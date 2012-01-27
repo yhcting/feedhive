@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Feeder</string>
+    <string name="ok">Ok</string>
+    <string name="url">Url</string>
+    <string name="fetch_progess">Fetching in progress...</string>
+    <string name="err_open_url">Fail to open given URL</string>
+    <string name="err_parse">Fail to parsing</string>
+    <string name="add_channel">Add channel</string>
+    <string name="refresh">refresh</string>
+    <string name="all">All</string>
+</resources>

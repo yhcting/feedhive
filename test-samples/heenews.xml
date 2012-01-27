@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+	<channel>
+		<title>이정희의 희소식</title> 
+		<link>http://www.heenews.co.kr</link> 
+		<description><![CDATA[이정희의 희소식]]></description> 
+		<language>ko-kr</language> 
+		<copyright>Copyright 2011 민중의소리</copyright>
+		<pubDate>Tue, 17 Jan 2012 14:15:00 +0900</pubDate> 
+		<lastBuildDate>Tue, 17 Jan 2012 14:15:00 +0900</lastBuildDate> 
+		<generator>http://www.heenews.co.kr</generator> 
+		<docs>http://blogs.law.harvard.edu/tech/rss</docs> 
+		<itunes:subtitle><![CDATA[이정희의 희소식]]></itunes:subtitle> 
+		<itunes:summary>이정희의 희소식</itunes:summary> 
+		<itunes:author>민중의소리</itunes:author> 
+		<itunes:owner>
+			<itunes:email>radio@vop.co.kr</itunes:email> 
+			<itunes:name>민중의소리</itunes:name> 
+		</itunes:owner>
+		<itunes:image href="http://www.podics.com/images/channel/132498833974.jpg" /> 
+		<itunes:category text="News &amp; Politics">
+		</itunes:category>
+		<itunes:explicit>no</itunes:explicit>
+		<image>
+			<url>http://www.podics.com/images/channel/132498833974.jpg</url> 
+			<title>이정희의 희소식</title> 
+			<link>http://www.heenews.co.kr</link> 
+		</image>
+		<item>
+			<title>제7화-시와 노래에 얽힌 이야기</title> 
+			<description>이정희 대표의 희소식 일곱번째 만남
+시와 노래에 얽힌 이야기
+기억속에 얽힌 노래들
+마른잎 다시 살아나, Imagine
+			</description>
+			<link>http://soundcloud.com/heenews/heenews07</link> 
+			<category>정치</category> 
+			<pubDate>Tue, 17 Jan 2012 14:15:00 +0900</pubDate>
+			<enclosure url="http://soundcloud.com/heenews/heenews07/download.mp3" length="37386135" type="audio/mpeg" />
+			<guid>http://soundcloud.com/heenews/heenews07</guid>
+			<itunes:subtitle>제7화-시와 노래에 얽힌 이야기
+			</itunes:subtitle> 
+			<itunes:summary>
+시와 노래에 얽힌 이야기
+기억속에 얽힌 노래들
+마른잎 다시 살아나, Imagine
+			</itunes:summary> 
+			<itunes:author>민중의소리</itunes:author>
+			<itunes:duration>39:02</itunes:duration>
+                        <itunes:explicit>no</itunes:explicit>
+		</item>
+		<item>
+			<title>제6화-한우값 폭락, 농민의 절규</title> 
+			<description>이정희 대표의 희소식 여섯번째 만남
+1. 돈봉투와 정치개혁 
+2. 한우값 폭락 농민의 절규
+3. 신승훈 현대차 노동자 사연
+			</description>
+			<link>http://soundcloud.com/heenews/heenews06</link> 
+			<category>정치</category> 
+			<pubDate>Thu, 12 Jan 2012 13:30:00 +0900</pubDate>
+			<enclosure url="http://soundcloud.com/heenews/heenews06/download.mp3" length="66383262" type="audio/mpeg" />
+			<guid>http://soundcloud.com/heenews/heenews06</guid>
+			<itunes:subtitle>제6화-한우값 폭락, 농민의 절규
+			</itunes:subtitle> 
+			<itunes:summary>
+1. 돈봉투와 정치개혁 
+2. 한우값 폭락 농민의 절규
+3. 신승훈 현대차 노동자 사연
+			</itunes:summary> 
+			<itunes:author>민중의소리</itunes:author>
+			<itunes:duration>55:02</itunes:duration>
+                        <itunes:explicit>no</itunes:explicit>
+		</item>
+		<item>
+			<title>제5화 - 신년설계</title> 
+			<description>이정희 대표의 희소식 다섯번째 만남
+1. 신년설계
+2. 검찰조사
+			</description>
+			<link>http://soundcloud.com/heenews/heenews05</link> 
+			<category>정치</category> 
+			<pubDate>Sat, 07 Jan 2012 13:20:00 +0900</pubDate>
+			<enclosure url="http://soundcloud.com/heenews/heenews05/download.mp3" length="47575602" type="audio/mpeg" />
+			<guid>http://soundcloud.com/heenews/heenews05</guid>
+			<itunes:subtitle>제5화 - 신년설계
+			</itunes:subtitle> 
+			<itunes:summary>
+1. 신년설계
+2. 검찰조사
+			</itunes:summary> 
+			<itunes:author>민중의소리</itunes:author>
+			<itunes:duration>39:41</itunes:duration>
+                        <itunes:explicit>no</itunes:explicit>
+		</item>
+		<item>
+			<title>제4화-고소득층 증세이야기</title> 
+			<description>이정희 대표의 희소식 네번째 만남
+IT노동자 특집
+부자감세에 목매는 한나라당
+			</description>
+			<link>http://soundcloud.com/heenews/heenews04</link> 
+			<category>정치</category> 
+			<pubDate>Tue, 04 Jan 2012 14:00:00 +0900</pubDate>
+			<enclosure url="http://soundcloud.com/heenews/heenews04/download.mp3" length="27288768" type="audio/mpeg" />
+			<guid>http://soundcloud.com/heenews/heenews04</guid>
+			<itunes:subtitle>제4화-고소득층 증세이야기
+			</itunes:subtitle> 
+			<itunes:summary>IT노동자 특집
+부자감세에 목매는 한나라당
+			</itunes:summary> 
+			<itunes:author>민중의소리</itunes:author>
+			<itunes:duration>57:08</itunes:duration>
+                        <itunes:explicit>no</itunes:explicit>
+		</item>
+		<item>
+			<title>제3화-국회 본회의 생얼 대공개</title> 
+			<description>이정희 대표의 희소식 세번째 만남
+		국회 본회의 생얼 대공개
+이정희가 뽑은 2011 기쁜소식 5개	
+			</description>
+			<link>http://soundcloud.com/heenews/heenews03</link> 
+			<category>정치</category> 
+			<pubDate>Sat, 31 Dec 2011 07:00:00 +0900</pubDate>
+			<enclosure url="http://soundcloud.com/heenews/heenews03/download.mp3" length="17592224" type="audio/mpeg" />
+			<guid>http://soundcloud.com/heenews/heenews03</guid>
+			<itunes:subtitle>제3화-국회 본회의 생얼 대공개 
+			</itunes:subtitle> 
+			<itunes:summary>국회 본회의 생얼 대공개
+		이정희가 뽑은 2011 기쁜소식	
+			</itunes:summary> 
+			<itunes:author>민중의소리</itunes:author>
+			<itunes:duration>36:50</itunes:duration>
+                        <itunes:explicit>no</itunes:explicit>
+		</item>
+		<item>
+			<title>제2화-전자주민증과 석패율제</title> 
+			<description>이정희 대표의 희소식 두번째 만남
+통합진보당의 색깔은?
+민주통합당 등원 후 벌어진 일, 전자주민증과 석패율 제도 합의
+			</description>
+			<link>http://soundcloud.com/heenews/heenews02</link> 
+			<category>정치</category> 
+			<pubDate>Thu, 27 Dec 2011 01:24:19 +0900</pubDate>
+			<enclosure url="http://soundcloud.com/heenews/heenews02/download.mp3" length="17430000" type="audio/mpeg" />
+			<guid>http://soundcloud.com/heenews/heenews02</guid>
+			<itunes:subtitle>이정희 대표의 희소식 두번째 만남 
+			</itunes:subtitle> 
+			<itunes:summary>통합진보당 색깔은?
+민주통합당 등원 후 벌어진 일, 전자주민증과 석패율 제도 합의
+			</itunes:summary> 
+			<itunes:author>민중의소리</itunes:author>
+			<itunes:duration>38:04</itunes:duration>
+                        <itunes:explicit>no</itunes:explicit>
+		</item>
+		<item>
+			<title>제1화-'와락'크리스마스와 봉도사</title> 
+			<description>
+통합진보당 만든 요즘 재미난 이야기
+쌍용차 '와락' 크리스마스 그리고 봉도사
+			</description>
+			<link>http://soundcloud.com/heenews/heenews01</link> 
+			<category>정치</category> 
+			<pubDate>Tue, 24 Dec 2011 01:13:45 +0900</pubDate>
+			<enclosure url="http://soundcloud.com/heenews/heenews01/download.mp3" length="17050000" type="audio/mpeg" />
+			<guid>http://soundcloud.com/heenews/heenews01</guid>
+			<itunes:subtitle>통합진보당 만든 요즘 재미난 이야기
+			</itunes:subtitle> 
+			<itunes:summary>통합진보당 만든 요즘 재미난 이야기
+쌍용차 '와락' 크리스마스 그리고 봉도사
+			</itunes:summary> 
+			<itunes:author>민중의소리</itunes:author>
+			<itunes:duration>37:14</itunes:duration>
+                        <itunes:explicit>no</itunes:explicit>
+		</item>
+	</channel>
+</rss>

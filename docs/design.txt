@@ -1,0 +1,20 @@
+[ Checking whether given item is in DB or not. ] - deprecated
+    * guid (optional)
+    * enclosure (optional)
+    * link (optional)
+    * title
+
+Checking whether given item is new one or not.
+    * 'pubDate' element is used.(if exists)
+        : listing order be increaseing or decreasing (any of these).
+    * namespace 'dc' need to be supported to use 'dc:date'
+
+
+Flow design
+    * Retrieve RSS items from given channel
+    * insert only newly updated items to DB
+        : How can we check that?
+	    -> Caching last updated date information for each channel.
+               (default value is  Thu. 1970. 1. 1. 00)
+	    -> If we can use channel's 'pubData' or 'lastBuildDate', these are better.
+    * Notification for "DB is updated."

@@ -1,0 +1,439 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+ <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+          <channel>
+          <title>나는 꼼수다</title>
+          <link>http://www.ddanzi.com</link>
+          <description>딴지일보 라디오</description>
+          <language>ko-kr</language>
+          <copyright>all copyright reserved at ddanzi.com</copyright>
+          <itunes:subtitle>나는꼼수다</itunes:subtitle>
+          <itunes:author>딴지라디오</itunes:author>
+          <itunes:summary>딴지일보에서 제작하는 국내 유일 각하 헌정방송</itunes:summary>
+          <itunes:owner>
+          <itunes:name>딴지일보</itunes:name>
+          <itunes:email>ddanzi.master@gmail.com</itunes:email>
+  <itunes:category text="News amp; Politics" />
+  </itunes:owner>
+  <itunes:image href="http://www.ddanzi.com/ddanzi/cheditor/attach/NMEdL8Jc4rW.jpg"/>
+  <itunes:explicit>no</itunes:explicit>
+ 
+  <item>
+<title>나는꼼수다1회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>BBK총정리</itunes:subtitle>
+<itunes:summary>BBK총정리</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110428.mp3" length="00:59:00" type="audio"/>
+<guid>http://ddanzi.clunet.co.kr/20110428.mp3</guid>
+<pubDate>Thu, 28 Apr 2011 12:00:00 +0900</pubDate>
+<itunes:duration>00:59:00</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다2회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>한나라당의내분</itunes:subtitle>
+<itunes:summary>한나라당의내분</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110512.mp3" length="00:59:00" type="audio"/>
+<guid>http://ddanzi.clunet.co.kr/20110512.mp3</guid>
+<pubDate>Thu, 12 May 2011 12:00:00 +0900</pubDate>
+<itunes:duration>00:59:00</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다3회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>140억의비밀</itunes:subtitle>
+<itunes:summary>140억의비밀</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110519.mp3" length="00:52:29" type="audio"/>
+<guid>http://ddanzi.clunet.co.kr/20110519.mp3</guid>
+<pubDate>Thu, 19 May 2011 12:00:00 +0900</pubDate>
+<itunes:duration>00:52:29</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다4회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>남북회담과 부산저축은행</itunes:subtitle>
+<itunes:summary>남북회담과 부산저축은행</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110603.mp3" length="00:67:51" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110603.mp3</guid>
+<pubDate>Fri, 03 Jun 2011 12:00:00 +0900</pubDate>
+<itunes:duration>00:67:51</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다5회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>중수부폐지와 등록금문제</itunes:subtitle>
+<itunes:summary>중수부폐지와 등록금문제</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110610.mp3" length="00:62:32" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110610.mp3</guid>
+<pubDate>Fri, 10 Jun 2011 16:00:00 +0900</pubDate>
+<itunes:duration>00:62:32</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다6회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>반값 등록금 문제</itunes:subtitle>
+<itunes:summary>반값 등록금 문제</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110615.mp3" length="00:82:04" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110615.mp3</guid>
+<pubDate>Wed, 15 Jun 2011 19:00:00 +0900</pubDate>
+<itunes:duration>00:82:04</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다7회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>오세훈의 무상급식</itunes:subtitle>
+<itunes:summary>오세훈의 무상급식</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110624.mp3" length="00:80:23" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110624.mp3</guid>
+<pubDate>Fri, 24 Jun 2011 16:00:00 +0900</pubDate>
+<itunes:duration>00:80:23</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다8회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>청계재단의 진실</itunes:subtitle>
+<itunes:summary>청계재단의 진실</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110630.mp3" length="00:85:13" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110630.mp3</guid>
+<pubDate>Thu, 30 Jun 2011 16:00:00 +0900</pubDate>
+<itunes:duration>00:85:13</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다9회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>3MC의 비밀</itunes:subtitle>
+<itunes:summary>3MC의 비밀</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110708.mp3" length="00:68:20" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110708.mp3</guid>
+<pubDate>Thu, 07 Jul 2011 16:00:00 +0900</pubDate>
+<itunes:duration>00:68:20</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다10회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>6미터의 비밀</itunes:subtitle>
+<itunes:summary>6미터의 비밀</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110715.mp3" length="00:95:05" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110715.mp3</guid>
+<pubDate>Fri, 15 Jul 2011 11:00:00 +0900</pubDate>
+<itunes:duration>00:95:05</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다11회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>농협사태의 비밀</itunes:subtitle>
+<itunes:summary>농협사태의 비밀</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110721.mp3" length="00:81:54" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110721.mp3</guid>
+<pubDate>Thu, 21 Jul 2011 23:59:00 +0900</pubDate>
+<itunes:duration>00:81:54</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다12회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>딴지일보 해킹과 장자연(1)</itunes:subtitle>
+<itunes:summary>딴지일보 해킹과 장자연(1)</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110728.mp3" length="00:99:25" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110728.mp3</guid>
+<pubDate>Thu, 28 Jul 2011 19:59:00 +0900</pubDate>
+<itunes:duration>00:99:25</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다13회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>장자연 사건과 인천공항</itunes:subtitle>
+<itunes:summary>장자연 사건과 인천공항</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110804.mp3" length="00:90:20" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110804.mp3</guid>
+<pubDate>Thu, 04 Aug 2011 20:59:00 +0900</pubDate>
+<itunes:duration>00:90:20</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다14회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>정봉주,댓글부대 그리고 자원외교</itunes:subtitle>
+<itunes:summary>정봉주,댓글부대 그리고 자원외교</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110811.mp3" length="00:99:25" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110811.mp3</guid>
+<pubDate>Thu, 11 Aug 2011 22:59:00 +0900</pubDate>
+<itunes:duration>00:99:25</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다15회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>정봉주,오세훈 그리고 큰목사님</itunes:subtitle>
+<itunes:summary>정봉주,오세훈 그리고 큰목사님</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110818.mp3" length="01:40:39" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110818.mp3</guid>
+<pubDate>Fri, 19 Aug 2011 05:00:00 +0900</pubDate>
+<itunes:duration>01:40:39</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다 호외</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>오세훈 시장 절친수락 사건</itunes:subtitle>
+<itunes:summary>오세훈 시장 절친수락 사건</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110822.mp3" length="00:45:03" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110822.mp3</guid>
+<pubDate>Mon, 22 Aug 2011 01:00:00 +0900</pubDate>
+<itunes:duration>00:45:03</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다16회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>오세훈 백수복귀, 딴지일보 해킹</itunes:subtitle>
+<itunes:summary>오세훈 백수복귀, 딴지일보 해킹</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110827.mp3" length="01:40:33" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110827.mp3</guid>
+<pubDate>Sat, 27 Aug 2011 11:00:00 +0900</pubDate>
+<itunes:duration>01:40:33</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다17회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>곽노현 10.26 사건</itunes:subtitle>
+<itunes:summary>곽노현 10.26 사건</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110831.mp3" length="00:89:17" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110831.mp3</guid>
+<pubDate>Wed, 31 Aug 2011 07:00:00 +0900</pubDate>
+<itunes:duration>00:89:17</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다18회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>가카, 곽노현 그리고 안철수</itunes:subtitle>
+<itunes:summary>가카, 곽노현 그리고 안철수</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/20110907.mp3" length="02:17:53" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/20110907.mp3</guid>
+<pubDate>Wed, 07 Sep 2011 14:00:00 +0900</pubDate>
+<itunes:duration>02:17:53</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다19회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>위키릭스와 곽노현</itunes:subtitle>
+<itunes:summary>위키릭스와 곽노현</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu019.mp3" length="01:32:03" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu019.mp3</guid>
+<pubDate>Fri, 16 Sep 2011 11:00:00 +0900</pubDate>
+<itunes:duration>01:32:03</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다20회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>왕재산간첩단, 삼화저축은행</itunes:subtitle>
+<itunes:summary>왕재산간첩단, 삼화저축은행</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu020.mp3" length="01:29:03" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu020.mp3</guid>
+<pubDate>Fri, 23 Sep 2011 10:00:00 +0900</pubDate>
+<itunes:duration>01:29:03</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다21회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>박영선VS박원순 아바타 토론회</itunes:subtitle>
+<itunes:summary>박영선VS박원순 아바타 토론회</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu021.mp3" length="02:31:03" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu021.mp3</guid>
+<pubDate>Sat, 01 Oct 2011 13:30:00 +0900</pubDate>
+<itunes:duration>02:31:03</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다22회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>도둑적으로 완벽하신 가카</itunes:subtitle>
+<itunes:summary>도둑적으로 완벽하신 가카</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/gaka022.mp3" length="01:39:23" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/gaka022.mp3</guid>
+<pubDate>Sun, 09 Oct 2011 03:15:00 +0900</pubDate>
+<itunes:duration>01:39:23</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다23회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>홍준표대표 초청 관훈토론회</itunes:subtitle>
+<itunes:summary>홍준표대표 초청 관훈토론회</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111015new.mp3" length="03:20:47" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111015new.mp3</guid>
+<pubDate>Sat, 15 Oct 2011 10:20:00 +0900</pubDate>
+<itunes:duration>03:20:47</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다24회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>가카 그리고 나경원</itunes:subtitle>
+<itunes:summary>가카 그리고 나경원</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111019.mp3" length="02:02:20" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111019.mp3</guid>
+<pubDate>Wed, 19 Oct 2011 18:30:00 +0900</pubDate>
+<itunes:duration>02:02:20</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다25회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>야당 얼굴마담 초청 관훈토론회</itunes:subtitle>
+<itunes:summary>야당 얼굴마담 초청 관훈토론회</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111024.mp3" length="02:21:34" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111024.mp3</guid>
+<pubDate>Wed, 24 Oct 2011 12:10:00 +0900</pubDate>
+<itunes:duration>02:21:34</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다26회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>서울수복과 도올선생</itunes:subtitle>
+<itunes:summary>서울수복과 도올선생</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111029.mp3" length="02:18:10" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111029.mp3</guid>
+<pubDate>Sat, 29 Oct 2011 11:30:00 +0900</pubDate>
+<itunes:duration>02:18:10</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다27회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>떨거지토론회-심상정,유시민,노회찬</itunes:subtitle>
+<itunes:summary>떨거지토론회-심상정,유시민,노회찬</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111107.mp3" length="03:17:10" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111107.mp3</guid>
+<pubDate>Mon, 07 Nov 2011 11:30:00 +1600</pubDate>
+<itunes:duration>03:17:10</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다28회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>선관위 그리고 안철수</itunes:subtitle>
+<itunes:summary>선관위 그리고 안철수</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111112.mp3" length="01:27:30" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111112.mp3</guid>
+<pubDate>Sat, 12 Nov 2011 17:00:00 +1600</pubDate>
+<itunes:duration>01:27:30</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다29회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>중앙일보, 곽노현 그리고 맥쿼리</itunes:subtitle>
+<itunes:summary>중앙일보, 곽노현 그리고 맥쿼리</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111123.mp3" length="01:45:48" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111123.mp3</guid>
+<pubDate>Wed, 23 Nov 2011 01:50:00 +1600</pubDate>
+<itunes:duration>01:45:48</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다30회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>괴담, 선관위 그리고 론스타</itunes:subtitle>
+<itunes:summary>괴담, 선관위 그리고 론스타</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111126.mp3" length="01:58:00" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111126.mp3</guid>
+<pubDate>Sat, 26 Nov 2011 11:00:00 +1600</pubDate>
+<itunes:duration>01:58:00</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다31회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>검경 수사권 조정과 선관위 디도스</itunes:subtitle>
+<itunes:summary>겸경 수사권 조정과 선관위 디도스</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111205.mp3" length="01:46:14" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111205.mp3</guid>
+<pubDate>Sun, 04 Dec 2011 19:00:00 +1600</pubDate>
+<itunes:duration>01:46:14</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다32회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>귀국 보고와 선관위</itunes:subtitle>
+<itunes:summary>귀국 보고와 선관위</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111218.mp3" length="01:27:49" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111218.mp3</guid>
+<pubDate>Sun, 18 Dec 2011 09:00:00 +1600</pubDate>
+<itunes:duration>01:27:49</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다 호외2</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>정봉주 대법원 판결 기념</itunes:subtitle>
+<itunes:summary>정봉주 대법원 판결 기념</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111219.mp3" length="01:04:36" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111219.mp3</guid>
+<pubDate>Mon, 19 Dec 2011 13:00:00 +0900</pubDate>
+<itunes:duration>01:04:36</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다 특별공지</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>정봉주 입감 특별공지</itunes:subtitle>
+<itunes:summary>정봉주 입감 특별공지</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111226-notice.mp3" length="00:03:30" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111226-notice.mp3</guid>
+<pubDate>Mon, 26 Dec 2011 01:00:00 +0900</pubDate>
+<itunes:duration>00:03:30</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다 호외3</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>정봉주 징역 1년 확정 기념</itunes:subtitle>
+<itunes:summary>정봉주 징역 1년 확정 기념</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-111227.mp3" length="00:52:15" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-111227.mp3</guid>
+<pubDate>Tue, 27 Dec 2011 23:00:00 +0900</pubDate>
+<itunes:duration>00:52:15</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다 봉주1회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>다스 상속세의 비밀, 선관위</itunes:subtitle>
+<itunes:summary>다스 상속세의 비밀, 선관위</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-120101.mp3" length="01:30:40" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-120101.mp3</guid>
+<pubDate>Sun, 01 Jan 2012 21:00:00 +0900</pubDate>
+<itunes:duration>01:30:40</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+<item>
+<title>나는꼼수다 봉주2회</title>
+<itunes:author>딴지일보</itunes:author>
+<itunes:subtitle>민주통합당 대표 경선 특집</itunes:subtitle>
+<itunes:summary>민주통합당 대표 경선 특집</itunes:summary>
+<enclosure url="http://ddanzi.clunet.co.kr/ggomsu-120111.mp3" length="03:38:49" type="mp3"/>
+<guid>http://ddanzi.clunet.co.kr/ggomsu-120111.mp3</guid>
+<pubDate>Wed, 11 Jan 2012 19:00:00 +0900</pubDate>
+<itunes:duration>03:38:49</itunes:duration>
+<itunes:explicit>no</itunes:explicit>
+</item>
+</channel>
+</rss>
