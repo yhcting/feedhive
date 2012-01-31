@@ -9,14 +9,13 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
+import android.widget.Toast;
 
-public class ItemReaderActivity extends ListActivity {
+public class ItemReaderActivity extends ListActivity  implements ItemLoader.OnPostExecute {
+    private long    channelid = -1;
+
     private Cursor
     adapterCursorQuery(long cid) {
-        String selection = null;
-        if (0 != cid)
-            selection = DB.ColumnRssItem.CHANNELID.getName() + " = '" + cid + "'";
-
         return DB.db().query(
             DB.getRssItemTableName(cid),
             new DB.ColumnRssItem[]
@@ -24,7 +23,37 @@ public class ItemReaderActivity extends ListActivity {
                       DB.ColumnRssItem.TITLE,
                       DB.ColumnRssItem.DESCRIPTION,
                       DB.ColumnRssItem.CHANNELID },
-            selection, null, null, null, null);
+            null, null, null, null, null);
+    }
+
+    private void
+    refreshList() {
+        // [ NOTE ]
+        // Usually, number of channels are not big.
+        // So, we don't need to think about async. loading.
+        Cursor newCursor = adapterCursorQuery(channelid);
+        ((ItemListCursorAdapter)getListAdapter()).swapCursor(newCursor).close();
+        ((ItemListCursorAdapter)getListAdapter()).notifyDataSetChanged();
+    }
+
+    // Implements of ItemLoader.OnPostExecute
+    // See ItemLoader for details of parameter 'result'
+    public void
+    onPostExecute(FeederException.Err result, long cid, boolean bChannelInfoUpdated) {
+        // if fail to open url use existing DB information.
+        if (result != FeederException.Err.NoErr) {
+            // TODO : Error handling....
+            return;
+        }
+
+        if (result == FeederException.Err.IOOpenUrl) {
+            Toast.makeText(this, R.string.err_open_url, 2);
+        }
+
+        if (bChannelInfoUpdated)
+            setResult(RESULT_OK, null);
+
+        refreshList();
     }
 
     @Override
@@ -32,10 +61,10 @@ public class ItemReaderActivity extends ListActivity {
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        long cid = getIntent().getLongExtra("channelid", 0);
-        logI("* RSS Item to read : " + cid + "\n");
+        channelid = getIntent().getLongExtra("channelid", 0);
+        logI("* RSS Item to read : " + channelid + "\n");
         setContentView(R.layout.item_reader);
-        setListAdapter(new ItemListCursorAdapter(this, R.layout.item_list_row, adapterCursorQuery(cid)));
+        setListAdapter(new ItemListCursorAdapter(this, R.layout.item_list_row, adapterCursorQuery(channelid)));
     }
 
     @Override
@@ -58,6 +87,7 @@ public class ItemReaderActivity extends ListActivity {
 
         switch (item.getItemId()) {
         case R.id.refresh: {
+            new ItemLoader(this, this).execute(channelid);
         } break;
         }
         return true;

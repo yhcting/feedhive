@@ -10,11 +10,11 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
-import android.widget.Toast;
 
-public class FeederActivity extends ListActivity implements ItemLoader.OnPostExecute {
+public class FeederActivity extends ListActivity {
     // Request codes.
-    static final int RCAddChannel = 0;
+    static final int RCAddChannel   = 0;
+    static final int RCReadChannel  = 1;
 
     private Cursor
     adapterCursorQuery() {
@@ -46,40 +46,22 @@ public class FeederActivity extends ListActivity implements ItemLoader.OnPostExe
         setListAdapter(new ChannelListCursorAdapter(this, R.layout.channel_list_row, adapterCursorQuery()));
     }
 
-    // Implements of ItemLoader.OnPostExecute
-    // See ItemLoader for details of parameter 'result'
-    public void
-    onPostExecute(FeederException.Err result, long cid, boolean bChannelInfoUpdated) {
-        // if fail to open url use existing DB information.
-        if (result != FeederException.Err.NoErr) {
-            // TODO : Error handling....
-            return;
-        }
-
-        if (result == FeederException.Err.IOOpenUrl) {
-            Toast.makeText(this, R.string.err_open_url, 2);
-        }
-
-        Intent intent = new Intent(this, ItemReaderActivity.class);
-        intent.putExtra("channelid", cid);
-        startActivity(intent);
-
-        if (bChannelInfoUpdated)
-            refreshList();
-
-    }
-
     public void
     onAllButtonClicked(View v) {
         // id '0' means 'all'
-        new ItemLoader(this, this).execute(0L);
+        Intent intent = new Intent(this, ItemReaderActivity.class);
+        intent.putExtra("channelid", 0);
+        startActivityForResult(intent, RCReadChannel);
     }
 
     @Override
     protected void
     onListItemClick(ListView l, View v, int position, long id) {
-        new ItemLoader(this, this).execute(id);
+        Intent intent = new Intent(this, ItemReaderActivity.class);
+        intent.putExtra("channelid", id);
+        startActivityForResult(intent, RCReadChannel);
     }
+
     @Override
     public boolean
     onCreateOptionsMenu(Menu menu) {
@@ -125,6 +107,10 @@ public class FeederActivity extends ListActivity implements ItemLoader.OnPostExe
         switch(requestCode) {
         case RCAddChannel:
             onResult_addChannel(data);
+            break;
+
+        case RCReadChannel:
+            refreshList();
             break;
         }
     }
