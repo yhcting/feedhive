@@ -1,5 +1,6 @@
 package free.yhc.feeder;
 
+import free.yhc.feeder.model.DB;
 import android.app.Application;
 import android.content.res.Configuration;
 

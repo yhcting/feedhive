@@ -1,12 +1,12 @@
-package free.yhc.feeder;
+package free.yhc.feeder.model;
 
 import android.util.Log;
 
-class Utils {
+public class Utils {
     static final boolean DBG = true;
     static final String TAG = "[Feeder]";
 
-    static void
+    public static void
     eAssert(boolean cond) {
         if (!DBG)
             return;
@@ -17,7 +17,7 @@ class Utils {
         }
     }
 
-    static void
+    public static void
     logI(String msg) {
         if (!DBG)
             return;
@@ -25,7 +25,7 @@ class Utils {
         Log.i(TAG, msg);
     }
 
-    static void
+    public static void
     logW(String msg) {
         if (!DBG)
             return;
@@ -33,7 +33,7 @@ class Utils {
         Log.w(TAG, msg);
     }
 
-    static void
+    public static void
     logE(String msg) {
         if (!DBG)
             return;

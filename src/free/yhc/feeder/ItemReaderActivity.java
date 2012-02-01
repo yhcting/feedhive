@@ -1,6 +1,8 @@
 package free.yhc.feeder;
 
-import static free.yhc.feeder.Utils.logI;
+import static free.yhc.feeder.model.Utils.logI;
+import free.yhc.feeder.model.DB;
+import free.yhc.feeder.model.FeederException;
 import android.app.ListActivity;
 import android.database.Cursor;
 import android.os.Bundle;

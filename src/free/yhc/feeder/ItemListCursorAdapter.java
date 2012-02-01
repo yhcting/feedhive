@@ -1,5 +1,6 @@
 package free.yhc.feeder;
 
+import free.yhc.feeder.model.DB;
 import android.content.Context;
 import android.database.Cursor;
 import android.view.View;

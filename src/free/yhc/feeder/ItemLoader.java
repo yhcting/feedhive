@@ -1,7 +1,7 @@
 package free.yhc.feeder;
 
-import static free.yhc.feeder.Utils.eAssert;
-import static free.yhc.feeder.Utils.logI;
+import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.IOException;
 import java.net.URL;
@@ -11,6 +11,12 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
+
+import free.yhc.feeder.model.DB;
+import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.model.FeederException;
+import free.yhc.feeder.model.RSS;
+import free.yhc.feeder.model.RSSParser;
 
 import android.app.ProgressDialog;
 import android.content.Context;

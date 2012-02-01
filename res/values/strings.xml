@@ -9,4 +9,7 @@
     <string name="add_channel">Add channel</string>
     <string name="refresh">refresh</string>
     <string name="all">All</string>
+    <string name="update">Update</string>
+    <string name="enter_url">Enter URL</string>
+    <string name="channel_url">Channel URL</string>
 </resources>

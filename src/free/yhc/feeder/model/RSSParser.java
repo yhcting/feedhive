@@ -1,15 +1,17 @@
-package free.yhc.feeder;
+package free.yhc.feeder.model;
 
-import static free.yhc.feeder.Utils.logI;
+import static free.yhc.feeder.model.Utils.logI;
+
+import java.util.LinkedList;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import free.yhc.feeder.FeederException.Err;
+import free.yhc.feeder.model.FeederException.Err;
 
-class RSSParser {
+public class RSSParser {
 
     protected void
     printNexts(Node n) {
@@ -262,26 +264,85 @@ class RSSParser {
                 ch.category = nodeCategory(n);
             else if (n.getNodeName().equalsIgnoreCase("image"))
                 ch.image = nodeImage(n);
-
+            // To support itunes tag (This is special hack to support various RSS of Korea for itunes).
+            else if (n.getNodeName().equalsIgnoreCase("itunes:image")) {
+                ???? is this really work????
+            }
             n = n.getNextSibling();
         }
         return ch;
     }
 
-    RSS
-    parse(Document dom)
+    protected RSS
+    getRSS(Element root)
             throws FeederException {
-        RSS     rss;
-        Element root = dom.getDocumentElement();
-        logI("Root : " + root.getNodeName());
         verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
-        rss = nodeRss(root);
+        RSS rss = nodeRss(root);
         if (!rss.version.equals("2.0"))
             throw new FeederException(Err.ParserUnsupportedVersion);
+        return rss;
+    }
 
+    protected void
+    tagTreeCollector(Node pn, LinkedList<String> l, String s) {
+        Node n = pn.getFirstChild();
+
+        if (!s.isEmpty()) {
+            l.addLast(s);
+            s = s + RSS.tagtree_element_delimiter;
+        }
+
+        while (null != n) {
+            if (Node.ELEMENT_NODE == n.getNodeType())
+                tagTreeCollector(n, l, s + n.getNodeName());
+            n = n.getNextSibling();
+        }
+    }
+
+    protected RSS.TagTree
+    parseTagTree(Document dom)
+            throws FeederException {
+        RSS.TagTree tt = new RSS.TagTree();
+        Element root = dom.getDocumentElement();
+        // For Channel node
+        Node chn = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
+
+        LinkedList<String> l = new LinkedList<String>();
+        Node itemn = null; // first "item" node
+
+        // Collect Channel Tag Tree
+        Node n = chn.getFirstChild();
+        while (null != n) {
+            if (Node.ELEMENT_NODE == n.getNodeType()) {
+                if(!n.getNodeName().equalsIgnoreCase("item"))
+                    tagTreeCollector(n, l, n.getNodeName());
+                else if (null == itemn)
+                    itemn = n;
+            }
+            n = n.getNextSibling();
+        }
+        tt.ctags = (String[])l.toArray();
+
+        // Collect Item Tag Tree
+        l.clear();
+        tagTreeCollector(itemn, l, "");
+        tt.itags = (String[])l.toArray();
+
+        RSS.dump(tt);
+
+        return tt;
+    }
+
+    public RSS
+    parse(Document dom, String[] ctags, String[] itags)
+            throws FeederException {
+        Element root = dom.getDocumentElement();
+        RSS rss = getRSS(root);
+
+        rss.tagtree = parseTagTree(dom);
         // For Channel node
         Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
-        rss.channel = nodeChannel(n);
+        rss.channel = nodeChannel(n, ctags, itags);
 
         return rss;
     }

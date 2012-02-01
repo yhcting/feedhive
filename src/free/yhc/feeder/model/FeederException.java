@@ -1,11 +1,11 @@
-package free.yhc.feeder;
+package free.yhc.feeder.model;
 
-class FeederException extends Exception {
+public class FeederException extends Exception {
     private static final long serialVersionUID = 1L;
 
     // Err codes.
     // TODO : set correct string resource id
-    static enum Err {
+    public static enum Err {
         NoErr                       (0),
         IOOpenUrl                   (0),
         ParserUnsupportedFormat     (0),
@@ -25,29 +25,29 @@ class FeederException extends Exception {
         }
     }
 
-    Err err;
+    protected Err err;
 
-    FeederException() {
+    public FeederException() {
         super();
     }
 
-    FeederException(String message, Throwable cause) {
+    public FeederException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    FeederException(String message) {
+    public FeederException(String message) {
         super(message);
     }
 
-    FeederException(Throwable cause) {
+    public FeederException(Throwable cause) {
         super(cause);
     }
 
-    FeederException(Err err) {
+    public FeederException(Err err) {
         this.err = err;
     }
 
-    Err
+    public Err
     getError() {
         return err;
     }

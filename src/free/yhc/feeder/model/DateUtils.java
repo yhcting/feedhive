@@ -1,4 +1,4 @@
-package free.yhc.feeder;
+package free.yhc.feeder.model;
 
 import java.text.SimpleDateFormat;
 

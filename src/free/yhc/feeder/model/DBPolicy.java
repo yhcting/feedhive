@@ -1,11 +1,11 @@
-package free.yhc.feeder;
+package free.yhc.feeder.model;
 
-import static free.yhc.feeder.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.eAssert;
 
-class DBPolicy {
+public class DBPolicy {
     private DB    db   = null;
 
-    DBPolicy() {
+    public DBPolicy() {
         db = DB.db();
     }
 
@@ -14,7 +14,7 @@ class DBPolicy {
      * @return true  : DB is changed.
      *         false : DB is not changed.
      */
-    boolean
+    public boolean
     insertRSSChannel(RSS.Channel ch) {
         // FIXME implement policy.
 
@@ -27,7 +27,7 @@ class DBPolicy {
 
     // return : true  : if there is real update.
     //          false : nothing to update. (up-to-dated)
-    boolean
+    public boolean
     updateRSSChannel(RSS.Channel ch) {
         // FIXME implement policy.
         eAssert(ch.id > 0);
@@ -35,7 +35,7 @@ class DBPolicy {
         return true;
     }
 
-    boolean
+    public boolean
     deleteRSSChannel(long id) {
         long n = db.deleteChannel(id);
         eAssert(0 == n || 1 == n);
@@ -47,7 +47,7 @@ class DBPolicy {
      * @param items
      * @return : number of items that fails to insert.
      */
-    long
+    public long
     updateChannelItems(RSS.Channel ch, RSS.Item[] items) {
         // remove all items and insert new values
         db.cleanChannelItems(ch.id);

@@ -1,7 +1,7 @@
-package free.yhc.feeder;
+package free.yhc.feeder.model;
 
-import static free.yhc.feeder.Utils.eAssert;
-import static free.yhc.feeder.Utils.logI;
+import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.logI;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -10,13 +10,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 
 // This is singleton
-class DB extends SQLiteOpenHelper {
+public class DB extends SQLiteOpenHelper {
     private static DB instance = null;
 
     /**************************************
      * Members
      **************************************/
-    private SQLiteDatabase db = null;
+    protected SQLiteDatabase db = null;
 
 
     /**************************************
@@ -28,10 +28,10 @@ class DB extends SQLiteOpenHelper {
      *      <prefix string> + channel-id
      *
      **************************************/
-    static final String NAME    = "feader.db";
-    static final int    VERSION = 1;
+    protected static final String NAME    = "feader.db";
+    protected static final int    VERSION = 1;
 
-    interface Column {
+    public interface Column {
         String getName();
         String getType();
         String getConstraint();
@@ -40,10 +40,12 @@ class DB extends SQLiteOpenHelper {
     /**************************************
      * DB for RSS
      **************************************/
-    static final String TABLE_RSSCHANNEL= "rsschannel";
-    protected static final String TABLE_RSSITEM   = "rssitem";
+    public static final String TABLE_RSSCHANNEL         = "rsschannel";
+    protected static final String TABLE_RSSITEM         = "rssitem";
+    protected static final String TABLE_CHANNEL_USER    = "rsschanneluser";
+    protected static final String TABLE_ITEM_USER       = "rssitemuser";
 
-    static enum ColumnRssChannel implements Column {
+    public static enum ColumnRssChannel implements Column {
         // Required Channel Elements
         TITLE           ("title",           "text",     "not null"),
         LINK            ("link",            "text",     "not null"),
@@ -51,7 +53,31 @@ class DB extends SQLiteOpenHelper {
         PUBDATE         ("pubDate",         "text",     ""),
         LASTBUILDDATE   ("lastBuildDate",   "text",     ""),
 
+        // User Required Channel Elements
+        USERTXT0        ("usertxt0",        "text",     ""),
+        USERTXT1        ("usertxt1",        "text",     ""),
+        USERTXT2        ("usertxt2",        "text",     ""),
+        USERTXT3        ("usertxt3",        "text",     ""),
+        USERTXT4        ("usertxt4",        "text",     ""),
+
+        USERTAG0        ("usertag0",        "text",     ""),
+        USERTAG1        ("usertag1",        "text",     ""),
+        USERTAG2        ("usertag2",        "text",     ""),
+        USERTAG3        ("usertag3",        "text",     ""),
+        USERTAG4        ("usertag4",        "text",     ""),
+        USERTAG5        ("usertag5",        "text",     ""),
+        USERTAG6        ("usertag6",        "text",     ""),
+        USERTAG7        ("usertag7",        "text",     ""),
+        USERTAG8        ("usertag8",        "text",     ""),
+        USERTAG9        ("usertag9",        "text",     ""),
+
         // Columns for internal use.
+        IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
+        LASTUPDATE      ("lastUpdate",      "text",     ""),
+        LASTFULLUPDATE  ("lastFullUpdate",  "text",     ""),
+        CHANNELVIEW     ("channelView",     "text",     ""),
+        ITEMVIEW        ("itemView",        "text",     ""),
+        TAGTREE         ("tagtree",         "text",     ""),
         URL             ("url",             "text",     "not null"), // channel url of this rss.
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
 
@@ -70,7 +96,7 @@ class DB extends SQLiteOpenHelper {
         public String getConstraint() { return constraint; }
     }
 
-    static enum ColumnRssItem implements Column {
+    public static enum ColumnRssItem implements Column {
         TITLE           ("title",           "text",     "not null"),
         LINK            ("link",            "text",     "not null"),
         DESCRIPTION     ("description",     "text",     "not null"),
@@ -81,8 +107,27 @@ class DB extends SQLiteOpenHelper {
         GUID            ("guid",            "text",     ""),
         GUID_ISPERMALINK("guid_isPermaLink","text",     ""),
 
+        // User Required Channel Elements
+        USERTXT0        ("usertxt0",        "text",     ""),
+        USERTXT1        ("usertxt1",        "text",     ""),
+        USERTXT2        ("usertxt2",        "text",     ""),
+        USERTXT3        ("usertxt3",        "text",     ""),
+        USERTXT4        ("usertxt4",        "text",     ""),
+
+        USERTAG0        ("usertag0",        "text",     ""),
+        USERTAG1        ("usertag1",        "text",     ""),
+        USERTAG2        ("usertag2",        "text",     ""),
+        USERTAG3        ("usertag3",        "text",     ""),
+        USERTAG4        ("usertag4",        "text",     ""),
+        USERTAG5        ("usertag5",        "text",     ""),
+        USERTAG6        ("usertag6",        "text",     ""),
+        USERTAG7        ("usertag7",        "text",     ""),
+        USERTAG8        ("usertag8",        "text",     ""),
+        USERTAG9        ("usertag9",        "text",     ""),
+
         // Columns for internal use.
         CHANNELID       ("channelid",       "integer",  "not null"),
+        DOWNLOADFILE    ("downloadfile",    "text",     ""), // downloaded file path
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
 
         private String name;
@@ -99,7 +144,104 @@ class DB extends SQLiteOpenHelper {
         public String getConstraint() { return constraint; }
     }
 
-    static String
+    public static enum ColumnRssUserMap implements Column {
+        // Required Channel Elements
+        NAME           ("name",             "text",     "not null"), // name of value (tag name or etc.)
+        TYPE           ("type",             "text",     "not null"), // channel table? / item table?
+        COLUMN         ("column",           "text",     "not null"), // column name for value of this tag.
+                                                                     // (ex. usertext0, usertag1 ...)
+
+        // Columns for internal use.
+        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
+
+        private String name;
+        private String type;
+        private String constraint;
+
+        ColumnRssUserMap(String name, String type, String constraint) {
+            this.name = name;
+            this.type = type;
+            this.constraint = constraint;
+        }
+        public String getName() { return name; }
+        public String getType() { return type; }
+        public String getConstraint() { return constraint; }
+    }
+
+    public static enum ColumnRssChannelUser implements Column {
+        // Required Channel Elements
+        USERTXT0           ("usertxt0",           "text",     ""),
+        USERTXT1           ("usertxt1",           "text",     ""),
+        USERTXT2           ("usertxt2",           "text",     ""),
+        USERTXT3           ("usertxt3",           "text",     ""),
+        USERTXT4           ("usertxt4",           "text",     ""),
+
+        USERTAG0           ("usertag0",           "text",     ""),
+        USERTAG1           ("usertag1",           "text",     ""),
+        USERTAG2           ("usertag2",           "text",     ""),
+        USERTAG3           ("usertag3",           "text",     ""),
+        USERTAG4           ("usertag4",           "text",     ""),
+        USERTAG5           ("usertag5",           "text",     ""),
+        USERTAG6           ("usertag6",           "text",     ""),
+        USERTAG7           ("usertag7",           "text",     ""),
+        USERTAG8           ("usertag8",           "text",     ""),
+        USERTAG9           ("usertag9",           "text",     ""),
+
+        // Columns for internal use.
+        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
+
+        private String name;
+        private String type;
+        private String constraint;
+
+        ColumnRssChannelUser(String name, String type, String constraint) {
+            this.name = name;
+            this.type = type;
+            this.constraint = constraint;
+        }
+        public String getName() { return name; }
+        public String getType() { return type; }
+        public String getConstraint() { return constraint; }
+    }
+
+    public static enum ColumnRssItemUser implements Column {
+        // Required Channel Elements
+        USERTXT0           ("usertxt0",           "text",     ""),
+        USERTXT1           ("usertxt1",           "text",     ""),
+        USERTXT2           ("usertxt2",           "text",     ""),
+        USERTXT3           ("usertxt3",           "text",     ""),
+        USERTXT4           ("usertxt4",           "text",     ""),
+
+        USERTAG0           ("usertag0",           "text",     ""),
+        USERTAG1           ("usertag1",           "text",     ""),
+        USERTAG2           ("usertag2",           "text",     ""),
+        USERTAG3           ("usertag3",           "text",     ""),
+        USERTAG4           ("usertag4",           "text",     ""),
+        USERTAG5           ("usertag5",           "text",     ""),
+        USERTAG6           ("usertag6",           "text",     ""),
+        USERTAG7           ("usertag7",           "text",     ""),
+        USERTAG8           ("usertag8",           "text",     ""),
+        USERTAG9           ("usertag9",           "text",     ""),
+
+        // Columns for internal use.
+        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
+
+        private String name;
+        private String type;
+        private String constraint;
+
+        ColumnRssItemUser(String name, String type, String constraint) {
+            this.name = name;
+            this.type = type;
+            this.constraint = constraint;
+        }
+        public String getName() { return name; }
+        public String getType() { return type; }
+        public String getConstraint() { return constraint; }
+    }
+
+
+    public static String
     getRssItemTableName(long channelid) {
         return TABLE_RSSITEM + channelid;
     }
@@ -167,20 +309,20 @@ class DB extends SQLiteOpenHelper {
         super(context, NAME, null, VERSION);
     }
 
-    static DB
+    public static DB
     newSession(Context context) {
         eAssert(null == instance);
         instance = new DB(context);
         return instance;
     }
 
-    static DB
+    public static DB
     db() {
         eAssert(null != instance);
         return instance;
     }
 
-    void
+    public void
     open() {
         db = getWritableDatabase();
     }
@@ -215,14 +357,14 @@ class DB extends SQLiteOpenHelper {
     }
     */
 
-    Cursor
+    public Cursor
     query(String table, Column[] columns) {
         return db.query(table,
                         getColumnNames(columns),
                         null, null, null, null, null);
     }
 
-    Cursor
+    public Cursor
     query(String table,
           Column[] columns,
           String selection,
@@ -250,7 +392,7 @@ class DB extends SQLiteOpenHelper {
         return values;
     }
 
-    long
+    public long
     insertChannel(RSS.Channel ch) {
         long r = db.insert(TABLE_RSSCHANNEL, null, buildChannelValues(ch));
         if (r >= 0)
@@ -260,14 +402,15 @@ class DB extends SQLiteOpenHelper {
         return r;
     }
 
-    long updateChannel(RSS.Channel ch) {
+    public long
+    updateChannel(RSS.Channel ch) {
         return db.update(TABLE_RSSCHANNEL,
                          buildChannelValues(ch),
                          ColumnRssChannel.ID.getName() + " = '" + ch.id + "'",
                          null);
     }
 
-    long
+    public long
     deleteChannel(long id) {
         long r = db.delete(TABLE_RSSCHANNEL,
                             ColumnRssChannel.ID.getName() + " = " + id,
@@ -278,7 +421,7 @@ class DB extends SQLiteOpenHelper {
         return r;
     }
 
-    long
+    public long
     cleanChannelItems(long cid) {
         eAssert(cid >= 0);
         db.execSQL("drop table " + getRssItemTableName(cid));
@@ -286,7 +429,7 @@ class DB extends SQLiteOpenHelper {
         return 0;
     }
 
-    long
+    public long
     insertItem(long cid, RSS.Item item) {
         ContentValues values = new ContentValues();
 
@@ -326,7 +469,7 @@ class DB extends SQLiteOpenHelper {
         return ch;
     }
 
-    RSS.Channel
+    public RSS.Channel
     getRssChannelFromId(long id) {
         Cursor c = db.query(TABLE_RSSCHANNEL,
                             getColumnNames(ColumnRssChannel.values()),
@@ -345,7 +488,7 @@ class DB extends SQLiteOpenHelper {
         return ch;
     }
 
-    RSS.Channel[]
+    public RSS.Channel[]
     getRssChannels() {
         Cursor c = db.query(TABLE_RSSCHANNEL,
                             getColumnNames(ColumnRssChannel.values()),

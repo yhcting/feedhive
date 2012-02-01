@@ -30,8 +30,8 @@ public class AddChannelActivity extends Activity {
 
         // for test
         //url = "http://old.ddanzi.com/appstream/ddradio.xml";
-        //url = "file:///data/test/total_news.xml";
-        url = "http://www.khan.co.kr/rss/rssdata/total_news.xml";
+        url = "file:///data/test/total_news.xml";
+        //url = "http://www.khan.co.kr/rss/rssdata/total_news.xml";
 
         Intent data = new Intent();
         data.putExtra("url", url);
