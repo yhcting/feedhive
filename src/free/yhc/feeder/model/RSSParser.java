@@ -1,5 +1,6 @@
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
 import java.util.LinkedList;
@@ -9,11 +10,91 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-import free.yhc.feeder.model.FeederException.Err;
+public final class RSSParser {
 
-public class RSSParser {
+    // parsing priority of namespace supported.
+    private static final int PRI_ITUNES     = 2;
+    private static final int PRI_DC         = 1;
+    private static final int PRI_DEFAULT    = 0;
 
-    protected void
+    private class NodeValue {
+        int    priority; // priority value of parsing modules which updates this value.
+        String value;
+
+        NodeValue() {
+            init();
+        }
+
+        void
+        init() {
+            priority = -1;
+            value = null;
+        }
+    }
+
+    private class ChannelValues {
+        NodeValue   title       = new NodeValue();
+        NodeValue   description = new NodeValue();
+        NodeValue   imageref    = new NodeValue();
+
+        void
+        init() {
+            title.init();
+            description.init();
+            imageref.init();
+        }
+
+        void
+        set(RSS.Channel ch) {
+            ch.title = title.value;
+            ch.description = description.value;
+            ch.imageref = imageref.value;
+        }
+    }
+
+    private class ItemValues {
+        NodeValue   title           = new NodeValue();
+        NodeValue   description     = new NodeValue();
+        NodeValue   link            = new NodeValue();
+        NodeValue   enclosure_length= new NodeValue();
+        NodeValue   enclosure_url   = new NodeValue();
+        NodeValue   enclosure_type  = new NodeValue();
+        NodeValue   pubDate         = new NodeValue();
+
+        void
+        init() {
+            title.init();
+            description.init();
+            link.init();
+            enclosure_length.init();
+            enclosure_url.init();
+            enclosure_type.init();
+            pubDate.init();
+        }
+
+        void
+        set(RSS.Item item) {
+            item.title = title.value;
+            item.description = description.value;
+            item.link = link.value;
+            if (null != enclosure_length.value
+                || null != enclosure_url.value
+                || null != enclosure_type.value) {
+                item.enclosure = new RSS.Enclosure();
+                item.enclosure.length = enclosure_length.value;
+                item.enclosure.url = enclosure_url.value;
+                item.enclosure.type = enclosure_type.value;
+            }
+            item.pubDate = pubDate.value;
+        }
+    }
+
+    private class RSSAttr {
+        String              ver = "2.0"; // by default
+        LinkedList<String>  nsl = new LinkedList<String>(); // name space list.
+    }
+
+    private void
     printNexts(Node n) {
         String msg = "";
         while (null != n) {
@@ -23,14 +104,14 @@ public class RSSParser {
         logI(msg + "\n");
     }
 
-    protected void
+    private void
     verifyFormat(boolean cond)
             throws FeederException {
         if (!cond)
             throw new FeederException(Err.ParserUnsupportedFormat);
     }
 
-    protected Node
+    private Node
     findNodeByNameFromSiblings(Node n, String name) {
         while (null != n) {
             if (n.getNodeName().equalsIgnoreCase(name))
@@ -40,7 +121,7 @@ public class RSSParser {
         return null;
     }
 
-    protected String
+    private String
     getTextValue(Node n) {
         Node t = findNodeByNameFromSiblings(n.getFirstChild(), "#text");
 
@@ -80,125 +161,216 @@ public class RSSParser {
         return (null == t)? "": t.getNodeValue();
     }
 
-    protected RSS.Guid
-    nodeGuid(Node n) {
-        RSS.Guid guid = new RSS.Guid();
-        guid.value = getTextValue(n);
+    // ===========================================================
+    //
+    //                    Name space parsor
+    //
+    // ===========================================================
+    private class NSParser {
+        private int     priority;
 
-        NamedNodeMap nnm = n.getAttributes();
-        n = nnm.getNamedItem("isPermaLink");
-        if (null != n)
-            guid.isPermaLink = n.getNodeValue();
+        private NSParser(){} // block default constructor.
 
-        return guid;
-    }
-
-    protected RSS.Source
-    nodeSource(Node n) {
-        RSS.Source src = new RSS.Source();
-        src.value = getTextValue(n);
-
-        NamedNodeMap nnm = n.getAttributes();
-        n = nnm.getNamedItem("url");
-        if (null != n)
-            src.url = n.getNodeValue();
-
-        return src;
-    }
-
-    protected RSS.Category
-    nodeCategory(Node n) {
-        RSS.Category cat = new RSS.Category();
-        cat.value = getTextValue(n);
-
-        NamedNodeMap nnm = n.getAttributes();
-        n = nnm.getNamedItem("domain");
-        if (null != n)
-            cat.domain = n.getNodeValue();
-
-        return cat;
-    }
-
-    protected RSS.Enclosure
-    nodeEnclosure(Node n) {
-        RSS.Enclosure en = new RSS.Enclosure();
-
-        NamedNodeMap nnm = n.getAttributes();
-        n = nnm.getNamedItem("url");
-        if (null != n)
-            en.url = n.getNodeValue();
-
-        n = nnm.getNamedItem("length");
-        if (null != n)
-            en.length = n.getNodeValue();
-
-        n = nnm.getNamedItem("type");
-        if (null != n)
-            en.type = n.getNodeValue();
-
-        return en;
-    }
-
-    protected RSS.Image
-    nodeImage(Node n) {
-        RSS.Image img = new RSS.Image();
-        n = n.getFirstChild();
-        while (null != n) {
-            if (n.getNodeName().equalsIgnoreCase("url"))
-                img.url = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("title"))
-                img.title = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("link"))
-                img.link = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("width"))
-                img.width = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("height"))
-                img.height = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("description"))
-                img.description = getTextValue(n);
-
-            n = n.getNextSibling();
+        NSParser(int priority) {
+            eAssert(priority >= PRI_DEFAULT);
+            this.priority = priority;
         }
-        return img;
+
+        /*
+         * return: true(value is set) false(value is not set)
+         */
+        protected boolean
+        setValue(NodeValue nv, String value) {
+            if (nv.priority <= priority) {
+                nv.value = value;
+                return true;
+            }
+            return false;
+        }
+
+        /*
+         * return: true(handled) false(passed)
+         */
+        boolean
+        parseChannel(ChannelValues cv, Node n) {
+            return false;
+        }
+
+        boolean
+        parseItem(ItemValues iv, Node n) {
+            return false;
+        }
     }
 
-    protected RSS
-    nodeRss(Node n) {
-        RSS rss = new RSS();
+    // ========================================
+    //        To Support 'itunes' Namespace
+    // ========================================
+    private class NSItunesParser extends NSParser {
+        NSItunesParser() {
+            super(PRI_ITUNES);
+        }
+
+        @Override
+        boolean
+        parseChannel(ChannelValues cv, Node n) {
+            boolean ret = true;
+
+            if (n.getNodeName().equalsIgnoreCase("itunes:summary"))
+                setValue(cv.description, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("itunes:image")) {
+                NamedNodeMap nnm = n.getAttributes();
+                Node img = nnm.getNamedItem("href");
+                if (null != img)
+                    setValue(cv.imageref, img.getNodeValue());
+            } else
+                ret = false;
+
+            return ret;
+        }
+
+        @Override
+        boolean
+        parseItem(ItemValues iv, Node n) {
+            boolean ret = true;
+
+            if (n.getNodeName().equalsIgnoreCase("itunes:summary"))
+                setValue(iv.description, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("itunes:duration"))
+                setValue(iv.enclosure_length, getTextValue(n));
+            else
+                ret = false;
+
+            return ret;
+        }
+
+    }
+
+    // ========================================
+    //        To Support 'dc' Namespace
+    // ========================================
+    private class NSDcParser extends NSParser {
+        NSDcParser() {
+            super(PRI_DC);
+        }
+
+        @Override
+        boolean
+        parseItem(ItemValues iv, Node n) {
+            boolean ret = true;
+
+            if (n.getNodeName().equalsIgnoreCase("dc:date"))
+                setValue(iv.pubDate, getTextValue(n));
+            else
+                ret = false;
+
+            return ret;
+        }
+
+    }
+    // ========================================
+    //        Default RSS Parser
+    // ========================================
+    private class NSDefaultParser extends NSParser {
+        NSDefaultParser() {
+            super(PRI_DEFAULT);
+        }
+
+        private void
+        nodeImage(ChannelValues cv, Node n) {
+            n = n.getFirstChild();
+            while (null != n) {
+                if (n.getNodeName().equalsIgnoreCase("url")) {
+                    setValue(cv.imageref, getTextValue(n));
+                    return;
+                }
+                n = n.getNextSibling();
+            }
+        }
+
+        private void
+        nodeEnclosure(ItemValues iv, Node n) {
+            NamedNodeMap nnm = n.getAttributes();
+            n = nnm.getNamedItem("url");
+            if (null != n)
+                setValue(iv.enclosure_url, n.getNodeValue());
+
+            n = nnm.getNamedItem("length");
+            if (null != n)
+                setValue(iv.enclosure_length, n.getNodeValue());
+
+            n = nnm.getNamedItem("type");
+            if (null != n)
+                setValue(iv.enclosure_type, n.getNodeValue());
+        }
+
+        @Override
+        boolean
+        parseChannel(ChannelValues cv, Node n) {
+            boolean ret = true;
+
+            if (n.getNodeName().equalsIgnoreCase("title"))
+                setValue(cv.title, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("description"))
+                setValue(cv.description, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("image"))
+                nodeImage(cv, n);
+            else
+                ret = false;
+
+            return ret;
+        }
+
+        @Override
+        boolean
+        parseItem(ItemValues iv, Node n) {
+            boolean ret = true;
+
+            if (n.getNodeName().equalsIgnoreCase("title"))
+                setValue(iv.title, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("link"))
+                setValue(iv.link, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("description"))
+                setValue(iv.description, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("enclosure"))
+                nodeEnclosure(iv, n);
+            else if (n.getNodeName().equalsIgnoreCase("pubDate"))
+                setValue(iv.pubDate, getTextValue(n));
+            else
+                ret = false;
+
+            return ret;
+        }
+    }
+
+    // ===========================================================
+    //
+    // ===========================================================
+
+    private RSSAttr
+    nodeRssAttr(Node n) {
+        RSSAttr rss = new RSSAttr();
         NamedNodeMap nnm = n.getAttributes();
         Node nVer = nnm.getNamedItem("version");
         if (null != nVer)
-            rss.version = nVer.getNodeValue();
+            rss.ver = nVer.getNodeValue();
 
-        // TODO support 'xmlns' attributes.
+        // Some element from 'itunes' and 'dc' is supported.
+        // So, check it!
+        if (null != nnm.getNamedItem("xmlns:itunes"))
+            rss.nsl.addLast("itunes");
+
+        if (null != nnm.getNamedItem("xmlns:dc"))
+            rss.nsl.addLast("dc");
+
         return rss;
     }
 
-    protected RSS.Item
+    private RSS.Item
     nodeItem(Node n) {
         RSS.Item item = new RSS.Item();
         n = n.getFirstChild();
         while (null != n) {
-            if (n.getNodeName().equalsIgnoreCase("title")) {
-                item.title = getTextValue(n);
-            } else if (n.getNodeName().equalsIgnoreCase("link"))
-                item.link = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("description"))
-                item.description = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("author"))
-                item.author = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("category"))
-                item.category = nodeCategory(n);
-            else if (n.getNodeName().equalsIgnoreCase("comments"))
-                item.comments = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("enclosure"))
-                item.enclosure = nodeEnclosure(n);
-            else if (n.getNodeName().equalsIgnoreCase("guid"))
-                item.guid = nodeGuid(n);
-            else if (n.getNodeName().equalsIgnoreCase("pubDate"))
-                item.pubDate = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("source"))
-                item.source = nodeSource(n);
+
 
             n = n.getNextSibling();
         }
@@ -206,143 +378,93 @@ public class RSSParser {
         return item;
     }
 
-    protected RSS.Channel
-    nodeChannel(Node chn) {
-        RSS.Channel ch = new RSS.Channel();
-        Node n = chn.getFirstChild();
-
+    private RSS.Channel
+    nodeChannel(NSParser[] parser, Node chn) {
+        ChannelValues cv = new ChannelValues();
+        ItemValues iv = new ItemValues();
         // count number of items in this channel
-        int  cnt = 0;
-        while (null != n) {
-            if (n.getNodeName().equalsIgnoreCase("item"))
-                cnt++;
-            n = n.getNextSibling();
-        }
 
-        // alloc memory for items
-        ch.items = new RSS.Item[cnt];
-
-        // Start parsing
-        cnt = 0;
-        n = chn.getFirstChild();
+        LinkedList<RSS.Item> iteml = new LinkedList<RSS.Item>();
+        cv.init();
+        Node n = chn.getFirstChild();
         while (null != n) {
-            if (n.getNodeName().equalsIgnoreCase("item"))
-                ch.items[cnt++] = nodeItem(n);
-            else if (n.getNodeName().equalsIgnoreCase("title"))
-                ch.title = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("link"))
-                ch.link = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("description"))
-                ch.description = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("language"))
-                ch.language = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("copyright"))
-                ch.copyright = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("managingEditor"))
-                ch.managingEditor = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("webMaster"))
-                ch.webMaster = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("pubDate"))
-                ch.pubDate = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("lastBuildDate"))
-                ch.lastBuildDate = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("generator"))
-                ch.generator = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("docs"))
-                ch.docs = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("cloud"))
-                ch.cloud = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("ttl"))
-                ch.ttl = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("rating"))
-                ch.rating = ""; // TODO: support this field
-            else if (n.getNodeName().equalsIgnoreCase("textInput"))
-                ch.textInput = ""; // TODO: support this field
-            else if (n.getNodeName().equalsIgnoreCase("skipHours"))
-                ch.skipHours = getTextValue(n);
-            else if (n.getNodeName().equalsIgnoreCase("category"))
-                ch.category = nodeCategory(n);
-            else if (n.getNodeName().equalsIgnoreCase("image"))
-                ch.image = nodeImage(n);
-            // To support itunes tag (This is special hack to support various RSS of Korea for itunes).
-            else if (n.getNodeName().equalsIgnoreCase("itunes:image")) {
-                ???? is this really work????
+            if (n.getNodeName().equalsIgnoreCase("item")) {
+                // Parsing elements of 'item'
+                iv.init(); // to reuse
+                Node in = n.getFirstChild();
+                while (null != in) {
+                    for (NSParser p : parser) {
+                        if (p.parseItem(iv, in))
+                            break; // handled
+                    }
+                    in = in.getNextSibling();
+                }
+                RSS.Item item = new RSS.Item();
+                iv.set(item);
+                iteml.addLast(item);
+            } else {
+                for (NSParser p : parser) {
+                    if (p.parseChannel(cv, n))
+                        break; // handled
+                }
             }
             n = n.getNextSibling();
         }
+
+        RSS.Channel ch = new RSS.Channel();
+        cv.set(ch);
+        ch.items = iteml.toArray(new RSS.Item[0]);
+
         return ch;
     }
 
-    protected RSS
-    getRSS(Element root)
-            throws FeederException {
-        verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
-        RSS rss = nodeRss(root);
-        if (!rss.version.equals("2.0"))
-            throw new FeederException(Err.ParserUnsupportedVersion);
-        return rss;
-    }
+    // false (fail)
+    private boolean
+    verifyNotNullPolicy(RSS rss) {
+        if (null == rss.channel.title)
+            return false;
 
-    protected void
-    tagTreeCollector(Node pn, LinkedList<String> l, String s) {
-        Node n = pn.getFirstChild();
+        for (RSS.Item item : rss.channel.items)
+            if (null == item.title)
+                return false;
 
-        if (!s.isEmpty()) {
-            l.addLast(s);
-            s = s + RSS.tagtree_element_delimiter;
-        }
-
-        while (null != n) {
-            if (Node.ELEMENT_NODE == n.getNodeType())
-                tagTreeCollector(n, l, s + n.getNodeName());
-            n = n.getNextSibling();
-        }
-    }
-
-    protected RSS.TagTree
-    parseTagTree(Document dom)
-            throws FeederException {
-        RSS.TagTree tt = new RSS.TagTree();
-        Element root = dom.getDocumentElement();
-        // For Channel node
-        Node chn = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
-
-        LinkedList<String> l = new LinkedList<String>();
-        Node itemn = null; // first "item" node
-
-        // Collect Channel Tag Tree
-        Node n = chn.getFirstChild();
-        while (null != n) {
-            if (Node.ELEMENT_NODE == n.getNodeType()) {
-                if(!n.getNodeName().equalsIgnoreCase("item"))
-                    tagTreeCollector(n, l, n.getNodeName());
-                else if (null == itemn)
-                    itemn = n;
-            }
-            n = n.getNextSibling();
-        }
-        tt.ctags = (String[])l.toArray();
-
-        // Collect Item Tag Tree
-        l.clear();
-        tagTreeCollector(itemn, l, "");
-        tt.itags = (String[])l.toArray();
-
-        RSS.dump(tt);
-
-        return tt;
+        return true;
     }
 
     public RSS
-    parse(Document dom, String[] ctags, String[] itags)
+    parse(Document dom)
             throws FeederException {
         Element root = dom.getDocumentElement();
-        RSS rss = getRSS(root);
+        verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
 
-        rss.tagtree = parseTagTree(dom);
+        RSSAttr rssAttr = nodeRssAttr(root);
+        if (!rssAttr.ver.equals("2.0"))
+            throw new FeederException(Err.ParserUnsupportedVersion);
+
+        // Set parser
+        LinkedList<NSParser> pl = new LinkedList<NSParser>();
+        for (String s : rssAttr.nsl.toArray(new String[0])) {
+            NSParser p = null;
+            if (s.equals("itunes"))
+                p = new NSItunesParser();
+            else if (s.equals("dc"))
+                p = new NSDcParser();
+            else
+                eAssert(false); // Not-supported namespace is parsed!!
+            pl.add(p);
+        }
+        pl.add(new NSDefaultParser());
+
+
         // For Channel node
         Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
-        rss.channel = nodeChannel(n, ctags, itags);
+
+        RSS rss = new RSS();
+        rss.channel = nodeChannel(pl.toArray(new NSParser[0]), n);
+
+        if (!verifyNotNullPolicy(rss))
+            throw new FeederException(Err.ParserUnsupportedFormat);
+        //logI(rss.channel.dump());
 
         return rss;
     }

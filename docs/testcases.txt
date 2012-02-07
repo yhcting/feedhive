@@ -1,0 +1,30 @@
+Channel
+-------
+* add 'invalid url' for channel
+* add 'duplicated url' for channel
+* add channel which has follow defects
+    - link for image reference is invalid.
+        : http://old.ddanzi.com/appstream/ddradio.xml
+    - image size linked is out of spec.(max 144x400)
+        : http://cast.vop.co.kr/kfline.xml
+
+* delete channel
+* delete channel -> add same channel.
+
+Item
+----
+* update items
+    - check: state of existing item (ex. read) is not chaned.
+    - check: unlisted old items in updated RSS are removed from item list.
+    - check: there should not have duplicated items.
+
+* Action on item
+    - open/download
+
+Stablity
+--------
+* Cancel during updating/adding channel.
+    - check: stability of DB.
+
+* Cancel during download
+    - check: download file which is not finished, is successfuly removed from disk.

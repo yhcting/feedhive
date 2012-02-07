@@ -1,8 +1,8 @@
 package free.yhc.feeder;
 
-import free.yhc.feeder.model.DB;
 import android.app.Application;
 import android.content.res.Configuration;
+import free.yhc.feeder.model.DB;
 
 public class FeederApp extends Application {
     @Override
@@ -15,8 +15,8 @@ public class FeederApp extends Application {
     public void
     onCreate() {
         super.onCreate();
-
         DB.newSession(getApplicationContext()).open();
+        //UIPolicy.setAppRootDir(getApplicationContext().getFilesDir().getPath());
     }
 
     @Override

@@ -1,6 +1,5 @@
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.logI;
 
 
 
@@ -22,154 +21,105 @@ public class RSS {
     // It's just any value enough small.
     public static final String default_date = "THU, 1 Jan 1970 00:00:00 +0000";
 
-    // '<', '>' is not used as tag name.
-    public static final char tagtree_element_delimiter = '>';
-    public static final char tagtree_string_delimiter  = '<';
+    // See spec.
+    public static final int CHANNEL_IMAGE_MAX_WIDTH  = 144;
+    public static final int CHANNEL_IMAGE_MAX_HEIGHT = 400;
 
-    public static class Xmlns {
-        public String name = null;
-        public String link = null;
+    public static enum ActionType {
+        OPEN,   // open link
+        DNOPEN; // download/open link or enclosure
+
+        public static ActionType
+        convert(String s) {
+            for (ActionType a : ActionType.values())
+                if (s.equals(a.name()))
+                    return a;
+            return null;
+        }
     }
 
-    public static class Image {
-        // Numeric values used here are defined by RSS 2.0.1 spec.
-        public static final String MAX_WIDTH       = "144";
-        public static final String MAX_HEIGHT      = "400";
-        public static final String DEFAULT_WIDTH   = "88";
-        public static final String DEFAULT_HEIGHT  = "31";
+    public static enum ItemState {
+        DUMMY,  // dummy item for UI usage.
+        NEW,    // new
+        OPENED;   // item is read (in case of 'open' action.
 
-        // Required
-        public String url      = "";
-        public String title    = "";
-        public String link     = "";
-
-        // Optional
-        public String width    = null;
-        public String height   = null;
-        public String description = null;
-    }
-
-    public static class Category {
-        // attributes
-        public String domain   = null; // optional
-        public String value    = "";
+        public static ItemState
+        convert(String s) {
+            for (ItemState a : ItemState.values())
+                if (s.equals(a.name()))
+                    return a;
+            return null;
+        }
     }
 
     public static class Enclosure {
-        // attributes - required
-        public String url      = "";
-        public String length   = ""; // In some cases, this is used as "play time" - out of spec.
-        public String type     = "";
+        public String url      = null;
+        public String length   = null; // In some cases, this is used as "play time" - out of spec.
+        public String type     = null;
     }
 
-    public static class Guid {
-        // attributes
-        public String isPermaLink  = "true"; // optional (true is default)
-        public String value        = "";
-    }
-
-    public static class Source {
-        // attributes
-        public String url      = null; // required
-        public String value    = "";
-    }
-
-    public static class Item {
+     public static class Item {
         // For internal use
-        public long   id = -1;
-        public long   channelid = -1;
+        public long   id           = -1;
+        public long   channelid    = -1;
+        public ItemState state     = null;
 
-        // Values of user requirement
-        // (values depend on argument passed when parsing)
-        public String[] userValues = null;
-
-        // Required Elements
-        public String title        = "";
-        public String link         = "";
-        public String description  = "";
-
-        // Optional Elements
-        public String author       = null;
-        public Category category   = null;
-        public String comments     = null;
-        public Enclosure enclosure = null;
-        public Guid   guid         = null;
+        // Information from parsing.
+        public String title        = null;
+        public String link         = null;
+        public String description  = null;
         public String pubDate      = null;
-        public Source source       = null;
+        public Enclosure enclosure = null;
+
+        // for debugging
+        public String
+        dump() {
+            return new StringBuilder()
+                .append("----------- Item -----------\n")
+                .append("title : ").append(title).append("\n")
+                .append("link  : ").append(link).append("\n")
+                .append("desc  : ").append(description).append("\n")
+                .append("date  : ").append(pubDate).append("\n")
+                .append("enclosure-url : ").append(enclosure.url).append("\n")
+                .append("enclosure-len : ").append(enclosure.length).append("\n")
+                .append("enclosure-type: ").append(enclosure.type).append("\n")
+                .append("state : ").append((null == state)? null: state.toString()).append("\n")
+                .toString();
+        }
+
     }
 
     public static class Channel {
-        public Item[] items        = null;
-
-        // Values of user requirement
-        // (values depend on argument passed when parsing)
-        public String[] userValues = null;
+        public Item[] items        = new Item[0];
 
         // For internal use.
         public long   id           = -1;
         public String url          = null; // channel url.
+        public String lastupdate   = null; // date updated lastly
+        public byte[] imageblob    = null;
+        public ActionType actionType = null;
 
-        // Required Elements.
-        public String title        = "";
-        public String link         = "";
-        public String description  = "";
+        // Information from parsing.
+        public String title        = null;
+        public String description  = null;
+        public String imageref     = null;
 
-        // Optional Elements
-        public String language     = null;
-        public String copyright    = null;
-        public String managingEditor = null;
-        public String webMaster    = null;
-        public String pubDate      = null; // RFC-822 TODO: parser not implemented yet...
-        public String lastBuildDate= null; // RFC-822 TODO: parser not implemented yet...
-        public Category category   = null;
-        public String generator    = null;
-        public String docs         = null;
-        public String cloud        = null;
-        public String ttl          = null;
-        public Image  image        = null;
-        public String rating       = null; // ignored
-        public String textInput    = null; // ignored
-        public String skipHours    = null;
-
-        // Hack
-        public String itunesImage  = null; // image reference at itunes namespace
+        // for debuggin
+        public String
+        dump() {
+            StringBuilder builder =  new StringBuilder();
+            builder
+            .append("=============== Channel Dump ===============\n")
+            .append("title    : ").append(title).append("\n")
+            .append("desc     : ").append(description).append("\n")
+            .append("imageref : ").append(imageref).append("\n")
+            .append("imageblob: ").append((null == imageblob)? null: imageblob.toString()).append("\n");
+            for (Item item : items)
+                builder.append(item.dump());
+            builder.append("\n\n");
+            return builder.toString();
+        }
     }
 
-    public static class TagTree {
-        // For internal use - dynamic information.
-
-        // cels/iels is element's tag tree.
-        // Example
-        //     <a>
-        //         <b/>
-        //     </a>
-        //     <c>
-        //         <d/>
-        //         <e/>
-        //     </c>
-        // els[0] = "a>b"
-        // els[1] = "c>d"
-        // els[2] = "c>e"
-        public String[] ctags = null; // elements of channel
-        public String[] itags = null; // elements of item
-    }
-
-    /*
-     * Functions for debugging!!
-     */
-    public static void
-    dump(TagTree tt) {
-        logI("------- Channel Tag Tree -------\n");
-        for (String s : tt.ctags)
-            logI(s + "\n");
-        logI("------- Item Tag Tree ---------\n");
-        for (String s : tt.itags)
-            logI(s + "\n");
-        logI("--------------------------------\n");
-    }
-
-    public String  version     = "2.0"; // by default
-    public Xmlns[] xmlns       = null;
-    public Channel channel     = null;
-    public TagTree tagtree     = null;
+    public Channel  channel     = null;
 }

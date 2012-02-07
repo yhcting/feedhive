@@ -17,28 +17,33 @@ import android.widget.EditText;
 import android.widget.ListView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
-import free.yhc.feeder.model.RSS;
+import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.NetLoader;
 
-public class FeederActivity extends ListActivity {
+public class FeederActivity extends ListActivity implements
+AsyncTaskMy.OnPostExecute,
+AsyncTaskMy.OnDoWork {
     // Request codes.
-    static protected final int RCAddChannel   = 0;
-    static protected final int RCReadChannel  = 1;
+    private static final int ReqCReadChannel  = 0;
+
+    public static final int  ResCReadChannelOk      = 0; // nothing special
+    public static final int  ResCReadChannelUpdated = 1; // item list is updated.
 
     private Cursor
     adapterCursorQuery() {
-        return DB.db().query(
-                DB.TABLE_RSSCHANNEL,
-                new DB.ColumnRssChannel[]
+        return new DBPolicy().queryChannel(
+                    new DB.ColumnRssChannel[]
                         { DB.ColumnRssChannel.ID, // Mandatory.
                           DB.ColumnRssChannel.TITLE,
                           DB.ColumnRssChannel.DESCRIPTION,
-                          DB.ColumnRssChannel.URL }
-                );
+                          DB.ColumnRssChannel.LASTUPDATE,
+                          DB.ColumnRssChannel.IMAGEBLOB},
+                    null);
     }
 
     private void
     refreshList() {
-        // [ NOTE ]
+        // NOTE
         // Usually, number of channels are not big.
         // So, we don't need to think about async. loading.
         Cursor newCursor = adapterCursorQuery();
@@ -67,7 +72,16 @@ public class FeederActivity extends ListActivity {
                     // Perform action on key press
                     //Toast.makeText(this, "hahah", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
-                    addChannel(((EditText)v).getText().toString());
+                    //addChannel(((EditText)v).getText().toString());
+                    //url = "http://old.ddanzi.com/appstream/ddradio.xml";
+                    //url = "file:///data/test/total_news.xml";
+                    //url = "http://www.khan.co.kr/rss/rssdata/total_news.xml";
+                    //http://cast.vop.co.kr/kfline.xml
+                    // addChannel("http://old.ddanzi.com/appstream/ddradio.xml"); // out-of spec.
+                    // addChannel("http://cast.vop.co.kr/kfline.xml"); // good
+                    // addChannel("http://cast.vop.co.kr/heenews.xml"); // good
+                    // addChannel("http://www.khan.co.kr/rss/rssdata/total_news.xml"); // large xml
+                    addChannel("http://cbspodcast.com/podcast/sisa/sisa.xml"); // large xml
                     return true;
                 }
                 return false;
@@ -77,17 +91,35 @@ public class FeederActivity extends ListActivity {
         dialog.show();
     }
 
+    // For NetLoaderTask
+    @Override
+    public void
+    onPostExecute(Err result) {
+        refreshList();
+    }
+
+    // For NetLoaderTask
+    @Override
+    public Err
+    doWork(Object... objs) {
+        Err err = Err.NoErr;
+
+        for (Object o : objs) {
+            String s = (String)o;
+            err = new NetLoader().initialLoad(s);
+
+            // TODO : handle returning error!!!
+            if (Err.NoErr != err)
+                break;
+        }
+        return err;
+    }
+
     private void
     addChannel(String url) {
         eAssert(url != null);
-
-        RSS.Channel ch = new RSS.Channel();
-        ch.url = url;
-
-        // Just add url. at this times.
-        new DBPolicy().insertRSSChannel(ch);
-
-        refreshList();
+        final FeederActivity fa = this;
+        new NetLoaderTask(this, this, this).execute(url);
     }
 
     @Override
@@ -95,15 +127,7 @@ public class FeederActivity extends ListActivity {
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        //setListAdapter(new ChannelListCursorAdapter(this, R.layout.channel_list_row, adapterCursorQuery()));
-    }
-
-    public void
-    onAllButtonClicked(View v) {
-        // id '0' means 'all'
-        Intent intent = new Intent(this, ItemReaderActivity.class);
-        intent.putExtra("channelid", 0);
-        startActivityForResult(intent, RCReadChannel);
+        setListAdapter(new ChannelListAdapter(this, R.layout.channel_row, adapterCursorQuery()));
     }
 
     @Override
@@ -111,7 +135,7 @@ public class FeederActivity extends ListActivity {
     onListItemClick(ListView l, View v, int position, long id) {
         Intent intent = new Intent(this, ItemReaderActivity.class);
         intent.putExtra("channelid", id);
-        startActivityForResult(intent, RCReadChannel);
+        startActivityForResult(intent, ReqCReadChannel);
     }
 
     @Override
@@ -139,6 +163,15 @@ public class FeederActivity extends ListActivity {
     protected void
     onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        if (ReqCReadChannel == requestCode) {
+            switch (resultCode) {
+            case ResCReadChannelUpdated:
+                refreshList();
+                break;
+            }
+        } else
+            eAssert(false);
     }
 
     @Override

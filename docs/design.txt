@@ -1,3 +1,206 @@
+===============================================================================
+=                                 Design For Feeder                           =
+=                               (git branch : master)                         =
+===============================================================================
+DB Design
+---------
+    Notatation
+	// : Reference position
+        [] : Table
+        <> : Column
+	#  : comments or constraints
+
+    Abbrev:
+        {} : Reference to UI Flow
+
+
+    [ Channels ]
+    channel list
+        <url>
+	<title>
+	<description>
+	<lastupdate>
+	    date that channel is update lastly.
+	    (related with selection 'update' at /S2/)
+	<imageblob>
+	    image data represented by 'image->url'
+	<actiontype>
+	    'download/open' # on enclosure
+	    'open'          # on link
+	...
+
+    [ Items ]
+    items for each channel
+    first row should be dummy item for 'update' {PDB0}
+        <title>
+	<description>
+	<link>
+	<enclosure>
+	<pubDate>
+	<state>
+	    'new'
+	    'read' if opened-link
+	<channel id>
+
+    ** Updating items of channel **
+    To keep sync with rss xml of channel, table for items should be fully updated
+      with newly one.
+    Why?
+    We cannot insert item at top of table interms of DB's id.
+    So, newly added items are always be shown at bottom of item list,
+      and this is not match rss 'xml'.
+    To keep and sync item's order with channel's rss xml, full update is unavoidable.
+
+
+Components
+----------
+    * UI
+    * Parser
+    * Service (auto update - monitoring channels)
+    * Database
+
+
+Decision Policy
+---------------
+    Notation:
+        A > B : A has priority.
+
+    [ Compare ]
+    'item' is same if and only if 'title' is same.
+    (others - guid etc - are ignored at compare operation.)
+
+    [ Action type of channel ]
+    if "channel has 'itunes' namespace"
+        'download/open(enclosure)' is default action.
+    else
+        'open(link)' is default action.
+
+    [ Parsing ]
+    if 'cdata' section is available instead of '#text'
+        read 'cdata-section'.
+        assume that is html text and convert it to string.
+	  * replace <br/> to 'newline'
+	  * remove all other tags.
+
+    if "channel has 'itunes' namespace"
+        < channel >
+	    image->url  < itunes:image#href
+	    description < itunes:summary
+	<item>
+	    description       < itunes:summary
+	    enclosure->length < itunes:duration
+
+    if "channel has 'dc' namespace"
+        <item>
+	    pubDate < dc:date
+
+    [ Save as file ]
+    Program has root directory at '/data/xxxx'.
+    Each channel has it's own directory at 'root'.
+    File(link or enclosure) is saved with basename
+      at channel-specific directory.
+
+UI Flow
+-------
+    Notation:
+	[] : Screen for doing something
+             Can be activity, dialog or background process etc.
+	<> : sub field of screen
+	#  : comments or constraints
+	:  : description
+	{} : Policy. Can be changed or need to tune...
+  	=>() : Screen is changed with data.
+	       => [position] (passing data)
+	// : Reference position
+	R(): Refer given position
+	$$ : low priority.
+
+    Abbrev:
+        S  : Screen
+	D  : Dialog
+	P  : Position (to mark for future reference)
+	PDB: Reference for DB Design.
+
+    /S1/
+        <main>
+	    Channel list.
+
+	<select channel>
+	    => /S2/ (channel)
+
+	<optmenu>
+	    "Add channel"
+	        => /D1/
+	        [ loading channel info ]
+		    read from network and update db with default setting.
+
+	<long touch menu>
+	    "delete"
+	    $"select image"$
+	        select image that is used as channel icon.
+		(This may be useful if linked image at RSS is invalid.)
+	    $"reload"$
+	        reload channel info fully.
+		  - image, etc
+	    "preference"
+	        'download/open(enclosure)' or 'open(link)'
+		'order of item list"
+		    - 'original' / 'reverse'
+		      (Usually, latest item is at the top.
+		       But, there are exceptional sites (latest is at the bottom.)
+		       So, preference is supported).
+
+    /D1/
+        <main>
+	    edit box to enter url of channel.
+
+
+    /S2/
+        <main>
+	    Feed item list
+            First item should be 'update' => update item /PDB0/
+	    (default is 'use local information from DB' - NOT from network)
+	    Item should look different to tell whether it's already operationed or not.
+	    (ex. read(open) or downloaded(download/open))
+
+        <select 'update'>
+	    [ update given channel. ]
+	        if this comes from selecting 'all', update all channels.
+		this update's only item list.
+		(NOT full-reload - image, channel information etc..)
+
+	<select item>
+	    operate accroding to channel operation setting.
+	    can be 'open' or 'download/open'.
+
+	<long touch menu>
+	    "delete" for 'download/open' action.
+	        delete downloaded file.
+
+	<opt menu>
+
+
+Known Bugs
+----------
+    Notation :
+        [] : Priority (Hight 1 ----- 5 Low)
+
+    [1] Canceling in the middle of updating DB items.
+        : DB may be in unepxected state.
+	  (ex. 'channel' is inserted but 'item table' for this 'channel' is
+             not created.)
+
+    [2] Stability between changing orientation (or fix orientation???)
+
+    [3] Progress bar for fetching and loading RSS channel.
+        : In case of some sites, RSS xml size is very large.
+	  And loading this kind of site takes long time.
+	  User may fill that something wrong happened in program.
+
+===============================================================================
+=                         Design For Customizable Feeder                      =
+=                           (git branch : customizable)                       =
+===============================================================================
 [ Checking whether given item is in DB or not. ] - deprecated
     * guid (optional)
     * enclosure (optional)
