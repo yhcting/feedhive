@@ -1,29 +1,13 @@
 package free.yhc.feeder.model;
 
-
-
-
-
-//
-//http://www.rssboard.org/rss-specification
-//( RSS 2.0.1 )
-//
-
-//
-// Most members are not used yet.
-//
-// Default value of required element is set as "".
-//   => at DB this column is set as 'not null'
-// Default value of optional element is set as null.
-//
-public class RSS {
+public class Feed {
     // This deault_date is NOT defined by spec.
     // It's just any value enough small.
     public static final String default_date = "THU, 1 Jan 1970 00:00:00 +0000";
 
     // See spec.
-    public static final int CHANNEL_IMAGE_MAX_WIDTH  = 144;
-    public static final int CHANNEL_IMAGE_MAX_HEIGHT = 400;
+    public static final int CHANNEL_IMAGE_MAX_WIDTH  = 200;
+    public static final int CHANNEL_IMAGE_MAX_HEIGHT = 200;
 
     public static enum ActionType {
         OPEN,   // open link
@@ -38,38 +22,34 @@ public class RSS {
         }
     }
 
-    public static enum ItemState {
-        DUMMY,  // dummy item for UI usage.
-        NEW,    // new
-        OPENED;   // item is read (in case of 'open' action.
-
-        public static ItemState
-        convert(String s) {
-            for (ItemState a : ItemState.values())
-                if (s.equals(a.name()))
-                    return a;
-            return null;
-        }
-    }
-
-    public static class Enclosure {
-        public String url      = null;
-        public String length   = null; // In some cases, this is used as "play time" - out of spec.
-        public String type     = null;
-    }
-
      public static class Item {
+         public static enum State {
+             DUMMY,  // dummy item for UI usage.
+             NEW,    // new
+             OPENED;   // item is read (in case of 'open' action.
+
+             public static State
+             convert(String s) {
+                 for (State a : State.values())
+                     if (s.equals(a.name()))
+                         return a;
+                 return null;
+             }
+         }
+
         // For internal use
         public long   id           = -1;
         public long   channelid    = -1;
-        public ItemState state     = null;
+        public State  state        = State.NEW;
 
         // Information from parsing.
-        public String title        = null;
-        public String link         = null;
-        public String description  = null;
-        public String pubDate      = null;
-        public Enclosure enclosure = null;
+        public String title        = "";
+        public String link         = "";
+        public String description  = "";
+        public String pubDate      = "";
+        public String enclosureUrl = "";
+        public String enclosureLength = "";
+        public String enclosureType = "";
 
         // for debugging
         public String
@@ -80,9 +60,9 @@ public class RSS {
                 .append("link  : ").append(link).append("\n")
                 .append("desc  : ").append(description).append("\n")
                 .append("date  : ").append(pubDate).append("\n")
-                .append("enclosure-url : ").append(enclosure.url).append("\n")
-                .append("enclosure-len : ").append(enclosure.length).append("\n")
-                .append("enclosure-type: ").append(enclosure.type).append("\n")
+                .append("enclosure-url : ").append(enclosureUrl).append("\n")
+                .append("enclosure-len : ").append(enclosureLength).append("\n")
+                .append("enclosure-type: ").append(enclosureType).append("\n")
                 .append("state : ").append((null == state)? null: state.toString()).append("\n")
                 .toString();
         }
@@ -90,19 +70,25 @@ public class RSS {
     }
 
     public static class Channel {
+        public static enum Type {
+            NORMAL, // normal feed - ex. news feed.
+            MEDIA,  // media-based feed - ex. podcast.
+        }
+
+        public Type   type         = Type.NORMAL;
         public Item[] items        = new Item[0];
 
         // For internal use.
         public long   id           = -1;
-        public String url          = null; // channel url.
-        public String lastupdate   = null; // date updated lastly
+        public String url          = ""; // channel url.
+        public String lastupdate   = ""; // date updated lastly
         public byte[] imageblob    = null;
-        public ActionType actionType = null;
+        public ActionType actionType = ActionType.OPEN;
 
         // Information from parsing.
-        public String title        = null;
-        public String description  = null;
-        public String imageref     = null;
+        public String title        = "";
+        public String description  = "";
+        public String imageref     = "";
 
         // for debuggin
         public String
@@ -121,5 +107,5 @@ public class RSS {
         }
     }
 
-    public Channel  channel     = null;
+    public Channel  channel     = new Channel();
 }

@@ -28,7 +28,7 @@ public final class RSSParser {
         void
         init() {
             priority = -1;
-            value = null;
+            value    = "";
         }
     }
 
@@ -45,7 +45,7 @@ public final class RSSParser {
         }
 
         void
-        set(RSS.Channel ch) {
+        set(Feed.Channel ch) {
             ch.title = title.value;
             ch.description = description.value;
             ch.imageref = imageref.value;
@@ -73,17 +73,16 @@ public final class RSSParser {
         }
 
         void
-        set(RSS.Item item) {
+        set(Feed.Item item) {
             item.title = title.value;
             item.description = description.value;
             item.link = link.value;
             if (null != enclosure_length.value
                 || null != enclosure_url.value
                 || null != enclosure_type.value) {
-                item.enclosure = new RSS.Enclosure();
-                item.enclosure.length = enclosure_length.value;
-                item.enclosure.url = enclosure_url.value;
-                item.enclosure.type = enclosure_type.value;
+                item.enclosureLength = enclosure_length.value;
+                item.enclosureUrl = enclosure_url.value;
+                item.enclosureType = enclosure_type.value;
             }
             item.pubDate = pubDate.value;
         }
@@ -365,26 +364,13 @@ public final class RSSParser {
         return rss;
     }
 
-    private RSS.Item
-    nodeItem(Node n) {
-        RSS.Item item = new RSS.Item();
-        n = n.getFirstChild();
-        while (null != n) {
-
-
-            n = n.getNextSibling();
-        }
-
-        return item;
-    }
-
-    private RSS.Channel
-    nodeChannel(NSParser[] parser, Node chn) {
+    private void
+    nodeChannel(Feed.Channel ch, NSParser[] parser, Node chn) {
         ChannelValues cv = new ChannelValues();
         ItemValues iv = new ItemValues();
         // count number of items in this channel
 
-        LinkedList<RSS.Item> iteml = new LinkedList<RSS.Item>();
+        LinkedList<Feed.Item> iteml = new LinkedList<Feed.Item>();
         cv.init();
         Node n = chn.getFirstChild();
         while (null != n) {
@@ -399,7 +385,7 @@ public final class RSSParser {
                     }
                     in = in.getNextSibling();
                 }
-                RSS.Item item = new RSS.Item();
+                Feed.Item item = new Feed.Item();
                 iv.set(item);
                 iteml.addLast(item);
             } else {
@@ -411,27 +397,24 @@ public final class RSSParser {
             n = n.getNextSibling();
         }
 
-        RSS.Channel ch = new RSS.Channel();
         cv.set(ch);
-        ch.items = iteml.toArray(new RSS.Item[0]);
-
-        return ch;
+        ch.items = iteml.toArray(new Feed.Item[0]);
     }
 
     // false (fail)
     private boolean
-    verifyNotNullPolicy(RSS rss) {
-        if (null == rss.channel.title)
+    verifyNotNullPolicy(Feed feed) {
+        if (null == feed.channel.title)
             return false;
 
-        for (RSS.Item item : rss.channel.items)
+        for (Feed.Item item : feed.channel.items)
             if (null == item.title)
                 return false;
 
         return true;
     }
 
-    public RSS
+    public Feed
     parse(Document dom)
             throws FeederException {
         Element root = dom.getDocumentElement();
@@ -441,13 +424,16 @@ public final class RSSParser {
         if (!rssAttr.ver.equals("2.0"))
             throw new FeederException(Err.ParserUnsupportedVersion);
 
+        Feed feed = new Feed();
         // Set parser
+        // NOTE : Should we save name space list all...???
         LinkedList<NSParser> pl = new LinkedList<NSParser>();
         for (String s : rssAttr.nsl.toArray(new String[0])) {
             NSParser p = null;
-            if (s.equals("itunes"))
+            if (s.equals("itunes")) {
                 p = new NSItunesParser();
-            else if (s.equals("dc"))
+                feed.channel.type = Feed.Channel.Type.MEDIA;
+            } else if (s.equals("dc"))
                 p = new NSDcParser();
             else
                 eAssert(false); // Not-supported namespace is parsed!!
@@ -459,13 +445,12 @@ public final class RSSParser {
         // For Channel node
         Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
 
-        RSS rss = new RSS();
-        rss.channel = nodeChannel(pl.toArray(new NSParser[0]), n);
+        nodeChannel(feed.channel, pl.toArray(new NSParser[0]), n);
 
-        if (!verifyNotNullPolicy(rss))
+        if (!verifyNotNullPolicy(feed))
             throw new FeederException(Err.ParserUnsupportedFormat);
-        //logI(rss.channel.dump());
+        //logI(feed.channel.dump());
 
-        return rss;
+        return feed;
     }
 }

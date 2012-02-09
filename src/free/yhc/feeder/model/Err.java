@@ -4,6 +4,7 @@ package free.yhc.feeder.model;
 // TODO : set correct string resource id
 public enum Err {
     NoErr                       (0),
+    Interrupted                 (0),
     IONet                       (0),
     IOFile                      (0),
     ParserUnsupportedFormat     (0),

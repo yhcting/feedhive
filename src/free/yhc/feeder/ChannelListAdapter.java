@@ -18,15 +18,15 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
 
     @Override
     public void bindView(View view, Context context, Cursor c) {
-        String title = c.getString(c.getColumnIndex(DB.ColumnRssChannel.TITLE.getName()));
-        String desc  = c.getString(c.getColumnIndex(DB.ColumnRssChannel.DESCRIPTION.getName()));
-        String date  = c.getString(c.getColumnIndex(DB.ColumnRssChannel.LASTUPDATE.getName()));
+        String title = c.getString(c.getColumnIndex(DB.ColumnFeedChannel.TITLE.getName()));
+        String desc  = c.getString(c.getColumnIndex(DB.ColumnFeedChannel.DESCRIPTION.getName()));
+        String date  = c.getString(c.getColumnIndex(DB.ColumnFeedChannel.LASTUPDATE.getName()));
 
         int ci; // column index;
-        ci = c.getColumnIndex(DB.ColumnRssChannel.IMAGEBLOB.getName());
+        ci = c.getColumnIndex(DB.ColumnFeedChannel.IMAGEBLOB.getName());
         Bitmap bm = null;
         if (Cursor.FIELD_TYPE_NULL != c.getType(ci)) {
-            byte[] imgRaw= c.getBlob(c.getColumnIndex(DB.ColumnRssChannel.IMAGEBLOB.getName()));
+            byte[] imgRaw= c.getBlob(c.getColumnIndex(DB.ColumnFeedChannel.IMAGEBLOB.getName()));
             bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
         }
 

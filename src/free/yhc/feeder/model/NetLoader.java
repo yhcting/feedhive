@@ -20,22 +20,23 @@ import org.xml.sax.SAXException;
 import android.graphics.Bitmap;
 
 public class NetLoader {
-    DBPolicy dbp     = new DBPolicy();
+    DBPolicy dbp              = DBPolicy.get();
 
     public NetLoader() {
     }
 
-    private RSS
+    private Feed
     loadUrl(String url)
             throws FeederException {
         logI("Fetching Channel [" + url + "]\n");
-        RSS rss = null;
+        Feed feed = null;
         try {
             Document dom = DocumentBuilderFactory
                             .newInstance()
                             .newDocumentBuilder()
                             .parse(new URL(url).openStream());
-            rss = new RSSParser().parse(dom);
+            // Only RSS is supported at this version.
+            feed = new RSSParser().parse(dom);
         } catch (IOException e) {
             throw new FeederException(Err.IONet);
         } catch (SAXException e) {
@@ -46,7 +47,7 @@ public class NetLoader {
         } catch (FeederException e) {
             throw e;
         }
-        return rss;
+        return feed;
     }
 
     public ByteArrayBuffer
@@ -89,8 +90,9 @@ public class NetLoader {
      * Load full information of this channel (This is first load)
      */
     public Err
-    initialLoad(String url) {
-        RSS rss;
+    initialLoad(String url)
+            throws InterruptedException {
+        Feed feed;
 
         // We don't allow inserting duplicated channel.
         // (channel that has same url is regarded as same!)
@@ -99,20 +101,20 @@ public class NetLoader {
             return Err.DBDuplicatedChannel;
 
         try {
-            rss = loadUrl(url);
+            feed = loadUrl(url);
         } catch (FeederException e) {
             e.printStackTrace();
             return e.getError();
         }
 
         // Update mandatory initial values
-        rss.channel.url = url;
-        rss.channel.lastupdate = DateUtils.getCurrentDateString();
-        UIPolicy.setAsDefaultActionType(rss.channel);
+        feed.channel.url = url;
+        feed.channel.lastupdate = DateUtils.getCurrentDateString();
+        UIPolicy.setAsDefaultActionType(feed.channel);
 
         ByteArrayBuffer imgBab = null;
         try {
-            imgBab = download(rss.channel.imageref);
+            imgBab = download(feed.channel.imageref);
         } catch (FeederException e) {
             if (Err.IONet != e.getError()) {
                 e.printStackTrace();
@@ -120,6 +122,8 @@ public class NetLoader {
             }
         }
 
+        //
+        // [ In case of RSS. ]
         // Lots of sites doesn't obey RSS spec. related with channel image.
         // Spec. says max value for width = 144 / for height = 400.
         // But, there are lots of out-of-spec-sites
@@ -129,21 +133,20 @@ public class NetLoader {
         //     (To save memory and increase performance.)
         if (null != imgBab) {
             Bitmap bm = Utils.decodeImage(imgBab.toByteArray(),
-                                          RSS.CHANNEL_IMAGE_MAX_WIDTH,
-                                          RSS.CHANNEL_IMAGE_MAX_HEIGHT);
+                                          Feed.CHANNEL_IMAGE_MAX_WIDTH,
+                                          Feed.CHANNEL_IMAGE_MAX_HEIGHT);
             ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
             bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-            rss.channel.imageblob = baos.toByteArray();
+            feed.channel.imageblob = baos.toByteArray();
         }
 
         // This is perfectly full reload.
-        for (RSS.Item item : rss.channel.items)
-            item.state = RSS.ItemState.NEW;
+        for (Feed.Item item : feed.channel.items)
+            item.state = Feed.Item.State.NEW;
 
         // It's time to update Database!!!
-
-        if (0 > dbp.insertRSSChannel(rss.channel))
-                return Err.DBUnknown;
+        if (0 > dbp.insertFeedChannel(feed.channel))
+            return Err.DBUnknown;
 
         return Err.NoErr;
     }
@@ -152,31 +155,35 @@ public class NetLoader {
      * Update feed information only.
      */
     public Err
-    loadFeeds(long cid) {
-        String url = dbp.getRSSChannelInfoString(cid, DB.ColumnRssChannel.URL);
+    loadFeeds(long cid)
+            throws InterruptedException {
+        String url = dbp.getFeedChannelInfoString(cid, DB.ColumnFeedChannel.URL);
         eAssert(null != url);
 
-        RSS rss;
+        Feed feed;
         try {
-            rss = loadUrl(url);
+            feed = loadUrl(url);
         } catch (FeederException e) {
             e.printStackTrace();
             return e.getError();
         }
 
+        // set to given value forcely due to this is 'update'.
+        feed.channel.id = cid;
+
         String state;
-        for (RSS.Item item : rss.channel.items) {
+        for (Feed.Item item : feed.channel.items) {
             // ignore empty-titled item
             if (null == item.title || item.title.isEmpty())
                 continue;
             state = dbp.isDuplicatedItemTitleWithState(cid, item.title);
             if (null != state)
-                item.state = RSS.ItemState.convert(state);
+                item.state = Feed.Item.State.convert(state);
             else
-                item.state = RSS.ItemState.NEW;
+                item.state = Feed.Item.State.NEW;
         }
 
-        dbp.updateRSSItems(rss.channel);
+        dbp.updateFeedItems(feed.channel);
 
         return Err.NoErr;
     }

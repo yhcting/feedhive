@@ -18,27 +18,53 @@ import android.widget.ListView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.NetLoader;
 
-public class FeederActivity extends ListActivity implements
-AsyncTaskMy.OnPostExecute,
-AsyncTaskMy.OnDoWork {
+public class FeederActivity extends ListActivity {
     // Request codes.
     private static final int ReqCReadChannel  = 0;
 
     public static final int  ResCReadChannelOk      = 0; // nothing special
     public static final int  ResCReadChannelUpdated = 1; // item list is updated.
 
+    class NetLoaderEventHandler implements NetLoaderTask.OnEvent {
+        @Override
+        public Err
+        onDoWork(NetLoaderTask task, Object... objs) {
+            try {
+                return task.initialLoad(objs);
+            } catch (InterruptedException e) {
+                return Err.Interrupted;
+            }
+        }
+
+        @Override
+        public void
+        onPostExecute(NetLoaderTask task, Err result) {
+            if (Err.NoErr == result)
+                refreshList();
+            else if (Err.Interrupted == result)
+                refreshList(); // Is really OK/enough ???
+            else {
+                ;// TODO Handle Error!!
+            }
+        }
+    }
+
     private Cursor
     adapterCursorQuery() {
-        return new DBPolicy().queryChannel(
-                    new DB.ColumnRssChannel[]
-                        { DB.ColumnRssChannel.ID, // Mandatory.
-                          DB.ColumnRssChannel.TITLE,
-                          DB.ColumnRssChannel.DESCRIPTION,
-                          DB.ColumnRssChannel.LASTUPDATE,
-                          DB.ColumnRssChannel.IMAGEBLOB},
+        try {
+            return DBPolicy.get().queryChannel(
+                    new DB.ColumnFeedChannel[]
+                        { DB.ColumnFeedChannel.ID, // Mandatory.
+                          DB.ColumnFeedChannel.TITLE,
+                          DB.ColumnFeedChannel.DESCRIPTION,
+                          DB.ColumnFeedChannel.LASTUPDATE,
+                          DB.ColumnFeedChannel.IMAGEBLOB},
                     null);
+        } catch (InterruptedException e) {
+            finish();
+        }
+        return null;
     }
 
     private void
@@ -81,7 +107,9 @@ AsyncTaskMy.OnDoWork {
                     // addChannel("http://cast.vop.co.kr/kfline.xml"); // good
                     // addChannel("http://cast.vop.co.kr/heenews.xml"); // good
                     // addChannel("http://www.khan.co.kr/rss/rssdata/total_news.xml"); // large xml
-                    addChannel("http://cbspodcast.com/podcast/sisa/sisa.xml"); // large xml
+                    // addChannel("http://cbspodcast.com/podcast/sisa/sisa.xml"); // large xml
+                    // addChannel("file:///sdcard/tmp/heenews.xml");
+                    addChannel("file:///sdcard/tmp/total_news.xml");
                     return true;
                 }
                 return false;
@@ -91,35 +119,10 @@ AsyncTaskMy.OnDoWork {
         dialog.show();
     }
 
-    // For NetLoaderTask
-    @Override
-    public void
-    onPostExecute(Err result) {
-        refreshList();
-    }
-
-    // For NetLoaderTask
-    @Override
-    public Err
-    doWork(Object... objs) {
-        Err err = Err.NoErr;
-
-        for (Object o : objs) {
-            String s = (String)o;
-            err = new NetLoader().initialLoad(s);
-
-            // TODO : handle returning error!!!
-            if (Err.NoErr != err)
-                break;
-        }
-        return err;
-    }
-
     private void
     addChannel(String url) {
         eAssert(url != null);
-        final FeederActivity fa = this;
-        new NetLoaderTask(this, this, this).execute(url);
+        new NetLoaderTask(this, new NetLoaderEventHandler()).execute(url);
     }
 
     @Override

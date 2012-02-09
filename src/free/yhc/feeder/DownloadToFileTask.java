@@ -14,25 +14,30 @@ import java.net.URLConnection;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.os.AsyncTask;
 import free.yhc.feeder.model.Err;
 
-public class DownloadToFileTask extends AsyncTaskMy {
+public class DownloadToFileTask extends AsyncTask<String, Integer, Err> {
+    interface OnEvent {
+        void onPostExecute(DownloadToFileTask task, Err result);
+    }
+
     private ProgressDialog progressDialog;
     private String         outFilePath;
     private InputStream    inputStream = null;
     private OutputStream   outputStream = null;
     private Context        context = null;
+    private OnEvent        onEvent = null;
 
-    DownloadToFileTask(String outFilePath, Context context,
-                       OnPostExecute post, OnDoWork work) {
-        super(post, work);
+    DownloadToFileTask(String outFilePath, Context context, OnEvent onEvent) {
+        super();
         this.context = context;
         this.outFilePath = outFilePath;
+        this.onEvent = onEvent;
     }
 
     @Override
     protected void onPreExecute() {
-        super.onPreExecute();
         progressDialog = new ProgressDialog(context);
         progressDialog.setMessage("Downloading file..");
         progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -43,11 +48,9 @@ public class DownloadToFileTask extends AsyncTaskMy {
     // args[0] : url to download
     @Override
     protected Err
-    doInBackground(Object... aurl) {
-        super.doInBackground(aurl);
-
+    doInBackground(String... aurl) {
         try {
-            URL url = new URL((String)aurl[0]);
+            URL url = new URL(aurl[0]);
             URLConnection conn = url.openConnection();
             conn.connect();
 
@@ -95,13 +98,12 @@ public class DownloadToFileTask extends AsyncTaskMy {
     @Override
     protected void
     onProgressUpdate(Integer... progress) {
-        super.onProgressUpdate(progress);
         progressDialog.setProgress(progress[0]);
     }
 
     @Override
     protected void
-    onCancelled() {
+    onCancelled(Err err) {
         try {
             if (null != outputStream)
                 outputStream.close();
@@ -110,15 +112,13 @@ public class DownloadToFileTask extends AsyncTaskMy {
             logW(e.getMessage());
         }
         new File(outFilePath).delete();
-
-        super.onCancelled();
     }
 
     @Override
     protected void
     onPostExecute(Err result) {
         progressDialog.dismiss();
-
-        super.onPostExecute(result);
+        if (null != onEvent)
+            onEvent.onPostExecute(this, result);
     }
 }

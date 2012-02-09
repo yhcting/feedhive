@@ -24,66 +24,44 @@ public class UIPolicy {
     */
 
     static void
-    setAsDefaultActionType(RSS.Channel ch) {
+    setAsDefaultActionType(Feed.Channel ch) {
         // default is "open link"
-        ch.actionType = RSS.ActionType.OPEN;
-        if (0 < ch.items.length
-            && null != ch.items[0].enclosure) {
-            // action for enclosure.
-            ch.actionType = RSS.ActionType.DNOPEN;
+        ch.actionType = Feed.ActionType.OPEN;
+        if (Feed.Channel.Type.MEDIA == ch.type
+            && isValidValue(ch.items[0].enclosureUrl)) {
+            ch.actionType = Feed.ActionType.DNOPEN;
         }
     }
 
     // check and fix if possible.
     static boolean
-    verifyConstraints(RSS.Item item) {
+    verifyConstraints(Feed.Item item) {
         // 'title' is mandatory!!!
         if (!isValidValue(item.title))
             return false;
 
         // Item should have one of link or enclosure url.
         if (!isValidValue(item.link)
-             && (null == item.enclosure
-                 || !isValidValue(item.enclosure.url)))
+             && !isValidValue(item.enclosureUrl))
             return false;
-
-        // 'pubDate' and 'description' is important in terms of UI.
-        // So, these are used directly in UI with assumption of "not-null".
-        // But, it's just UI policy - not related with DB and algorithm design!
-        if (null == item.pubDate)
-            item.pubDate = "";
-
-        if (null == item.description)
-            item.description = "";
-
-        // member of enclosure cannot be NULL!
-        if (null != item.enclosure) {
-            if (!isValidValue(item.enclosure.url))
-                return false;
-            // 'url' is valid. others should NOT null - UI may assume belows are not null.
-            if (null == item.enclosure.length)
-                item.enclosure.length = "";
-            if (null == item.enclosure.type)
-                item.enclosure.type = "";
-        }
 
         return true;
     }
 
     static boolean
-    verifyConstraints(RSS.Channel ch) {
+    verifyConstraints(Feed.Channel ch) {
         if (!isValidValue(ch.title) || !isValidValue(ch.lastupdate))
             return false;
-
-        if (null == ch.description)
-            ch.description = "";
 
         return true;
     }
 
     public static boolean
     makeChannelDir(long cid) {
-        return new File(appRootDir + cid).mkdirs();
+        File f = new File(appRootDir + cid);
+        if (f.exists())
+            Utils.removeFileRecursive(f);
+        return f.mkdir();
     }
 
     public static boolean
@@ -97,6 +75,10 @@ public class UIPolicy {
     public static String
     getItemFilePath(long cid, String title, String url) {
         eAssert(null != url && null != title);
+
+        // we don't need to create valid filename with empty url value.
+        if (url.isEmpty())
+            return "";
 
         String ext = Utils.getExtention(url);
         if (null == ext)

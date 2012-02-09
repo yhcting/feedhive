@@ -42,15 +42,26 @@ DB Design
 	    'read' if opened-link
 	<channel id>
 
-    ** Updating items of channel **
-    To keep sync with rss xml of channel, table for items should be fully updated
-      with newly one.
+    ***** Updating items of channel *****
+    To keep sync with rss xml of channel, table for items should be fully
+      updated with newly one.
     Why?
     We cannot insert item at top of table interms of DB's id.
     So, newly added items are always be shown at bottom of item list,
       and this is not match rss 'xml'.
-    To keep and sync item's order with channel's rss xml, full update is unavoidable.
-
+    To keep and sync item's order with channel's rss xml, we have two options.
+    1st : Full update. Drop table and recreate and insert.
+    (This is currently used in Feeder.)
+        -> Simple. But runtime information (ex. state) of not-changed-item
+	     should be preserved.
+    2nd : Using another column that represents order of item - ORDER column.
+        -> Increasing ORDER value to insert bottom, and decreasing ORDER value
+	     to insert top.
+	-> When creating cursor to display items, get cusor with ORDER BY this
+             ORDER value.
+        pros : We can assume that newly added item is put on top or on bottom.
+	       So, we don't need to visit all exsiting item
+        cons : complex to compare and update DB.
 
 Components
 ----------
@@ -113,7 +124,7 @@ UI Flow
 	       => [position] (passing data)
 	// : Reference position
 	R(): Refer given position
-	$$ : low priority.
+	$n$: priority. (High 1 <---------> 5 Low)
 
     Abbrev:
         S  : Screen
@@ -136,10 +147,13 @@ UI Flow
 
 	<long touch menu>
 	    "delete"
-	    $"select image"$
+	    $3$"select image"
 	        select image that is used as channel icon.
 		(This may be useful if linked image at RSS is invalid.)
-	    $"reload"$
+            $4$"update background"
+	        update this channel in background.
+		During updating, user can see other channel's items.
+	    $5$"reload"
 	        reload channel info fully.
 		  - image, etc
 	    "preference"
@@ -196,254 +210,3 @@ Known Bugs
         : In case of some sites, RSS xml size is very large.
 	  And loading this kind of site takes long time.
 	  User may fill that something wrong happened in program.
-
-===============================================================================
-=                         Design For Customizable Feeder                      =
-=                           (git branch : customizable)                       =
-===============================================================================
-[ Checking whether given item is in DB or not. ] - deprecated
-    * guid (optional)
-    * enclosure (optional)
-    * link (optional)
-    * title
-
-
-Checking whether given item is new one or not.
-    * Assumption :
-        listing order is increaseing or decreasing (any of these).
-    * 'pubData' of channel is available
-        => pubData is newer than before --(no)--> nothing todo.
-    * Checking whether given item is in DB or not
-        + guid (optional)
-	+ title : Assumption (title is unique among items!)
-
-
-DB Design
----------
-    Notatation
-	// : Reference position
-        [] : Table
-        <> : Column
-	#  : comments or constraints
-
-    Abbrev:
-        {} : Reference to UI Flow
-
-
-    *** tag tree for channel and item should be stored ***
-        Example
-             <a>
-                 <b/>
-             </a>
-             <c>
-                 <d/>
-                 <e/>
-             </c>
-	This tree is represented like follows :
-	    # '>', '<' is delimiter
-	    "a>b<c>d<c>e"
-
-    [ Channels ]
-    channel list
-    first row should be dummy item for 'all' {PDB0}
-        <url>
-	<title>
-	...
-	# below is for internal use-case
-	<channel_tagtree>
-	    tag tree string of channel.
-	<item_tagtree>
-	    tag tree string of channel item.
-	<user_channel_tagtree>
-	    user required tags
-	    value is stored at column (channel_user_tag0 ...)
-	<user_item_tagtree>
-	    user required tags
-	    value is stored at column (item_user_tag0 ... at item table)
-	<last_update>
-	    time when channel items are updated lastly.
-	<last_full_update>
-	    time when channel items are fully updated lastly.
-	<channel_view>
-	    which template is used to view channel info (usually layout)
-	<item_view>
-	    which template is used to view item info (usually layout)
-        <imageblob>
-	    blob data of image
-	# belows are to save user customization for channel view
-	<channel_user_text0>
-	...
-	<channel_user_text4>
-	<channel_user_tag0>
-	...
-	<channel_user_tag9>
-	...
-	... custome tags as column ...
-	    custome tag is wrapped by '< >' to avoid conflict
-	      of column name with mandatory one.
-
-    [ Items ]
-    items for each channel
-    first row should be dummy item for 'update' {PDB1}
-        <title>
-	<link>
-	<enclosure>
-	<actioned>
-	    boolean value
-	    'downloaded' if actionis 'download/open'
-	    'opened' if action is 'open'
-	...
-	<item_user_text0>
-	...
-	<item_user_text4>
-	<item_user_tag0>
-	...
-	<item_user_tag9>
-	... custome tags as column ...
-	    custome tag is started with '_' to avoid conflict
-	      of column name with mandatory one.
-
-    [ User Tag Map]
-        <name>
-	    # name of user value
-        <type>
-	    # channel or item
-	<column>
-	    # column name of table that value of given tag is stored.
-
-
-Components
-----------
-    * UI
-    * Parser
-        + Html -> String (To handle html-formatted-'#cdata-section')
-    * Service (auto update - monitoring channels)
-    * Database
-
-
-UI Flow
--------
-    Notation:
-	[] : Screen for doing something
-             Can be activity, dialog or background process etc.
-	<> : sub field of screen
-	#  : comments or constraints
-	:  : description
-	{} : Policy. Can be changed or need to tune...
-  	=>() : Screen is changed with data.
-	       => [position] (passing data)
-	// : Reference position
-	R(): Refer given position
-
-    Abbrev:
-        S  : Screen
-	D  : Dialog
-	P  : Position (to mark for future reference)
-	PDB: Reference for DB Design.
-
-    /S1/
-        <main>
-	    Channel list.
-	    First item should be 'all' /PDB0/
-
-	<select all >
-	    => /S2/ (all)
-
-	<select channel>
-	    => /S2/ (channel)
-
-	<optmenu>
-	    "Add channel"
-	        => /D1/
-	        [ loading channel info ]
-		    read from network and update db with default setting.
-
-	<long touch menu>
-	    "delete"
-	    "customize" #customizing view template.
-	        => /S3/ (channel)
-		After return : [ loading channel info again ]
-		    customized information should be stored at DB.
-	    "update"
-	         update channel info fully.
-		   - tagtree, image, etc
-            "preference"
-	        "acton on"
-		    'link' or 'enclosure' <- fixed if only one is available.
-		"action type"
-		    'open' or 'download/open'
-		"auto update frequence"
-		"font"
-		...(etc)...
-
-
-    /D1/
-        <main>
-	    edit box to enter url of channel.
-
-
-    /S2/
-        <main>
-	    Feed item list
-            First item should be 'update' => update item /PDB1/
-	    (default is 'use local information from DB' - NOT from network)
-	    Item should look different to tell whether it's already operationed or not.
-	    (ex. read or downloaded)
-
-        <select 'update'>
-	    [ update given channel. ]
-	        if this comes from selecting 'all', update all channels.
-		this update's only item list.
-		(Not tagtree, image, channel information etc..)
-
-	<select item>
-	    operate accroding to channel operation setting.
-	    can be 'open' or 'download/open'.
-
-	<long touch menu>
-	    "delete" for 'download/open' action.
-	        delete downloaded file.
-
-	<opt menu>
-
-
-    /S3/
-	<main>
-	    list of channel item templates.
-	    /P1/
-	    {Radio button group}.
-	    # current template should be selected by default.
-            Each list item - template - should be like follows
-		Consist of drop-down to select tags to be shown
-		  at each cell of template, and edit boxes for static text.
-		(Ex. [drop down boxes],
-		     <edit box>,
-		     xxx : Not configurable)
-		+-----+-----+----------------+
-		| xxx | < > | [            ] |
-		+-----+-----+----+-----+-----+
-		| < > | [ ] |    | < > | [ ] |
-		+-----+-----+----+-----+-----+
-		| [                        ] |
-		+----------------------------+
-
-	<ok>
-	    User changes are saved.
-	    => /S4/
-	    After return : if /S4/ finished with 'ok', back to before.
-
-	<back>
-	    Cancel
-
-
-    /S4/
-        <main>
-	    list of each feed item templates.
-	    R(P1)
-
-	<ok>
-	    User changes are saved.
-	    => back to before
-
-	<back>
-	    cancel

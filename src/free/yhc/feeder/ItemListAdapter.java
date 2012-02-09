@@ -12,24 +12,23 @@ import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
-import free.yhc.feeder.model.RSS;
+import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.UIPolicy;
 
 public class ItemListAdapter extends ResourceCursorAdapter {
     private int       layout = -1;
     private long      cid    = -1;
-    private String    cTitle = null;
-    private DBPolicy  dbp    = new DBPolicy();
+    private DBPolicy  dbp    = DBPolicy.get();
 
-    // Putting icon information inside 'RSS.ItemState' directly, is not good idea in terms of code structure.
+    // Putting icon information inside 'Feed.Item.State' directly, is not good idea in terms of code structure.
     // We would better to decouple 'Model' from 'View/Control' as much as possible.
-    // But, putting icon id to 'RSS.ItemState' makes another dependency between View/Control/Model.
-    // So, instead of putting this data to 'RSS.ItemState', below function is used.
+    // But, putting icon id to 'Feed.Item.State' makes another dependency between View/Control/Model.
+    // So, instead of putting this data to 'Feed.Item.State', below function is used.
     private int
-    iconFromState(RSS.ItemState state) {
-        if (RSS.ItemState.NEW == state)
+    iconFromState(Feed.Item.State state) {
+        if (Feed.Item.State.NEW == state)
             return R.drawable.unactioned;
-        else if (RSS.ItemState.OPENED == state)
+        else if (Feed.Item.State.OPENED == state)
             return R.drawable.actioned;
         else
             eAssert(false);
@@ -40,7 +39,6 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         super(context, layout, c);
         this.layout = layout;
         this.cid = cid;
-        cTitle = dbp.getRSSChannelInfoString(cid, DB.ColumnRssChannel.TITLE);
     }
 
     private void
@@ -50,9 +48,9 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         TextView date   = (TextView)view.findViewById(R.id.date);
         ImageView img   = (ImageView)view.findViewById(R.id.image);
 
-        titlev.setText(c.getString(c.getColumnIndex(DB.ColumnRssItem.TITLE.getName())));
-        descv.setText(c.getString(c.getColumnIndex(DB.ColumnRssItem.DESCRIPTION.getName())));
-        date.setText(c.getString(c.getColumnIndex(DB.ColumnRssItem.PUBDATE.getName())));
+        titlev.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.TITLE.getName())));
+        descv.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.DESCRIPTION.getName())));
+        date.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.PUBDATE.getName())));
 
         // NOTE
         //   Check performance drop for this DB access...
@@ -61,10 +59,17 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         //   But, definitely slower than before...
         // TODO
         //   Do performance check on low-end-device.
-        String state = dbp.getRSSItemInfoString(cid,
-                                                c.getLong(c.getColumnIndex(DB.ColumnRssItem.ID.getName())),
-                                                DB.ColumnRssItem.STATE);
-        img.setImageResource(iconFromState(RSS.ItemState.convert(state)));
+        String state;
+        try {
+                state = dbp.getFeedItemInfoString(
+                    cid,
+                    c.getLong(c.getColumnIndex(DB.ColumnFeedItem.ID.getName())),
+                    DB.ColumnFeedItem.STATE);
+        } catch (InterruptedException e) {
+            eAssert(false);
+            state = "NEW";
+        }
+        img.setImageResource(iconFromState(Feed.Item.State.convert(state)));
     }
 
     private void
@@ -75,23 +80,23 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         TextView length = (TextView)view.findViewById(R.id.length);
         ImageView img   = (ImageView)view.findViewById(R.id.image);
 
-        String title = c.getString(c.getColumnIndex(DB.ColumnRssItem.TITLE.getName()));
-        String url = c.getString(c.getColumnIndex(DB.ColumnRssItem.ENCLOSURE_URL.getName()));
+        String title = c.getString(c.getColumnIndex(DB.ColumnFeedItem.TITLE.getName()));
+        String url = c.getString(c.getColumnIndex(DB.ColumnFeedItem.ENCLOSURE_URL.getName()));
 
         titlev.setText(title);
-        descv.setText(c.getString(c.getColumnIndex(DB.ColumnRssItem.DESCRIPTION.getName())));
-        date.setText(c.getString(c.getColumnIndex(DB.ColumnRssItem.PUBDATE.getName())));
-        length.setText(c.getString(c.getColumnIndex(DB.ColumnRssItem.ENCLOSURE_LENGTH.getName())));
+        descv.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.DESCRIPTION.getName())));
+        date.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.PUBDATE.getName())));
+        length.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.ENCLOSURE_LENGTH.getName())));
 
 
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
         //   add proper icon (or representation...)
-        RSS.ItemState state;
+        Feed.Item.State state;
         if (new File(UIPolicy.getItemFilePath(cid, title, url)).exists())
-            state = RSS.ItemState.OPENED;
+            state = Feed.Item.State.OPENED;
         else
-            state = RSS.ItemState.NEW;
+            state = Feed.Item.State.NEW;
 
         img.setImageResource(iconFromState(state));
     }
@@ -99,8 +104,8 @@ public class ItemListAdapter extends ResourceCursorAdapter {
     @Override
     public void
     bindView(View view, Context context, Cursor c) {
-        String state = c.getString(c.getColumnIndex(DB.ColumnRssItem.STATE.getName()));
-        if (RSS.ItemState.DUMMY.name().equals(state)) {
+        String state = c.getString(c.getColumnIndex(DB.ColumnFeedItem.STATE.getName()));
+        if (Feed.Item.State.DUMMY.name().equals(state)) {
             // First row : dummy row for special usage.
             view.findViewById(R.id.tv_update).setVisibility(View.VISIBLE);
             view.findViewById(R.id.item_layout).setVisibility(View.GONE);

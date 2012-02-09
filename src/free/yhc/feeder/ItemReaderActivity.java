@@ -17,17 +17,16 @@ import android.widget.ListView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.NetLoader;
-import free.yhc.feeder.model.RSS;
+import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
 
 public class ItemReaderActivity extends ListActivity {
-    private long           cid = -1; // channel id
-    private RSS.ActionType action = null; // action type of this channel
+    private long            cid = -1; // channel id
+    private Feed.ActionType action = null; // action type of this channel
     // title of this channel - used as part of download filename.
-    private String         cTitle = null;
-    private DBPolicy       db = new DBPolicy();
+    private String          cTitle = null;
+    private DBPolicy        db = DBPolicy.get();
 
     private class ActionInfo {
         private int layout;
@@ -55,33 +54,31 @@ public class ItemReaderActivity extends ListActivity {
         }
     }
 
-    private class WorkNetLoader implements AsyncTaskMy.OnDoWork {
+    private class NetLoaderEventHandler implements NetLoaderTask.OnEvent {
         @Override
-        public Err doWork(Object... objs) {
-            Err err = Err.NoErr;
-
-            for (Object o : objs) {
-                Long l = (Long) o;
-                err = new NetLoader().loadFeeds(l.longValue());
-
-                // TODO : handle returning error!!!
-                if (Err.NoErr != err)
-                    break;
+        public Err
+        onDoWork(NetLoaderTask task, Object... objs) {
+            try {
+                return task.loadFeeds(objs);
+            } catch (InterruptedException e) {
+                return Err.Interrupted;
             }
-            return err;
+        }
+
+        @Override
+        public void
+        onPostExecute(NetLoaderTask task, Err result) {
+            if (Err.NoErr == result)
+                refreshList();
+            else {
+                ;// TODO Handle Error!!
+            }
         }
     }
 
-    private class PostNetLoader implements AsyncTaskMy.OnPostExecute {
+    private class DownloadToFileEventHandler implements DownloadToFileTask.OnEvent {
         @Override
-        public void onPostExecute(Err result) {
-            refreshList();
-        }
-    }
-
-    private class PostDownloadToFile implements AsyncTaskMy.OnPostExecute {
-        @Override
-        public void onPostExecute(Err result) {
+        public void onPostExecute(DownloadToFileTask task, Err result) {
             if (Err.NoErr == result)
                 refreshList();
             else {
@@ -90,19 +87,19 @@ public class ItemReaderActivity extends ListActivity {
         }
     }
 
-    // Putting these information inside 'RSS.ActionType' directly, is not good
+    // Putting these information inside 'Feed.ActionType' directly, is not good
     // idea in terms of code structure.
     // We would better to decouple 'Model' from 'View/Control' as much as
     // possible.
-    // But, putting icon id to 'RSS.ItemState' makes another dependency between
+    // But, putting icon id to 'Feed.ItemState' makes another dependency between
     // View/Control/Model.
-    // So, instead of putting this data to 'RSS.ActionType', below function is
+    // So, instead of putting this data to 'Feed.ActionType', below function is
     // used.
     private ActionInfo
-    getActionInfo(RSS.ActionType type) {
-        if (RSS.ActionType.OPEN == type)
+    getActionInfo(Feed.ActionType type) {
+        if (Feed.ActionType.OPEN == type)
             return new ActionInfo(R.layout.item_row_link, "onActionOpen");
-        else if (RSS.ActionType.DNOPEN == type)
+        else if (Feed.ActionType.DNOPEN == type)
             return new ActionInfo(R.layout.item_row_enclosure, "onActionDnOpen");
         else
             eAssert(false);
@@ -111,14 +108,19 @@ public class ItemReaderActivity extends ListActivity {
 
     private Cursor
     adapterCursorQuery(long cid) {
-        return db.queryItem(cid, new DB.ColumnRssItem[] {
-                DB.ColumnRssItem.ID, // Mandatory.
-                DB.ColumnRssItem.TITLE,
-                DB.ColumnRssItem.DESCRIPTION,
-                DB.ColumnRssItem.ENCLOSURE_LENGTH,
-                DB.ColumnRssItem.ENCLOSURE_URL,
-                DB.ColumnRssItem.PUBDATE,
-                DB.ColumnRssItem.STATE }, null);
+        try {
+            return db.queryItem(cid, new DB.ColumnFeedItem[] {
+                DB.ColumnFeedItem.ID, // Mandatory.
+                DB.ColumnFeedItem.TITLE,
+                DB.ColumnFeedItem.DESCRIPTION,
+                DB.ColumnFeedItem.ENCLOSURE_LENGTH,
+                DB.ColumnFeedItem.ENCLOSURE_URL,
+                DB.ColumnFeedItem.PUBDATE,
+                DB.ColumnFeedItem.STATE }, null);
+        } catch (InterruptedException e) {
+            finish();
+        }
+        return null;
     }
 
     private void
@@ -139,13 +141,19 @@ public class ItemReaderActivity extends ListActivity {
         cid = getIntent().getLongExtra("channelid", 0);
         logI("* RSS Item to read : " + cid + "\n");
 
-        String[] s = db.getRSSChannelInfoStrings(cid,
-                new DB.ColumnRssChannel[] {
-                    DB.ColumnRssChannel.ACTIONTYPE,
-                    DB.ColumnRssChannel.TITLE });
+        String[] s = null;
+        try {
+            s = db.getFeedChannelInfoStrings(cid,
+                new DB.ColumnFeedChannel[] {
+                    DB.ColumnFeedChannel.ACTIONTYPE,
+                    DB.ColumnFeedChannel.TITLE });
+        } catch (InterruptedException e) {
+            finish();
+            return;
+        }
 
         cTitle = s[1];
-        for (RSS.ActionType act : RSS.ActionType.values()) {
+        for (Feed.ActionType act : Feed.ActionType.values()) {
             if (act.name().equals(s[0])) {
                 action = act;
                 break;
@@ -160,18 +168,23 @@ public class ItemReaderActivity extends ListActivity {
 
     private void
     onItemClickUpdate() {
-        new NetLoaderTask(this, new PostNetLoader(), new WorkNetLoader()).execute(cid);
+        new NetLoaderTask(this, new NetLoaderEventHandler()).execute(cid);
     }
 
     // 'public' to use java reflection
     public void
     onActionDnOpen(long id) {
-        String[] data = db.getRSSItemInfoStrings(cid, id,
+        String[] data = null;
+        try {
+            data = db.getFeedItemInfoStrings(cid, id,
                 // Column index is directly used below. Keep order!
-                new DB.ColumnRssItem[] {
-                    DB.ColumnRssItem.TITLE,
-                    DB.ColumnRssItem.ENCLOSURE_URL,
-                    DB.ColumnRssItem.ENCLOSURE_TYPE });
+                new DB.ColumnFeedItem[] {
+                    DB.ColumnFeedItem.TITLE,
+                    DB.ColumnFeedItem.ENCLOSURE_URL,
+                    DB.ColumnFeedItem.ENCLOSURE_TYPE });
+        } catch (InterruptedException e) {
+            finish();
+        }
         // 'enclosure' is used.
         String fpath = UIPolicy.getItemFilePath(cid, data[0], data[1]);
         eAssert(null != fpath);
@@ -191,7 +204,7 @@ public class ItemReaderActivity extends ListActivity {
             startActivity(intent);
         } else {
             // File is not exists in local
-            DownloadToFileTask dnTask = new DownloadToFileTask(fpath, this, new PostDownloadToFile(), null);
+            DownloadToFileTask dnTask = new DownloadToFileTask(fpath, this, new DownloadToFileEventHandler());
             dnTask.execute(data[1]);
         }
     }
@@ -200,26 +213,30 @@ public class ItemReaderActivity extends ListActivity {
     public void
     onActionOpen(long id) {
         // 'link' is used.
-        String[] data = db.getRSSItemInfoStrings(cid, id,
-                new DB.ColumnRssItem[] {
-                    DB.ColumnRssItem.LINK,
-                    DB.ColumnRssItem.STATE });
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        // TODO : check. Does Uri.parse always return non-null-Uri reference???
-        intent.setData(Uri.parse(data[0]));
-        startActivity(intent);
+        try {
+            String[] data = db.getFeedItemInfoStrings(cid, id,
+                new DB.ColumnFeedItem[] {
+                    DB.ColumnFeedItem.LINK,
+                    DB.ColumnFeedItem.STATE });
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            // TODO : check. Does Uri.parse always return non-null-Uri reference???
+            intent.setData(Uri.parse(data[0]));
+            startActivity(intent);
 
-        RSS.ItemState state = RSS.ItemState.convert(data[1]);
-        if (RSS.ItemState.NEW == state) {
-            db.setRSSItemInfo_state(cid, id, RSS.ItemState.OPENED);
-            ((ItemListAdapter) getListAdapter()).notifyDataSetChanged();
+            Feed.Item.State state = Feed.Item.State.convert(data[1]);
+            if (Feed.Item.State.NEW == state) {
+                db.setFeedItemInfo_state(cid, id, Feed.Item.State.OPENED);
+                ((ItemListAdapter) getListAdapter()).notifyDataSetChanged();
+            }
+        } catch (InterruptedException e) {
+            finish();
         }
     }
 
     @Override
     protected void
     onListItemClick(ListView l, View v, int position, long id) {
-        if (0 == id)
+        if (1 == id)
             // dummy item for 'update'
             onItemClickUpdate();
         else
