@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
 import android.database.Cursor;
-import free.yhc.feeder.model.DB.ColumnFeedChannel;
-import free.yhc.feeder.model.DB.ColumnFeedItem;
+import free.yhc.feeder.model.DB.ColumnChannel;
+import free.yhc.feeder.model.DB.ColumnItem;
 
 // Singleton
 public class DBPolicy {
@@ -40,7 +40,7 @@ public class DBPolicy {
     }
 
     private Feed.Item
-    getDummyFeedItem() {
+    getDummyItem() {
         Feed.Item item = new Feed.Item();
         item.title = "";
         item.state = Feed.Item.State.DUMMY;
@@ -52,11 +52,11 @@ public class DBPolicy {
             throws InterruptedException {
         boolean ret = false;
         lock();
-        Cursor c = db.query(DB.TABLE_FEEDCHANNEL,
-                            new ColumnFeedChannel[] {
-                                ColumnFeedChannel.ID
+        Cursor c = db.query(DB.TABLE_CHANNEL,
+                            new ColumnChannel[] {
+                                ColumnChannel.ID
                             },
-                            ColumnFeedChannel.URL.getName() + " = '" + url + "'",
+                            ColumnChannel.URL.getName() + " = '" + url + "'",
                             null, null, null, null);
         unlock();
         if (0 < c.getCount())
@@ -70,11 +70,11 @@ public class DBPolicy {
             throws InterruptedException {
         boolean ret = false;
         lock();
-        Cursor c = db.query(DB.getFeedItemTableName(cid),
-                            new ColumnFeedItem[] {
-                                ColumnFeedItem.ID
+        Cursor c = db.query(DB.getItemTableName(cid),
+                            new ColumnItem[] {
+                                ColumnItem.ID
                             },
-                            ColumnFeedItem.TITLE.getName() + " = '" + title + "'",
+                            ColumnItem.TITLE.getName() + " = '" + title + "'",
                             null, null, null, null);
         unlock();
         if (0 < c.getCount())
@@ -91,13 +91,13 @@ public class DBPolicy {
             throws InterruptedException {
         String ret = null;
         lock();
-        Cursor c = db.query(DB.getFeedItemTableName(cid),
+        Cursor c = db.query(DB.getItemTableName(cid),
                             // Column index is used below. So order is important.
-                            new ColumnFeedItem[] {
-                                ColumnFeedItem.ID,
-                                ColumnFeedItem.STATE,
+                            new ColumnItem[] {
+                                ColumnItem.ID,
+                                ColumnItem.STATE,
                             },
-                            ColumnFeedItem.TITLE.getName() + " = '" + title + "'",
+                            ColumnItem.TITLE.getName() + " = '" + title + "'",
                             null, null, null, null);
         unlock();
         if (c.moveToFirst())
@@ -114,7 +114,7 @@ public class DBPolicy {
      *        -1 : fails. Error!
      */
     public int
-    insertFeedChannel(Feed.Channel ch)
+    insertChannel(Feed.Channel ch)
             throws InterruptedException {
         // Apply insertion policy
         eAssert(null != ch.actionType
@@ -129,8 +129,6 @@ public class DBPolicy {
             if (!UIPolicy.verifyConstraints(ch))
                 return -1;
 
-            logI("+++ Start insert channel----");
-
             lock();
             // insert and update channel id.
             cid = db.insertChannel(ch);
@@ -143,7 +141,7 @@ public class DBPolicy {
             // This is tightly coupled with implementation of
             //   'ItemListAdapter'
             // See 'ItemListAdapter' for detail reasons.
-            if (0 > db.insertItem(cid, getDummyFeedItem())) {
+            if (0 > db.insertItem(cid, getDummyItem())) {
                 db.deleteChannel(cid);
                 unlock();
                 return -1;
@@ -188,7 +186,7 @@ public class DBPolicy {
             for (Feed.Item item : ch.items)
                 item.channelid = cid;
 
-            // logI("+++ End insert channel----");
+            logI("+++ Inserting channel DONE");
 
             return 0;
 
@@ -213,19 +211,19 @@ public class DBPolicy {
      * return: -1 (for fail to update)
      * */
     public int
-    updateFeedItems(Feed.Channel ch)
+    updateItems(Feed.Channel ch)
             throws InterruptedException {
         eAssert(null != ch.items);
 
         lock();
-        Cursor c = db.query(DB.getFeedItemTableName(ch.id),
+        Cursor c = db.query(DB.getItemTableName(ch.id),
                             // Column index is used below. So order is important.
-                            new ColumnFeedItem[] {
-                                DB.ColumnFeedItem.TITLE,
-                                DB.ColumnFeedItem.LINK,
-                                DB.ColumnFeedItem.ENCLOSURE_URL,
+                            new ColumnItem[] {
+                                DB.ColumnItem.TITLE,
+                                DB.ColumnItem.LINK,
+                                DB.ColumnItem.ENCLOSURE_URL,
                                 // runtime information of item.
-                                DB.ColumnFeedItem.STATE,
+                                DB.ColumnItem.STATE,
                             },
                             null, null, null, null, null);
         unlock();
@@ -264,7 +262,7 @@ public class DBPolicy {
         lock();
         db.prepareUpdateItemTable(ch.id);
         try {
-            if (0 > db.insertItem(ch.id, getDummyFeedItem())) {
+            if (0 > db.insertItem(ch.id, getDummyItem())) {
                 db.rollbackUpdateItemTable(ch.id);
                 unlock();
                 return -1;
@@ -301,11 +299,11 @@ public class DBPolicy {
     }
 
     public Cursor
-    queryChannel(ColumnFeedChannel[] columns,
+    queryChannel(ColumnChannel[] columns,
                  String selection)
                          throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.TABLE_FEEDCHANNEL,
+        Cursor c = db.query(DB.TABLE_CHANNEL,
                             columns, selection,
                             null, null, null, null);
         unlock();
@@ -313,7 +311,7 @@ public class DBPolicy {
     }
 
     public int
-    deleteFeedChannel(long cid)
+    deleteChannel(long cid)
             throws InterruptedException {
         lock();
         long n = db.deleteChannel(cid);
@@ -329,16 +327,16 @@ public class DBPolicy {
     }
 
     public String
-    getFeedChannelInfoString(long cid, ColumnFeedChannel column)
+    getChannelInfoString(long cid, ColumnChannel column)
             throws InterruptedException {
         String ret = null;
         lock();
-        Cursor c = db.query(DB.TABLE_FEEDCHANNEL,
+        Cursor c = db.query(DB.TABLE_CHANNEL,
                             // Column index is used below. So order is important.
-                            new ColumnFeedChannel[] {
+                            new ColumnChannel[] {
                                 column
                             },
-                            ColumnFeedChannel.ID.getName() + " = '" + cid + "'",
+                            ColumnChannel.ID.getName() + " = '" + cid + "'",
                             null, null, null, null);
         unlock();
         if (c.moveToFirst())
@@ -349,12 +347,12 @@ public class DBPolicy {
     }
 
     public String[]
-    getFeedChannelInfoStrings(long cid, ColumnFeedChannel[] columns)
+    getChannelInfoStrings(long cid, ColumnChannel[] columns)
             throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.TABLE_FEEDCHANNEL,
+        Cursor c = db.query(DB.TABLE_CHANNEL,
                             columns,
-                            ColumnFeedChannel.ID.getName() + " = '" + cid + "'",
+                            ColumnChannel.ID.getName() + " = '" + cid + "'",
                             null, null, null, null);
         unlock();
         if (!c.moveToFirst()) {
@@ -371,16 +369,16 @@ public class DBPolicy {
     }
 
     public String
-    getFeedItemInfoString(long cid, long id, ColumnFeedItem column)
+    getItemInfoString(long cid, long id, ColumnItem column)
             throws InterruptedException {
         String ret = null;
         lock();
-        Cursor c = db.query(DB.getFeedItemTableName(cid),
+        Cursor c = db.query(DB.getItemTableName(cid),
                             // Column index is used below. So order is important.
-                            new ColumnFeedItem[] {
+                            new ColumnItem[] {
                                 column
                             },
-                            ColumnFeedItem.ID.getName() + " = '" + id + "'",
+                            ColumnItem.ID.getName() + " = '" + id + "'",
                             null, null, null, null);
         unlock();
         if (c.moveToFirst())
@@ -391,12 +389,12 @@ public class DBPolicy {
     }
 
     public String[]
-    getFeedItemInfoStrings(long cid, long id, ColumnFeedItem[] columns)
+    getItemInfoStrings(long cid, long id, ColumnItem[] columns)
             throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.getFeedItemTableName(cid),
+        Cursor c = db.query(DB.getItemTableName(cid),
                             columns,
-                            ColumnFeedItem.ID.getName() + " = '" + id + "'",
+                            ColumnItem.ID.getName() + " = '" + id + "'",
                             null, null, null, null);
         unlock();
         if (!c.moveToFirst()) {
@@ -414,11 +412,11 @@ public class DBPolicy {
 
     public Cursor
     queryItem(long channelid,
-              ColumnFeedItem[] columns,
+              ColumnItem[] columns,
               String selection)
                       throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.getFeedItemTableName(channelid),
+        Cursor c = db.query(DB.getItemTableName(channelid),
                             columns, selection,
                             null, null, null, null);
         unlock();
@@ -427,7 +425,7 @@ public class DBPolicy {
 
     // return : old value
     public int
-    setFeedItemInfo_state(long cid, long id, Feed.Item.State state)
+    setItemInfo_state(long cid, long id, Feed.Item.State state)
             throws InterruptedException {
         lock();
         long n = db.updateItem_state(cid, id, state);

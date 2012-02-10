@@ -15,7 +15,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".AddChannelActivity"/>
-        <activity android:name=".ItemReaderActivity"/>
+        <activity android:name=".ChannelListActivity"/>
+        <activity android:name=".ItemListActivity"/>
     </application>
 </manifest>

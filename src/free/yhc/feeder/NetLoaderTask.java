@@ -11,6 +11,7 @@ import free.yhc.feeder.model.NetLoader;
 
 public class NetLoaderTask extends AsyncTask<Object, Integer, Err> implements
 DialogInterface.OnDismissListener,
+DialogInterface.OnCancelListener,
 DialogInterface.OnClickListener
 {
     interface OnEvent {
@@ -18,9 +19,10 @@ DialogInterface.OnClickListener
         void onPostExecute(NetLoaderTask task, Err result);
     }
 
-    private ProgressDialog progress = null;
+    private ProgressDialog dialog = null;
     private Context        context  = null;
     private OnEvent        onEvent  = null;
+    private boolean        userCancelled = false;
 
     NetLoaderTask(Context context, OnEvent onEvent) {
         super();
@@ -60,31 +62,6 @@ DialogInterface.OnClickListener
         return err;
     }
 
-    public void
-    onClick(DialogInterface dialog, int which) {
-        progress.setMessage(context.getResources().getText(R.string.wait_cancel));
-        // Canceling backgroud task may corrupt DB
-        //   by interrupting in the middle of transaction.
-        // To avoid this case, start db transaction to cancel!.
-        int retry = 20;
-        try {
-            DBPolicy.get().lock();
-        } catch (InterruptedException e) {
-            eAssert(false);
-            return;
-        }
-
-        while (0 < retry--) {
-            cancel(true);
-            if (isCancelled())
-                break;
-        }
-
-        DBPolicy.get().unlock();
-
-        progress.dismiss();
-    }
-
     // return :
     @Override
     protected Err
@@ -95,18 +72,46 @@ DialogInterface.OnClickListener
         return ret;
     }
 
+    private boolean
+    cancelWork() {
+        userCancelled = true;
+        // Canceling backgroud task may corrupt DB
+        //   by interrupting in the middle of transaction.
+        // To avoid this case, start db transaction to cancel!.
+        int retry = 20;
+        try {
+            DBPolicy.get().lock();
+        } catch (InterruptedException e) {
+            eAssert(false);
+            return false;
+        }
+        while (0 < retry-- && !cancel(true));
+        DBPolicy.get().unlock();
+
+        return retry > 0? true: false;
+    }
+
     @Override
-    protected void
-    onCancelled(Err err) {
-        // TODO
-        //   Handle cancelled case!!!
-        ;
+    public void
+    onCancel(DialogInterface dialogI) {
+        cancelWork();
+    }
+
+    @Override
+    public void
+    onClick(DialogInterface dialogI, int which) {
+        dialog.setMessage(context.getResources().getText(R.string.wait_cancel));
+        dialog.cancel();
     }
 
     @Override
     protected void
     onPostExecute(Err result) {
-        progress.dismiss();
+        // In normal case, onPostExecute is not called in case of 'user-cancel'.
+        // below code is for safty.
+        if (userCancelled)
+            result = Err.NoErr;
+        dialog.dismiss();
         if (null != onEvent)
             onEvent.onPostExecute(this, result);
     }
@@ -119,14 +124,15 @@ DialogInterface.OnClickListener
     @Override
     protected void
     onPreExecute() {
-        progress = new ProgressDialog(context);
-        progress.setMessage(context.getResources().getText(R.string.load_progress));
-        progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        progress.setCanceledOnTouchOutside(false);
-        progress.setCancelable(false);
-        progress.setButton(context.getResources().getText(R.string.cancel_loading), this);
-        progress.setOnDismissListener(this);
-        progress.show();
+        dialog = new ProgressDialog(context);
+        dialog.setMessage(context.getResources().getText(R.string.load_progress));
+        dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        dialog.setCanceledOnTouchOutside(false);
+        //dialog.setCancelable(false);
+        dialog.setButton(context.getResources().getText(R.string.cancel_loading), this);
+        dialog.setOnCancelListener(this);
+        dialog.setOnDismissListener(this);
+        dialog.show();
     }
 
     /*

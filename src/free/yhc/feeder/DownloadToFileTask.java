@@ -14,20 +14,25 @@ import java.net.URLConnection;
 
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.AsyncTask;
 import free.yhc.feeder.model.Err;
 
-public class DownloadToFileTask extends AsyncTask<String, Integer, Err> {
+public class DownloadToFileTask extends AsyncTask<String, Integer, Err> implements
+DialogInterface.OnClickListener,
+DialogInterface.OnCancelListener {
     interface OnEvent {
         void onPostExecute(DownloadToFileTask task, Err result);
     }
 
-    private ProgressDialog progressDialog;
-    private String         outFilePath;
-    private InputStream    inputStream = null;
+    private Context        context      = null;
+    private OnEvent        onEvent      = null;
+    private ProgressDialog dialog;
+    private String         outFilePath  = "";
+    private InputStream    inputStream  = null;
     private OutputStream   outputStream = null;
-    private Context        context = null;
-    private OnEvent        onEvent = null;
+    private boolean        userCancelled= false;
+    private Object         streamLock   = new Object();
 
     DownloadToFileTask(String outFilePath, Context context, OnEvent onEvent) {
         super();
@@ -37,12 +42,32 @@ public class DownloadToFileTask extends AsyncTask<String, Integer, Err> {
     }
 
     @Override
-    protected void onPreExecute() {
-        progressDialog = new ProgressDialog(context);
-        progressDialog.setMessage("Downloading file..");
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setCancelable(false);
-        progressDialog.show();
+    protected void
+    onPreExecute() {
+        dialog = new ProgressDialog(context);
+        dialog.setMessage(context.getResources().getText(R.string.downloading));
+        dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setButton(context.getResources().getText(R.string.cancel_downloading), this);
+        dialog.setOnCancelListener(this);
+        dialog.show();
+    }
+
+    private boolean
+    cleanupStream() {
+        try {
+            if (null != inputStream)
+                inputStream.close();
+            if (null != outputStream) {
+                outputStream.close();
+                new File(outFilePath).delete();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            logW(e.getMessage());
+            return false;
+        }
+        return true;
     }
 
     // args[0] : url to download
@@ -67,57 +92,80 @@ public class DownloadToFileTask extends AsyncTask<String, Integer, Err> {
 
             long total = 0;
             int count;
-            while ((count = inputStream.read(data)) != -1) {
+
+            while (true) {
+                synchronized (streamLock) {
+                    if (userCancelled)
+                        break;
+
+                    if (-1 == (count = inputStream.read(data)))
+                        break;
+                    outputStream.write(data, 0, count);
+                }
                 total += count;
                 publishProgress((int) (total * 100 / lenghtOfFile));
-                outputStream.write(data, 0, count);
             }
 
-            outputStream.flush();
-            outputStream.close();
-            inputStream.close();
+            synchronized (streamLock) {
+                if (userCancelled)
+                    return Err.UserCancelled;
+
+                outputStream.flush();
+                outputStream.close();
+                inputStream.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
             logW(e.getMessage());
-            try {
-                if (null != inputStream)
-                    inputStream.close();
-                if (null != outputStream) {
-                    outputStream.close();
-                    new File(outFilePath).delete();
-                }
-            } catch (IOException e2) {
-                e2.printStackTrace();
-                logW(e2.getMessage());
+            synchronized (streamLock) {
+                if (!userCancelled)
+                    cleanupStream();
             }
             return Err.IONet;
         }
         return Err.NoErr;
     }
 
+    private boolean
+    cancelWork() {
+        int retry = 20;
+        synchronized (streamLock) {
+            userCancelled = true;
+            while (0 < retry-- && !cancel(true));
+            if (retry > 0) {
+                int retryCleanup = 5;
+                while (0 < retryCleanup-- && !cleanupStream());
+            }
+        }
+        return retry > 0? true: false;
+    }
+
     @Override
-    protected void
-    onProgressUpdate(Integer... progress) {
-        progressDialog.setProgress(progress[0]);
+    public void
+    onClick(DialogInterface dialogI, int which) {
+        dialog.cancel();
+    }
+
+    @Override
+    public void
+    onCancel(DialogInterface dialogI) {
+        cancelWork();
     }
 
     @Override
     protected void
-    onCancelled(Err err) {
-        try {
-            if (null != outputStream)
-                outputStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            logW(e.getMessage());
-        }
-        new File(outFilePath).delete();
+    onProgressUpdate(Integer... progress) {
+        dialog.setProgress(progress[0]);
     }
 
     @Override
     protected void
     onPostExecute(Err result) {
-        progressDialog.dismiss();
+        // In normal case, onPostExecute is not called in case of 'user-cancel'.
+        // below code is for safty.
+        if (userCancelled)
+            result = Err.NoErr;
+        dialog.dismiss();
         if (null != onEvent)
             onEvent.onPostExecute(this, result);
     }

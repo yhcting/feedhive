@@ -5,6 +5,8 @@ import java.io.File;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.util.Log;
 
 public class Utils {
@@ -264,4 +266,13 @@ public class Utils {
         return true;
     }
 
+    public static boolean
+    isNetworkAvailable(Context context) {
+        ConnectivityManager cm = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ni = cm.getActiveNetworkInfo();
+        if (null != ni)
+            return ni.isConnectedOrConnecting();
+        else
+            return false;
+    }
 }

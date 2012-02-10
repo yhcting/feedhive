@@ -24,8 +24,8 @@ public final class DB extends SQLiteOpenHelper {
      *
      * Database design
      * ---------------
-     *  - table for rss items per each channel.
-     *  - naming for rss-item-table
+     *  - table for items per each channel.
+     *  - naming for item-table
      *      <prefix string> + channel-id
      *
      **************************************/
@@ -41,10 +41,10 @@ public final class DB extends SQLiteOpenHelper {
     /**************************************
      * DB for RSS
      **************************************/
-    static final String TABLE_FEEDCHANNEL        = "feedchannel";
-    private static final String TABLE_FEEDITEM   = "feeditem";
+    static final String TABLE_CHANNEL        = "channel";
+    private static final String TABLE_ITEM   = "item";
 
-    public static enum ColumnFeedChannel implements Column {
+    public static enum ColumnChannel implements Column {
         // Required Channel Elements
         TITLE           ("title",           "text",     "not null"),
         DESCRIPTION     ("description",     "text",     "not null"),
@@ -61,7 +61,7 @@ public final class DB extends SQLiteOpenHelper {
         private String type;
         private String constraint;
 
-        ColumnFeedChannel(String name, String type, String constraint) {
+        ColumnChannel(String name, String type, String constraint) {
             this.name = name;
             this.type = type;
             this.constraint = constraint;
@@ -71,7 +71,7 @@ public final class DB extends SQLiteOpenHelper {
         public String getConstraint() { return constraint; }
     }
 
-    public static enum ColumnFeedItem implements Column {
+    public static enum ColumnItem implements Column {
         TITLE           ("title",           "text",     "not null"),
         DESCRIPTION     ("description",     "text",     "not null"),
         LINK            ("link",            "text",     "not null"),
@@ -89,7 +89,7 @@ public final class DB extends SQLiteOpenHelper {
         private String type;
         private String constraint;
 
-        ColumnFeedItem(String name, String type, String constraint) {
+        ColumnItem(String name, String type, String constraint) {
             this.name = name;
             this.type = type;
             this.constraint = constraint;
@@ -100,13 +100,13 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     static String
-    getFeedItemTableName(long channelid) {
-        return TABLE_FEEDITEM + channelid;
+    getItemTableName(long channelid) {
+        return TABLE_ITEM + channelid;
     }
 
     static String
-    getFeedItemTempTableName(long channelid) {
-        return TABLE_FEEDITEM + "temp" + channelid;
+    getItemTempTableName(long channelid) {
+        return TABLE_ITEM + "temp" + channelid;
     }
 
     /**************************************
@@ -148,7 +148,7 @@ public final class DB extends SQLiteOpenHelper {
     private long
     createItemTable(long cid) {
         try {
-            db.execSQL(buildTableSQL(getFeedItemTableName(cid), ColumnFeedItem.values()));
+            db.execSQL(buildTableSQL(getItemTableName(cid), ColumnItem.values()));
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
@@ -159,7 +159,7 @@ public final class DB extends SQLiteOpenHelper {
     private long
     alterItemTable_toTemp(long cid) {
         try {
-            db.execSQL("ALTER TABLE '" + getFeedItemTableName(cid) + "' RENAME TO '" + getFeedItemTempTableName(cid) + "';");
+            db.execSQL("ALTER TABLE '" + getItemTableName(cid) + "' RENAME TO '" + getItemTempTableName(cid) + "';");
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
@@ -170,7 +170,7 @@ public final class DB extends SQLiteOpenHelper {
     private long
     alterItemTable_toMain(long cid) {
         try {
-            db.execSQL("ALTER TABLE '" + getFeedItemTempTableName(cid) + "' RENAME TO '" + getFeedItemTableName(cid) + "';");
+            db.execSQL("ALTER TABLE '" + getItemTempTableName(cid) + "' RENAME TO '" + getItemTableName(cid) + "';");
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
@@ -181,7 +181,7 @@ public final class DB extends SQLiteOpenHelper {
     private long
     dropItemTable(long cid) {
         try {
-            db.execSQL("DROP TABLE '" + getFeedItemTableName(cid) + "';");
+            db.execSQL("DROP TABLE '" + getItemTableName(cid) + "';");
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
@@ -192,7 +192,7 @@ public final class DB extends SQLiteOpenHelper {
     private long
     dropTempItemTable(long cid) {
         try {
-            db.execSQL("DROP TABLE '" + getFeedItemTempTableName(cid) + "';");
+            db.execSQL("DROP TABLE '" + getItemTempTableName(cid) + "';");
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
@@ -206,7 +206,7 @@ public final class DB extends SQLiteOpenHelper {
     @Override
     public void
     onCreate(SQLiteDatabase db) {
-        db.execSQL(buildTableSQL(TABLE_FEEDCHANNEL, ColumnFeedChannel.values()));
+        db.execSQL(buildTableSQL(TABLE_CHANNEL, ColumnChannel.values()));
     }
 
     @Override
@@ -310,26 +310,26 @@ public final class DB extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
 
         // information defined by spec.
-        values.put(ColumnFeedItem.CHANNELID.getName(),           cid);
-        values.put(ColumnFeedItem.TITLE.getName(),               item.title);
-        values.put(ColumnFeedItem.LINK.getName(),                item.link);
-        values.put(ColumnFeedItem.DESCRIPTION.getName(),         item.description);
-        values.put(ColumnFeedItem.PUBDATE.getName(),             item.pubDate);
-        values.put(ColumnFeedItem.STATE.getName(),               item.state.name());
-        values.put(ColumnFeedItem.ENCLOSURE_URL.getName(),       item.enclosureUrl);
-        values.put(ColumnFeedItem.ENCLOSURE_LENGTH.getName(),    item.enclosureLength);
-        values.put(ColumnFeedItem.ENCLOSURE_TYPE.getName(),      item.enclosureType);
+        values.put(ColumnItem.CHANNELID.getName(),           cid);
+        values.put(ColumnItem.TITLE.getName(),               item.title);
+        values.put(ColumnItem.LINK.getName(),                item.link);
+        values.put(ColumnItem.DESCRIPTION.getName(),         item.description);
+        values.put(ColumnItem.PUBDATE.getName(),             item.pubDate);
+        values.put(ColumnItem.STATE.getName(),               item.state.name());
+        values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.enclosureUrl);
+        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.enclosureLength);
+        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.enclosureType);
 
-        return db.insert(getFeedItemTableName(cid), null, values);
+        return db.insert(getItemTableName(cid), null, values);
     }
 
     long
     updateItem_state(long cid, long id, Feed.Item.State state) {
         ContentValues values = new ContentValues();
-        values.put(ColumnFeedItem.STATE.getName(), state.name());
-        return db.update(getFeedItemTableName(cid),
+        values.put(ColumnItem.STATE.getName(), state.name());
+        return db.update(getItemTableName(cid),
                          values,
-                         ColumnFeedItem.ID.getName() + " = " + id,
+                         ColumnItem.ID.getName() + " = " + id,
                          null);
     }
 
@@ -349,18 +349,18 @@ public final class DB extends SQLiteOpenHelper {
 
         ContentValues values = new ContentValues();
         // application's internal information
-        values.put(ColumnFeedChannel.URL.getName(),              ch.url);
-        values.put(ColumnFeedChannel.ACTIONTYPE.getName(),       ch.actionType.name());
-        values.put(ColumnFeedChannel.LASTUPDATE.getName(),       ch.lastupdate);
+        values.put(ColumnChannel.URL.getName(),              ch.url);
+        values.put(ColumnChannel.ACTIONTYPE.getName(),       ch.actionType.name());
+        values.put(ColumnChannel.LASTUPDATE.getName(),       ch.lastupdate);
 
         if (null != ch.imageblob)
-            values.put(ColumnFeedChannel.IMAGEBLOB.getName(),    ch.imageblob);
+            values.put(ColumnChannel.IMAGEBLOB.getName(),    ch.imageblob);
 
         // information defined by spec.
-        values.put(ColumnFeedChannel.TITLE.getName(),            ch.title);
-        values.put(ColumnFeedChannel.DESCRIPTION.getName(),      ch.description);
+        values.put(ColumnChannel.TITLE.getName(),            ch.title);
+        values.put(ColumnChannel.DESCRIPTION.getName(),      ch.description);
 
-        long cid = db.insert(TABLE_FEEDCHANNEL, null, values);
+        long cid = db.insert(TABLE_CHANNEL, null, values);
         if (cid >= 0) {
             if (0 > createItemTable(cid)) {
                 deleteChannel(cid);
@@ -377,8 +377,8 @@ public final class DB extends SQLiteOpenHelper {
      */
     long
     deleteChannel(long cid) {
-        long r = db.delete(TABLE_FEEDCHANNEL,
-                           ColumnFeedChannel.ID.getName() + " = " + cid,
+        long r = db.delete(TABLE_CHANNEL,
+                           ColumnChannel.ID.getName() + " = " + cid,
                            null);
         if (0 != r) {
             dropItemTable(cid);
@@ -390,7 +390,7 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     prepareUpdateItemTable(long cid) {
-        eAssert(!doesTableExists(getFeedItemTempTableName(cid)));
+        eAssert(!doesTableExists(getItemTempTableName(cid)));
         // to make sure.
         dropTempItemTable(cid);
         if (0 > alterItemTable_toTemp(cid))

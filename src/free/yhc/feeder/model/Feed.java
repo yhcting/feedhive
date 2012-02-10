@@ -1,5 +1,7 @@
 package free.yhc.feeder.model;
 
+import free.yhc.feeder.R;
+
 public class Feed {
     // This deault_date is NOT defined by spec.
     // It's just any value enough small.
@@ -24,9 +26,39 @@ public class Feed {
 
      public static class Item {
          public static enum State {
-             DUMMY,  // dummy item for UI usage.
-             NEW,    // new
-             OPENED;   // item is read (in case of 'open' action.
+             DUMMY      (-1, -1, -1),  // dummy item for UI usage.
+             NEW        (R.color.title_color_new,
+                         R.color.text_color_new,
+                         R.drawable.unactioned),
+             // item is read (in case of 'open' action).
+             OPENED     (R.color.title_color_opened,
+                         R.color.text_color_opened,
+                         R.drawable.actioned);
+
+             private int titleColor;
+             private int textColor;
+             private int icon;
+
+             State(int titleColor, int textColor, int icon) {
+                 this.titleColor = titleColor;
+                 this.textColor = textColor;
+                 this.icon = icon;
+             }
+
+             public int
+             getTitleColor() {
+                 return titleColor;
+             }
+
+             public int
+             getTextColor() {
+                 return textColor;
+             }
+
+             public int
+             getIcon() {
+                 return icon;
+             }
 
              public static State
              convert(String s) {

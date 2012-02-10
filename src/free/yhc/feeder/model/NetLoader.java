@@ -145,7 +145,7 @@ public class NetLoader {
             item.state = Feed.Item.State.NEW;
 
         // It's time to update Database!!!
-        if (0 > dbp.insertFeedChannel(feed.channel))
+        if (0 > dbp.insertChannel(feed.channel))
             return Err.DBUnknown;
 
         return Err.NoErr;
@@ -157,7 +157,7 @@ public class NetLoader {
     public Err
     loadFeeds(long cid)
             throws InterruptedException {
-        String url = dbp.getFeedChannelInfoString(cid, DB.ColumnFeedChannel.URL);
+        String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
         eAssert(null != url);
 
         Feed feed;
@@ -183,7 +183,7 @@ public class NetLoader {
                 item.state = Feed.Item.State.NEW;
         }
 
-        dbp.updateFeedItems(feed.channel);
+        dbp.updateItems(feed.channel);
 
         return Err.NoErr;
     }

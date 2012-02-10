@@ -11,22 +11,22 @@ import android.widget.TextView;
 import free.yhc.feeder.model.DB;
 
 public class ChannelListAdapter extends ResourceCursorAdapter {
-
     ChannelListAdapter(Context context, int layout, Cursor c) {
         super(context, layout, c);
     }
 
     @Override
-    public void bindView(View view, Context context, Cursor c) {
-        String title = c.getString(c.getColumnIndex(DB.ColumnFeedChannel.TITLE.getName()));
-        String desc  = c.getString(c.getColumnIndex(DB.ColumnFeedChannel.DESCRIPTION.getName()));
-        String date  = c.getString(c.getColumnIndex(DB.ColumnFeedChannel.LASTUPDATE.getName()));
+    public void
+    bindView(View view, Context context, Cursor c) {
+        String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
+        String desc  = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
+        String date  = c.getString(c.getColumnIndex(DB.ColumnChannel.LASTUPDATE.getName()));
 
         int ci; // column index;
-        ci = c.getColumnIndex(DB.ColumnFeedChannel.IMAGEBLOB.getName());
+        ci = c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName());
         Bitmap bm = null;
         if (Cursor.FIELD_TYPE_NULL != c.getType(ci)) {
-            byte[] imgRaw= c.getBlob(c.getColumnIndex(DB.ColumnFeedChannel.IMAGEBLOB.getName()));
+            byte[] imgRaw= c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
             bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
         }
 

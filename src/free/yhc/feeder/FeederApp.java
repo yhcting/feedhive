@@ -16,7 +16,6 @@ public class FeederApp extends Application {
     onCreate() {
         super.onCreate();
         DB.newSession(getApplicationContext()).open();
-        //UIPolicy.setAppRootDir(getApplicationContext().getFilesDir().getPath());
     }
 
     @Override

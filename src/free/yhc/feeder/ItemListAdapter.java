@@ -20,21 +20,6 @@ public class ItemListAdapter extends ResourceCursorAdapter {
     private long      cid    = -1;
     private DBPolicy  dbp    = DBPolicy.get();
 
-    // Putting icon information inside 'Feed.Item.State' directly, is not good idea in terms of code structure.
-    // We would better to decouple 'Model' from 'View/Control' as much as possible.
-    // But, putting icon id to 'Feed.Item.State' makes another dependency between View/Control/Model.
-    // So, instead of putting this data to 'Feed.Item.State', below function is used.
-    private int
-    iconFromState(Feed.Item.State state) {
-        if (Feed.Item.State.NEW == state)
-            return R.drawable.unactioned;
-        else if (Feed.Item.State.OPENED == state)
-            return R.drawable.actioned;
-        else
-            eAssert(false);
-        return -1;
-    }
-
     public ItemListAdapter(Context context, int layout, Cursor c, long cid) {
         super(context, layout, c);
         this.layout = layout;
@@ -46,11 +31,10 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         TextView titlev = (TextView)view.findViewById(R.id.title);
         TextView descv  = (TextView)view.findViewById(R.id.description);
         TextView date   = (TextView)view.findViewById(R.id.date);
-        ImageView img   = (ImageView)view.findViewById(R.id.image);
 
-        titlev.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.TITLE.getName())));
-        descv.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.DESCRIPTION.getName())));
-        date.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.PUBDATE.getName())));
+        titlev.setText(c.getString(c.getColumnIndex(DB.ColumnItem.TITLE.getName())));
+        descv.setText(c.getString(c.getColumnIndex(DB.ColumnItem.DESCRIPTION.getName())));
+        date.setText(c.getString(c.getColumnIndex(DB.ColumnItem.PUBDATE.getName())));
 
         // NOTE
         //   Check performance drop for this DB access...
@@ -59,17 +43,21 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         //   But, definitely slower than before...
         // TODO
         //   Do performance check on low-end-device.
-        String state;
+        String statestr;
         try {
-                state = dbp.getFeedItemInfoString(
-                    cid,
-                    c.getLong(c.getColumnIndex(DB.ColumnFeedItem.ID.getName())),
-                    DB.ColumnFeedItem.STATE);
+                statestr = dbp.getItemInfoString(
+                                cid,
+                                c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName())),
+                                DB.ColumnItem.STATE);
         } catch (InterruptedException e) {
             eAssert(false);
-            state = "NEW";
+            statestr = "NEW";
         }
-        img.setImageResource(iconFromState(Feed.Item.State.convert(state)));
+
+        Feed.Item.State state = Feed.Item.State.convert(statestr);
+        titlev.setTextColor(state.getTitleColor());
+        descv.setTextColor(state.getTextColor());
+        date.setTextColor(state.getTextColor());
     }
 
     private void
@@ -80,13 +68,13 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         TextView length = (TextView)view.findViewById(R.id.length);
         ImageView img   = (ImageView)view.findViewById(R.id.image);
 
-        String title = c.getString(c.getColumnIndex(DB.ColumnFeedItem.TITLE.getName()));
-        String url = c.getString(c.getColumnIndex(DB.ColumnFeedItem.ENCLOSURE_URL.getName()));
+        String title = c.getString(c.getColumnIndex(DB.ColumnItem.TITLE.getName()));
+        String url = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_URL.getName()));
 
         titlev.setText(title);
-        descv.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.DESCRIPTION.getName())));
-        date.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.PUBDATE.getName())));
-        length.setText(c.getString(c.getColumnIndex(DB.ColumnFeedItem.ENCLOSURE_LENGTH.getName())));
+        descv.setText(c.getString(c.getColumnIndex(DB.ColumnItem.DESCRIPTION.getName())));
+        date.setText(c.getString(c.getColumnIndex(DB.ColumnItem.PUBDATE.getName())));
+        length.setText(c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_LENGTH.getName())));
 
 
         // In case of enclosure, icon is decided by file is in the disk or not.
@@ -98,13 +86,18 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         else
             state = Feed.Item.State.NEW;
 
-        img.setImageResource(iconFromState(state));
+        img.setImageResource(state.getIcon());
+
+        titlev.setTextColor(context.getResources().getColor(state.getTitleColor()));
+        descv.setTextColor(context.getResources().getColor(state.getTextColor()));
+        date.setTextColor(context.getResources().getColor(state.getTextColor()));
+        length.setTextColor(context.getResources().getColor(state.getTextColor()));
     }
 
     @Override
     public void
     bindView(View view, Context context, Cursor c) {
-        String state = c.getString(c.getColumnIndex(DB.ColumnFeedItem.STATE.getName()));
+        String state = c.getString(c.getColumnIndex(DB.ColumnItem.STATE.getName()));
         if (Feed.Item.State.DUMMY.name().equals(state)) {
             // First row : dummy row for special usage.
             view.findViewById(R.id.tv_update).setVisibility(View.VISIBLE);
