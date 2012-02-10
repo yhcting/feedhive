@@ -32,7 +32,6 @@ DialogInterface.OnCancelListener {
     private InputStream    inputStream  = null;
     private OutputStream   outputStream = null;
     private boolean        userCancelled= false;
-    private Object         streamLock   = new Object();
 
     DownloadToFileTask(String outFilePath, Context context, OnEvent onEvent) {
         super();
@@ -60,7 +59,8 @@ DialogInterface.OnCancelListener {
                 inputStream.close();
             if (null != outputStream) {
                 outputStream.close();
-                new File(outFilePath).delete();
+                if (!new File(outFilePath).delete())
+                    return false;
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -87,41 +87,34 @@ DialogInterface.OnCancelListener {
             inputStream = new BufferedInputStream(url.openStream());
             outputStream = new FileOutputStream(outFilePath);
 
-            // alloc a-little-bit-big-buffer for performance.
             byte data[] = new byte[256*1024];
 
             long total = 0;
             int count;
 
             while (true) {
-                synchronized (streamLock) {
-                    if (userCancelled)
-                        break;
-
-                    if (-1 == (count = inputStream.read(data)))
-                        break;
-                    outputStream.write(data, 0, count);
-                }
+                if (-1 == (count = inputStream.read(data)))
+                    break;
+                outputStream.write(data, 0, count);
                 total += count;
                 publishProgress((int) (total * 100 / lenghtOfFile));
             }
 
-            synchronized (streamLock) {
-                if (userCancelled)
-                    return Err.UserCancelled;
-
-                outputStream.flush();
-                outputStream.close();
-                inputStream.close();
-            }
+            outputStream.flush();
+            outputStream.close();
+            inputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
-            logW(e.getMessage());
-            synchronized (streamLock) {
-                if (!userCancelled)
-                    cleanupStream();
+            // User's canceling operation close in/out stream in force.
+            // And this leads to IOException here.
+            // So, we should check that this Exception is caused by user's cancel or real IOException.
+            if (userCancelled) {
+                return Err.NoErr;
+            } else {
+                e.printStackTrace();
+                logW(e.getMessage());
+                cleanupStream();
+                return Err.IONet;
             }
-            return Err.IONet;
         }
         return Err.NoErr;
     }
@@ -129,13 +122,11 @@ DialogInterface.OnCancelListener {
     private boolean
     cancelWork() {
         int retry = 20;
-        synchronized (streamLock) {
-            userCancelled = true;
-            while (0 < retry-- && !cancel(true));
-            if (retry > 0) {
-                int retryCleanup = 5;
-                while (0 < retryCleanup-- && !cleanupStream());
-            }
+        userCancelled = true;
+        while (0 < retry-- && !cancel(true));
+        if (retry > 0) {
+            int retryCleanup = 5;
+            while (0 < retryCleanup-- && !cleanupStream());
         }
         return retry > 0? true: false;
     }
