@@ -199,7 +199,10 @@ public class ItemListActivity extends ListActivity {
             startActivity(intent);
         } else {
             // File is not exists in local
-            DownloadToFileTask dnTask = new DownloadToFileTask(fpath, this, new DownloadToFileEventHandler());
+            DownloadToFileTask dnTask = new DownloadToFileTask(this,
+                                                               fpath,
+                                                               UIPolicy.getItemDownloadTempPath(cid),
+                                                               new DownloadToFileEventHandler());
             dnTask.execute(getInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
         }
     }

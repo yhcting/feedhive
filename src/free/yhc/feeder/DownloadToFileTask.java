@@ -17,6 +17,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
 import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.Utils;
 
 public class DownloadToFileTask extends AsyncTask<String, Integer, Err> implements
 DialogInterface.OnClickListener,
@@ -29,20 +30,31 @@ DialogInterface.OnCancelListener {
     private OnEvent        onEvent      = null;
     private ProgressDialog dialog;
     private String         outFilePath  = "";
+    private String         tempFilePath = "";
     private InputStream    inputStream  = null;
     private OutputStream   outputStream = null;
     private boolean        userCancelled= false;
 
-    DownloadToFileTask(String outFilePath, Context context, OnEvent onEvent) {
+    // Why is 'tempFilePath' required.
+    // If orientation is changed, UI may check whether file is exists or not again.
+    // Therefore, writing data to destination file directly may lead UI to misunderstand that
+    //   destination file is already exists even if it is under downloading.
+    // To prevent this, tempFilePath is used until download is fully completed.
+    DownloadToFileTask(Context context, String outFilePath, String tempFilePath, OnEvent onEvent) {
         super();
+        Utils.eAssert(Utils.isValidValue(outFilePath) && Utils.isValidValue(tempFilePath));
         this.context = context;
         this.outFilePath = outFilePath;
+        this.tempFilePath = tempFilePath;
         this.onEvent = onEvent;
     }
 
     @Override
     protected void
     onPreExecute() {
+        // remove tempfile to use.
+        new File(tempFilePath).delete();
+
         dialog = new ProgressDialog(context);
         dialog.setMessage(context.getResources().getText(R.string.downloading));
         dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -59,8 +71,10 @@ DialogInterface.OnCancelListener {
                 inputStream.close();
             if (null != outputStream) {
                 outputStream.close();
-                if (!new File(outFilePath).delete())
+                if (!new File(tempFilePath).delete()) {
+                    logI("**** Fail to delete temporal downloaded file!!! [" + tempFilePath +"]\n");
                     return false;
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -85,7 +99,7 @@ DialogInterface.OnCancelListener {
                  "    to    : " + outFilePath);
 
             inputStream = new BufferedInputStream(url.openStream());
-            outputStream = new FileOutputStream(outFilePath);
+            outputStream = new FileOutputStream(tempFilePath);
 
             byte data[] = new byte[256*1024];
 
@@ -152,11 +166,18 @@ DialogInterface.OnCancelListener {
     @Override
     protected void
     onPostExecute(Err result) {
-        // In normal case, onPostExecute is not called in case of 'user-cancel'.
-        // below code is for safty.
-        if (userCancelled)
-            result = Err.NoErr;
         dialog.dismiss();
+
+        // In normal case, onPostExecute is not called in case of 'user-cancel'.
+        // below code is for safety.
+        if (userCancelled)
+            return; // onPostExecute SHOULD NOT be called in case of user-cancel
+
+        if (Err.NoErr == result) {
+            if (!new File(tempFilePath).renameTo(new File(outFilePath)))
+                result = Err.IOFile;
+        }
+
         if (null != onEvent)
             onEvent.onPostExecute(this, result);
     }

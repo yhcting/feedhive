@@ -69,6 +69,11 @@ public class UIPolicy {
         return Utils.removeFileRecursive(new File(appRootDir + cid));
     }
 
+    public static String
+    getItemDownloadTempPath(long cid) {
+        return appRootDir + "____temp__" + cid + "___";
+    }
+
     // postfix : usually, extension;
     // NOTE
     //   DB for channel item is fully updated

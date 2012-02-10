@@ -2,6 +2,7 @@ package free.yhc.feeder;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 
 public class FeederActivity extends Activity {
@@ -14,6 +15,12 @@ public class FeederActivity extends Activity {
         finish();
     }
 
+    @Override
+    public void
+    onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Do nothing!
+    }
 
     @Override
     protected void

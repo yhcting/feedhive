@@ -107,11 +107,13 @@ DialogInterface.OnClickListener
     @Override
     protected void
     onPostExecute(Err result) {
-        // In normal case, onPostExecute is not called in case of 'user-cancel'.
-        // below code is for safty.
-        if (userCancelled)
-            result = Err.NoErr;
         dialog.dismiss();
+
+        // In normal case, onPostExecute is not called in case of 'user-cancel'.
+        // below code is for safety.
+        if (userCancelled)
+            return; // onPostExecute SHOULD NOT be called in case of user-cancel
+
         if (null != onEvent)
             onEvent.onPostExecute(this, result);
     }
