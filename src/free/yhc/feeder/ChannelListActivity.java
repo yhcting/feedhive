@@ -2,8 +2,8 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.ListActivity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -18,6 +18,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -26,12 +27,14 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Utils;
 
-public class ChannelListActivity extends ListActivity {
+public class ChannelListActivity extends Activity {
     // Request codes.
     private static final int ReqCReadChannel  = 0;
 
     public static final int  ResCReadChannelOk      = 0; // nothing special
     public static final int  ResCReadChannelUpdated = 1; // item list is updated.
+
+    private ListView    list;
 
     class NetLoaderEventHandler implements NetLoaderTask.OnEvent {
         @Override
@@ -54,6 +57,11 @@ public class ChannelListActivity extends ListActivity {
         }
     }
 
+    private ChannelListAdapter
+    getListAdapter() {
+        return (ChannelListAdapter)list.getAdapter();
+    }
+
     private Cursor
     adapterCursorQuery() {
         try {
@@ -63,8 +71,7 @@ public class ChannelListActivity extends ListActivity {
                           DB.ColumnChannel.TITLE,
                           DB.ColumnChannel.DESCRIPTION,
                           DB.ColumnChannel.LASTUPDATE,
-                          DB.ColumnChannel.IMAGEBLOB},
-                    null);
+                          DB.ColumnChannel.IMAGEBLOB});
         } catch (InterruptedException e) {
             finish();
         }
@@ -77,8 +84,8 @@ public class ChannelListActivity extends ListActivity {
         // Usually, number of channels are not big.
         // So, we don't need to think about async. loading.
         Cursor newCursor = adapterCursorQuery();
-        ((ChannelListAdapter)getListAdapter()).swapCursor(newCursor).close();
-        ((ChannelListAdapter)getListAdapter()).notifyDataSetChanged();
+        getListAdapter().swapCursor(newCursor).close();
+        getListAdapter().notifyDataSetChanged();
     }
 
     private void
@@ -124,7 +131,7 @@ public class ChannelListActivity extends ListActivity {
                     // Perform action on key press
                     //Toast.makeText(this, "hahah", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
-                    addChannel(((EditText)v).getText().toString());
+                    //addChannel(((EditText)v).getText().toString());
                     //url = "http://old.ddanzi.com/appstream/ddradio.xml";
                     //url = "file:///data/test/total_news.xml";
                     //url = "http://www.khan.co.kr/rss/rssdata/total_news.xml";
@@ -134,7 +141,7 @@ public class ChannelListActivity extends ListActivity {
                     // addChannel("http://cast.vop.co.kr/heenews.xml"); // good
                     // addChannel("http://www.khan.co.kr/rss/rssdata/total_news.xml"); // large xml
                     // addChannel("http://cbspodcast.com/podcast/sisa/sisa.xml"); // large xml
-                    // addChannel("file:///sdcard/tmp/heenews.xml");
+                    addChannel("file:///sdcard/tmp/heenews.xml");
                     //addChannel("file:///sdcard/tmp/total_news.xml");
                     return true;
                 }
@@ -176,8 +183,22 @@ public class ChannelListActivity extends ListActivity {
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.channel_list);
-        setListAdapter(new ChannelListAdapter(this, R.layout.channel_row, adapterCursorQuery()));
-        registerForContextMenu(getListView());
+
+        list = ((ListView)findViewById(R.id.list));
+        eAssert(null != list);
+
+        list.setAdapter(new ChannelListAdapter(this, R.layout.channel_row, adapterCursorQuery()));
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void
+            onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+                intent.putExtra("channelid", id);
+                startActivityForResult(intent, ReqCReadChannel);
+            }
+        });
+
+        registerForContextMenu(list);
     }
 
     @Override
@@ -208,14 +229,6 @@ public class ChannelListActivity extends ListActivity {
             return true;
         }
         return false;
-    }
-
-    @Override
-    protected void
-    onListItemClick(ListView l, View v, int position, long id) {
-        Intent intent = new Intent(this, ItemListActivity.class);
-        intent.putExtra("channelid", id);
-        startActivityForResult(intent, ReqCReadChannel);
     }
 
     @Override
@@ -256,7 +269,7 @@ public class ChannelListActivity extends ListActivity {
     @Override
     protected void
     onDestroy() {
-        ((ChannelListAdapter)getListAdapter()).getCursor().close();
+        getListAdapter().getCursor().close();
         super.onDestroy();
     }
 }

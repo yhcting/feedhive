@@ -1,5 +1,6 @@
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.eAssert;
 import free.yhc.feeder.R;
 
 public class Feed {
@@ -11,38 +12,29 @@ public class Feed {
     public static final int CHANNEL_IMAGE_MAX_WIDTH  = 200;
     public static final int CHANNEL_IMAGE_MAX_HEIGHT = 200;
 
-    public static enum ActionType {
-        OPEN,   // open link
-        DNOPEN; // download/open link or enclosure
-
-        public static ActionType
-        convert(String s) {
-            for (ActionType a : ActionType.values())
-                if (s.equals(a.name()))
-                    return a;
-            return null;
-        }
-    }
-
      public static class Item {
          public static enum State {
-             DUMMY      (-1, -1, -1),  // dummy item for UI usage.
              NEW        (R.color.title_color_new,
                          R.color.text_color_new,
+                         R.drawable.unactioned,
                          R.drawable.unactioned),
-             // item is read (in case of 'open' action).
-             OPENED     (R.color.title_color_opened,
+             // For 'open'  : item is read
+             // For 'dnopen': item is downloaded
+             ACTIONED  (R.color.title_color_opened,
                          R.color.text_color_opened,
+                         R.drawable.actioned,
                          R.drawable.actioned);
 
              private int titleColor;
              private int textColor;
-             private int icon;
+             private int iconLink;
+             private int iconEnclosure;
 
-             State(int titleColor, int textColor, int icon) {
+             State(int titleColor, int textColor, int iconLink, int iconEnclosure) {
                  this.titleColor = titleColor;
                  this.textColor = textColor;
-                 this.icon = icon;
+                 this.iconLink = iconLink;
+                 this.iconEnclosure = iconEnclosure;
              }
 
              public int
@@ -56,8 +48,13 @@ public class Feed {
              }
 
              public int
-             getIcon() {
-                 return icon;
+             getIconLink() {
+                 return iconLink;
+             }
+
+             public int
+             getIconEnclosure() {
+                 return iconEnclosure;
              }
 
              public static State
@@ -65,6 +62,7 @@ public class Feed {
                  for (State a : State.values())
                      if (s.equals(a.name()))
                          return a;
+                 eAssert(false);
                  return null;
              }
          }
@@ -102,9 +100,27 @@ public class Feed {
     }
 
     public static class Channel {
+        public static enum Action {
+            OPEN,   // open link
+            DNOPEN; // download/open link or enclosure
+
+            public static Action
+            convert(String s) {
+                for (Action a : Action.values())
+                    if (s.equals(a.name()))
+                        return a;
+                return null;
+            }
+        }
+
         public static enum Type {
             NORMAL, // normal feed - ex. news feed.
             MEDIA,  // media-based feed - ex. podcast.
+        }
+
+        public static enum Order {
+            NORMAL,  // item will be listed by same order with xml.
+            REVERSE, // reverse.
         }
 
         public Type   type         = Type.NORMAL;
@@ -112,10 +128,12 @@ public class Feed {
 
         // For internal use.
         public long   id           = -1;
+        public String userCategory = "";
         public String url          = ""; // channel url.
         public String lastupdate   = ""; // date updated lastly
         public byte[] imageblob    = null;
-        public ActionType actionType = ActionType.OPEN;
+        public Action action       = Action.OPEN;
+        public Order  order        = Order.NORMAL;
 
         // Information from parsing.
         public String title        = "";

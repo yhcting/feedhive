@@ -52,7 +52,10 @@ public final class DB extends SQLiteOpenHelper {
         // Columns for internal use.
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "text",     "not null"), // time when channel is updated, lastly
-        ACTIONTYPE      ("actiontype",      "text",     "not null"),
+        ACTION          ("action",          "text",     "not null"),
+        USERCATEGORY    ("usercategory",    "text",     "not null"),
+        // 'order' is reserved word at DB. so make it's column name as 'listingorder'
+        ORDER           ("listingorder",    "text",     "not null"), // normal / reverse
         URL             ("url",             "text",     "not null"), // channel url of this rss.
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
 
@@ -350,7 +353,9 @@ public final class DB extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         // application's internal information
         values.put(ColumnChannel.URL.getName(),              ch.url);
-        values.put(ColumnChannel.ACTIONTYPE.getName(),       ch.actionType.name());
+        values.put(ColumnChannel.ACTION.getName(),           ch.action.name());
+        values.put(ColumnChannel.ORDER.getName(),            ch.order.name());
+        values.put(ColumnChannel.USERCATEGORY.getName(),     ch.userCategory);
         values.put(ColumnChannel.LASTUPDATE.getName(),       ch.lastupdate);
 
         if (null != ch.imageblob)

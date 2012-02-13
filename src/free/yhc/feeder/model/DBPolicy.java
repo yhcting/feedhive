@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DB.ColumnItem;
 
@@ -39,14 +40,6 @@ public class DBPolicy {
         dbMutex.release();
     }
 
-    private Feed.Item
-    getDummyItem() {
-        Feed.Item item = new Feed.Item();
-        item.title = "";
-        item.state = Feed.Item.State.DUMMY;
-        return item;
-    }
-
     boolean
     isDuplicatedChannelUrl(String url)
             throws InterruptedException {
@@ -56,25 +49,7 @@ public class DBPolicy {
                             new ColumnChannel[] {
                                 ColumnChannel.ID
                             },
-                            ColumnChannel.URL.getName() + " = '" + url + "'",
-                            null, null, null, null);
-        unlock();
-        if (0 < c.getCount())
-            ret = true;
-        c.close();
-        return ret;
-    }
-
-    boolean
-    isDuplicatedItemTitle(long cid, String title)
-            throws InterruptedException {
-        boolean ret = false;
-        lock();
-        Cursor c = db.query(DB.getItemTableName(cid),
-                            new ColumnItem[] {
-                                ColumnItem.ID
-                            },
-                            ColumnItem.TITLE.getName() + " = '" + title + "'",
+                            ColumnChannel.URL.getName() + " = " + DatabaseUtils.sqlEscapeString(url),
                             null, null, null, null);
         unlock();
         if (0 < c.getCount())
@@ -97,7 +72,7 @@ public class DBPolicy {
                                 ColumnItem.ID,
                                 ColumnItem.STATE,
                             },
-                            ColumnItem.TITLE.getName() + " = '" + title + "'",
+                            ColumnItem.TITLE.getName() + " = " + DatabaseUtils.sqlEscapeString(title),
                             null, null, null, null);
         unlock();
         if (c.moveToFirst())
@@ -117,7 +92,8 @@ public class DBPolicy {
     insertChannel(Feed.Channel ch)
             throws InterruptedException {
         // Apply insertion policy
-        eAssert(null != ch.actionType
+        eAssert(null != ch.action
+                && null != ch.order
                 && null != ch.lastupdate
                 && null != ch.title
                 && null != ch.items);
@@ -136,17 +112,6 @@ public class DBPolicy {
                 unlock();
                 return -1;
             }
-
-            // Add dummy item at the first of item-db
-            // This is tightly coupled with implementation of
-            //   'ItemListAdapter'
-            // See 'ItemListAdapter' for detail reasons.
-            if (0 > db.insertItem(cid, getDummyItem())) {
-                db.deleteChannel(cid);
-                unlock();
-                return -1;
-            }
-
 
             if (!UIPolicy.makeChannelDir(cid)) {
                 db.deleteChannel(cid);
@@ -262,12 +227,6 @@ public class DBPolicy {
         lock();
         db.prepareUpdateItemTable(ch.id);
         try {
-            if (0 > db.insertItem(ch.id, getDummyItem())) {
-                db.rollbackUpdateItemTable(ch.id);
-                unlock();
-                return -1;
-            }
-
             int cnt = 0;
             for (Feed.Item item : ch.items) {
                 // ignore not-verified item
@@ -299,12 +258,11 @@ public class DBPolicy {
     }
 
     public Cursor
-    queryChannel(ColumnChannel[] columns,
-                 String selection)
+    queryChannel(ColumnChannel[] columns)
                          throws InterruptedException {
         lock();
         Cursor c = db.query(DB.TABLE_CHANNEL,
-                            columns, selection,
+                            columns, null,
                             null, null, null, null);
         unlock();
         return c;
@@ -412,12 +370,11 @@ public class DBPolicy {
 
     public Cursor
     queryItem(long channelid,
-              ColumnItem[] columns,
-              String selection)
+              ColumnItem[] columns)
                       throws InterruptedException {
         lock();
         Cursor c = db.query(DB.getItemTableName(channelid),
-                            columns, selection,
+                            columns, null,
                             null, null, null, null);
         unlock();
         return c;

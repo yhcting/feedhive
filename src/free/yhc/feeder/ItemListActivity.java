@@ -6,8 +6,9 @@ import static free.yhc.feeder.model.Utils.logI;
 import java.io.File;
 import java.lang.reflect.Method;
 
+import android.app.ActionBar;
+import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.ListActivity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -16,10 +17,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Gravity;
+import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
@@ -28,10 +34,11 @@ import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
 
-public class ItemListActivity extends ListActivity {
-    private long            cid = -1; // channel id
-    private Feed.ActionType action = null; // action type of this channel
-    private DBPolicy        db = DBPolicy.get();
+public class ItemListActivity extends Activity {
+    private long                cid = -1; // channel id
+    private Feed.Channel.Action action = null; // action type of this channel
+    private DBPolicy            db = DBPolicy.get();
+    private ListView            list;
 
     private class ActionInfo {
         private int layout;
@@ -84,7 +91,7 @@ public class ItemListActivity extends ListActivity {
         @Override
         public void onPostExecute(DownloadToFileTask task, Err result) {
             if (Err.NoErr == result)
-                ((ItemListAdapter) getListAdapter()).notifyDataSetChanged();
+                getListAdapter().notifyDataSetChanged();
             else
                 LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
         }
@@ -99,14 +106,19 @@ public class ItemListActivity extends ListActivity {
     // So, instead of putting this data to 'Feed.ActionType', below function is
     // used.
     private ActionInfo
-    getActionInfo(Feed.ActionType type) {
-        if (Feed.ActionType.OPEN == type)
+    getActionInfo(Feed.Channel.Action action) {
+        if (Feed.Channel.Action.OPEN == action)
             return new ActionInfo(R.layout.item_row_link, "onActionOpen");
-        else if (Feed.ActionType.DNOPEN == type)
+        else if (Feed.Channel.Action.DNOPEN == action)
             return new ActionInfo(R.layout.item_row_enclosure, "onActionDnOpen");
         else
             eAssert(false);
         return null;
+    }
+
+    private ItemListAdapter
+    getListAdapter() {
+        return (ItemListAdapter)list.getAdapter();
     }
 
     private Cursor
@@ -121,7 +133,7 @@ public class ItemListActivity extends ListActivity {
                 DB.ColumnItem.ENCLOSURE_TYPE,
                 DB.ColumnItem.PUBDATE,
                 DB.ColumnItem.LINK,
-                DB.ColumnItem.STATE }, null);
+                DB.ColumnItem.STATE });
         } catch (InterruptedException e) {
             finish();
         }
@@ -130,7 +142,7 @@ public class ItemListActivity extends ListActivity {
 
     private String
     getInfoString(DB.ColumnItem column, int position) {
-        Cursor c = ((ItemListAdapter) getListAdapter()).getCursor();
+        Cursor c = getListAdapter().getCursor();
         if (!c.moveToPosition(position)) {
             eAssert(false);
             return null;
@@ -144,8 +156,8 @@ public class ItemListActivity extends ListActivity {
         // Usually, number of channels are not big.
         // So, we don't need to think about async. loading.
         Cursor newCursor = adapterCursorQuery(cid);
-        ((ItemListAdapter) getListAdapter()).swapCursor(newCursor).close();
-        ((ItemListAdapter) getListAdapter()).notifyDataSetChanged();
+        getListAdapter().swapCursor(newCursor).close();
+        getListAdapter().notifyDataSetChanged();
     }
 
     private boolean
@@ -168,7 +180,7 @@ public class ItemListActivity extends ListActivity {
     }
 
     private void
-    onItemClickUpdate() {
+    updateItems() {
         if (Utils.isNetworkAvailable(this))
             new NetLoaderTask(this, new NetLoaderEventHandler()).execute(cid);
         else
@@ -219,8 +231,8 @@ public class ItemListActivity extends ListActivity {
         Feed.Item.State state = Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, position));
         try {
             if (Feed.Item.State.NEW == state) {
-                db.setItemInfo_state(cid, id, Feed.Item.State.OPENED);
-                ((ItemListAdapter)getListAdapter()).notifyDataSetChanged();
+                db.setItemInfo_state(cid, id, Feed.Item.State.ACTIONED);
+                getListAdapter().notifyDataSetChanged();
             }
         } catch (InterruptedException e) {
             finish();
@@ -241,7 +253,7 @@ public class ItemListActivity extends ListActivity {
                 if (!deleteEnclosureDnFile(id, position))
                     LookAndFeel.showTextToast(ItemListActivity.this, Err.IOFile.getMsgId());
                 else
-                    ((ItemListAdapter) getListAdapter()).notifyDataSetChanged();
+                    getListAdapter().notifyDataSetChanged();
 
                 dialog.dismiss();
             }
@@ -267,18 +279,21 @@ public class ItemListActivity extends ListActivity {
         logI("Item to read : " + cid + "\n");
 
         String[] s = null;
+        final int indexTITLE    = 0;
+        final int indexACTION   = 1;
         try {
             s = db.getChannelInfoStrings(cid,
                 new DB.ColumnChannel[] {
-                    DB.ColumnChannel.ACTIONTYPE
+                    DB.ColumnChannel.TITLE,
+                    DB.ColumnChannel.ACTION,
                     });
         } catch (InterruptedException e) {
             finish();
             return;
         }
 
-        for (Feed.ActionType act : Feed.ActionType.values()) {
-            if (act.name().equals(s[0])) {
+        for (Feed.Channel.Action act : Feed.Channel.Action.values()) {
+            if (act.name().equals(s[indexACTION])) {
                 action = act;
                 break;
             }
@@ -286,8 +301,43 @@ public class ItemListActivity extends ListActivity {
         eAssert(null != action);
 
         setContentView(R.layout.item_list);
-        setListAdapter(new ItemListAdapter(this, getActionInfo(action).getLayout(), adapterCursorQuery(cid), cid));
-        registerForContextMenu(getListView());
+
+        setTitle(s[indexTITLE]);
+
+        // TODO
+        //   How to use custom view + default option menu ???
+        //
+        // Set custom action bar
+        ActionBar bar= getActionBar();
+        LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
+        ((ImageButton)abView.findViewById(R.id.update_button)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ItemListActivity.this.updateItems();
+            }
+        });
+        bar.setCustomView(abView, new ActionBar.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.RIGHT));
+
+        int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
+        bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
+
+        list = ((ListView)findViewById(R.id.list));
+        eAssert(null != list);
+        list.setAdapter(new ItemListAdapter(this, getActionInfo(action).getLayout(), adapterCursorQuery(cid), cid));
+        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            public void
+            onItemClick (AdapterView<?> parent, View view, int position, long id) {
+                getActionInfo(action).invokeAction(id, position);
+            }
+        });
+        registerForContextMenu(list);
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        return true;
     }
 
     @Override
@@ -306,24 +356,14 @@ public class ItemListActivity extends ListActivity {
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        if (Feed.ActionType.DNOPEN == action
+        if (Feed.Channel.Action.DNOPEN == action
             && doesEnclosureDnFileExists(info.id, info.position))
             menu.findItem(R.id.delete_dnfile).setVisible(true);
 
         // Check for "Mark as unactioned option"
-        if (Feed.ActionType.OPEN == action
-            && Feed.Item.State.OPENED == Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, info.position)))
+        if (Feed.Channel.Action.OPEN == action
+            && Feed.Item.State.ACTIONED == Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, info.position)))
             menu.findItem(R.id.mark_unactioned).setVisible(true);
-    }
-
-    @Override
-    protected void
-    onListItemClick(ListView l, View v, int position, long id) {
-        if (1 == id)
-            // dummy item for 'update'
-            onItemClickUpdate();
-        else
-            getActionInfo(action).invokeAction(id, position);
     }
 
     @Override
@@ -362,7 +402,7 @@ public class ItemListActivity extends ListActivity {
     @Override
     protected void
     onDestroy() {
-        ((ItemListAdapter) getListAdapter()).getCursor().close();
+        getListAdapter().getCursor().close();
         super.onDestroy();
     }
 }

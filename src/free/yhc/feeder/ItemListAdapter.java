@@ -82,12 +82,11 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         //   add proper icon (or representation...)
         Feed.Item.State state;
         if (new File(UIPolicy.getItemFilePath(cid, title, url)).exists())
-            state = Feed.Item.State.OPENED;
+            state = Feed.Item.State.ACTIONED;
         else
             state = Feed.Item.State.NEW;
 
-        img.setImageResource(state.getIcon());
-
+        img.setImageResource(state.getIconEnclosure());
         titlev.setTextColor(context.getResources().getColor(state.getTitleColor()));
         descv.setTextColor(context.getResources().getColor(state.getTextColor()));
         date.setTextColor(context.getResources().getColor(state.getTextColor()));
@@ -98,13 +97,6 @@ public class ItemListAdapter extends ResourceCursorAdapter {
     public void
     bindView(View view, Context context, Cursor c) {
         String state = c.getString(c.getColumnIndex(DB.ColumnItem.STATE.getName()));
-        if (Feed.Item.State.DUMMY.name().equals(state)) {
-            // First row : dummy row for special usage.
-            view.findViewById(R.id.tv_update).setVisibility(View.VISIBLE);
-            view.findViewById(R.id.item_layout).setVisibility(View.GONE);
-            return;
-        }
-
         view.findViewById(R.id.tv_update).setVisibility(View.GONE);
         view.findViewById(R.id.item_layout).setVisibility(View.VISIBLE);
 

@@ -9,27 +9,19 @@ import java.io.File;
  *     - initial setting of values.
  */
 public class UIPolicy {
-    private static final String appRootDir = "/sdcard/.free.yhc.feeder/";
+    private static final String appRootDir = "/sdcard/yhcFeeder/";
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
     private static final int    maxFileNameLength = 127;
 
-    // This should be called only at the begining of context.
-    /*
-    public static void
-    setAppRootDir(String path) {
-        appRootDir = path;
-    }
-    */
-
     static void
     setAsDefaultActionType(Feed.Channel ch) {
         // default is "open link"
-        ch.actionType = Feed.ActionType.OPEN;
+        ch.action = Feed.Channel.Action.OPEN;
         if (Feed.Channel.Type.MEDIA == ch.type
             && isValidValue(ch.items[0].enclosureUrl)) {
-            ch.actionType = Feed.ActionType.DNOPEN;
+            ch.action = Feed.Channel.Action.DNOPEN;
         }
     }
 
@@ -54,6 +46,11 @@ public class UIPolicy {
             return false;
 
         return true;
+    }
+
+    public static void
+    makeAppRootDir() {
+        new File(appRootDir).mkdirs();
     }
 
     public static boolean
