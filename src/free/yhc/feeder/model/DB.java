@@ -33,18 +33,15 @@ public final class DB extends SQLiteOpenHelper {
     private static final String NAME    = "feader.db";
     private static final int    VERSION = 1;
 
+    static final String         TABLE_CATEGORY  = "category";
+    static final String         TABLE_CHANNEL   = "channel";
+    private static final String TABLE_ITEM      = "item";
+
     public interface Column {
         String getName();
         String getType();
         String getConstraint();
     }
-
-    /**************************************
-     * DB for RSS
-     **************************************/
-    static final String         TABLE_CATEGORY  = "category";
-    static final String         TABLE_CHANNEL   = "channel";
-    private static final String TABLE_ITEM      = "item";
 
     public static enum ColumnCategory implements Column {
         NAME            ("name",            "text",     "not null"), // channel url of this rss.
@@ -379,21 +376,21 @@ public final class DB extends SQLiteOpenHelper {
 
         ContentValues values = new ContentValues();
         // application's internal information
-        values.put(ColumnChannel.URL.getName(),              ch.url);
-        values.put(ColumnChannel.ACTION.getName(),           ch.action.name());
-        values.put(ColumnChannel.ORDER.getName(),            ch.order.name());
-        values.put(ColumnChannel.CATEGORYID.getName(),       ch.categoryid);
-        values.put(ColumnChannel.LASTUPDATE.getName(),       ch.lastupdate);
+        values.put(ColumnChannel.URL.getName(),              ch.profD.url);
+        values.put(ColumnChannel.ACTION.getName(),           ch.dynD.action.name());
+        values.put(ColumnChannel.ORDER.getName(),            ch.dynD.order.name());
+        values.put(ColumnChannel.CATEGORYID.getName(),       ch.dbD.categoryid);
+        values.put(ColumnChannel.LASTUPDATE.getName(),       ch.dbD.lastupdate);
 
         // temporal : this column is for future use.
         values.put(ColumnChannel.UNOPENEDCOUNT.getName(),    0);
 
-        if (null != ch.imageblob)
-            values.put(ColumnChannel.IMAGEBLOB.getName(),    ch.imageblob);
+        if (null != ch.dynD.imageblob)
+            values.put(ColumnChannel.IMAGEBLOB.getName(),    ch.dynD.imageblob);
 
         // information defined by spec.
-        values.put(ColumnChannel.TITLE.getName(),            ch.title);
-        values.put(ColumnChannel.DESCRIPTION.getName(),      ch.description);
+        values.put(ColumnChannel.TITLE.getName(),            ch.parD.title);
+        values.put(ColumnChannel.DESCRIPTION.getName(),      ch.parD.description);
 
         long cid = db.insert(TABLE_CHANNEL, null, values);
         if (cid >= 0) {
@@ -495,14 +492,14 @@ public final class DB extends SQLiteOpenHelper {
 
         // information defined by spec.
         values.put(ColumnItem.CHANNELID.getName(),           cid);
-        values.put(ColumnItem.TITLE.getName(),               item.title);
-        values.put(ColumnItem.LINK.getName(),                item.link);
-        values.put(ColumnItem.DESCRIPTION.getName(),         item.description);
-        values.put(ColumnItem.PUBDATE.getName(),             item.pubDate);
-        values.put(ColumnItem.STATE.getName(),               item.state.name());
-        values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.enclosureUrl);
-        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.enclosureLength);
-        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.enclosureType);
+        values.put(ColumnItem.TITLE.getName(),               item.parD.title);
+        values.put(ColumnItem.LINK.getName(),                item.parD.link);
+        values.put(ColumnItem.DESCRIPTION.getName(),         item.parD.description);
+        values.put(ColumnItem.PUBDATE.getName(),             item.parD.pubDate);
+        values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.parD.enclosureUrl);
+        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.parD.enclosureLength);
+        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.parD.enclosureType);
+        values.put(ColumnItem.STATE.getName(),               item.dynD.state.name());
 
         return db.insert(getItemTableName(cid), null, values);
     }

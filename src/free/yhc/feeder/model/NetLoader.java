@@ -18,18 +18,22 @@ public class NetLoader {
     public NetLoader() {
     }
 
-    private Feed
+    private RSSParser.Result
     loadUrl(String url)
             throws FeederException {
         logI("Fetching Channel [" + url + "]\n");
-        Feed feed = null;
+        RSSParser.Result res = null;
         try {
+            Utils.beginTimeLog();
             Document dom = DocumentBuilderFactory
                             .newInstance()
                             .newDocumentBuilder()
                             .parse(new URL(url).openStream());
+            Utils.endTimeLog("Open URL and Parseing as Dom");
+            Utils.beginTimeLog();
             // Only RSS is supported at this version.
-            feed = new RSSParser().parse(dom);
+            res = new RSSParser().parse(dom);
+            Utils.endTimeLog("RSSParsing");
         } catch (IOException e) {
             throw new FeederException(Err.IONet);
         } catch (SAXException e) {
@@ -40,7 +44,7 @@ public class NetLoader {
         } catch (FeederException e) {
             throw e;
         }
-        return feed;
+        return res;
     }
 
     /*
@@ -49,7 +53,8 @@ public class NetLoader {
     public Err
     initialLoad(long categoryid, String url, long[] outcid)
             throws InterruptedException {
-        Feed feed;
+
+        logI("Init Loading Channel : " + url);
 
         // We don't allow inserting duplicated channel.
         // (channel that has same url is regarded as same!)
@@ -57,37 +62,49 @@ public class NetLoader {
         if (dbp.isDuplicatedChannelUrl(url))
             return Err.DBDuplicatedChannel;
 
+        Utils.beginTimeLog();
+        RSSParser.Result res;
         try {
-            feed = loadUrl(url);
+            res = loadUrl(url);
         } catch (FeederException e) {
             e.printStackTrace();
             return e.getError();
         }
+        Utils.endTimeLog("Loading + Parsing");
+
+        Feed.Channel ch = new Feed.Channel(res.channel, res.items);
+
+        // Fill other informations from parsed-data.
 
         // Update mandatory initial values
-        feed.channel.url = url;
-        feed.channel.categoryid = categoryid;
+        ch.profD.url = url;
+        ch.dbD.categoryid = categoryid;
         // NOTE
         //   feed.lastupdate  will be filled inside DBPolicy automatically.
 
-        UIPolicy.setAsDefaultActionType(feed.channel);
+        UIPolicy.setAsDefaultActionType(ch);
 
+        Utils.beginTimeLog();
         try {
-            feed.channel.imageblob = Utils.getDecodedImageData(feed.channel.imageref);
+            ch.dynD.imageblob = Utils.getDecodedImageData(ch.parD.imageref);
         } catch (FeederException e) {
             ; // ignore image data
         }
+        Utils.endTimeLog((null == ch.dynD.imageblob)?"< Fail >":"< Ok >" + "Handling Image");
 
         // This is perfectly full reload.
-        for (Feed.Item item : feed.channel.items)
-            item.state = Feed.Item.State.NEW;
+        for (Feed.Item item : ch.items)
+            item.dynD.state = Feed.Item.State.NEW;
 
+        Utils.beginTimeLog();
         // It's time to update Database!!!
-        if (0 > dbp.insertChannel(feed.channel))
+        if (0 > dbp.insertChannel(ch))
             return Err.DBUnknown;
 
+        Utils.endTimeLog("Inserting Channel");
+
         if (null != outcid)
-            outcid[0] = feed.channel.id;
+            outcid[0] = ch.dbD.id;
 
         return Err.NoErr;
     }
@@ -101,30 +118,39 @@ public class NetLoader {
         String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
         eAssert(null != url);
 
-        Feed feed;
+        logI("Loading Items: " + url);
+
+        Utils.beginTimeLog();
+        RSSParser.Result res;
         try {
-            feed = loadUrl(url);
+            res = loadUrl(url);
         } catch (FeederException e) {
             e.printStackTrace();
             return e.getError();
         }
+        Utils.endTimeLog("Loading + Parsing");
 
-        // set to given value forcely due to this is 'update'.
-        feed.channel.id = cid;
+        // set to given value forcely due to this is 'update' - Not new insertion.
+        Feed.Channel ch = new Feed.Channel(res.channel, res.items);
+        ch.dbD.id = cid;
 
+        Utils.beginTimeLog();
         String state;
-        for (Feed.Item item : feed.channel.items) {
+        for (Feed.Item item : ch.items) {
             // ignore empty-titled item
-            if (null == item.title || item.title.isEmpty())
+            if (null == item.parD.title || item.parD.title.isEmpty())
                 continue;
-            state = dbp.isDuplicatedItemTitleWithState(cid, item.title);
+            state = dbp.isDuplicatedItemTitleWithState(cid, item.parD.title);
             if (null != state)
-                item.state = Feed.Item.State.convert(state);
+                item.dynD.state = Feed.Item.State.convert(state);
             else
-                item.state = Feed.Item.State.NEW;
+                item.dynD.state = Feed.Item.State.NEW;
         }
+        Utils.endTimeLog("Comparing with DB data");
 
-        dbp.updateItems(feed.channel);
+        Utils.beginTimeLog();
+        dbp.updateItems(ch);
+        Utils.endTimeLog("Updating Items");
 
         return Err.NoErr;
     }

@@ -10,12 +10,21 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-public final class RSSParser {
-
+public class RSSParser {
     // parsing priority of namespace supported.
     private static final int PRI_ITUNES     = 2;
     private static final int PRI_DC         = 1;
     private static final int PRI_DEFAULT    = 0;
+
+    private static final int CDATA_UNCHECKED  = 0;
+    private static final int CDATA_HTTPLIKE   = 1;
+    private static final int CDATA_PLAINTEXT  = 2;
+
+    // Result data format from parse.
+    class Result {
+        Feed.Channel.ParD channel = new Feed.Channel.ParD();
+        Feed.Item.ParD[]  items   = null;
+    }
 
     private class NodeValue {
         int    priority; // priority value of parsing modules which updates this value.
@@ -45,7 +54,7 @@ public final class RSSParser {
         }
 
         void
-        set(Feed.Channel ch) {
+        set(Feed.Channel.ParD ch) {
             ch.title = title.value;
             ch.description = description.value;
             ch.imageref = imageref.value;
@@ -73,7 +82,7 @@ public final class RSSParser {
         }
 
         void
-        set(Feed.Item item) {
+        set(Feed.Item.ParD item) {
             item.title = title.value;
             item.description = description.value;
             item.link = link.value;
@@ -122,6 +131,7 @@ public final class RSSParser {
 
     private String
     getTextValue(Node n) {
+        String text = "";
         Node t = findNodeByNameFromSiblings(n.getFirstChild(), "#text");
 
         /*
@@ -132,16 +142,48 @@ public final class RSSParser {
          * For example
          *     <title><![CDATA[[사설]지상파·케이블의 밥그릇 싸움과 방통위의 무능]]></title>
          *
+         * At some cases, 'desciption' elements includs several 'cdata-section'
+         * For example
+         *     <description><![CDATA[[ xxx ]]> <![CDATA[[xxxx]]></description>
+         *
          * In this case, there is no title string!!!
          * To support this case, we uses 'cdata' section if there is no valid 'text' section.
+         * In case of there is several 'cdata-section', merge all into one string.
          * (This is kind of parsing policy!!)
          *
          * TODO
          *   This new Parsing Policy is best way to support this?
          *   Is there any elegant code structure to support various parsing policy?
          */
-        if (null == t)
-            t = findNodeByNameFromSiblings(n.getFirstChild(), "#cdata-section");
+        if (null == t) {
+            StringBuilder sbuilder = new StringBuilder();
+            n = n.getFirstChild();
+            while (null != n) {
+                if (n.getNodeName().equalsIgnoreCase("#cdata-section"))
+                    sbuilder.append(n.getNodeValue());
+                n = n.getNextSibling();
+            }
+            text = sbuilder.toString();
+
+            // Check cdata section!
+            if (HttpParser.guessIsHttpText(text))
+                text = HttpParser.removeTags(text);
+
+        } else
+            text = t.getNodeValue();
+
+        /*
+         * remove leading and trailing new line.
+         *
+         * + 'xxx' is stored.
+         *     <tag>xxx</tag>
+         *
+         * + '\nxxx\n' is stored.
+         *     <tag>
+         *     xxx
+         *     </tag>
+         */
+        text = Utils.removeLeadingTrailingNewLine(text);
 
         /*
          * NOTE
@@ -157,7 +199,7 @@ public final class RSSParser {
          *   But, having empty string as an text value of node 'title', is
          *     more reasonable than null as it's value.
          */
-        return (null == t)? "": t.getNodeValue();
+        return text;
     }
 
     // ===========================================================
@@ -365,12 +407,12 @@ public final class RSSParser {
     }
 
     private void
-    nodeChannel(Feed.Channel ch, NSParser[] parser, Node chn) {
+    nodeChannel(Result res, NSParser[] parser, Node chn) {
         ChannelValues cv = new ChannelValues();
         ItemValues iv = new ItemValues();
         // count number of items in this channel
 
-        LinkedList<Feed.Item> iteml = new LinkedList<Feed.Item>();
+        LinkedList<Feed.Item.ParD> iteml = new LinkedList<Feed.Item.ParD>();
         cv.init();
         Node n = chn.getFirstChild();
         while (null != n) {
@@ -385,7 +427,7 @@ public final class RSSParser {
                     }
                     in = in.getNextSibling();
                 }
-                Feed.Item item = new Feed.Item();
+                Feed.Item.ParD item = new Feed.Item.ParD();
                 iv.set(item);
                 iteml.addLast(item);
             } else {
@@ -397,34 +439,37 @@ public final class RSSParser {
             n = n.getNextSibling();
         }
 
-        cv.set(ch);
-        ch.items = iteml.toArray(new Feed.Item[0]);
+        cv.set(res.channel);
+        res.items = iteml.toArray(new Feed.Item.ParD[0]);
     }
 
     // false (fail)
     private boolean
-    verifyNotNullPolicy(Feed feed) {
-        if (null == feed.channel.title)
+    verifyNotNullPolicy(Result res) {
+        if (null == res.channel.title)
             return false;
 
-        for (Feed.Item item : feed.channel.items)
+        for (Feed.Item.ParD item : res.items)
             if (null == item.title)
                 return false;
 
         return true;
     }
 
-    public Feed
+    public Result
     parse(Document dom)
             throws FeederException {
         Element root = dom.getDocumentElement();
         verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
 
         RSSAttr rssAttr = nodeRssAttr(root);
+        /* Remove version check... parser can parse.. lower version too!
         if (!rssAttr.ver.equals("2.0"))
             throw new FeederException(Err.ParserUnsupportedVersion);
+        */
 
-        Feed feed = new Feed();
+        Result res = new Result();
+
         // Set parser
         // NOTE : Should we save name space list all...???
         LinkedList<NSParser> pl = new LinkedList<NSParser>();
@@ -432,7 +477,7 @@ public final class RSSParser {
             NSParser p = null;
             if (s.equals("itunes")) {
                 p = new NSItunesParser();
-                feed.channel.type = Feed.Channel.Type.MEDIA;
+                res.channel.type = Feed.Channel.Type.MEDIA;
             } else if (s.equals("dc"))
                 p = new NSDcParser();
             else
@@ -445,12 +490,12 @@ public final class RSSParser {
         // For Channel node
         Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
 
-        nodeChannel(feed.channel, pl.toArray(new NSParser[0]), n);
+        nodeChannel(res, pl.toArray(new NSParser[0]), n);
 
-        if (!verifyNotNullPolicy(feed))
+        if (!verifyNotNullPolicy(res))
             throw new FeederException(Err.ParserUnsupportedFormat);
         //logI(feed.channel.dump());
 
-        return feed;
+        return res;
     }
 }

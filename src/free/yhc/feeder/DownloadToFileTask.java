@@ -22,10 +22,6 @@ import free.yhc.feeder.model.Utils;
 public class DownloadToFileTask extends AsyncTask<String, Integer, Err> implements
 DialogInterface.OnClickListener,
 DialogInterface.OnCancelListener {
-    interface OnEvent {
-        void onPostExecute(DownloadToFileTask task, Err result);
-    }
-
     private Context        context      = null;
     private OnEvent        onEvent      = null;
     private ProgressDialog dialog;
@@ -34,6 +30,10 @@ DialogInterface.OnCancelListener {
     private InputStream    inputStream  = null;
     private OutputStream   outputStream = null;
     private boolean        userCancelled= false;
+
+    interface OnEvent {
+        void onPostExecute(DownloadToFileTask task, Err result);
+    }
 
     // Why is 'tempFilePath' required.
     // If orientation is changed, UI may check whether file is exists or not again.
@@ -88,6 +88,7 @@ DialogInterface.OnCancelListener {
     @Override
     protected Err
     doInBackground(String... aurl) {
+        Utils.resetTimeLog();
         try {
             URL url = new URL(aurl[0]);
             URLConnection conn = url.openConnection();
@@ -174,8 +175,10 @@ DialogInterface.OnCancelListener {
             return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
         if (Err.NoErr == result) {
-            if (!new File(tempFilePath).renameTo(new File(outFilePath)))
+            if (!new File(tempFilePath).renameTo(new File(outFilePath))) {
+                logI("Fail to rename to : " + outFilePath);
                 result = Err.IOFile;
+            }
         }
 
         if (null != onEvent)

@@ -168,23 +168,18 @@ public class DBPolicy {
      * Progress is hard-coded...
      * Any better way???
      *
+     * @cid : out value (channel id of DB)
+     * @ch  : constant
      * @return 0 : successfully inserted and DB is changed.
      *        -1 : fails. Error!
      */
     public int
     insertChannel(Feed.Channel ch)
             throws InterruptedException {
-        // Apply insertion policy
-        eAssert(null != ch.action
-                && null != ch.order
-                && null != ch.lastupdate
-                && null != ch.title
-                && null != ch.items);
-
         long cid = -1;
 
         // update with current data.
-        ch.lastupdate = DateUtils.getCurrentDateString();
+        ch.dbD.lastupdate = DateUtils.getCurrentDateString();
 
         try { // Big block
 
@@ -233,9 +228,9 @@ public class DBPolicy {
 
             // All values in 'ch' should be keep untouched until operation is successfully completed.
             // So, setting values of 'ch' should be put here - at the end of successful operation.
-            ch.id = cid;
+            ch.dbD.id = cid;
             for (Feed.Item item : ch.items)
-                item.channelid = cid;
+                item.dbD.cid = cid;
 
             return 0;
 
@@ -265,7 +260,7 @@ public class DBPolicy {
         eAssert(null != ch.items);
 
         lock();
-        Cursor c = db.query(DB.getItemTableName(ch.id),
+        Cursor c = db.query(DB.getItemTableName(ch.dbD.id),
                             // Column index is used below. So order is important.
                             new ColumnItem[] {
                                 DB.ColumnItem.TITLE,
@@ -288,7 +283,7 @@ public class DBPolicy {
             // ignore not-verified item
             if (!UIPolicy.verifyConstraints(item))
                 continue;
-            m.put(item.title, item);
+            m.put(item.parD.title, item);
         }
 
         // Delete unlisted item.
@@ -298,18 +293,18 @@ public class DBPolicy {
                 Feed.Item item = m.get(title);
                 if (null == item) {
                     // This is unlisted old-item.
-                    new File(UIPolicy.getItemFilePath(ch.id, title, c.getString(COLUMN_LINK))).delete();
-                    new File(UIPolicy.getItemFilePath(ch.id, title, c.getString(COLUMN_ENCLOSURE_URL))).delete();
+                    new File(UIPolicy.getItemFilePath(ch.dbD.id, title, c.getString(COLUMN_LINK))).delete();
+                    new File(UIPolicy.getItemFilePath(ch.dbD.id, title, c.getString(COLUMN_ENCLOSURE_URL))).delete();
                 } else {
                     // copy runtime information stored in DB.
-                    item.state = Feed.Item.State.convert(c.getString(COLUMN_STATE));
+                    item.dynD.state = Feed.Item.State.convert(c.getString(COLUMN_STATE));
                 }
             } while (c.moveToNext());
         }
         c.close();
 
         lock();
-        db.prepareUpdateItemTable(ch.id);
+        db.prepareUpdateItemTable(ch.dbD.id);
         try {
             int cnt = 0;
             for (Feed.Item item : ch.items) {
@@ -317,8 +312,8 @@ public class DBPolicy {
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
 
-                if (0 > db.insertItem(ch.id, item)) {
-                    db.rollbackUpdateItemTable(ch.id);
+                if (0 > db.insertItem(ch.dbD.id, item)) {
+                    db.rollbackUpdateItemTable(ch.dbD.id);
                     unlock();
                     return -1;
                 }
@@ -333,11 +328,11 @@ public class DBPolicy {
             }
 
             // update lastupdate-tiem for this channel
-            db.updateChannel(ch.id, ColumnChannel.LASTUPDATE, DateUtils.getCurrentDateString());
-            db.completeUpdateItemTable(ch.id);
+            db.updateChannel(ch.dbD.id, ColumnChannel.LASTUPDATE, DateUtils.getCurrentDateString());
+            db.completeUpdateItemTable(ch.dbD.id);
             unlock();
         } catch (InterruptedException e) {
-            db.rollbackUpdateItemTable(ch.id);
+            db.rollbackUpdateItemTable(ch.dbD.id);
             throw new InterruptedException();
         }
 

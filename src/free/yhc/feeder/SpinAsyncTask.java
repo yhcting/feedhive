@@ -8,22 +8,24 @@ import android.os.AsyncTask;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.NetLoader;
+import free.yhc.feeder.model.Utils;
 
 public class SpinAsyncTask extends AsyncTask<Object, Integer, Err> implements
 DialogInterface.OnDismissListener,
 DialogInterface.OnCancelListener,
 DialogInterface.OnClickListener
 {
-    interface OnEvent {
-        Err  onDoWork(SpinAsyncTask task, Object... objs);
-        void onPostExecute(SpinAsyncTask task, Err result);
-    }
 
     private Context        context      = null;
     private ProgressDialog dialog       = null;
     private int            msgid        = -1;
     private OnEvent        onEvent      = null;
     private boolean        userCancelled= false;
+
+    interface OnEvent {
+        Err  onDoWork(SpinAsyncTask task, Object... objs);
+        void onPostExecute(SpinAsyncTask task, Err result);
+    }
 
     SpinAsyncTask(Context context, OnEvent onEvent, int msgid) {
         super();
@@ -50,6 +52,7 @@ DialogInterface.OnClickListener
     @Override
     protected Err
     doInBackground(Object... objs) {
+        Utils.resetTimeLog();
         Err ret = Err.NoErr;
         if (null != onEvent)
             ret = onEvent.onDoWork(this, objs);

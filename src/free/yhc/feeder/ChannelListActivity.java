@@ -72,6 +72,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             String filePath = c.getString(columnIndex);
             c.close();
 
+            logI("Pick Icon : file [" + filePath + "]");
+
             // Make url string from file path
             byte[] imageData = null;
             try {
@@ -307,10 +309,10 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(layout);
         final AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.channel_url);
+        dialog.setTitle(R.string.enter_name);
         // Set action for dialog.
         EditText edit = (EditText)layout.findViewById(R.id.editbox);
-        edit.setHint(R.string.enter_url);
+        edit.setHint(R.string.enter_name);
         edit.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
@@ -348,7 +350,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onOpt_deleteCategory() {
-        long categoryid = getCategoryId(ab.getSelectedTab());
+        final long categoryid = getCategoryId(ab.getSelectedTab());
         if (DBPolicy.get().isDefaultCategoryId(categoryid)) {
             LookAndFeel.showTextToast(this, R.string.warn_delete_default_category);
             return;
@@ -357,18 +359,37 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // 0 should be default category index!
         eAssert(ab.getSelectedNavigationIndex() > 0);
 
-        try {
-            long[] cids = DBPolicy.get().getChannelIds(categoryid);
-            for (long cid : cids)
-                DBPolicy.get().updateChannel_categoryToDefault(cid);
+        // Create "Enter Url" dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog dialog = builder.create();
+        dialog.setTitle(R.string.confirm_delete_channel);
+        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                try {
+                    long[] cids = DBPolicy.get().getChannelIds(categoryid);
+                    for (long cid : cids)
+                        DBPolicy.get().updateChannel_categoryToDefault(cid);
 
-            DBPolicy.get().deleteCategory(categoryid);
-        } catch (InterruptedException e) {
-            finish();
-            return;
-        }
-        ab.removeTab(ab.getSelectedTab());
-        ab.setSelectedNavigationItem(0);
+                    DBPolicy.get().deleteCategory(categoryid);
+                } catch (InterruptedException e) {
+                    finish();
+                    return;
+                }
+                ab.removeTab(ab.getSelectedTab());
+                ab.setSelectedNavigationItem(0);
+                dialog.dismiss();
+            }
+        });
+        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Do nothing
+                dialog.dismiss();
+            }
+        });
+        dialog.show();
+
     }
 
     private void

@@ -14,7 +14,7 @@ public enum Err {
     CodecDecode                 (R.string.err_codec_decode),
     ParserUnsupportedFormat     (R.string.err_parse_unsupported_format),
     ParserUnsupportedVersion    (R.string.err_parse_unsupported_version),
-    DBDuplicatedChannel         (R.string.err_dbunknown),
+    DBDuplicatedChannel         (R.string.err_duplicated_channel),
     DBUnknown                   (R.string.err_dbunknown),
     Unknown                     (R.string.err_unknwon);
 

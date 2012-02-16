@@ -18,10 +18,10 @@ public class UIPolicy {
     static void
     setAsDefaultActionType(Feed.Channel ch) {
         // default is "open link"
-        ch.action = Feed.Channel.Action.OPEN;
-        if (Feed.Channel.Type.MEDIA == ch.type
-            && isValidValue(ch.items[0].enclosureUrl)) {
-            ch.action = Feed.Channel.Action.DNOPEN;
+        ch.dynD.action = Feed.Channel.Action.OPEN;
+        if (Feed.Channel.Type.MEDIA == ch.parD.type
+            && isValidValue(ch.items[0].parD.enclosureUrl)) {
+            ch.dynD.action = Feed.Channel.Action.DNOPEN;
         }
     }
 
@@ -29,12 +29,12 @@ public class UIPolicy {
     static boolean
     verifyConstraints(Feed.Item item) {
         // 'title' is mandatory!!!
-        if (!isValidValue(item.title))
+        if (!isValidValue(item.parD.title))
             return false;
 
         // Item should have one of link or enclosure url.
-        if (!isValidValue(item.link)
-             && !isValidValue(item.enclosureUrl))
+        if (!isValidValue(item.parD.link)
+             && !isValidValue(item.parD.enclosureUrl))
             return false;
 
         return true;
@@ -42,7 +42,7 @@ public class UIPolicy {
 
     static boolean
     verifyConstraints(Feed.Channel ch) {
-        if (!isValidValue(ch.title) || !isValidValue(ch.lastupdate))
+        if (!isValidValue(ch.parD.title) || !isValidValue(ch.dbD.lastupdate))
             return false;
 
         return true;

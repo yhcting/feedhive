@@ -13,76 +13,102 @@ public class Feed {
     public static final int CHANNEL_IMAGE_MAX_HEIGHT = 200;
 
     public static class Item {
-         public static enum State {
-             NEW        (R.color.title_color_new,
-                         R.color.text_color_new),
+        ParD   parD;
+        DbD    dbD     = new DbD();
+        DynD   dynD    = new DynD();
+
+        public static enum State {
+            NEW        (R.color.title_color_new,
+                        R.color.text_color_new),
              // For 'open'  : item is read
              // For 'dnopen': item is downloaded
-             OPENED     (R.color.title_color_opened,
-                         R.color.text_color_opened);
+            OPENED     (R.color.title_color_opened,
+                        R.color.text_color_opened);
 
-             private int titleColor;
-             private int textColor;
+            private int titleColor;
+            private int textColor;
 
-             State(int titleColor, int textColor) {
-                 this.titleColor = titleColor;
-                 this.textColor = textColor;
-             }
+            State(int titleColor, int textColor) {
+                this.titleColor = titleColor;
+                this.textColor = textColor;
+            }
 
-             public int
-             getTitleColor() {
-                 return titleColor;
-             }
+            public int
+            getTitleColor() {
+                return titleColor;
+            }
 
-             public int
-             getTextColor() {
-                 return textColor;
-             }
+            public int
+            getTextColor() {
+                return textColor;
+            }
 
-             public static State
-             convert(String s) {
-                 for (State a : State.values())
-                     if (s.equals(a.name()))
-                         return a;
-                 eAssert(false);
-                 return null;
-             }
-         }
+            public static State
+            convert(String s) {
+                for (State a : State.values())
+                    if (s.equals(a.name()))
+                        return a;
+                eAssert(false);
+                return null;
+            }
+        }
 
+         // Information from parsing.
+        static class ParD {
+            String title        = "";
+            String link         = "";
+            String description  = "";
+            String pubDate      = "";
+            String enclosureUrl = "";
+            String enclosureLength = "";
+            String enclosureType = "";
+        }
 
-        // For internal use
-        long   id           = -1;
-        long   channelid    = -1;
-        State  state        = State.NEW;
+        // DB related data
+        static class DbD {
+            long   id  = -1;
+            long   cid = -1; // channel id
+        }
 
-        // Information from parsing.
-        String title        = "";
-        String link         = "";
-        String description  = "";
-        String pubDate      = "";
-        String enclosureUrl = "";
-        String enclosureLength = "";
-        String enclosureType = "";
+        // Dynamic data - changed in runtime dynamically (usually by user action.
+        static class DynD {
+            State  state        = State.NEW;
+        }
+
+        Item() {
+            parD = new ParD();
+        }
+
+        Item(ParD parD) {
+            this.parD = parD;
+        }
 
         // for debugging
         public String
         dump() {
             return new StringBuilder()
                 .append("----------- Item -----------\n")
-                .append("title : ").append(title).append("\n")
-                .append("link  : ").append(link).append("\n")
-                .append("desc  : ").append(description).append("\n")
-                .append("date  : ").append(pubDate).append("\n")
-                .append("enclosure-url : ").append(enclosureUrl).append("\n")
-                .append("enclosure-len : ").append(enclosureLength).append("\n")
-                .append("enclosure-type: ").append(enclosureType).append("\n")
-                .append("state : ").append((null == state)? null: state.toString()).append("\n")
+                .append("title : ").append(parD.title).append("\n")
+                .append("link  : ").append(parD.link).append("\n")
+                .append("desc  : ").append(parD.description).append("\n")
+                .append("date  : ").append(parD.pubDate).append("\n")
+                .append("enclosure-url : ").append(parD.enclosureUrl).append("\n")
+                .append("enclosure-len : ").append(parD.enclosureLength).append("\n")
+                .append("enclosure-type: ").append(parD.enclosureType).append("\n")
+                .append("state : ").append((null == dynD.state)? null: dynD.state.name()).append("\n")
                 .toString();
         }
 
     }
 
     public static class Channel {
+        ProfD profD = new ProfD();
+        DbD   dbD   = new DbD();
+        DynD  dynD  = new DynD();
+        ParD  parD;
+
+        Item[] items;
+
         public static enum Action {
             OPEN,   // open link
             DNOPEN; // download/open link or enclosure
@@ -124,33 +150,59 @@ public class Feed {
             }
         }
 
-        Type   type         = Type.NORMAL;
-        Item[] items        = new Item[0];
-
-        // For internal use.
-        long   id           = -1;
-        long   categoryid   = -1;
-        String url          = ""; // channel url.
-        String lastupdate   = ""; // date updated lastly
-        byte[] imageblob    = null;
-        Action action       = Action.OPEN;
-        Order  order        = Order.NORMAL;
+        // Profile data.
+        static class ProfD {
+            String url          = ""; // channel url.
+        }
 
         // Information from parsing.
-        String title        = "";
-        String description  = "";
-        String imageref     = "";
+        static class ParD {
+            // Type is usually determined by which namespace is used at XML.
+            // For example.
+            //   xmlns:itunes -> Media
+            Type   type         = Type.NORMAL;
+            String title        = "";
+            String description  = "";
+            String imageref     = "";
+        }
 
-        // for debuggin
+        // DB related data
+        static class DbD {
+            long   id           = -1;
+            long   categoryid   = -1;
+            String lastupdate   = ""; // date when item DB is updated lastly
+        }
+
+        // Dynamic data - changed in runtime dynamically (usually by user action.
+        static class DynD {
+            Action action       = Action.OPEN;
+            Order  order        = Order.NORMAL;
+            byte[] imageblob    = null;
+        }
+
+        Channel() {
+            parD  = new ParD();
+            items = new Item[0];
+        }
+
+        Channel(ParD parD, Item.ParD[] itemParDs) {
+            this.parD   = parD;
+            items = new Item[itemParDs.length];
+            for (int i = 0; i < itemParDs.length; i++) {
+                items[i] = new Item();
+                items[i].parD = itemParDs[i];
+            }
+        }
+
+        // for debugging
         public String
         dump() {
             StringBuilder builder =  new StringBuilder();
             builder
             .append("=============== Channel Dump ===============\n")
-            .append("title    : ").append(title).append("\n")
-            .append("desc     : ").append(description).append("\n")
-            .append("imageref : ").append(imageref).append("\n")
-            .append("imageblob: ").append((null == imageblob)? null: imageblob.toString()).append("\n");
+            .append("title    : ").append(parD.title).append("\n")
+            .append("desc     : ").append(parD.description).append("\n")
+            .append("imageref : ").append(parD.imageref).append("\n");
             for (Item item : items)
                 builder.append(item.dump());
             builder.append("\n\n");
@@ -166,6 +218,4 @@ public class Feed {
             this.name = name;
         }
     }
-
-    public Channel  channel     = new Channel();
 }

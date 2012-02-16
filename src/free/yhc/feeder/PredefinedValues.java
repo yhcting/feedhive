@@ -1,35 +1,6 @@
 package free.yhc.feeder;
 
 class PredefinedValues {
-    static class Channel {
-        String   name;
-        String   url;
-        String   imageref;
-        Channel(String name, String url, String imageref) {
-            this.name = name;
-            this.url = url;
-            this.imageref = imageref;
-        }
-    }
-
-    static class Category {
-        String       name;
-        Channel[]    channels;
-
-        Category(String name, Channel[] channels) {
-            this.name = name;
-            this.channels = channels;
-        }
-    }
-
-    private static class CategoryChannelMap {
-        String      categoryName;
-        String[]    channelInfo;
-        CategoryChannelMap(String[] channelInfo, String categoryName) {
-            this.channelInfo = channelInfo;
-            this.categoryName = categoryName;
-        }
-    }
 
     private static final int    indexUrl       = 0;
     private static final int    indexImageref  = 1;
@@ -53,7 +24,7 @@ class PredefinedValues {
     private static final String[] potcasts = new String[] {
         "http://old.ddanzi.com/appstream/ddradio.xml",          "http://cfile24.uf.tistory.com/image/113B324D4F3A76A80BE6E1", "나는 꼼수다",
         "http://old.ddanzi.com/appstream/ggobsari.xml",         "http://cfile28.uf.tistory.com/image/123B324D4F3A76A809124F", "나는 꼽사리다",
-        "http://http://cast.vop.co.kr/kfline.xml",              "",                                                 "애국전선",
+        "http://cast.vop.co.kr/kfline.xml",                     "",                                                 "애국전선",
         "http://www.viddler.com/rss/newstapa",                  "",                                                 "뉴스타파",
         "http://test.handypia.org/radio/jugong.xml",            "",                                                 "저공비행",
         "http://rss.ohmynews.com/RSS/podcast_etul_main.xml",    "",                                                 "이털남",
@@ -88,6 +59,36 @@ class PredefinedValues {
         new CategoryChannelMap(potcasts,    "팟캐스트"),
         new CategoryChannelMap(etcs,        "기타"),
     };
+
+    static class Channel {
+        String   name;
+        String   url;
+        String   imageref;
+        Channel(String name, String url, String imageref) {
+            this.name = name;
+            this.url = url;
+            this.imageref = imageref;
+        }
+    }
+
+    static class Category {
+        String       name;
+        Channel[]    channels;
+
+        Category(String name, Channel[] channels) {
+            this.name = name;
+            this.channels = channels;
+        }
+    }
+
+    private static class CategoryChannelMap {
+        String      categoryName;
+        String[]    channelInfo;
+        CategoryChannelMap(String[] channelInfo, String categoryName) {
+            this.channelInfo = channelInfo;
+            this.categoryName = categoryName;
+        }
+    }
 
     static Category[]
     getPredefinedChannels() {
