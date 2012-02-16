@@ -5,6 +5,7 @@ import static free.yhc.feeder.model.Utils.logI;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -41,8 +42,27 @@ public final class DB extends SQLiteOpenHelper {
     /**************************************
      * DB for RSS
      **************************************/
-    static final String TABLE_CHANNEL        = "channel";
-    private static final String TABLE_ITEM   = "item";
+    static final String         TABLE_CATEGORY  = "category";
+    static final String         TABLE_CHANNEL   = "channel";
+    private static final String TABLE_ITEM      = "item";
+
+    public static enum ColumnCategory implements Column {
+        NAME            ("name",            "text",     "not null"), // channel url of this rss.
+        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
+
+        private String name;
+        private String type;
+        private String constraint;
+
+        ColumnCategory(String name, String type, String constraint) {
+            this.name = name;
+            this.type = type;
+            this.constraint = constraint;
+        }
+        public String getName() { return name; }
+        public String getType() { return type; }
+        public String getConstraint() { return constraint; }
+    }
 
     public static enum ColumnChannel implements Column {
         // Required Channel Elements
@@ -53,11 +73,13 @@ public final class DB extends SQLiteOpenHelper {
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "text",     "not null"), // time when channel is updated, lastly
         ACTION          ("action",          "text",     "not null"),
-        USERCATEGORY    ("usercategory",    "text",     "not null"),
         // 'order' is reserved word at DB. so make it's column name as 'listingorder'
         ORDER           ("listingorder",    "text",     "not null"), // normal / reverse
         URL             ("url",             "text",     "not null"), // channel url of this rss.
-        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
+        UNOPENEDCOUNT   ("unopenedcount",   "integer",  "not null"),
+        CATEGORYID      ("categoryid",      "integer",  ""),
+        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
+                + "FOREIGN KEY(categoryid) REFERENCES " + TABLE_CATEGORY + "(" + ColumnCategory.ID.getName() + ")");
 
 
         private String name;
@@ -85,8 +107,11 @@ public final class DB extends SQLiteOpenHelper {
 
         // Columns for internal use.
         STATE           ("state",           "text",     "not null"), // new, read etc
-        CHANNELID       ("channelid",       "integer",  "not null"),
-        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
+        CHANNELID       ("channelid",       "integer",  ""),
+        // add foreign key
+        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
+                // Add additional
+                + "FOREIGN KEY(channelid) REFERENCES " + TABLE_CHANNEL + "(" + ColumnChannel.ID.getName() + ")");
 
         private String name;
         private String type;
@@ -100,6 +125,11 @@ public final class DB extends SQLiteOpenHelper {
         public String getName() { return name; }
         public String getType() { return type; }
         public String getConstraint() { return constraint; }
+    }
+
+    static long
+    getDefaultCategoryId() {
+        return 0;
     }
 
     static String
@@ -209,7 +239,12 @@ public final class DB extends SQLiteOpenHelper {
     @Override
     public void
     onCreate(SQLiteDatabase db) {
-        db.execSQL(buildTableSQL(TABLE_CHANNEL, ColumnChannel.values()));
+        db.execSQL(buildTableSQL(TABLE_CHANNEL,  ColumnChannel.values()));
+        db.execSQL(buildTableSQL(TABLE_CATEGORY, ColumnCategory.values()));
+        // default category is empty-named-category
+        db.execSQL("INSERT INTO " + TABLE_CATEGORY + " ("
+                    + ColumnCategory.NAME.getName() + ", " + ColumnCategory.ID.getName() + ") "
+                    + "VALUES (" + "'', " + getDefaultCategoryId() + ");");
     }
 
     @Override
@@ -309,33 +344,25 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    insertItem(long cid, Feed.Item item) {
+    insertCategory(Feed.Category category) {
         ContentValues values = new ContentValues();
-
-        // information defined by spec.
-        values.put(ColumnItem.CHANNELID.getName(),           cid);
-        values.put(ColumnItem.TITLE.getName(),               item.title);
-        values.put(ColumnItem.LINK.getName(),                item.link);
-        values.put(ColumnItem.DESCRIPTION.getName(),         item.description);
-        values.put(ColumnItem.PUBDATE.getName(),             item.pubDate);
-        values.put(ColumnItem.STATE.getName(),               item.state.name());
-        values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.enclosureUrl);
-        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.enclosureLength);
-        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.enclosureType);
-
-        return db.insert(getItemTableName(cid), null, values);
+        values.put(ColumnCategory.NAME.getName(), category.name);
+        return db.insert(TABLE_CATEGORY, null, values);
     }
 
     long
-    updateItem_state(long cid, long id, Feed.Item.State state) {
-        ContentValues values = new ContentValues();
-        values.put(ColumnItem.STATE.getName(), state.name());
-        return db.update(getItemTableName(cid),
-                         values,
-                         ColumnItem.ID.getName() + " = " + id,
+    deleteCategory(long id) {
+        return db.delete(TABLE_CATEGORY,
+                         ColumnCategory.ID.getName() + " = " + id,
                          null);
     }
 
+    long
+    deleteCategory(String name) {
+        return db.delete(TABLE_CATEGORY,
+                         ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
+                         null);
+    }
 
     /*
      * IMPORTANT : This is not one-transaction!!!
@@ -355,8 +382,11 @@ public final class DB extends SQLiteOpenHelper {
         values.put(ColumnChannel.URL.getName(),              ch.url);
         values.put(ColumnChannel.ACTION.getName(),           ch.action.name());
         values.put(ColumnChannel.ORDER.getName(),            ch.order.name());
-        values.put(ColumnChannel.USERCATEGORY.getName(),     ch.userCategory);
+        values.put(ColumnChannel.CATEGORYID.getName(),       ch.categoryid);
         values.put(ColumnChannel.LASTUPDATE.getName(),       ch.lastupdate);
+
+        // temporal : this column is for future use.
+        values.put(ColumnChannel.UNOPENEDCOUNT.getName(),    0);
 
         if (null != ch.imageblob)
             values.put(ColumnChannel.IMAGEBLOB.getName(),    ch.imageblob);
@@ -391,6 +421,100 @@ public final class DB extends SQLiteOpenHelper {
         }
 
         return r;
+    }
+
+    long
+    updateChannel(long cid, ColumnChannel column, String value) {
+        ContentValues cvs = new ContentValues();
+        cvs.put(column.getName(), value);
+
+        return db.update(TABLE_CHANNEL,
+                         cvs,
+                         ColumnChannel.ID.getName() + " = " + cid,
+                         null);
+    }
+
+    long
+    updateChannel(long cid, ColumnChannel[] columns, String[] values) {
+        ContentValues cvs = new ContentValues();
+        eAssert(columns.length == values.length);
+        for (int i = 0; i < columns.length; i++)
+            cvs.put(columns[i].getName(), values[i]);
+
+        return db.update(TABLE_CHANNEL,
+                         cvs,
+                         ColumnChannel.ID.getName() + " = " + cid,
+                         null);
+    }
+
+    long
+    updateChannel(long cid, ColumnChannel column, long value) {
+        ContentValues cvs = new ContentValues();
+        cvs.put(column.getName(), value);
+
+        return db.update(TABLE_CHANNEL,
+                         cvs,
+                         ColumnChannel.ID.getName() + " = " + cid,
+                         null);
+    }
+
+    long
+    updateChannel(long cid, ColumnChannel column, byte[] data) {
+        ContentValues cvs = new ContentValues();
+        cvs.put(column.getName(), data);
+
+        return db.update(TABLE_CHANNEL,
+                         cvs,
+                         ColumnChannel.ID.getName() + " = " + cid,
+                         null);
+    }
+
+    long
+    updateChannel(long cid, Feed.Channel.Order order) {
+        ContentValues cvs = new ContentValues();
+        cvs.put(ColumnChannel.ORDER.getName(), order.name());
+        return db.update(TABLE_CHANNEL,
+                         cvs,
+                         ColumnChannel.ID.getName() + " = " + cid,
+                         null);
+    }
+
+    long
+    updateChannel(long cid, Feed.Channel.Action action) {
+        ContentValues cvs = new ContentValues();
+        cvs.put(ColumnChannel.ACTION.getName(), action.name());
+        return db.update(TABLE_CHANNEL,
+                         cvs,
+                         ColumnChannel.ID.getName() + " = " + cid,
+                         null);
+    }
+
+    long
+    insertItem(long cid, Feed.Item item) {
+        ContentValues values = new ContentValues();
+
+        // information defined by spec.
+        values.put(ColumnItem.CHANNELID.getName(),           cid);
+        values.put(ColumnItem.TITLE.getName(),               item.title);
+        values.put(ColumnItem.LINK.getName(),                item.link);
+        values.put(ColumnItem.DESCRIPTION.getName(),         item.description);
+        values.put(ColumnItem.PUBDATE.getName(),             item.pubDate);
+        values.put(ColumnItem.STATE.getName(),               item.state.name());
+        values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.enclosureUrl);
+        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.enclosureLength);
+        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.enclosureType);
+
+        return db.insert(getItemTableName(cid), null, values);
+    }
+
+    long
+    updateItem(long cid, long id, Feed.Item.State state) {
+        ContentValues values = new ContentValues();
+        values.put(ColumnItem.STATE.getName(), state.name());
+        return db.update(getItemTableName(cid),
+                         values,
+                         ColumnItem.ID.getName() + " = " + id,
+                         null);
     }
 
     long

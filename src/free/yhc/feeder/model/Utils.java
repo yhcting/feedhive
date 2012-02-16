@@ -1,6 +1,14 @@
 package free.yhc.feeder.model;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+
+import org.apache.http.util.ByteArrayBuffer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -210,6 +218,76 @@ public class Utils {
             }
         }
         return decodeImageRaw(image, opt);
+    }
+
+    public static ByteArrayBuffer
+    download(String dnurl)
+            throws FeederException {
+        if (null == dnurl)
+            return null;
+
+        ByteArrayBuffer bab = null;
+        try {
+            URL url = new URL(dnurl);
+
+            /*
+            long startTime = System.currentTimeMillis();
+            logI("Start Downloading : " + dnurl);
+            */
+
+            // Open a connection to that URL.
+            URLConnection ucon = url.openConnection();
+            // Define InputStreams to read from the URLConnection.
+            InputStream is = ucon.getInputStream();
+            BufferedInputStream bis = new BufferedInputStream(is);
+
+            // Read bytes to the Buffer until there is nothing more to read(-1).
+            bab = new ByteArrayBuffer(1024);
+            int current = 0;
+            while ((current = bis.read()) != -1)
+                    bab.append((byte) current);
+
+            /*
+            logI("End Downloading : "
+                            + ((System.currentTimeMillis() - startTime) / 1000)
+                            + " sec");
+            */
+
+        } catch (IOException e) {
+            throw new FeederException(Err.IONet);
+        }
+
+        return bab;
+    }
+
+    public static byte[]
+    getDecodedImageData(String url)
+            throws FeederException {
+        ByteArrayBuffer imgBab = null;
+        imgBab = download(url);
+
+        //
+        // [ In case of RSS. ]
+        // Lots of sites doesn't obey RSS spec. related with channel image.
+        // Spec. says max value for width = 144 / for height = 400.
+        // But, there are lots of out-of-spec-sites
+        // So, we need to consider this case (image size is out-of-spec.)
+        // Solution used below is
+        //   * shrink downloaded image and save it to DB.
+        //     (To save memory and increase performance.)
+        if (null != imgBab && !imgBab.isEmpty()) {
+            Bitmap bm = Utils.decodeImage(imgBab.toByteArray(),
+                                          Feed.CHANNEL_IMAGE_MAX_WIDTH,
+                                          Feed.CHANNEL_IMAGE_MAX_HEIGHT);
+            if (null == bm)
+                return null;
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+            bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+            bm.recycle();
+            return baos.toByteArray();
+        }
+        return null;
     }
 
     public static boolean

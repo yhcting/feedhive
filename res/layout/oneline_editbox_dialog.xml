@@ -5,10 +5,10 @@
     android:layout_height="match_parent"
     android:orientation="vertical" >
     <EditText
-        android:id="@+id/url"
+        android:id="@+id/editbox"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:hint="@string/enter_url" >
+        >
         <requestFocus />
     </EditText>
 </LinearLayout>

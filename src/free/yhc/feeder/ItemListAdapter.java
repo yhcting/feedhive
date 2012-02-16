@@ -27,7 +27,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
     }
 
     private void
-    bindViewLink(View view, Context context, Cursor c) {
+    bindViewLink(View view, Context context, Cursor c, Feed.Item.State state) {
         TextView titlev = (TextView)view.findViewById(R.id.title);
         TextView descv  = (TextView)view.findViewById(R.id.description);
         TextView date   = (TextView)view.findViewById(R.id.date);
@@ -36,32 +36,14 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         descv.setText(c.getString(c.getColumnIndex(DB.ColumnItem.DESCRIPTION.getName())));
         date.setText(c.getString(c.getColumnIndex(DB.ColumnItem.PUBDATE.getName())));
 
-        // NOTE
-        //   Check performance drop for this DB access...
-        //   If this is critical, we need to find other solution for updating state.
-        //   It seems OK on OMAP4430.
-        //   But, definitely slower than before...
-        // TODO
-        //   Do performance check on low-end-device.
-        String statestr;
-        try {
-                statestr = dbp.getItemInfoString(
-                                cid,
-                                c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName())),
-                                DB.ColumnItem.STATE);
-        } catch (InterruptedException e) {
-            eAssert(false);
-            statestr = "NEW";
-        }
 
-        Feed.Item.State state = Feed.Item.State.convert(statestr);
-        titlev.setTextColor(state.getTitleColor());
-        descv.setTextColor(state.getTextColor());
-        date.setTextColor(state.getTextColor());
+        titlev.setTextColor(context.getResources().getColor(state.getTitleColor()));
+        descv.setTextColor(context.getResources().getColor(state.getTextColor()));
+        date.setTextColor(context.getResources().getColor(state.getTextColor()));
     }
 
     private void
-    bindViewEnclosure(View view, Context context, Cursor c) {
+    bindViewEnclosure(View view, Context context, Cursor c, Feed.Item.State state) {
         TextView titlev = (TextView)view.findViewById(R.id.title);
         TextView descv  = (TextView)view.findViewById(R.id.description);
         TextView date   = (TextView)view.findViewById(R.id.date);
@@ -80,13 +62,13 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
         //   add proper icon (or representation...)
-        Feed.Item.State state;
+        int icon;
         if (new File(UIPolicy.getItemFilePath(cid, title, url)).exists())
-            state = Feed.Item.State.ACTIONED;
+            icon = R.drawable.ondisk;
         else
-            state = Feed.Item.State.NEW;
+            icon = R.drawable.onweb;;
 
-        img.setImageResource(state.getIconEnclosure());
+        img.setImageResource(icon);
         titlev.setTextColor(context.getResources().getColor(state.getTitleColor()));
         descv.setTextColor(context.getResources().getColor(state.getTextColor()));
         date.setTextColor(context.getResources().getColor(state.getTextColor()));
@@ -96,16 +78,31 @@ public class ItemListAdapter extends ResourceCursorAdapter {
     @Override
     public void
     bindView(View view, Context context, Cursor c) {
-        String state = c.getString(c.getColumnIndex(DB.ColumnItem.STATE.getName()));
-        view.findViewById(R.id.tv_update).setVisibility(View.GONE);
-        view.findViewById(R.id.item_layout).setVisibility(View.VISIBLE);
+        // NOTE
+        //   Check performance drop for this DB access...
+        //   If this is critical, we need to find other solution for updating state.
+        //   It seems OK on OMAP4430.
+        //   But, definitely slower than before...
+        // TODO
+        //   Do performance check on low-end-device.
+        String statestr;
+        try {
+            statestr = dbp.getItemInfoString(
+                            cid,
+                            c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName())),
+                            DB.ColumnItem.STATE);
+        } catch (InterruptedException e) {
+            eAssert(false);
+            statestr = "NEW";
+        }
+        Feed.Item.State state = Feed.Item.State.convert(statestr);
 
         switch (layout) {
         case R.layout.item_row_link:
-            bindViewLink(view, context, c);
+            bindViewLink(view, context, c, state);
             break;
         case R.layout.item_row_enclosure:
-            bindViewEnclosure(view, context, c);
+            bindViewEnclosure(view, context, c, state);
             break;
         default:
             eAssert(false);

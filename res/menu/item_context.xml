@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:id="@+id/delete_dnfile" android:title="@string/delete_downloaded_file" android:visible="false"></item>
-    <item android:id="@+id/mark_unactioned" android:title="@string/mark_as_unactioned" android:visible="false"></item>
+    <item android:id="@+id/mark_unopened" android:title="@string/mark_as_unopened" android:visible="false"></item>
 </menu>

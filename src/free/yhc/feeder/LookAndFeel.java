@@ -10,12 +10,8 @@ import android.widget.Toast;
 public class LookAndFeel {
     private static LinearLayout
     inflateLayout(Context context, int layout) {
-        LinearLayout root = new LinearLayout(context);
-        root.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
-                                                           LinearLayout.LayoutParams.WRAP_CONTENT));
         LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        inflater.inflate(layout, root);
-        return root;
+        return (LinearLayout)inflater.inflate(layout, null);
     }
 
     private static void
@@ -35,6 +31,13 @@ public class LookAndFeel {
         ((ImageView)root.findViewById(R.id.icon)).setImageResource(R.drawable.icon);
         showToast(context, root);
         */
+    }
+
+    public static void
+    showTextToast(Context context, String text) {
+        Toast t = Toast.makeText(context, text, Toast.LENGTH_LONG);
+        t.setGravity(Gravity.CENTER, 0, 0);
+        t.show();
     }
 
     public static void

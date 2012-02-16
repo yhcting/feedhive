@@ -12,29 +12,21 @@ public class Feed {
     public static final int CHANNEL_IMAGE_MAX_WIDTH  = 200;
     public static final int CHANNEL_IMAGE_MAX_HEIGHT = 200;
 
-     public static class Item {
+    public static class Item {
          public static enum State {
              NEW        (R.color.title_color_new,
-                         R.color.text_color_new,
-                         R.drawable.unactioned,
-                         R.drawable.unactioned),
+                         R.color.text_color_new),
              // For 'open'  : item is read
              // For 'dnopen': item is downloaded
-             ACTIONED  (R.color.title_color_opened,
-                         R.color.text_color_opened,
-                         R.drawable.actioned,
-                         R.drawable.actioned);
+             OPENED     (R.color.title_color_opened,
+                         R.color.text_color_opened);
 
              private int titleColor;
              private int textColor;
-             private int iconLink;
-             private int iconEnclosure;
 
-             State(int titleColor, int textColor, int iconLink, int iconEnclosure) {
+             State(int titleColor, int textColor) {
                  this.titleColor = titleColor;
                  this.textColor = textColor;
-                 this.iconLink = iconLink;
-                 this.iconEnclosure = iconEnclosure;
              }
 
              public int
@@ -47,16 +39,6 @@ public class Feed {
                  return textColor;
              }
 
-             public int
-             getIconLink() {
-                 return iconLink;
-             }
-
-             public int
-             getIconEnclosure() {
-                 return iconEnclosure;
-             }
-
              public static State
              convert(String s) {
                  for (State a : State.values())
@@ -67,19 +49,20 @@ public class Feed {
              }
          }
 
+
         // For internal use
-        public long   id           = -1;
-        public long   channelid    = -1;
-        public State  state        = State.NEW;
+        long   id           = -1;
+        long   channelid    = -1;
+        State  state        = State.NEW;
 
         // Information from parsing.
-        public String title        = "";
-        public String link         = "";
-        public String description  = "";
-        public String pubDate      = "";
-        public String enclosureUrl = "";
-        public String enclosureLength = "";
-        public String enclosureType = "";
+        String title        = "";
+        String link         = "";
+        String description  = "";
+        String pubDate      = "";
+        String enclosureUrl = "";
+        String enclosureLength = "";
+        String enclosureType = "";
 
         // for debugging
         public String
@@ -115,30 +98,48 @@ public class Feed {
 
         public static enum Type {
             NORMAL, // normal feed - ex. news feed.
-            MEDIA,  // media-based feed - ex. podcast.
+            MEDIA;  // media-based feed - ex. podcast.
+
+            public static Type
+            convert(String s) {
+                for (Type a : Type.values())
+                    if (s.equals(a.name()))
+                        return a;
+                eAssert(false);
+                return null;
+            }
         }
 
         public static enum Order {
             NORMAL,  // item will be listed by same order with xml.
-            REVERSE, // reverse.
+            REVERSE; // reverse.
+
+            public static Order
+            convert(String s) {
+                for (Order a : Order.values())
+                    if (s.equals(a.name()))
+                        return a;
+                eAssert(false);
+                return null;
+            }
         }
 
-        public Type   type         = Type.NORMAL;
-        public Item[] items        = new Item[0];
+        Type   type         = Type.NORMAL;
+        Item[] items        = new Item[0];
 
         // For internal use.
-        public long   id           = -1;
-        public String userCategory = "";
-        public String url          = ""; // channel url.
-        public String lastupdate   = ""; // date updated lastly
-        public byte[] imageblob    = null;
-        public Action action       = Action.OPEN;
-        public Order  order        = Order.NORMAL;
+        long   id           = -1;
+        long   categoryid   = -1;
+        String url          = ""; // channel url.
+        String lastupdate   = ""; // date updated lastly
+        byte[] imageblob    = null;
+        Action action       = Action.OPEN;
+        Order  order        = Order.NORMAL;
 
         // Information from parsing.
-        public String title        = "";
-        public String description  = "";
-        public String imageref     = "";
+        String title        = "";
+        String description  = "";
+        String imageref     = "";
 
         // for debuggin
         public String
@@ -154,6 +155,15 @@ public class Feed {
                 builder.append(item.dump());
             builder.append("\n\n");
             return builder.toString();
+        }
+    }
+
+    public static class Category {
+        public long     id      = -1;
+        public String   name    = ""; // category name
+        public Category() {}
+        public Category(String name) {
+            this.name = name;
         }
     }
 

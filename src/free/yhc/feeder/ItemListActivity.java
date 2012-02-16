@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -35,9 +36,10 @@ import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
 
 public class ItemListActivity extends Activity {
-    private long                cid = -1; // channel id
-    private Feed.Channel.Action action = null; // action type of this channel
-    private DBPolicy            db = DBPolicy.get();
+    private long                cid     = -1; // channel id
+    private Feed.Channel.Action action  = null; // action type of this channel
+    private Feed.Channel.Order  order   = null;
+    private DBPolicy            db      = DBPolicy.get();
     private ListView            list;
 
     private class ActionInfo {
@@ -66,12 +68,12 @@ public class ItemListActivity extends Activity {
         }
     }
 
-    private class NetLoaderEventHandler implements NetLoaderTask.OnEvent {
+    private class UpdateEventHandler implements SpinAsyncTask.OnEvent {
         @Override
         public Err
-        onDoWork(NetLoaderTask task, Object... objs) {
+        onDoWork(SpinAsyncTask task, Object... objs) {
             try {
-                return task.loadFeeds(objs);
+                return task.loadFeeds(objs[0]);
             } catch (InterruptedException e) {
                 return Err.Interrupted;
             }
@@ -79,7 +81,7 @@ public class ItemListActivity extends Activity {
 
         @Override
         public void
-        onPostExecute(NetLoaderTask task, Err result) {
+        onPostExecute(SpinAsyncTask task, Err result) {
             if (Err.NoErr == result)
                 refreshList();
             else
@@ -124,16 +126,20 @@ public class ItemListActivity extends Activity {
     private Cursor
     adapterCursorQuery(long cid) {
         try {
-            return db.queryItem(cid, new DB.ColumnItem[] {
-                DB.ColumnItem.ID, // Mandatory.
-                DB.ColumnItem.TITLE,
-                DB.ColumnItem.DESCRIPTION,
-                DB.ColumnItem.ENCLOSURE_LENGTH,
-                DB.ColumnItem.ENCLOSURE_URL,
-                DB.ColumnItem.ENCLOSURE_TYPE,
-                DB.ColumnItem.PUBDATE,
-                DB.ColumnItem.LINK,
-                DB.ColumnItem.STATE });
+            DB.ColumnItem[] columns = new DB.ColumnItem[] {
+                    DB.ColumnItem.ID, // Mandatory.
+                    DB.ColumnItem.TITLE,
+                    DB.ColumnItem.DESCRIPTION,
+                    DB.ColumnItem.ENCLOSURE_LENGTH,
+                    DB.ColumnItem.ENCLOSURE_URL,
+                    DB.ColumnItem.ENCLOSURE_TYPE,
+                    DB.ColumnItem.PUBDATE,
+                    DB.ColumnItem.LINK,
+                    DB.ColumnItem.STATE };
+            if (Feed.Channel.Order.NORMAL == order)
+                return db.queryItem(cid, columns);
+            else
+                return db.queryItem_reverse(cid, columns);
         } catch (InterruptedException e) {
             finish();
         }
@@ -179,12 +185,28 @@ public class ItemListActivity extends Activity {
         return new File(f).delete();
     }
 
+    private boolean
+    changeItemState_opened(long id, int position) {
+        // chanage state as 'opened' at this moment.
+        Feed.Item.State state = Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, position));
+        try {
+            if (Feed.Item.State.NEW == state) {
+                db.setItemInfo_state(cid, id, Feed.Item.State.OPENED);
+                getListAdapter().notifyDataSetChanged();
+                return true;
+            }
+        } catch (InterruptedException e) {
+            finish();
+        }
+        return false;
+    }
+
     private void
     updateItems() {
         if (Utils.isNetworkAvailable(this))
-            new NetLoaderTask(this, new NetLoaderEventHandler()).execute(cid);
+            new SpinAsyncTask(this, new UpdateEventHandler(), R.string.load_progress).execute(cid);
         else
-            LookAndFeel.showTextToast(this, R.string.network_unavailable);
+            LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
     }
 
     // 'public' to use java reflection
@@ -208,7 +230,15 @@ public class ItemListActivity extends Activity {
             else
                 intent.setDataAndType(Uri.fromFile(f), type);
 
-            startActivity(intent);
+            try {
+                startActivity(intent);
+            } catch (ActivityNotFoundException e) {
+                LookAndFeel.showTextToast(this,
+                        getResources().getText(R.string.warn_find_app_to_open).toString() + " [" + type + "]");
+                return;
+            }
+            // chanage state as 'opened' at this moment.
+            changeItemState_opened(id, position);
         } else {
             // File is not exists in local
             DownloadToFileTask dnTask = new DownloadToFileTask(this,
@@ -228,15 +258,7 @@ public class ItemListActivity extends Activity {
         intent.setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position)));
         startActivity(intent);
 
-        Feed.Item.State state = Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, position));
-        try {
-            if (Feed.Item.State.NEW == state) {
-                db.setItemInfo_state(cid, id, Feed.Item.State.ACTIONED);
-                getListAdapter().notifyDataSetChanged();
-            }
-        } catch (InterruptedException e) {
-            finish();
-        }
+        changeItemState_opened(id, position);
     }
 
     private void
@@ -279,29 +301,25 @@ public class ItemListActivity extends Activity {
         logI("Item to read : " + cid + "\n");
 
         String[] s = null;
-        final int indexTITLE    = 0;
-        final int indexACTION   = 1;
+        final int indexTITLE        = 0;
+        final int indexACTION       = 1;
+        final int indexORDER        = 2;
         try {
             s = db.getChannelInfoStrings(cid,
                 new DB.ColumnChannel[] {
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.ACTION,
+                    DB.ColumnChannel.ORDER,
                     });
         } catch (InterruptedException e) {
             finish();
             return;
         }
 
-        for (Feed.Channel.Action act : Feed.Channel.Action.values()) {
-            if (act.name().equals(s[indexACTION])) {
-                action = act;
-                break;
-            }
-        }
-        eAssert(null != action);
+        action = Feed.Channel.Action.convert(s[indexACTION]);
+        order = Feed.Channel.Order.convert(s[indexORDER]);
 
         setContentView(R.layout.item_list);
-
         setTitle(s[indexTITLE]);
 
         // TODO
@@ -323,6 +341,7 @@ public class ItemListActivity extends Activity {
 
         int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
         bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
+        bar.setDisplayShowHomeEnabled(false);
 
         list = ((ListView)findViewById(R.id.list));
         eAssert(null != list);
@@ -336,7 +355,8 @@ public class ItemListActivity extends Activity {
         registerForContextMenu(list);
     }
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean
+    onCreateOptionsMenu(Menu menu) {
         return true;
     }
 
@@ -360,10 +380,10 @@ public class ItemListActivity extends Activity {
             && doesEnclosureDnFileExists(info.id, info.position))
             menu.findItem(R.id.delete_dnfile).setVisible(true);
 
-        // Check for "Mark as unactioned option"
+        // Check for "Mark as unopened option"
         if (Feed.Channel.Action.OPEN == action
-            && Feed.Item.State.ACTIONED == Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, info.position)))
-            menu.findItem(R.id.mark_unactioned).setVisible(true);
+            && Feed.Item.State.OPENED == Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, info.position)))
+            menu.findItem(R.id.mark_unopened).setVisible(true);
     }
 
     @Override
@@ -375,7 +395,7 @@ public class ItemListActivity extends Activity {
             logI(" Delete Downloaded File : ID : " + info.id + " / " + info.position);
             onContext_deleteDnFile(info.id, info.position);
             return true;
-        case R.id.mark_unactioned:
+        case R.id.mark_unopened:
             logI(" Mark As Unactioned : ID : " + info.id + " / " + info.position);
             return true;
         }
@@ -403,6 +423,8 @@ public class ItemListActivity extends Activity {
     protected void
     onDestroy() {
         getListAdapter().getCursor().close();
+        // '0' is temporal value. (reserved for future use)
+        setResult(0);
         super.onDestroy();
     }
 }

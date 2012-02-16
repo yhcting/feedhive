@@ -31,7 +31,6 @@ DB Design
 
     [ Items ]
     items for each channel
-    first row should be dummy item for 'update' {PDB0}
         <title>
 	<description>
 	<link>
@@ -172,8 +171,6 @@ UI Flow
     /S2/
         <main>
 	    Feed item list
-            First item should be 'update' => update item /PDB0/
-	    (default is 'use local information from DB' - NOT from network)
 	    Item should look different to tell whether it's already operationed or not.
 	    (ex. read(open) or downloaded(download/open))
 
@@ -193,18 +190,16 @@ UI Flow
 
 	<opt menu>
 
+TODO
+----
+    [2] displaying 'unopened-item-count' at channel list.
+    [3] It take long~ time to parsing data (Dom + RSS). Any way to
+    	  shorten this?? (How about using SAX??)
 
 Known Bugs
 ----------
     Notation :
         [] : Priority (Hight 1 ----- 5 Low)
-
-    [1] Canceling in the middle of updating DB items.
-        : DB may be in unepxected state.
-	  (ex. 'channel' is inserted but 'item table' for this 'channel' is
-             not created.)
-
-    [2] Stability between changing orientation (or fix orientation???)
 
     [3] Progress bar for fetching and loading RSS channel.
         : In case of some sites, RSS xml size is very large.

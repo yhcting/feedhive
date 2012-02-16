@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+    <TextView
+        android:id="@+id/name"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="3dip"
+        android:paddingTop="7dip"
+        android:paddingBottom="7dip"
+        android:textSize="@dimen/title_text_size"
+        />
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="2dip"
+        android:scaleType="fitXY"
+        android:src="@drawable/divider"
+        />    
+</LinearLayout>

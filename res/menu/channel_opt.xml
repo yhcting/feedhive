@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:visible="true" android:id="@+id/add" android:title="@string/add_channel"></item>    
+    <item android:id="@+id/add_channel"
+          android:title="@string/add_channel"
+          android:visible="true"
+          />
+    <item android:id="@+id/add_category"
+          android:title="@string/add_category"
+          android:visible="true"
+          />
+    <item android:id="@+id/delete_category"
+          android:title="@string/delete_category"
+          android:visible="true"
+          />
+    <item android:id="@+id/select_predefined_channel"
+          android:title="@string/select_predefined_channel"
+          android:visible="true"
+          />    
 </menu>

@@ -35,7 +35,7 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         ((TextView)view.findViewById(R.id.date)).setText(date);
         if (null == bm)
             // fail to decode.
-            ((ImageView)view.findViewById(R.id.image)).setImageResource(R.drawable.fail_decode);
+            ((ImageView)view.findViewById(R.id.image)).setImageResource(R.drawable.not_decoded);
         else
             ((ImageView)view.findViewById(R.id.image)).setImageBitmap(bm);
     }

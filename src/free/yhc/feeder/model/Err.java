@@ -10,6 +10,8 @@ public enum Err {
     UserCancelled               (R.string.err_user_cancelled),
     IONet                       (R.string.err_ionet),
     IOFile                      (R.string.err_iofile),
+    MediaGet                    (R.string.err_media_get),
+    CodecDecode                 (R.string.err_codec_decode),
     ParserUnsupportedFormat     (R.string.err_parse_unsupported_format),
     ParserUnsupportedVersion    (R.string.err_parse_unsupported_version),
     DBDuplicatedChannel         (R.string.err_dbunknown),

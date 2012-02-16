@@ -6,7 +6,7 @@
     android:weightSum="1">
     <ListView
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="0dip"
         android:id="@+id/list"
         android:layout_weight="1.0"/>    
 </LinearLayout>

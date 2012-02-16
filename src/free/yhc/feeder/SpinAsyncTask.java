@@ -9,57 +9,41 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.NetLoader;
 
-public class NetLoaderTask extends AsyncTask<Object, Integer, Err> implements
+public class SpinAsyncTask extends AsyncTask<Object, Integer, Err> implements
 DialogInterface.OnDismissListener,
 DialogInterface.OnCancelListener,
 DialogInterface.OnClickListener
 {
     interface OnEvent {
-        Err  onDoWork(NetLoaderTask task, Object... objs);
-        void onPostExecute(NetLoaderTask task, Err result);
+        Err  onDoWork(SpinAsyncTask task, Object... objs);
+        void onPostExecute(SpinAsyncTask task, Err result);
     }
 
-    private ProgressDialog dialog = null;
-    private Context        context  = null;
-    private OnEvent        onEvent  = null;
-    private boolean        userCancelled = false;
+    private Context        context      = null;
+    private ProgressDialog dialog       = null;
+    private int            msgid        = -1;
+    private OnEvent        onEvent      = null;
+    private boolean        userCancelled= false;
 
-    NetLoaderTask(Context context, OnEvent onEvent) {
+    SpinAsyncTask(Context context, OnEvent onEvent, int msgid) {
         super();
         this.context = context;
         this.onEvent = onEvent;
+        this.msgid   = msgid;
     }
 
     public Err
-    initialLoad(Object... objs)
+    initialLoad(long[] outcid, Object... objs)
             throws InterruptedException {
-        Err err = Err.NoErr;
-
-        for (Object o : objs) {
-            String s = (String)o;
-            err = new NetLoader().initialLoad(s);
-
-            // TODO : handle returning error!!!
-            if (Err.NoErr != err)
-                break;
-        }
-        return err;
+        long categoryid = ((Long)objs[0]).longValue();
+        String url      = (String)objs[1];
+        return new NetLoader().initialLoad(categoryid, url, outcid);
     }
 
     public Err
-    loadFeeds(Object... objs)
+    loadFeeds(Object obj)
             throws InterruptedException {
-        Err err = Err.NoErr;
-
-        for (Object o : objs) {
-            Long l = (Long) o;
-            err = new NetLoader().loadFeeds(l.longValue());
-
-            // TODO : handle returning error!!!
-            if (Err.NoErr != err)
-                break;
-        }
-        return err;
+        return new NetLoader().loadFeeds(((Long)obj).longValue());
     }
 
     // return :
@@ -127,11 +111,11 @@ DialogInterface.OnClickListener
     protected void
     onPreExecute() {
         dialog = new ProgressDialog(context);
-        dialog.setMessage(context.getResources().getText(R.string.load_progress));
+        dialog.setMessage(context.getResources().getText(msgid));
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         dialog.setCanceledOnTouchOutside(false);
         //dialog.setCancelable(false);
-        dialog.setButton(context.getResources().getText(R.string.cancel_loading), this);
+        dialog.setButton(context.getResources().getText(R.string.cancel_processing), this);
         dialog.setOnCancelListener(this);
         dialog.setOnDismissListener(this);
         dialog.show();
