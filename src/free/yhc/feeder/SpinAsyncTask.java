@@ -44,9 +44,9 @@ DialogInterface.OnClickListener
     }
 
     public Err
-    loadFeeds(Object obj)
+    updateLoad(boolean updateImage, Object obj)
             throws InterruptedException {
-        return new NetLoader().loadFeeds(((Long)obj).longValue());
+        return new NetLoader().updateLoad(((Long)obj).longValue(), updateImage);
     }
 
     // return :
@@ -71,6 +71,7 @@ DialogInterface.OnClickListener
         try {
             DBPolicy.get().lock();
         } catch (InterruptedException e) {
+            DBPolicy.get().unlock();
             eAssert(false);
             return false;
         }

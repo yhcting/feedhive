@@ -19,13 +19,18 @@ import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.GestureDetector;
+import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
@@ -33,6 +38,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.ViewFlipper;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
@@ -48,13 +54,144 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     public static final int ResCReadChannelOk       = 0; // nothing special
 
-    private ListView  list = null;
-    private ActionBar ab;
+    // For swipe animation
+    private static final int SWIPE_MIN_DISTANCE = 120;
+    private static final int SWIPE_MAX_OFF_PATH = 250;
+    private static final int SWIPE_THRESHOLD_VELOCITY = 200;
+
+    private ActionBar   ab;
+    private Flipper     flipper;
+
+    // Animation
 
     // Saved cid for Async execution.
     private long      cid_pickImage = -1;
 
-    class PickIconEventHandler implements SpinAsyncTask.OnEvent {
+    private class Flipper {
+        private Context     context;
+        private ViewFlipper viewFlipper;
+        private Animation   slideLeftIn;
+        private Animation   slideLeftOut;
+        private Animation   slideRightIn;
+        private Animation   slideRightOut;
+        private GestureDetector gestureDetector;
+
+        private class SwipeGestureDetector extends SimpleOnGestureListener {
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                try {
+                    if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH)
+                        return false;
+
+                    // right to left swipe
+                    if(e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE
+                       && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+                        // Change ActionBar Tab.
+                        int nextIdx = ab.getSelectedNavigationIndex() + 1;
+                        if (nextIdx < ab.getNavigationItemCount()) {
+                            showNext();
+                            getTag(ab.getTabAt(nextIdx)).fromGesture = true;
+                            ab.setSelectedNavigationItem(nextIdx);
+                        }
+
+                    }  else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE
+                                && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+                        // Change ActionBar Tab.
+                        int nextIdx = ab.getSelectedNavigationIndex() - 1;
+                        if (nextIdx >= 0) {
+                            showPrev();
+                            getTag(ab.getTabAt(nextIdx)).fromGesture = true;
+                            ab.setSelectedNavigationItem(nextIdx);
+                        }
+
+                    }
+                } catch (Exception e) {
+                    // nothing
+                }
+                return false;
+            }
+        }
+
+        Flipper(Context context, ViewFlipper viewFlipper) {
+            this.context = context;
+            this.viewFlipper = viewFlipper;
+            slideLeftIn = AnimationUtils.loadAnimation(context, R.anim.slide_left_in);
+            slideLeftOut = AnimationUtils.loadAnimation(context, R.anim.slide_left_out);
+            slideRightIn = AnimationUtils.loadAnimation(context, R.anim.slide_right_in);
+            slideRightOut = AnimationUtils.loadAnimation(context, R.anim.slide_right_out);
+            gestureDetector = new GestureDetector(new SwipeGestureDetector());
+        }
+
+        LinearLayout
+        addListLayout() {
+            LinearLayout ll = LookAndFeel.inflateLayout(context, R.layout.list);
+            ListView list = ((ListView)ll.findViewById(R.id.list));
+            eAssert(null != list);
+            list.setAdapter(new ChannelListAdapter(context, R.layout.channel_row, null));
+            list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void
+                onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+                    intent.putExtra("channelid", id);
+                    startActivityForResult(intent, ReqCReadChannel);
+                }
+            });
+
+            list.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean
+                onTouch(View v, MotionEvent event) {
+                    if (flipper.onTouch(event))
+                        return true;
+                    else
+                        return false;
+                }
+            });
+            flipper.addView(ll);
+            return ll;
+        }
+
+        void
+        addView(View child) {
+            viewFlipper.addView(child);
+        }
+
+        void
+        showNext() {
+            viewFlipper.setInAnimation(slideLeftIn);
+            viewFlipper.setOutAnimation(slideLeftOut);
+            viewFlipper.showNext();
+        }
+
+        void
+        showPrev() {
+            viewFlipper.setInAnimation(slideRightIn);
+            viewFlipper.setOutAnimation(slideRightOut);
+            viewFlipper.showPrevious();
+        }
+
+        void
+        show(Tab tab) {
+            viewFlipper.setInAnimation(null);
+            viewFlipper.setOutAnimation(null);
+            viewFlipper.setDisplayedChild(viewFlipper.indexOfChild(getTag(tab).layout));
+        }
+
+        void
+        remove(Tab tab) {
+            viewFlipper.removeView(getTag(tab).layout);
+        }
+
+        boolean
+        onTouch(MotionEvent event) {
+            return gestureDetector.onTouchEvent(event);
+        }
+    }
+
+
+
+    private class PickIconEventHandler implements SpinAsyncTask.OnEvent {
         @Override
         public Err
         onDoWork(SpinAsyncTask task, Object... objs) {
@@ -113,7 +250,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
-    class AddChannelEventHandler implements SpinAsyncTask.OnEvent {
+    private class AddChannelEventHandler implements SpinAsyncTask.OnEvent {
         @Override
         public Err
         onDoWork(SpinAsyncTask task, Object... objs) {
@@ -134,14 +271,60 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
+
+    private class UpdateEventHandler implements SpinAsyncTask.OnEvent {
+        @Override
+        public Err
+        onDoWork(SpinAsyncTask task, Object... objs) {
+            try {
+                return task.updateLoad(true, objs[0]);
+            } catch (InterruptedException e) {
+                return Err.Interrupted;
+            }
+        }
+
+        @Override
+        public void
+        onPostExecute(SpinAsyncTask task, Err result) {
+            if (Err.NoErr == result)
+                refreshList(ab.getSelectedTab());
+            else
+                LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
+        }
+    }
+
+
+    class TabTag {
+        long         categoryid;
+        boolean      fromGesture = false;
+        ListView     listView;
+        LinearLayout layout;
+    }
+
+    private TabTag
+    getTag(Tab tab) {
+        return (TabTag)tab.getTag();
+    }
+
+    private void
+    selectDefaultAsSelected() {
+        // 0 is index of default tab
+        ab.setSelectedNavigationItem(0);
+    }
+
+    private Tab
+    getDefaultTab() {
+        return ab.getTabAt(0);
+    }
+
     private ChannelListAdapter
-    getListAdapter() {
-        return (ChannelListAdapter) list.getAdapter();
+    getListAdapter(Tab tab) {
+        return (ChannelListAdapter)getTag(tab).listView.getAdapter();
     }
 
     private long
     getCategoryId(Tab tab) {
-        return ((Long)tab.getTag()).longValue();
+        return getTag(tab).categoryid;
     }
 
     private long
@@ -166,15 +349,17 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     }
 
     private boolean
-    changeCategory(long cid, long from, long to) {
-        if (from == to) // nothing to do
+    changeCategory(long cid, Tab from, Tab to) {
+        if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
         try {
-            DBPolicy.get().updateChannel_category(cid, to);
+            DBPolicy.get().updateChannel_category(cid, getTag(to).categoryid);
         } catch (InterruptedException e) {
             finish();
             return false;
         }
+        refreshList(from);
+        refreshList(to);
         return true;
     }
 
@@ -183,23 +368,57 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // NOTE
         // Usually, number of channels are not big.
         // So, we don't need to think about async. loading.
-        Cursor newCursor = adapterCursorQuery((Long)tab.getTag());
-        getListAdapter().changeCursor(newCursor);
-        getListAdapter().notifyDataSetChanged();
+        Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
+        getListAdapter(tab).changeCursor(newCursor);
+        getListAdapter(tab).notifyDataSetChanged();
     }
 
-    private void
-    addCategoryTab(Feed.Category cat) {
+    private Tab
+    addCategory(Feed.Category cat) {
         String text;
         if (DBPolicy.get().isDefaultCategoryId(cat.id))
             text = getResources().getText(R.string.default_category_name).toString();
         else
             text = cat.name;
-        ab.addTab(ab.newTab()
+
+        // Add new tab to action bar
+        Tab tab = ab.newTab()
                 .setCustomView(createTabView(text))
                 .setTag(cat.id)
-                .setTabListener(this)
-              , false);
+                .setTabListener(this);
+
+        LinearLayout layout = flipper.addListLayout();
+
+        TabTag tag = new TabTag();
+        tag.categoryid = cat.id;
+        tag.layout = layout;
+        tag.listView = (ListView)layout.findViewById(R.id.list);
+
+        tab.setTag(tag);
+        ab.addTab(tab, false);
+        refreshList(tab); // create cursor adapters
+        return tab;
+    }
+
+    private void
+    deleteCategory(long categoryid) {
+        try {
+            long[] cids = DBPolicy.get().getChannelIds(categoryid);
+            for (long cid : cids)
+                DBPolicy.get().updateChannel_categoryToDefault(cid);
+
+            DBPolicy.get().deleteCategory(categoryid);
+        } catch (InterruptedException e) {
+            finish();
+            return;
+        }
+        // channel list of default category is changed.
+        refreshList(getDefaultTab());
+
+        Tab curTab = ab.getSelectedTab();
+        ab.removeTab(curTab);
+        flipper.remove(curTab);
+        selectDefaultAsSelected();
     }
 
     private TextView
@@ -314,7 +533,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         EditText edit = (EditText)layout.findViewById(R.id.editbox);
         edit.setHint(R.string.enter_name);
         edit.setOnKeyListener(new View.OnKeyListener() {
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
+            public boolean
+            onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
                     String name = ((EditText) v).getText().toString();
@@ -333,7 +553,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                                 LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
                             else {
                                 eAssert(cat.id >= 0);
-                                addCategoryTab(cat);
+                                refreshList(addCategory(cat));
                             }
                         }
                     } catch (InterruptedException e) {
@@ -360,24 +580,14 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         eAssert(ab.getSelectedNavigationIndex() > 0);
 
         // Create "Enter Url" dialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.confirm_delete_channel);
+        AlertDialog dialog =
+                LookAndFeel.createWarningDialog(this,
+                                                R.string.delete_category,
+                                                R.string.delete_category_msg);
         dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                try {
-                    long[] cids = DBPolicy.get().getChannelIds(categoryid);
-                    for (long cid : cids)
-                        DBPolicy.get().updateChannel_categoryToDefault(cid);
-
-                    DBPolicy.get().deleteCategory(categoryid);
-                } catch (InterruptedException e) {
-                    finish();
-                    return;
-                }
-                ab.removeTab(ab.getSelectedTab());
-                ab.setSelectedNavigationItem(0);
+                deleteCategory(categoryid);
                 dialog.dismiss();
             }
         });
@@ -400,10 +610,10 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onContext_deleteChannel(final long cid) {
-        // Create "Enter Url" dialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.confirm_delete_channel);
+        AlertDialog dialog =
+                LookAndFeel.createWarningDialog(this,
+                                                R.string.delete_channel,
+                                                R.string.delete_channel_msg);
         dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -459,9 +669,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             public void
             onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 changeCategory(cid,
-                               (Long)ab.getSelectedTab().getTag(),
-                               (Long)((Tab)list.getAdapter().getItem(position)).getTag());
-                refreshList(ab.getSelectedTab());
+                               ab.getSelectedTab(),
+                               (Tab)list.getAdapter().getItem(position));
                 dialog.dismiss();
             }
         });
@@ -494,6 +703,34 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
+    private void
+    onContext_update(final long cid) {
+        if (!Utils.isNetworkAvailable(this)) {
+            LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
+            return;
+        }
+
+        AlertDialog dialog =
+                LookAndFeel.createWarningDialog(this,
+                                                R.string.update_channel,
+                                                R.string.update_channel_msg);
+        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                new SpinAsyncTask(ChannelListActivity.this, new UpdateEventHandler(), R.string.load_progress).execute(cid);
+            }
+        });
+        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Do nothing
+                dialog.dismiss();
+            }
+        });
+        dialog.show();
+    }
+
     @Override
     public void
     onCreate(Bundle savedInstanceState) {
@@ -510,21 +747,11 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         // Setup list view
         setContentView(R.layout.channel_list);
-        list = ((ListView) findViewById(R.id.list));
-        eAssert(null != list);
 
-        list.setAdapter(new ChannelListAdapter(this, R.layout.channel_row, null));
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void
-            onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-                intent.putExtra("channelid", id);
-                startActivityForResult(intent, ReqCReadChannel);
-            }
-        });
+        // Setup for swipe.
+        flipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
 
-        registerForContextMenu(list);
+
 
         // Setup Tabs
         ab = getActionBar();
@@ -532,12 +759,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         ab.setDisplayShowTitleEnabled(false);
         ab.setDisplayShowHomeEnabled(false);
 
-        for (Feed.Category cat : cats)
-            addCategoryTab(cat);
-
+        for (Feed.Category cat : cats) {
+            Tab tab = addCategory(cat);
+            refreshList(tab); // create cursor adapters
+        }
         // Select default category as current category.
-        ab.setSelectedNavigationItem(0);
-
+        selectDefaultAsSelected();
         // 0 doesn't have meaning.
         setResult(0);
     }
@@ -545,22 +772,26 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     @Override
     public void
     onTabSelected(Tab tab, FragmentTransaction ft) {
-        // change tab title's format to margee.
-        getTabTextView(tab).setEllipsize(TextUtils.TruncateAt.MARQUEE);
-        refreshList(tab);
+        onTabReselected(tab, ft);
     }
 
     @Override
     public void
     onTabUnselected(Tab tab, FragmentTransaction ft) {
         getTabTextView(tab).setEllipsize(TextUtils.TruncateAt.END);
+        // to make sure
+        getTag(tab).fromGesture = false;
     }
 
     @Override
     public void
     onTabReselected(Tab tab, FragmentTransaction ft) {
         getTabTextView(tab).setEllipsize(TextUtils.TruncateAt.MARQUEE);
-        refreshList(tab);
+        if (!getTag(tab).fromGesture)
+            flipper.show(tab);
+        else
+            getTag(tab).fromGesture = false;
+        registerForContextMenu(getTag(tab).listView);
     }
 
     @Override
@@ -600,6 +831,10 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         case R.id.pick_icon:
             onContext_pickIcon(info.id);
+            return true;
+
+        case R.id.update:
+            onContext_update(info.id);
             return true;
         }
         return false;
@@ -665,7 +900,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     @Override
     protected void
     onDestroy() {
-        getListAdapter().getCursor().close();
+        for (int i = 0; i < ab.getTabCount(); i++)
+            getListAdapter(ab.getTabAt(i)).getCursor().close();
         super.onDestroy();
     }
 }

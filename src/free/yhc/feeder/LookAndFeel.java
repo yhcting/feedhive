@@ -1,5 +1,7 @@
 package free.yhc.feeder;
 
+import static free.yhc.feeder.model.Utils.eAssert;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -8,18 +10,18 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 public class LookAndFeel {
-    private static LinearLayout
-    inflateLayout(Context context, int layout) {
-        LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        return (LinearLayout)inflater.inflate(layout, null);
-    }
-
     private static void
     showToast(Context context, ViewGroup root) {
         Toast t = Toast.makeText(context, "", Toast.LENGTH_LONG);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.setView(root);
         t.show();
+    }
+
+    public static LinearLayout
+    inflateLayout(Context context, int layout) {
+        LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        return (LinearLayout)inflater.inflate(layout, null);
     }
 
     public static void
@@ -50,5 +52,17 @@ public class LookAndFeel {
         ((TextView)root.findViewById(R.id.text)).setText(textid);
         showToast(context, root);
         */
+    }
+
+    public static AlertDialog
+    createWarningDialog(Context context, int title, int message) {
+        eAssert(0 != title);
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog dialog = builder.create();
+        dialog.setIcon(R.drawable.warn);
+        dialog.setTitle(title);
+        if (0 != message)
+            dialog.setMessage(context.getResources().getText(message));
+        return dialog;
     }
 }

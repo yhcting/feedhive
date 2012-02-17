@@ -193,6 +193,17 @@ UI Flow
 TODO
 ----
     [2] displaying 'unopened-item-count' at channel list.
+    [2] load predefined channel list dynamically from web.
+        - Without hosting server, it is impossible map fixed URL to dynamically-changed-text-file.
+	- One workaround-way
+	    : Read special text that represents URL of text file from fixed-urled-html.
+	      (Indirect referencing.)
+	    App ----> fixed-URL(textfile)  [X]
+	        : it is impossible to change contents of text file since after.
+	    App --> fixed-URL(html page) -- Parsing and read MyURL of textfile --> URL(textfile)
+	        : I can update text file by following way.
+		- uploading modified text file
+		- updating fixed-URL html page (to described newly uploaded text file's URL)
     [3] It take long~ time to parsing data (Dom + RSS). Any way to
     	  shorten this?? (How about using SAX??)
 

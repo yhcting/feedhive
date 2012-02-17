@@ -11,7 +11,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="3dip"
-        android:paddingLeft="3dip"
+        android:paddingLeft="@dimen/list_item_left_padding"
         android:textSize="@dimen/title_text_size"
         android:singleLine="true"
         android:ellipsize="end"
@@ -35,6 +35,8 @@
     <ImageView
         android:layout_width="fill_parent"
         android:layout_height="2dip"
+        android:layout_marginLeft="@dimen/divider_horizonal_margin"
+        android:layout_marginRight="@dimen/divider_horizonal_margin"
         android:layout_marginTop="1dip"
         android:scaleType="fitXY"
         android:src="@drawable/divider"

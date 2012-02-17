@@ -7,14 +7,9 @@
         android:id="@+id/text"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="5dip"
-        android:paddingLeft="3dip"
-        android:textSize="@dimen/title_text_size"
+        android:paddingLeft="@dimen/list_item_left_padding"
+        android:paddingTop="@dimen/menu_row_vertical_padding"
+        android:paddingBottom="@dimen/menu_row_vertical_padding"
+        android:textSize="@dimen/menu_text_size"        
         />
-    <ImageView
-        android:layout_width="fill_parent"
-        android:layout_height="1dip"
-        android:scaleType="fitXY"
-        android:src="@drawable/divider"
-        />    
 </LinearLayout>

@@ -73,7 +73,7 @@ public class ItemListActivity extends Activity {
         public Err
         onDoWork(SpinAsyncTask task, Object... objs) {
             try {
-                return task.loadFeeds(objs[0]);
+                return task.updateLoad(false, objs[0]);
             } catch (InterruptedException e) {
                 return Err.Interrupted;
             }
@@ -271,9 +271,10 @@ public class ItemListActivity extends Activity {
     private void
     onContext_deleteDnFile(final long id, final int position) {
         // Create "Enter Url" dialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.confirm_delete_download_file);
+        AlertDialog dialog =
+                LookAndFeel.createWarningDialog(this,
+                                                R.string.delete_downloaded_file,
+                                                R.string.delete_downloaded_file_msg);
         dialog.setButton(getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override

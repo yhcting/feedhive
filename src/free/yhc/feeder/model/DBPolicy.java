@@ -255,7 +255,7 @@ public class DBPolicy {
      * return: -1 (for fail to update)
      * */
     public int
-    updateItems(Feed.Channel ch)
+    updateChannel(Feed.Channel ch, boolean updateImage)
             throws InterruptedException {
         eAssert(null != ch.items);
 
@@ -304,6 +304,19 @@ public class DBPolicy {
         c.close();
 
         lock();
+        // update channel information
+        db.updateChannel(ch.dbD.id,
+                         new ColumnChannel[] {
+                            ColumnChannel.TITLE,
+                            ColumnChannel.DESCRIPTION },
+                         new String[] {
+                            ch.parD.title,
+                            ch.parD.description });
+        if (updateImage)
+            db.updateChannel(ch.dbD.id, ColumnChannel.IMAGEBLOB, ch.dynD.imageblob);
+        unlock();
+
+        lock();
         db.prepareUpdateItemTable(ch.dbD.id);
         try {
             int cnt = 0;
@@ -326,8 +339,7 @@ public class DBPolicy {
                     lock();
                 }
             }
-
-            // update lastupdate-tiem for this channel
+            // update lastupdate-time for this channel
             db.updateChannel(ch.dbD.id, ColumnChannel.LASTUPDATE, DateUtils.getCurrentDateString());
             db.completeUpdateItemTable(ch.dbD.id);
             unlock();
