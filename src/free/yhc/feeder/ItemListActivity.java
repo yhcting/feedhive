@@ -212,16 +212,23 @@ public class ItemListActivity extends Activity {
     // 'public' to use java reflection
     public void
     onActionDnOpen(long id, int position) {
+        String enclosureUrl = getInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
         String fpath = UIPolicy.getItemFilePath(cid,
                                                 getInfoString(DB.ColumnItem.TITLE, position),
-                                                getInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
+                                                enclosureUrl);
         eAssert(null != fpath);
         File f = new File(fpath);
         if (f.exists()) {
-            String type = getInfoString(DB.ColumnItem.ENCLOSURE_TYPE, position);
+            // "RSS described media type" vs "mime type by guessing from file extention".
+            // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
+            String type = Utils.guessMimeTypeFromUrl(enclosureUrl);
+            if (null == type)
+                type = getInfoString(DB.ColumnItem.ENCLOSURE_TYPE, position);
+
             if (!Utils.isMimeType(type))
-                type = Utils.guessMimeType(fpath);
+                type = "text/plain"; // this is default.
+
 
             // File is already exists. Do action with it!
             Intent intent = new Intent(Intent.ACTION_VIEW);

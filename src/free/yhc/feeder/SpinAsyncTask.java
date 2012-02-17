@@ -1,6 +1,7 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.logI;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -53,6 +54,7 @@ DialogInterface.OnClickListener
     protected Err
     doInBackground(Object... objs) {
         Utils.resetTimeLog();
+        logI("* Start background Job : SpinSyncTask\n");
         Err ret = Err.NoErr;
         if (null != onEvent)
             ret = onEvent.onDoWork(this, objs);

@@ -644,7 +644,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         switch (requestCode) {
         case ReqCReadChannel:
-            getListAdapter().notifyDataSetChanged();
+            refreshList(ab.getSelectedTab());
             break;
         case ReqCPredefinedChannel:
             refreshList(ab.getSelectedTab());

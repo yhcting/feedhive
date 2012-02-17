@@ -82,9 +82,7 @@ public class UIPolicy {
         if (url.isEmpty())
             return "";
 
-        String ext = Utils.getExtention(url);
-        if (null == ext)
-            ext = "";
+        String ext = Utils.getExtentionFromUrl(url);
 
         // Title may include character that is not allowed as file name
         // (ex. '/')

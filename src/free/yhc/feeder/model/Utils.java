@@ -16,6 +16,7 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 public class Utils {
     private static final boolean DBG = true;
@@ -26,46 +27,35 @@ public class Utils {
         '/', '?', '"', '*', '|', '\\', '<', '>'
     };
 
+    // Belows are not used.
+    // Instead of self-implementation, predefined-android-classes are used.
     // index of each value.
     private static final int EXT2MIME_OFFSET_EXT = 0;
     private static final int EXT2MIME_OFFSET_MIME = 1;
     private static final int EXT2MIME_OFFSET_SZ = 2;
     private static String[] ext2mimeMap = {
             // Image
-            "gif",
-            "image/gif",
-            "jpeg",
-            "image/jpeg",
-            "jpg",
-            "image/jpeg",
-            "png",
-            "image/png",
-            "tiff",
-            "image/tiff",
-            "bmp",
-            "image/bmp", // is this standard???
+            "gif",           "image/gif",
+            "jpeg",          "image/jpeg",
+            "jpg",           "image/jpeg",
+            "png",           "image/png",
+            "tiff",          "image/tiff",
+            "bmp",           "image/bmp", // is this standard???
 
             // Audio
-            "mp3",
-            "audio/mpeg",
-            "aac",
-            "audio/*",
+            "mp3",           "audio/mpeg",
+            "aac",           "audio/*",
 
             // Video
-            "mpeg",
-            "video/mpeg",
-            "mp4",
-            "video/mp4",
-            "ogg",
-            "video/ogg",
+            "mpeg",          "video/mpeg",
+            "mp4",           "video/mp4",
+            "ogg",           "video/ogg",
 
             // Text
-            "txt",
-            "text/plain",
-            "html",
-            "text/html",
-            "xml",
-            "text/xml", };
+            "txt",           "text/plain",
+            "html",          "text/html",
+            "xml",           "text/xml",
+    };
 
     private static String[] mimeTypes = {
             "application",
@@ -75,7 +65,8 @@ public class Utils {
             "model",
             "multipart",
             "text",
-            "video", };
+            "video",
+    };
 
     private static final int NR_TIMELOG_SCRATCH = 10;
     private static int timeLogDepth = 0;
@@ -162,12 +153,12 @@ public class Utils {
         return null;
     }
 
-    /*
-     * Get size(width, height) of given image.
-     * @param image : 'image file path' or 'byte[]' image data
-     * @param out : out[0] : width of image / out[1] : height of image
-     * @return false if image cannot be decode. true if success
-     */
+    //
+    // Get size(width, height) of given image.
+    // @param image : 'image file path' or 'byte[]' image data
+    // @param out : out[0] : width of image / out[1] : height of image
+    // @return false if image cannot be decode. true if success
+    //
     // out[0] : width / out[1] : height
     public static boolean
     imageSize(Object image, int[] out) {
@@ -183,19 +174,19 @@ public class Utils {
         return true;
     }
 
-    /*
-     * Calculate rectangle(out[]). This is got by shrinking
-     * rectangle(width,height) to bound rectangle(boundW, boundH) with fixed
-     * ratio. If input rectangle is included in bound, then input rectangle
-     * itself will be returned.(we don't need to adjust)
-     *
-     * @param boundW : width of bound rect
-     * @param boundH : height of bound rect
-     * @param width : width of rect to be shrunk
-     * @param height : height of rect to be shrunk
-     * @param out : calculated value [ out[0](width) out[1](height) ]
-     * @return : false(not shrunk) / true(shrunk)
-     */
+    //
+    // Calculate rectangle(out[]). This is got by shrinking
+    // rectangle(width,height) to bound rectangle(boundW, boundH) with fixed
+    // ratio. If input rectangle is included in bound, then input rectangle
+    // itself will be returned.(we don't need to adjust)
+    //
+    // @param boundW : width of bound rect
+    // @param boundH : height of bound rect
+    // @param width : width of rect to be shrunk
+    // @param height : height of rect to be shrunk
+    // @param out : calculated value [ out[0](width) out[1](height) ]
+    // @return : false(not shrunk) / true(shrunk)
+    //
     public static boolean
     shrinkFixedRatio(int boundW, int boundH, int width, int height, int[] out) {
         boolean ret;
@@ -221,15 +212,15 @@ public class Utils {
         return ret;
     }
 
-    /*
-     * Make fixed-ration-bounded-bitmap with file. if (0 >= boundW || 0 >=
-     * boundH), original-size-bitmap is trying to be created.
-     *
-     * @param fpath : image file path (absolute path)
-     * @param boundW : bound width
-     * @param boundH : bound height
-     * @return : null (fail)
-     */
+    //
+    // Make fixed-ration-bounded-bitmap with file. if (0 >= boundW || 0 >=
+    // boundH), original-size-bitmap is trying to be created.
+    //
+    // @param fpath : image file path (absolute path)
+    // @param boundW : bound width
+    // @param boundH : bound height
+    // @return : null (fail)
+    //
     public static Bitmap
     decodeImage(Object image, int boundW, int boundH) {
         eAssert(null != image);
@@ -282,10 +273,10 @@ public class Utils {
         try {
             URL url = new URL(dnurl);
 
-            /*
-             * long startTime = System.currentTimeMillis();
-             * logI("Start Downloading : " + dnurl);
-             */
+            //
+            // long startTime = System.currentTimeMillis();
+            // logI("Start Downloading : " + dnurl);
+            //
 
             // Open a connection to that URL.
             URLConnection ucon = url.openConnection();
@@ -299,10 +290,10 @@ public class Utils {
             while ((current = bis.read()) != -1)
                 bab.append((byte) current);
 
-            /*
-             * logI("End Downloading : " + ((System.currentTimeMillis() -
-             * startTime) / 1000) + " sec");
-             */
+            //
+            // logI("End Downloading : " + ((System.currentTimeMillis() -
+            // startTime) / 1000) + " sec");
+            //
 
         } catch (IOException e) {
             throw new FeederException(Err.IONet);
@@ -346,6 +337,10 @@ public class Utils {
 
     public static boolean
     isMimeType(String str) {
+        // Let's reuse Android class
+        return MimeTypeMap.getSingleton().hasMimeType(str);
+
+        /* -- obsoleted implementation.
         int idx = str.lastIndexOf("/");
         if (idx < 0)
             return false;
@@ -356,18 +351,25 @@ public class Utils {
                 return true;
 
         return false;
+        */
     }
 
     public static String
-    getExtention(String str) {
+    getExtentionFromUrl(String url) {
+        return MimeTypeMap.getFileExtensionFromUrl(url);
+        /* -- obsoleted implementation.
         int idx = str.lastIndexOf(".");
         if (idx < 0)
             return null;
         return str.substring(idx + 1);
+        */
     }
 
     public static String
-    guessMimeType(String filename) {
+    guessMimeTypeFromUrl(String url) {
+        String ext = getExtentionFromUrl(url);
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        /* -- obsoleted implementation.
         String ext = getExtention(filename);
         if (null == ext)
             return null;
@@ -377,6 +379,7 @@ public class Utils {
                 return ext2mimeMap[EXT2MIME_OFFSET_MIME];
 
         return null;
+        */
     }
 
     // convert give string to filename-form

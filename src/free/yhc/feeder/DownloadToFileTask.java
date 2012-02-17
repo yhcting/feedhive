@@ -89,6 +89,8 @@ DialogInterface.OnCancelListener {
     protected Err
     doInBackground(String... aurl) {
         Utils.resetTimeLog();
+        logI("* Start background Job : DownloadToFileTask\n" +
+             "    Url : " + aurl[0]);
         try {
             URL url = new URL(aurl[0]);
             URLConnection conn = url.openConnection();
@@ -96,8 +98,8 @@ DialogInterface.OnCancelListener {
 
             int lenghtOfFile = conn.getContentLength();
             logI("Download File\n" +
-                 "    lenght: " + lenghtOfFile + "\n" +
-                 "    to    : " + outFilePath);
+                 "    lengh: " + lenghtOfFile + "\n" +
+                 "    to   : " + outFilePath);
 
             inputStream = new BufferedInputStream(url.openStream());
             outputStream = new FileOutputStream(tempFilePath);

@@ -10,15 +10,13 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import android.text.Html;
+
 public class RSSParser {
     // parsing priority of namespace supported.
     private static final int PRI_ITUNES     = 2;
     private static final int PRI_DC         = 1;
     private static final int PRI_DEFAULT    = 0;
-
-    private static final int CDATA_UNCHECKED  = 0;
-    private static final int CDATA_HTTPLIKE   = 1;
-    private static final int CDATA_PLAINTEXT  = 2;
 
     // Result data format from parse.
     class Result {
@@ -134,27 +132,27 @@ public class RSSParser {
         String text = "";
         Node t = findNodeByNameFromSiblings(n.getFirstChild(), "#text");
 
-        /*
-         * [ Issue of CDATA section. ]
-         * CDATA section should be ignored at XML parser.
-         * But, lots of rss feeds supported by Korean presses, uses CDATA section as a kind of text section.
-         *
-         * For example
-         *     <title><![CDATA[[사설]지상파·케이블의 밥그릇 싸움과 방통위의 무능]]></title>
-         *
-         * At some cases, 'desciption' elements includs several 'cdata-section'
-         * For example
-         *     <description><![CDATA[[ xxx ]]> <![CDATA[[xxxx]]></description>
-         *
-         * In this case, there is no title string!!!
-         * To support this case, we uses 'cdata' section if there is no valid 'text' section.
-         * In case of there is several 'cdata-section', merge all into one string.
-         * (This is kind of parsing policy!!)
-         *
-         * TODO
-         *   This new Parsing Policy is best way to support this?
-         *   Is there any elegant code structure to support various parsing policy?
-         */
+        //
+        // [ Issue of CDATA section. ]
+        // CDATA section should be ignored at XML parser.
+        // But, lots of rss feeds supported by Korean presses, uses CDATA section as a kind of text section.
+        //
+        // For example
+        //     <title><![CDATA[[사설]지상파·케이블의 밥그릇 싸움과 방통위의 무능]]></title>
+        //
+        // At some cases, 'desciption' elements includs several 'cdata-section'
+        // For example
+        //     <description><![CDATA[[ xxx ]]> <![CDATA[[xxxx]]></description>
+        //
+        // In this case, there is no title string!!!
+        // To support this case, we uses 'cdata' section if there is no valid 'text' section.
+        // In case of there is several 'cdata-section', merge all into one string.
+        // (This is kind of parsing policy!!)
+        //
+        // TODO
+        //   This new Parsing Policy is best way to support this?
+        //   Is there any elegant code structure to support various parsing policy?
+        //
         if (null == t) {
             StringBuilder sbuilder = new StringBuilder();
             n = n.getFirstChild();
@@ -164,41 +162,42 @@ public class RSSParser {
                 n = n.getNextSibling();
             }
             text = sbuilder.toString();
-
-            // Check cdata section!
-            if (HttpParser.guessIsHttpText(text))
-                text = HttpParser.removeTags(text);
-
         } else
             text = t.getNodeValue();
 
-        /*
-         * remove leading and trailing new line.
-         *
-         * + 'xxx' is stored.
-         *     <tag>xxx</tag>
-         *
-         * + '\nxxx\n' is stored.
-         *     <tag>
-         *     xxx
-         *     </tag>
-         */
+        // Lots of RSS serviced in South Korea uses raw HTML string in
+        //   'title' 'description' or 'cdata-section'
+        // So, we need to beautify this string.(remove ugly tags and entities)
+        // This may time-consuming job.
+        text = Html.fromHtml(text).toString();
+
+        //
+        // remove leading and trailing new line.
+        //
+        // + 'xxx' is stored.
+        //     <tag>xxx</tag>
+        //
+        // + '\nxxx\n' is stored.
+        //     <tag>
+        //     xxx
+        //     </tag>
+        //
         text = Utils.removeLeadingTrailingNewLine(text);
 
-        /*
-         * NOTE
-         *   Why "" is returned instead of null?
-         *   Calling this function means interesting node is found.
-         *   But, in case node has empty text, DOM parser doesn't havs '#text' node.
-         *
-         *   For example
-         *      <title></title>
-         *
-         *   In this case node 'title' doesn't have '#text'node as it's child.
-         *   So, t becomes null.
-         *   But, having empty string as an text value of node 'title', is
-         *     more reasonable than null as it's value.
-         */
+        //
+        // NOTE
+        //   Why "" is returned instead of null?
+        //   Calling this function means interesting node is found.
+        //   But, in case node has empty text, DOM parser doesn't havs '#text' node.
+        //
+        //   For example
+        //      <title></title>
+        //
+        //   In this case node 'title' doesn't have '#text'node as it's child.
+        //   So, t becomes null.
+        //   But, having empty string as an text value of node 'title', is
+        //     more reasonable than null as it's value.
+        //
         return text;
     }
 
