@@ -182,7 +182,7 @@ public class RSSParser {
         //     xxx
         //     </tag>
         //
-        text = Utils.removeLeadingTrailingNewLine(text);
+        text = Utils.removeLeadingTrailingWhiteSpace(text);
 
         //
         // NOTE

@@ -407,13 +407,9 @@ public class Utils {
     }
 
     public static String
-    removeLeadingTrailingNewLine(String s) {
-
-        if (s.length() > 0 && '\n' == s.charAt(0))
-            s = s.substring(1);
-        if (s.length() > 0 && '\n' == s.charAt(s.length() - 1))
-            s = s.substring(0, s.length() - 1);
-        return s;
+    removeLeadingTrailingWhiteSpace(String s) {
+        s = s.replaceFirst("^\\s+", "");
+        return s.replaceFirst("\\s+$", "");
     }
 
     public static boolean

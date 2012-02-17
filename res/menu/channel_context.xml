@@ -4,4 +4,5 @@
     <item android:id="@+id/change_category" android:title="@string/change_category" android:visible="true"></item>
     <item android:id="@+id/reverse_order" android:visible="true" android:title="@string/reverse_order"></item>
     <item android:id="@+id/pick_icon" android:visible="true" android:title="@string/pick_icon"></item>
+    <item android:id="@+id/update" android:title="@string/update" android:visible="true"></item>
 </menu>

@@ -8,7 +8,7 @@
 	    android:layout_width="fill_parent"
 	    android:layout_height="fill_parent"
         android:layout_marginTop="3dip"
-        android:paddingLeft="3dip"
+        android:paddingLeft="@dimen/list_item_left_padding"
 	    android:layout_gravity="center_vertical"
 	    android:orientation="horizontal"
 	    >
@@ -59,6 +59,8 @@
     <ImageView
         android:layout_width="fill_parent"
         android:layout_height="2dip"
+        android:layout_marginLeft="@dimen/divider_horizonal_margin"
+        android:layout_marginRight="@dimen/divider_horizonal_margin"
         android:layout_marginTop="1dip"
         android:scaleType="fitXY"
         android:src="@drawable/divider"

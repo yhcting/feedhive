@@ -113,7 +113,7 @@ public class NetLoader {
      * Update feed information only.
      */
     public Err
-    loadFeeds(long cid)
+    updateLoad(long cid, boolean reloadImage)
             throws InterruptedException {
         String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
         eAssert(null != url);
@@ -134,6 +134,16 @@ public class NetLoader {
         Feed.Channel ch = new Feed.Channel(res.channel, res.items);
         ch.dbD.id = cid;
 
+        if (reloadImage) {
+            Utils.beginTimeLog();
+            try {
+                ch.dynD.imageblob = Utils.getDecodedImageData(ch.parD.imageref);
+            } catch (FeederException e) {
+                ; // ignore image data
+            }
+            Utils.endTimeLog((null == ch.dynD.imageblob)?"< Fail >":"< Ok >" + "Handling Image");
+        }
+
         Utils.beginTimeLog();
         String state;
         for (Feed.Item item : ch.items) {
@@ -149,7 +159,7 @@ public class NetLoader {
         Utils.endTimeLog("Comparing with DB data");
 
         Utils.beginTimeLog();
-        dbp.updateItems(ch);
+        dbp.updateChannel(ch, null != ch.dynD.imageblob);
         Utils.endTimeLog("Updating Items");
 
         return Err.NoErr;
