@@ -84,7 +84,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                         return false;
 
                     // right to left swipe
-                    if(e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE
+                    if (e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE
                        && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
                         // Change ActionBar Tab.
                         int nextIdx = ab.getSelectedNavigationIndex() + 1;
@@ -93,9 +93,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                             getTag(ab.getTabAt(nextIdx)).fromGesture = true;
                             ab.setSelectedNavigationItem(nextIdx);
                         }
-
-                    }  else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE
-                                && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+                        return true;
+                    } else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE
+                               && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
                         // Change ActionBar Tab.
                         int nextIdx = ab.getSelectedNavigationIndex() - 1;
                         if (nextIdx >= 0) {
@@ -103,13 +103,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                             getTag(ab.getTabAt(nextIdx)).fromGesture = true;
                             ab.setSelectedNavigationItem(nextIdx);
                         }
-
+                        return true;
                     }
                 } catch (Exception e) {
                     // nothing
-                    return false;
                 }
-                return true;
+                return false;
             }
         }
 
