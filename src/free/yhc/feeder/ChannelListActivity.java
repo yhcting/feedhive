@@ -107,8 +107,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                     }
                 } catch (Exception e) {
                     // nothing
+                    return false;
                 }
-                return false;
+                return true;
             }
         }
 
@@ -138,14 +139,21 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 }
             });
 
+            // Why "event handling for motion detection is here?"
+            //   (not in 'ViewFlipper")
+            // We can do similar thing by inheriting ViewFlipper and using 'intercepting touch event.'
+            // But, in this case, scrolling up/down event is handled by list view and since than
+            //   events are dedicated to list view - intercept doesn't work expectedly
+            //   (not verified, but experimentally looks like it).
+            // So, motion should be handled at list view.
             list.setOnTouchListener(new View.OnTouchListener() {
                 @Override
                 public boolean
                 onTouch(View v, MotionEvent event) {
                     if (flipper.onTouch(event))
-                        return true;
-                    else
-                        return false;
+                        // To avoid 'onclick' is executed even if 'gesture' is triggered.
+                        event.setAction(MotionEvent.ACTION_CANCEL);
+                    return false;
                 }
             });
             flipper.addView(ll);
