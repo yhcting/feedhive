@@ -56,4 +56,5 @@
     <string name="reverse_order">Reverse order</string>
     <string name="select_predefined_channel">Select predefined</string>
     <string name="pick_icon">Pick icon</string>
+    <string name="open_link">Open link</string>
 </resources>

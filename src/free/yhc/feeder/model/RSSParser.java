@@ -172,7 +172,7 @@ public class RSSParser {
         text = Html.fromHtml(text).toString();
 
         //
-        // remove leading and trailing new line.
+        // [ remove leading and trailing new line. ]
         //
         // + 'xxx' is stored.
         //     <tag>xxx</tag>
@@ -182,6 +182,10 @@ public class RSSParser {
         //     xxx
         //     </tag>
         //
+        // [ removing wrapping white space between '￼' character ] ???
+        // Usually, image is wrapped by several white spaces.
+        // This beautifies web pages, but ugly in short description.
+        // Open discussion for this...
         text = Utils.removeLeadingTrailingWhiteSpace(text);
 
         //

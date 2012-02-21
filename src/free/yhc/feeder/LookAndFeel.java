@@ -55,14 +55,28 @@ public class LookAndFeel {
     }
 
     public static AlertDialog
-    createWarningDialog(Context context, int title, int message) {
-        eAssert(0 != title);
+    createAlertDialog(Context context, int icon, CharSequence title, CharSequence message) {
+        eAssert(null != title);
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         AlertDialog dialog = builder.create();
-        dialog.setIcon(R.drawable.warn);
+        if (0 != icon)
+            dialog.setIcon(icon);
         dialog.setTitle(title);
-        if (0 != message)
-            dialog.setMessage(context.getResources().getText(message));
+        if (null != message)
+            dialog.setMessage(message);
         return dialog;
+    }
+    
+    public static AlertDialog
+    createAlertDialog(Context context, int icon, int title, int message) {
+        eAssert(0 != title);
+        CharSequence t = context.getResources().getText(title);
+        CharSequence msg = (0 == message)? null: context.getResources().getText(message);
+        return createAlertDialog(context, icon, t, msg);
+    }
+    
+    public static AlertDialog
+    createWarningDialog(Context context, int title, int message) {
+        return createAlertDialog(context, R.drawable.ic_alert, title, message);
     }
 }

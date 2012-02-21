@@ -8,6 +8,6 @@
         android:layout_height="wrap_content"
         android:text="@string/load_progress"
         android:gravity="center"
-        android:textSize="50dip"
+        android:textSize="35dip"
         />        
 </LinearLayout>

@@ -16,6 +16,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.Layout;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
@@ -28,6 +29,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TextView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
@@ -49,7 +51,8 @@ public class ItemListActivity extends Activity {
         ActionInfo(int layout, String methodName) {
             this.layout = layout;
             try {
-                method = ItemListActivity.this.getClass().getMethod(methodName, long.class, int.class);
+                method = ItemListActivity.this.getClass()
+                            .getMethod(methodName, android.view.View.class, long.class, int.class);
             } catch (Exception e) {
                 eAssert(false);
             }
@@ -59,9 +62,9 @@ public class ItemListActivity extends Activity {
             return layout;
         }
 
-        void invokeAction(long id, int position) {
+        void invokeAction(View view, long id, int position) {
             try {
-                method.invoke(ItemListActivity.this, id, position);
+                method.invoke(ItemListActivity.this, view, id, position);
             } catch (Exception e) {
                 eAssert(false);
             }
@@ -211,7 +214,7 @@ public class ItemListActivity extends Activity {
 
     // 'public' to use java reflection
     public void
-    onActionDnOpen(long id, int position) {
+    onActionDnOpen(View view, long id, int position) {
         String enclosureUrl = getInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
         String fpath = UIPolicy.getItemFilePath(cid,
@@ -258,13 +261,50 @@ public class ItemListActivity extends Activity {
 
     // 'public' to use java reflection
     public void
-    onActionOpen(long id, int position) {
+    onActionOpen(View view, long id, final int position) {
         // 'link' is used.
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        // TODO : check. Does Uri.parse always return non-null-Uri reference???
-        intent.setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position)));
-        startActivity(intent);
-
+        
+        // Description is "end ellipsis"
+        boolean bEllipsed = false;
+        // See R.layout.item_row_link for below code.
+        TextView desc = (TextView)((LinearLayout)view).findViewById(R.id.description);
+        Layout l = desc.getLayout();
+        if (null != l){
+            int lines = l.getLineCount();
+            if (lines > 0)
+                if (l.getEllipsisCount(lines - 1) > 0)
+                    bEllipsed = true;
+        }
+        
+        if (bEllipsed) {
+            // Description is end-ellipsis
+            // open text view dialog to see details...
+            TextView title = (TextView)((LinearLayout)view).findViewById(R.id.title);
+            final AlertDialog dialog = LookAndFeel.createAlertDialog(this, 0, title.getText(), desc.getText());
+            dialog.setButton(getResources().getText(R.string.open_link),
+                             new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    startActivity(new Intent(Intent.ACTION_VIEW)
+                                    .setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position))));
+                    dialog.dismiss();
+                }                
+            });
+            dialog.setButton2(getResources().getText(R.string.ok),
+                    new DialogInterface.OnClickListener() {
+               @Override
+               public void onClick(DialogInterface dialog, int which) {
+                   dialog.dismiss();
+               }                
+           });
+            dialog.show();
+        } else {
+            // Full text is already shown at 'description' summary.
+            // So, open link directly!
+            startActivity(new Intent(Intent.ACTION_VIEW)
+                            .setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position))));
+        }
+        
         changeItemState_opened(id, position);
     }
 
@@ -357,7 +397,7 @@ public class ItemListActivity extends Activity {
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             public void
             onItemClick (AdapterView<?> parent, View view, int position, long id) {
-                getActionInfo(action).invokeAction(id, position);
+                getActionInfo(action).invokeAction(view, id, position);
             }
         });
         registerForContextMenu(list);

@@ -61,6 +61,6 @@
         android:layout_marginRight="@dimen/divider_horizonal_margin"
         android:layout_marginTop="1dip"
         android:scaleType="fitXY"
-        android:src="@drawable/divider"
+        android:src="@drawable/divider_horizontal_bright"
         />    
 </LinearLayout>
