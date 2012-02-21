@@ -29,7 +29,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:textSize="@dimen/desc_text_size"
-        android:maxLines="5"
+        android:maxLines="3"
         android:ellipsize="end"
         />
     <ImageView

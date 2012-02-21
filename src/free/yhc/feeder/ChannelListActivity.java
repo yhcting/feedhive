@@ -486,6 +486,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // Set action for dialog.
         EditText edit = (EditText) layout.findViewById(R.id.editbox);
         edit.setOnKeyListener(new View.OnKeyListener() {
+            @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
@@ -540,6 +541,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         EditText edit = (EditText)layout.findViewById(R.id.editbox);
         edit.setHint(R.string.enter_name);
         edit.setOnKeyListener(new View.OnKeyListener() {
+            @Override
             public boolean
             onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button

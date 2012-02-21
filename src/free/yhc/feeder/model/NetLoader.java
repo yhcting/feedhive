@@ -23,26 +23,32 @@ public class NetLoader {
             throws FeederException {
         logI("Fetching Channel [" + url + "]\n");
         RSSParser.Result res = null;
-        try {
-            Utils.beginTimeLog();
-            Document dom = DocumentBuilderFactory
-                            .newInstance()
-                            .newDocumentBuilder()
-                            .parse(new URL(url).openStream());
-            Utils.endTimeLog("Open URL and Parseing as Dom");
-            Utils.beginTimeLog();
-            // Only RSS is supported at this version.
-            res = new RSSParser().parse(dom);
-            Utils.endTimeLog("RSSParsing");
-        } catch (IOException e) {
-            throw new FeederException(Err.IONet);
-        } catch (SAXException e) {
-            e.printStackTrace();
-            throw new FeederException(Err.ParserUnsupportedFormat);
-        } catch (ParserConfigurationException e) {
-            throw new FeederException(Err.ParserUnsupportedFormat);
-        } catch (FeederException e) {
-            throw e;
+        int              retry = 5;
+        while (0 < retry--) {
+            try {
+                Utils.beginTimeLog();
+                Document dom = DocumentBuilderFactory
+                                .newInstance()
+                                .newDocumentBuilder()
+                                .parse(new URL(url).openStream());
+                Utils.endTimeLog("Open URL and Parseing as Dom");
+                Utils.beginTimeLog();
+                // Only RSS is supported at this version.
+                res = new RSSParser().parse(dom);
+                Utils.endTimeLog("RSSParsing");
+                break; // done
+            } catch (IOException e) {
+                if (retry <= 0)
+                    throw new FeederException(Err.IONet);
+                ; // continue next retry
+            } catch (SAXException e) {
+                e.printStackTrace();
+                throw new FeederException(Err.ParserUnsupportedFormat);
+            } catch (ParserConfigurationException e) {
+                throw new FeederException(Err.ParserUnsupportedFormat);
+            } catch (FeederException e) {
+                throw e;
+            }
         }
         return res;
     }

@@ -66,7 +66,7 @@ public class LookAndFeel {
             dialog.setMessage(message);
         return dialog;
     }
-    
+
     public static AlertDialog
     createAlertDialog(Context context, int icon, int title, int message) {
         eAssert(0 != title);
@@ -74,7 +74,7 @@ public class LookAndFeel {
         CharSequence msg = (0 == message)? null: context.getResources().getText(message);
         return createAlertDialog(context, icon, t, msg);
     }
-    
+
     public static AlertDialog
     createWarningDialog(Context context, int title, int message) {
         return createAlertDialog(context, R.drawable.ic_alert, title, message);

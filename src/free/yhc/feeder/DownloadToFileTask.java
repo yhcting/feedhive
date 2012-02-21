@@ -91,11 +91,29 @@ DialogInterface.OnCancelListener {
         Utils.resetTimeLog();
         logI("* Start background Job : DownloadToFileTask\n" +
              "    Url : " + aurl[0]);
-        try {
-            URL url = new URL(aurl[0]);
-            URLConnection conn = url.openConnection();
-            conn.connect();
 
+        URL           url = null;
+        URLConnection conn = null;
+        int           retry = 5;
+        while (0 < retry--) {
+            try {
+                url = new URL(aurl[0]);
+                conn = url.openConnection();
+                conn.connect();
+                break; // done
+            } catch (IOException e) {
+                if (userCancelled)
+                    return Err.NoErr;
+
+                if (0 >= retry) {
+                    e.printStackTrace();
+                    logW(e.getMessage());
+                    return Err.IONet;
+                }
+            }
+        }
+
+        try {
             int lenghtOfFile = conn.getContentLength();
             logI("Download File\n" +
                  "    lengh: " + lenghtOfFile + "\n" +

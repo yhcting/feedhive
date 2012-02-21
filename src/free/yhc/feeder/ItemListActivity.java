@@ -24,6 +24,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ImageButton;
@@ -263,7 +264,7 @@ public class ItemListActivity extends Activity {
     public void
     onActionOpen(View view, long id, final int position) {
         // 'link' is used.
-        
+
         // Description is "end ellipsis"
         boolean bEllipsed = false;
         // See R.layout.item_row_link for below code.
@@ -275,7 +276,7 @@ public class ItemListActivity extends Activity {
                 if (l.getEllipsisCount(lines - 1) > 0)
                     bEllipsed = true;
         }
-        
+
         if (bEllipsed) {
             // Description is end-ellipsis
             // open text view dialog to see details...
@@ -288,14 +289,14 @@ public class ItemListActivity extends Activity {
                     startActivity(new Intent(Intent.ACTION_VIEW)
                                     .setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position))));
                     dialog.dismiss();
-                }                
+                }
             });
             dialog.setButton2(getResources().getText(R.string.ok),
                     new DialogInterface.OnClickListener() {
                @Override
                public void onClick(DialogInterface dialog, int which) {
                    dialog.dismiss();
-               }                
+               }
            });
             dialog.show();
         } else {
@@ -304,7 +305,7 @@ public class ItemListActivity extends Activity {
             startActivity(new Intent(Intent.ACTION_VIEW)
                             .setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position))));
         }
-        
+
         changeItemState_opened(id, position);
     }
 
@@ -383,8 +384,8 @@ public class ItemListActivity extends Activity {
             }
         });
         bar.setCustomView(abView, new ActionBar.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT,
+                LayoutParams.WRAP_CONTENT,
                 Gravity.RIGHT));
 
         int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
@@ -395,6 +396,7 @@ public class ItemListActivity extends Activity {
         eAssert(null != list);
         list.setAdapter(new ItemListAdapter(this, getActionInfo(action).getLayout(), adapterCursorQuery(cid), cid));
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
             public void
             onItemClick (AdapterView<?> parent, View view, int position, long id) {
                 getActionInfo(action).invokeAction(view, id, position);

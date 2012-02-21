@@ -56,8 +56,11 @@ public final class DB extends SQLiteOpenHelper {
             this.type = type;
             this.constraint = constraint;
         }
+        @Override
         public String getName() { return name; }
+        @Override
         public String getType() { return type; }
+        @Override
         public String getConstraint() { return constraint; }
     }
 
@@ -88,8 +91,11 @@ public final class DB extends SQLiteOpenHelper {
             this.type = type;
             this.constraint = constraint;
         }
+        @Override
         public String getName() { return name; }
+        @Override
         public String getType() { return type; }
+        @Override
         public String getConstraint() { return constraint; }
     }
 
@@ -119,8 +125,11 @@ public final class DB extends SQLiteOpenHelper {
             this.type = type;
             this.constraint = constraint;
         }
+        @Override
         public String getName() { return name; }
+        @Override
         public String getType() { return type; }
+        @Override
         public String getConstraint() { return constraint; }
     }
 
