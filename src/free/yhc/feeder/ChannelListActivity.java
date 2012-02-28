@@ -35,15 +35,19 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
+import free.yhc.feeder.model.BGTask;
+import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.FeederException;
+import free.yhc.feeder.model.RTData;
 import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements ActionBar.TabListener {
@@ -53,6 +57,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private static final int ReqCPickImage          = 2;
 
     public static final int ResCReadChannelOk       = 0; // nothing special
+    public static final int ResCReadChannelUpdating = 1;
 
     // For swipe animation
     private static final int SWIPE_MIN_DISTANCE = 120;
@@ -80,7 +85,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 try {
-                    if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH)
+                    // Distance along x-axis SHOULD be larger than two-times of y distance
+                    if (2 * Math.abs(e1.getY() - e2.getY()) > Math.abs(e1.getX() - e2.getX()))
                         return false;
 
                     // right to left swipe
@@ -127,7 +133,15 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             LinearLayout ll = LookAndFeel.inflateLayout(context, R.layout.list);
             ListView list = ((ListView)ll.findViewById(R.id.list));
             eAssert(null != list);
-            list.setAdapter(new ChannelListAdapter(context, R.layout.channel_row, null));
+            list.setAdapter(new ChannelListAdapter(context, R.layout.channel_row, null,
+                                                    new ChannelListAdapter.OnAction() {
+                @Override
+                public void onUpdateClick(ImageView ibtn, long cid) {
+                    logI("ChannelList : update cid : " + cid);
+                    onBtn_channelUpdate(ibtn, cid);
+
+                }
+            }));
             list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void
@@ -196,7 +210,55 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
+    public class UpdateBGTask extends BGTaskUpdateChannel implements
+    BGTask.OnEvent {
+        private long    cid = -1;
 
+        UpdateBGTask(Object userObj, long cid) {
+            super(userObj);
+            this.cid = cid;
+        }
+
+        @Override
+        public void
+        onProgress(BGTask task, Object user, int progress) {
+        }
+
+        @Override
+        public void
+        onCancel(BGTask task, Object param, Object user) {
+            eAssert(cid >= 0);
+            RTData.S().unbindChannUpdateTask(cid);
+            if (isChannelInSelectedCategory(cid))
+                // NOTE : refresh??? just 'notifying' is enough?
+                getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+        }
+
+        @Override
+        public void
+        onPreRun(BGTask task, Object user) {
+            if (isChannelInSelectedCategory(cid))
+                // NOTE : refresh??? just 'notifying' is enough?
+                getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+        }
+
+        @Override
+        public void
+        onPostRun(BGTask task, Object user, Err result) {
+            // In normal case, onPostExecute is not called in case of 'user-cancel'.
+            // below code is for safety.
+            if (Err.UserCancelled == result)
+                return; // onPostExecute SHOULD NOT be called in case of user-cancel
+
+            RTData.S().unbindChannUpdateTask(cid);
+            if (Err.NoErr == result)
+                RTData.S().unregisterChannUpdateTask(cid);
+
+            if (isChannelInSelectedCategory(cid))
+                // NOTE : refresh??? just 'notifying' is enough?
+                getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+        }
+    }
 
     private class PickIconEventHandler implements SpinAsyncTask.OnEvent {
         @Override
@@ -235,7 +297,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 return Err.Unknown; // something evil!!!
             } else {
                 try {
-                    DBPolicy.get().updateChannel_image(cid_pickImage, imageData);
+                    DBPolicy.S().updateChannel_image(cid_pickImage, imageData);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                     return Err.DBUnknown;
@@ -300,7 +362,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
-
     class TabTag {
         long         categoryid;
         boolean      fromGesture = false;
@@ -339,10 +400,22 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         return getCategoryId(ab.getSelectedTab());
     }
 
+    private boolean
+    isChannelInSelectedCategory(long cid) {
+        TabTag tag = (TabTag)ab.getSelectedTab().getTag();
+        long catid;
+        try {
+            catid = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
+        } catch (InterruptedException e) {
+            return false;
+        }
+        return tag.categoryid == catid;
+    }
+
     private Cursor
     adapterCursorQuery(long categoryid) {
         try {
-            return DBPolicy.get().queryChannel(categoryid, new DB.ColumnChannel[] {
+            return DBPolicy.S().queryChannel(categoryid, new DB.ColumnChannel[] {
                     DB.ColumnChannel.ID, // Mandatory.
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.DESCRIPTION,
@@ -360,7 +433,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
         try {
-            DBPolicy.get().updateChannel_category(cid, getTag(to).categoryid);
+            DBPolicy.S().updateChannel_category(cid, getTag(to).categoryid);
         } catch (InterruptedException e) {
             finish();
             return false;
@@ -383,7 +456,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private Tab
     addCategory(Feed.Category cat) {
         String text;
-        if (DBPolicy.get().isDefaultCategoryId(cat.id))
+        if (DBPolicy.S().isDefaultCategoryId(cat.id))
             text = getResources().getText(R.string.default_category_name).toString();
         else
             text = cat.name;
@@ -410,11 +483,11 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private void
     deleteCategory(long categoryid) {
         try {
-            long[] cids = DBPolicy.get().getChannelIds(categoryid);
+            long[] cids = DBPolicy.S().getChannelIds(categoryid);
             for (long cid : cids)
-                DBPolicy.get().updateChannel_categoryToDefault(cid);
+                DBPolicy.S().updateChannel_categoryToDefault(cid);
 
-            DBPolicy.get().deleteCategory(categoryid);
+            DBPolicy.S().deleteCategory(categoryid);
         } catch (InterruptedException e) {
             finish();
             return;
@@ -449,7 +522,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     deleteChannel(Tab tab, long cid) {
         eAssert(null != tab);
         try {
-            DBPolicy.get().deleteChannel(cid);
+            DBPolicy.S().deleteChannel(cid);
         } catch (InterruptedException e) {
             e.printStackTrace();
             finish();
@@ -553,12 +626,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                     }
 
                     try {
-                        if (DBPolicy.get().isDuplicatedCategoryName(name)) {
+                        if (DBPolicy.S().isDuplicatedCategoryName(name)) {
                             LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                         } else {
                             // TODO -- add to DB!!
                             Feed.Category cat = new Feed.Category(name);
-                            if (0 > DBPolicy.get().insertCategory(cat))
+                            if (0 > DBPolicy.S().insertCategory(cat))
                                 LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
                             else {
                                 eAssert(cat.id >= 0);
@@ -580,7 +653,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private void
     onOpt_deleteCategory() {
         final long categoryid = getCategoryId(ab.getSelectedTab());
-        if (DBPolicy.get().isDefaultCategoryId(categoryid)) {
+        if (DBPolicy.S().isDefaultCategoryId(categoryid)) {
             LookAndFeel.showTextToast(this, R.string.warn_delete_default_category);
             return;
         }
@@ -692,7 +765,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private void
     onContext_reverseOrder(final long cid) {
         try {
-            DBPolicy.get().updateChannel_reverseOrder(cid);
+            DBPolicy.S().updateChannel_reverseOrder(cid);
         } catch (InterruptedException e) {
             finish();
             return;
@@ -713,7 +786,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     }
 
     private void
-    onContext_update(final long cid) {
+    onContext_fullUpdate(final long cid) {
         if (!Utils.isNetworkAvailable(this)) {
             LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
             return;
@@ -740,13 +813,64 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         dialog.show();
     }
 
+    private void
+    onBtn_channelUpdate(ImageView ibtn, long cid) {
+        RTData.StateChann state = RTData.S().getChannState(cid);
+        if (RTData.StateChann.Idle == state) {
+            logI("ChannelList : update : " + cid);
+            UpdateBGTask task = new UpdateBGTask(null, cid);
+            RTData.S().registerChannUpdateTask(cid, task);
+            RTData.S().bindChannUpdateTask(cid, task);
+            task.start(new BGTaskUpdateChannel.Arg(cid));
+        } else if (RTData.StateChann.Updating == state) {
+            logI("ChannelList : cancel : " + cid);
+            BGTask task = RTData.S().getChannUpdateTask(cid);
+            task.cancel(null);
+            // to change icon into "canceling"
+            getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+        } else if (RTData.StateChann.UpdateFailed == state) {
+            Err result = RTData.S().getChannBGTaskErr(cid);
+            LookAndFeel.showTextToast(this, result.getMsgId());
+            RTData.S().consumeResult(cid);
+            RTData.S().unregisterChannUpdateTask(cid);
+            getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+        } else if (RTData.StateChann.Canceling == state) {
+            LookAndFeel.showTextToast(this, R.string.wait_cancel);
+        } else
+            eAssert(false);
+    }
+
+    private void
+    onResult_pickImage(int resultCode, Intent data) {
+        if (RESULT_OK != resultCode)
+            return;
+        // this may takes quite long time (if image size is big!).
+        // So, let's do it in background.
+        new SpinAsyncTask(this, new PickIconEventHandler(), R.string.pick_icon_progress).execute(data);
+    }
+
+    private void
+    onResult_readChannel(int resultCode, Intent data) {
+        refreshList(ab.getSelectedTab());
+
+        switch (resultCode) {
+        case ResCReadChannelOk:
+            break;
+        case ResCReadChannelUpdating:
+            long cid = data.getLongExtra("cid", -1);
+            eAssert(cid >= 0);
+            RTData.S().bindChannUpdateTask(cid, new UpdateBGTask(null, cid));
+            break;
+        }
+    }
+
     @Override
     public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Feed.Category[] cats;
         try {
-            cats = DBPolicy.get().getCategories();
+            cats = DBPolicy.S().getCategories();
         } catch (InterruptedException e) {
             finish();
             return;
@@ -842,20 +966,11 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             onContext_pickIcon(info.id);
             return true;
 
-        case R.id.update:
-            onContext_update(info.id);
+        case R.id.full_update:
+            onContext_fullUpdate(info.id);
             return true;
         }
         return false;
-    }
-
-    private void
-    onResult_pickImage(int resultCode, Intent data) {
-        if (RESULT_OK != resultCode)
-            return;
-        // this may takes quite long time (if image size is big!).
-        // So, let's do it in background.
-        new SpinAsyncTask(this, new PickIconEventHandler(), R.string.pick_icon_progress).execute(data);
     }
 
     @Override
@@ -888,7 +1003,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         switch (requestCode) {
         case ReqCReadChannel:
-            refreshList(ab.getSelectedTab());
+            onResult_readChannel(resultCode, data);
             break;
         case ReqCPredefinedChannel:
             refreshList(ab.getSelectedTab());

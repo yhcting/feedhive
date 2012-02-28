@@ -1,6 +1,7 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
 import java.util.HashMap;
@@ -26,8 +27,9 @@ public class DBPolicy {
         db = DB.db();
     }
 
+    // S : Singleton instance
     public static DBPolicy
-    get() {
+    S() {
         if (null == instance)
             instance = new DBPolicy();
         return instance;
@@ -164,15 +166,15 @@ public class DBPolicy {
         return cats;
     }
 
-    /*
-     * Progress is hard-coded...
-     * Any better way???
-     *
-     * @cid : out value (channel id of DB)
-     * @ch  : constant
-     * @return 0 : successfully inserted and DB is changed.
-     *        -1 : fails. Error!
-     */
+    //
+    // Progress is hard-coded...
+    // Any better way???
+    //
+    // @cid : out value (channel id of DB)
+    // @ch  : constant
+    // @return 0 : successfully inserted and DB is changed.
+    //        -1 : fails. Error!
+    //
     public int
     insertChannel(Feed.Channel ch)
             throws InterruptedException {
@@ -187,6 +189,7 @@ public class DBPolicy {
                 return -1;
 
             lock();
+            logI("InsertChannel DB Section Start");
             // insert and update channel id.
             cid = db.insertChannel(ch);
             if (cid < 0) {
@@ -222,8 +225,9 @@ public class DBPolicy {
                     // give chance to be interrupted.
                     lock();
                 }
-                // logI("Inerting item----");
+                // logI("Inserting item----");
             }
+            logI("InsertChannel DB Section End (Success)");
             unlock();
 
             // All values in 'ch' should be keep untouched until operation is successfully completed.
@@ -248,17 +252,18 @@ public class DBPolicy {
         }
     }
 
-    /*
-     * Progress is hard-coded...
-     * Any better way???
-     *
-     * return: -1 (for fail to update)
-     * */
+    //
+    // Progress is hard-coded...
+    // Any better way???
+    //
+    // return: -1 (for fail to update)
+    //
     public int
     updateChannel(Feed.Channel ch, boolean updateImage)
             throws InterruptedException {
         eAssert(null != ch.items);
 
+        logI("UpdateChannel DB Section Start");
         lock();
         Cursor c = db.query(DB.getItemTableName(ch.dbD.id),
                             // Column index is used below. So order is important.
@@ -339,15 +344,15 @@ public class DBPolicy {
                     lock();
                 }
             }
+            db.completeUpdateItemTable(ch.dbD.id);
             // update lastupdate-time for this channel
             db.updateChannel(ch.dbD.id, ColumnChannel.LASTUPDATE, DateUtils.getCurrentDateString());
-            db.completeUpdateItemTable(ch.dbD.id);
             unlock();
         } catch (InterruptedException e) {
             db.rollbackUpdateItemTable(ch.dbD.id);
             throw new InterruptedException();
         }
-
+        logI("UpdateChannel DB Section End");
         return 0;
     }
 

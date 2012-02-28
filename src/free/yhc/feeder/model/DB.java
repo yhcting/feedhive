@@ -2,6 +2,10 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+import static free.yhc.feeder.model.Utils.logW;
+
+import java.util.HashMap;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -36,6 +40,8 @@ public final class DB extends SQLiteOpenHelper {
     static final String         TABLE_CATEGORY  = "category";
     static final String         TABLE_CHANNEL   = "channel";
     private static final String TABLE_ITEM      = "item";
+
+    private HashMap<Long, Boolean> updatingChannels = new HashMap<Long, Boolean>();
 
     public interface Column {
         String getName();
@@ -73,7 +79,7 @@ public final class DB extends SQLiteOpenHelper {
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "text",     "not null"), // time when channel is updated, lastly
         ACTION          ("action",          "text",     "not null"),
-        // 'order' is reserved word at DB. so make it's column name as 'listingorder'
+        // 'order' is reserved word at DB. so make it's column name as 'listing order'
         ORDER           ("listingorder",    "text",     "not null"), // normal / reverse
         URL             ("url",             "text",     "not null"), // channel url of this rss.
         UNOPENEDCOUNT   ("unopenedcount",   "integer",  "not null"),
@@ -144,7 +150,7 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     static String
-    getItemTempTableName(long channelid) {
+    getTempItemTableName(long channelid) {
         return TABLE_ITEM + "temp" + channelid;
     }
 
@@ -196,9 +202,21 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     private long
+    createTempItemTable(long cid) {
+        try {
+            db.execSQL(buildTableSQL(getTempItemTableName(cid), ColumnItem.values()));
+        } catch (SQLException e) {
+            logI(e.getMessage());
+            return -1;
+        }
+        return 0;
+    }
+
+
+    private long
     alterItemTable_toTemp(long cid) {
         try {
-            db.execSQL("ALTER TABLE '" + getItemTableName(cid) + "' RENAME TO '" + getItemTempTableName(cid) + "';");
+            db.execSQL("ALTER TABLE '" + getItemTableName(cid) + "' RENAME TO '" + getTempItemTableName(cid) + "';");
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
@@ -209,7 +227,7 @@ public final class DB extends SQLiteOpenHelper {
     private long
     alterItemTable_toMain(long cid) {
         try {
-            db.execSQL("ALTER TABLE '" + getItemTempTableName(cid) + "' RENAME TO '" + getItemTableName(cid) + "';");
+            db.execSQL("ALTER TABLE '" + getTempItemTableName(cid) + "' RENAME TO '" + getItemTableName(cid) + "';");
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
@@ -231,13 +249,19 @@ public final class DB extends SQLiteOpenHelper {
     private long
     dropTempItemTable(long cid) {
         try {
-            db.execSQL("DROP TABLE '" + getItemTempTableName(cid) + "';");
+            db.execSQL("DROP TABLE '" + getTempItemTableName(cid) + "';");
         } catch (SQLException e) {
             logI(e.getMessage());
             return -1;
         }
         return 0;
     }
+
+    private boolean
+    isUnderUpdating(long cid) {
+        return (null != updatingChannels.get(cid));
+    }
+
     /**************************************
      * Overriding.
      **************************************/
@@ -418,6 +442,7 @@ public final class DB extends SQLiteOpenHelper {
      */
     long
     deleteChannel(long cid) {
+        eAssert(!isUnderUpdating(cid));
         long r = db.delete(TABLE_CHANNEL,
                            ColumnChannel.ID.getName() + " = " + cid,
                            null);
@@ -431,6 +456,7 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     updateChannel(long cid, ColumnChannel column, String value) {
+        eAssert(!isUnderUpdating(cid));
         ContentValues cvs = new ContentValues();
         cvs.put(column.getName(), value);
 
@@ -442,6 +468,7 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     updateChannel(long cid, ColumnChannel[] columns, String[] values) {
+        eAssert(!isUnderUpdating(cid));
         ContentValues cvs = new ContentValues();
         eAssert(columns.length == values.length);
         for (int i = 0; i < columns.length; i++)
@@ -455,6 +482,7 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     updateChannel(long cid, ColumnChannel column, long value) {
+        eAssert(!isUnderUpdating(cid));
         ContentValues cvs = new ContentValues();
         cvs.put(column.getName(), value);
 
@@ -466,6 +494,7 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     updateChannel(long cid, ColumnChannel column, byte[] data) {
+        eAssert(!isUnderUpdating(cid));
         ContentValues cvs = new ContentValues();
         cvs.put(column.getName(), data);
 
@@ -477,6 +506,7 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     updateChannel(long cid, Feed.Channel.Order order) {
+        eAssert(!isUnderUpdating(cid));
         ContentValues cvs = new ContentValues();
         cvs.put(ColumnChannel.ORDER.getName(), order.name());
         return db.update(TABLE_CHANNEL,
@@ -487,6 +517,7 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     updateChannel(long cid, Feed.Channel.Action action) {
+        eAssert(!isUnderUpdating(cid));
         ContentValues cvs = new ContentValues();
         cvs.put(ColumnChannel.ACTION.getName(), action.name());
         return db.update(TABLE_CHANNEL,
@@ -510,11 +541,14 @@ public final class DB extends SQLiteOpenHelper {
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.parD.enclosureType);
         values.put(ColumnItem.STATE.getName(),               item.dynD.state.name());
 
-        return db.insert(getItemTableName(cid), null, values);
+        String tableName = isUnderUpdating(cid)? getTempItemTableName(cid): getItemTableName(cid);
+        return db.insert(tableName, null, values);
     }
 
     long
     updateItem(long cid, long id, Feed.Item.State state) {
+        // Update item during 'updating channel' is not expected!!
+        eAssert(!isUnderUpdating(cid));
         ContentValues values = new ContentValues();
         values.put(ColumnItem.STATE.getName(), state.name());
         return db.update(getItemTableName(cid),
@@ -525,30 +559,31 @@ public final class DB extends SQLiteOpenHelper {
 
     long
     prepareUpdateItemTable(long cid) {
-        eAssert(!doesTableExists(getItemTempTableName(cid)));
+        if (!doesTableExists(getTempItemTableName(cid)))
+            logW("Temp Item Table exists : cid(" + cid + ")");
         // to make sure.
         dropTempItemTable(cid);
-        if (0 > alterItemTable_toTemp(cid))
-            return -1;
 
-        if (0 > createItemTable(cid)) {
-            alterItemTable_toMain(cid);
+        updatingChannels.put(cid, true);
+        if (0 > createTempItemTable(cid)) {
+            updatingChannels.remove(cid);
             return -1;
         }
-
         return 0;
     }
 
     long
     completeUpdateItemTable(long cid) {
-        dropTempItemTable(cid);
+        dropItemTable(cid);
+        alterItemTable_toMain(cid);
+        updatingChannels.remove(cid);
         return 0;
     }
 
     long
     rollbackUpdateItemTable(long cid) {
-        dropItemTable(cid);
-        alterItemTable_toMain(cid);
+        dropTempItemTable(cid);
+        updatingChannels.remove(cid);
         return 0;
     }
 }

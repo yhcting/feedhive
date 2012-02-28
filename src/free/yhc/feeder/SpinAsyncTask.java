@@ -69,14 +69,14 @@ DialogInterface.OnClickListener
         // To avoid this case, start db transaction to cancel!.
         int retry = 20;
         try {
-            DBPolicy.get().lock();
+            DBPolicy.S().lock();
         } catch (InterruptedException e) {
-            DBPolicy.get().unlock();
+            DBPolicy.S().unlock();
             eAssert(false);
             return false;
         }
         while (0 < retry-- && !cancel(true));
-        DBPolicy.get().unlock();
+        DBPolicy.S().unlock();
 
         return retry > 0? true: false;
     }

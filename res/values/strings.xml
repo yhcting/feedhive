@@ -10,6 +10,7 @@
     <string name="refresh">새로고침</string>
     <string name="all">전부</string>
     <string name="update">업데이트</string>
+    <string name="full_update">전체 업데이트</string>
     <string name="enter_url">URL 입력</string>
     <string name="enter_name">이름 입력</string>
     <string name="channel_url">채널 URL</string>

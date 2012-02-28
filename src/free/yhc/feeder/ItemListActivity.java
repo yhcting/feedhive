@@ -25,24 +25,28 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import free.yhc.feeder.model.BGTask;
+import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.RTData;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
-
 public class ItemListActivity extends Activity {
     private long                cid     = -1; // channel id
     private Feed.Channel.Action action  = null; // action type of this channel
     private Feed.Channel.Order  order   = null;
-    private DBPolicy            db      = DBPolicy.get();
+    private DBPolicy            db      = DBPolicy.S();
     private ListView            list;
 
     private class ActionInfo {
@@ -72,24 +76,39 @@ public class ItemListActivity extends Activity {
         }
     }
 
-    private class UpdateEventHandler implements SpinAsyncTask.OnEvent {
-        @Override
-        public Err
-        onDoWork(SpinAsyncTask task, Object... objs) {
-            try {
-                return task.updateLoad(false, objs[0]);
-            } catch (InterruptedException e) {
-                return Err.Interrupted;
-            }
+    public class UpdateBGTask extends BGTaskUpdateChannel implements BGTask.OnEvent<Object, Long, Object> {
+        UpdateBGTask(Object userObj) {
+            super(userObj);
         }
 
         @Override
         public void
-        onPostExecute(SpinAsyncTask task, Err result) {
-            if (Err.NoErr == result)
+        onProgress(BGTask task, Object user, int progress) {
+        }
+
+        @Override
+        public void
+        onCancel(BGTask task, Object param, Object user) {
+            setUpdateButton();
+            RTData.S().unbindChannUpdateTask(cid);
+        }
+
+        @Override
+        public void
+        onPreRun(BGTask task, Object user) {
+            ; // nothing to do
+        }
+
+        @Override
+        public void
+        onPostRun(BGTask task, Object user, Err result) {
+            setUpdateButton();
+            RTData.S().unbindChannUpdateTask(cid);
+
+            if (Err.NoErr == result) {
+                RTData.S().unregisterChannUpdateTask(cid);
                 refreshList();
-            else
-                LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
+            }
         }
     }
 
@@ -170,6 +189,67 @@ public class ItemListActivity extends Activity {
         getListAdapter().notifyDataSetChanged();
     }
 
+    private void
+    startUpdatingAnim(ImageView btn) {
+        btn.startAnimation(AnimationUtils.loadAnimation(this, R.anim.rotate_spin));
+    }
+
+    private void
+    endUpdatingAnim(ImageView btn, boolean bCancel) {
+        btn.getAnimation().cancel();
+        if (bCancel)
+            btn.setImageResource(R.drawable.ic_info);
+        else
+            btn.setImageResource(R.drawable.ic_refresh);
+    }
+
+    private void
+    setOnClick_startUpdate(final ImageView btn) {
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ItemListActivity.this.updateItems();
+                setUpdateButton();
+            }
+        });
+    }
+
+    private void
+    setOnClick_cancelUpdate(final ImageView btn) {
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                BGTask task = RTData.S().getChannUpdateTask(cid);
+                if (null != task)
+                    task.cancel(null);
+                setUpdateButton();
+            }
+        });
+    }
+
+    private void
+    setOnClick_notification(final ImageView btn, final int msg) {
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LookAndFeel.showTextToast(ItemListActivity.this, msg);
+            }
+        });
+    }
+
+    private void
+    setOnClick_errResult(final ImageView btn, final Err result) {
+        btn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
+                RTData.S().consumeResult(cid);
+                RTData.S().unregisterChannUpdateTask(cid);
+                setUpdateButton();
+            }
+        });
+    }
+
     private boolean
     doesEnclosureDnFileExists(long id, int position) {
         // enclosure-url is link of downloaded file.
@@ -207,10 +287,10 @@ public class ItemListActivity extends Activity {
 
     private void
     updateItems() {
-        if (Utils.isNetworkAvailable(this))
-            new SpinAsyncTask(this, new UpdateEventHandler(), R.string.load_progress).execute(cid);
-        else
-            LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
+        UpdateBGTask updateTask = new UpdateBGTask(null);
+        RTData.S().registerChannUpdateTask(cid, updateTask);
+        RTData.S().bindChannUpdateTask(cid, updateTask);
+        updateTask.start(new BGTaskUpdateChannel.Arg(cid));
     }
 
     // 'public' to use java reflection
@@ -310,6 +390,36 @@ public class ItemListActivity extends Activity {
     }
 
     private void
+    setUpdateButton() {
+        ActionBar bar = getActionBar();
+        ImageView iv = (ImageView)bar.getCustomView().findViewById(R.id.update_button);
+        Animation anim = iv.getAnimation();
+
+        RTData.StateChann state = RTData.S().getChannState(cid);
+        if (RTData.StateChann.Idle == state) {
+            if (null != anim)
+                anim.cancel();
+            iv.setImageResource(R.drawable.ic_refresh);
+            setOnClick_startUpdate(iv);
+        } else if (RTData.StateChann.Updating == state) {
+            iv.setImageResource(R.drawable.ic_refresh);
+            iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.rotate_spin));
+            setOnClick_cancelUpdate(iv);
+        } else if (RTData.StateChann.Canceling == state) {
+            iv.setImageResource(R.drawable.ic_info);
+            iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.rotate_spin));
+            setOnClick_notification(iv, R.string.wait_cancel);
+        } else if (RTData.StateChann.UpdateFailed == state) {
+            if (null != anim)
+                anim.cancel();
+            iv.setImageResource(R.drawable.ic_info);
+            Err result = RTData.S().getChannBGTaskErr(cid);
+            setOnClick_errResult(iv, result);
+        } else
+            eAssert(false);
+    }
+
+    private void
     onContext_deleteDnFile(final long id, final int position) {
         // Create "Enter Url" dialog
         AlertDialog dialog =
@@ -375,14 +485,8 @@ public class ItemListActivity extends Activity {
         //   How to use custom view + default option menu ???
         //
         // Set custom action bar
-        ActionBar bar= getActionBar();
+        ActionBar bar = getActionBar();
         LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
-        ((ImageButton)abView.findViewById(R.id.update_button)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ItemListActivity.this.updateItems();
-            }
-        });
         bar.setCustomView(abView, new ActionBar.LayoutParams(
                 LayoutParams.WRAP_CONTENT,
                 LayoutParams.WRAP_CONTENT,
@@ -403,6 +507,12 @@ public class ItemListActivity extends Activity {
             }
         });
         registerForContextMenu(list);
+
+        setUpdateButton();
+        RTData.StateChann state = RTData.S().getChannState(cid);
+        if (RTData.StateChann.Idle != state)
+            RTData.S().bindChannUpdateTask(cid, new UpdateBGTask(null));
+        //
     }
     @Override
     public boolean
@@ -473,8 +583,17 @@ public class ItemListActivity extends Activity {
     protected void
     onDestroy() {
         getListAdapter().getCursor().close();
-        // '0' is temporal value. (reserved for future use)
-        setResult(0);
+
+        RTData.StateChann state = RTData.S().getChannState(cid);
+        if (RTData.StateChann.Idle != state) {
+            RTData.S().unbindChannUpdateTask(cid);
+            Intent intent = new Intent();
+            intent.putExtra("cid", cid);
+            // '0' is temporal value. (reserved for future use)
+            setResult(ChannelListActivity.ResCReadChannelUpdating, intent);
+        } else {
+            setResult(ChannelListActivity.ResCReadChannelOk);
+        }
         super.onDestroy();
     }
 }

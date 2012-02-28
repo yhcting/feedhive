@@ -4,6 +4,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -13,7 +14,9 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 public class NetLoader {
-    DBPolicy dbp    = DBPolicy.get();
+    private DBPolicy             dbp     = DBPolicy.S();
+    private volatile boolean     cancelled = false;
+    private volatile InputStream istream = null; // Multi-thread access
 
     public NetLoader() {
     }
@@ -23,21 +26,28 @@ public class NetLoader {
             throws FeederException {
         logI("Fetching Channel [" + url + "]\n");
         RSSParser.Result res = null;
+        long             time;
         int              retry = 5;
+        eAssert(null == istream);
         while (0 < retry--) {
             try {
-                Utils.beginTimeLog();
+                time = System.currentTimeMillis();
+                istream = new URL(url).openStream();
                 Document dom = DocumentBuilderFactory
                                 .newInstance()
                                 .newDocumentBuilder()
-                                .parse(new URL(url).openStream());
-                Utils.endTimeLog("Open URL and Parseing as Dom");
-                Utils.beginTimeLog();
+                                .parse(istream);
+                istream.close();
+                logI("TIME: Open URL and Parseing as Dom : " + (System.currentTimeMillis() - time));
+                time = System.currentTimeMillis();
                 // Only RSS is supported at this version.
                 res = new RSSParser().parse(dom);
-                Utils.endTimeLog("RSSParsing");
+                logI("TIME: RSSParsing : " + (System.currentTimeMillis() - time));
                 break; // done
             } catch (IOException e) {
+                if (cancelled)
+                    throw new FeederException(Err.UserCancelled);
+
                 if (retry <= 0)
                     throw new FeederException(Err.IONet);
                 ; // continue next retry
@@ -68,7 +78,10 @@ public class NetLoader {
         if (dbp.isDuplicatedChannelUrl(url))
             return Err.DBDuplicatedChannel;
 
-        Utils.beginTimeLog();
+        long    time;
+        String  timePrefix;
+        time = System.currentTimeMillis();
+
         RSSParser.Result res;
         try {
             res = loadUrl(url);
@@ -76,7 +89,7 @@ public class NetLoader {
             e.printStackTrace();
             return e.getError();
         }
-        Utils.endTimeLog("Loading + Parsing");
+        logI("TIME: Loading + Parsing : " + (System.currentTimeMillis() - time));
 
         Feed.Channel ch = new Feed.Channel(res.channel, res.items);
 
@@ -90,24 +103,26 @@ public class NetLoader {
 
         UIPolicy.setAsDefaultActionType(ch);
 
-        Utils.beginTimeLog();
+        time = System.currentTimeMillis();
         try {
             ch.dynD.imageblob = Utils.getDecodedImageData(ch.parD.imageref);
         } catch (FeederException e) {
             ; // ignore image data
         }
-        Utils.endTimeLog((null == ch.dynD.imageblob)?"< Fail >":"< Ok >" + "Handling Image");
+
+        timePrefix = (null == ch.dynD.imageblob)? "< Fail >": "< Ok >";
+        logI("TIME: Handling Image " + timePrefix + " : " + (System.currentTimeMillis() - time));
 
         // This is perfectly full reload.
         for (Feed.Item item : ch.items)
             item.dynD.state = Feed.Item.State.NEW;
 
-        Utils.beginTimeLog();
+        time = System.currentTimeMillis();
         // It's time to update Database!!!
         if (0 > dbp.insertChannel(ch))
             return Err.DBUnknown;
 
-        Utils.endTimeLog("Inserting Channel");
+        logI("TIME: Inserting Channel : " + (System.currentTimeMillis() - time));
 
         if (null != outcid)
             outcid[0] = ch.dbD.id;
@@ -126,7 +141,7 @@ public class NetLoader {
 
         logI("Loading Items: " + url);
 
-        Utils.beginTimeLog();
+        long time = System.currentTimeMillis();
         RSSParser.Result res;
         try {
             res = loadUrl(url);
@@ -134,23 +149,25 @@ public class NetLoader {
             e.printStackTrace();
             return e.getError();
         }
-        Utils.endTimeLog("Loading + Parsing");
+        logI("TIME: Loading + Parsing : " + (System.currentTimeMillis() - time));
 
         // set to given value forcely due to this is 'update' - Not new insertion.
         Feed.Channel ch = new Feed.Channel(res.channel, res.items);
         ch.dbD.id = cid;
 
         if (reloadImage) {
-            Utils.beginTimeLog();
+            String prefix;
+            time = System.currentTimeMillis();
             try {
                 ch.dynD.imageblob = Utils.getDecodedImageData(ch.parD.imageref);
             } catch (FeederException e) {
                 ; // ignore image data
             }
-            Utils.endTimeLog((null == ch.dynD.imageblob)?"< Fail >":"< Ok >" + "Handling Image");
+            prefix = (null == ch.dynD.imageblob)? "< Fail >" : "< Ok >";
+            logI("TIME: Handle Image : " + prefix + (System.currentTimeMillis() - time));
         }
 
-        Utils.beginTimeLog();
+        time = System.currentTimeMillis();
         String state;
         for (Feed.Item item : ch.items) {
             // ignore empty-titled item
@@ -162,12 +179,27 @@ public class NetLoader {
             else
                 item.dynD.state = Feed.Item.State.NEW;
         }
-        Utils.endTimeLog("Comparing with DB data");
+        logI("TIME: Comparing with DB data : " + (System.currentTimeMillis() - time));
 
-        Utils.beginTimeLog();
+        time = System.currentTimeMillis();
         dbp.updateChannel(ch, null != ch.dynD.imageblob);
-        Utils.endTimeLog("Updating Items");
+        logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
 
         return Err.NoErr;
+    }
+
+    public boolean
+    cancel() {
+        cancelled = true;
+        // Kind of hack!
+        // There is no fast-way to cancel running-java thread.
+        // So, make input-stream closed forcely to stop loading/DOM-parsing.
+        try {
+            if (null != istream)
+                istream.close();
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
     }
 }

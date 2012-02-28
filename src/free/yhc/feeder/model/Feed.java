@@ -173,7 +173,7 @@ public class Feed {
             String lastupdate   = ""; // date when item DB is updated lastly
         }
 
-        // Dynamic data - changed in runtime dynamically (usually by user action.
+        // Dynamic data - changed in runtime dynamically (usually by user action).
         static class DynD {
             Action action       = Action.OPEN;
             Order  order        = Order.NORMAL;

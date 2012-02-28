@@ -52,7 +52,7 @@ public class PredefinedChannelActivity extends Activity {
             }
 
             try {
-                DBPolicy.get().updateChannel_image(cid[0], imageData);
+                DBPolicy.S().updateChannel_image(cid[0], imageData);
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 return Err.DBUnknown;
@@ -110,7 +110,7 @@ public class PredefinedChannelActivity extends Activity {
             onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 PredefinedValues.Channel ch = (PredefinedValues.Channel)list.getAdapter().getItem(position);
                 new SpinAsyncTask(PredefinedChannelActivity.this, new SpinAsyncEventHandler(), R.string.load_progress)
-                    .execute(DBPolicy.get().getDefaultCategoryId(),
+                    .execute(DBPolicy.S().getDefaultCategoryId(),
                             ch.url, ch.imageref);
             }
         });

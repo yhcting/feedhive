@@ -128,7 +128,12 @@ public class RSSParser {
     }
 
     private String
-    getTextValue(Node n) {
+    getTextValue(Node n)
+            throws FeederException {
+
+        if (Thread.interrupted())
+            throw new FeederException(Err.Interrupted);
+
         String text = "";
         Node t = findNodeByNameFromSiblings(n.getFirstChild(), "#text");
 
@@ -236,12 +241,14 @@ public class RSSParser {
          * return: true(handled) false(passed)
          */
         boolean
-        parseChannel(ChannelValues cv, Node n) {
+        parseChannel(ChannelValues cv, Node n)
+                throws FeederException {
             return false;
         }
 
         boolean
-        parseItem(ItemValues iv, Node n) {
+        parseItem(ItemValues iv, Node n)
+                throws FeederException {
             return false;
         }
     }
@@ -256,7 +263,8 @@ public class RSSParser {
 
         @Override
         boolean
-        parseChannel(ChannelValues cv, Node n) {
+        parseChannel(ChannelValues cv, Node n)
+                throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("itunes:summary"))
@@ -274,7 +282,8 @@ public class RSSParser {
 
         @Override
         boolean
-        parseItem(ItemValues iv, Node n) {
+        parseItem(ItemValues iv, Node n)
+                throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("itunes:summary"))
@@ -299,7 +308,8 @@ public class RSSParser {
 
         @Override
         boolean
-        parseItem(ItemValues iv, Node n) {
+        parseItem(ItemValues iv, Node n)
+                throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("dc:date"))
@@ -320,7 +330,8 @@ public class RSSParser {
         }
 
         private void
-        nodeImage(ChannelValues cv, Node n) {
+        nodeImage(ChannelValues cv, Node n)
+                throws FeederException {
             n = n.getFirstChild();
             while (null != n) {
                 if (n.getNodeName().equalsIgnoreCase("url")) {
@@ -349,7 +360,8 @@ public class RSSParser {
 
         @Override
         boolean
-        parseChannel(ChannelValues cv, Node n) {
+        parseChannel(ChannelValues cv, Node n)
+                throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("title"))
@@ -366,7 +378,8 @@ public class RSSParser {
 
         @Override
         boolean
-        parseItem(ItemValues iv, Node n) {
+        parseItem(ItemValues iv, Node n)
+                throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("title"))
@@ -410,7 +423,8 @@ public class RSSParser {
     }
 
     private void
-    nodeChannel(Result res, NSParser[] parser, Node chn) {
+    nodeChannel(Result res, NSParser[] parser, Node chn)
+            throws FeederException {
         ChannelValues cv = new ChannelValues();
         ItemValues iv = new ItemValues();
         // count number of items in this channel

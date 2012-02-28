@@ -4,26 +4,59 @@
     android:layout_height="fill_parent"
     android:orientation="vertical"
     >
-	<LinearLayout
+	<RelativeLayout
 	    android:layout_width="fill_parent"
 	    android:layout_height="fill_parent"
         android:layout_marginTop="3dip"
         android:paddingLeft="@dimen/list_item_left_padding"
 	    android:layout_gravity="center_vertical"
-	    android:orientation="horizontal"
 	    >
 	    <ImageView
 	        android:id="@+id/image"
 	        android:layout_width="50dip"
 	        android:layout_height="50dip"
 	        android:layout_marginRight="5dip"
+	        android:layout_alignParentLeft="true"
+	        android:layout_centerVertical="true"
 	        android:gravity="center"
 	        android:scaleType="fitCenter"
-	        android:src="@drawable/icon"
+	        android:src="@drawable/ic_block"
 	        />
+	    <LinearLayout
+	        android:id="@+id/update_pannel"
+	        android:layout_width="35dip"
+	        android:layout_height="wrap_content"
+	        android:layout_alignParentRight="true"
+	        android:layout_centerVertical="true"
+	        android:layout_marginLeft="3dip"
+	        android:orientation="vertical"
+	        >
+	        <TextView
+	            android:id="@+id/age"
+	            android:layout_width="35dip"
+	            android:layout_height="wrap_content"
+	            android:textSize="@dimen/desc_text_size"
+	            android:textColor="@color/title_color_new"
+	            android:text="@string/ok"
+	            android:singleLine="true"
+	            android:ellipsize="end"
+	            />
+		    <view
+		        class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
+		        android:id="@+id/update_btn"
+		        android:layout_width="35dip"
+		        android:layout_height="35dip"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/ic_refresh"
+		        android:background="@null"
+		        android:clickable="true"
+		        />	        
+		</LinearLayout>	  	    
 	    <LinearLayout
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
+	        android:layout_toRightOf="@id/image"
+	        android:layout_toLeftOf="@id/update_pannel"
 	        android:orientation="vertical"
 	        >
 	        <TextView
@@ -55,7 +88,7 @@
 	            android:ellipsize="end"
 	            />
 	    </LinearLayout>
-	</LinearLayout>
+	</RelativeLayout>
     <ImageView
         android:layout_width="fill_parent"
         android:layout_height="2dip"

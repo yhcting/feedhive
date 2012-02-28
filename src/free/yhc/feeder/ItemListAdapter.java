@@ -18,7 +18,7 @@ import free.yhc.feeder.model.UIPolicy;
 public class ItemListAdapter extends ResourceCursorAdapter {
     private int       layout = -1;
     private long      cid    = -1;
-    private DBPolicy  dbp    = DBPolicy.get();
+    private DBPolicy  dbp    = DBPolicy.S();
 
     public ItemListAdapter(Context context, int layout, Cursor c, long cid) {
         super(context, layout, c);

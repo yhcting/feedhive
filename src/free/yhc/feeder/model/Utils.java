@@ -19,7 +19,7 @@ import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 public class Utils {
-    private static final boolean DBG = true;
+    public static final boolean DBG = true;
     private static final String TAG = "[Feeder]";
 
     // Characters that is not allowed as filename in Android.
@@ -107,6 +107,7 @@ public class Utils {
         Log.e(TAG, msg);
     }
 
+    /*
     public static void
     beginTimeLog() {
         if (!DBG)
@@ -123,6 +124,7 @@ public class Utils {
         long taken = System.currentTimeMillis() - timeLogScratch[--timeLogDepth];
         logI(msgPrefix + " : time taken = " + taken / 1000 + "s, " + taken % 1000 + "ms");
     }
+    */
 
     public static void
     resetTimeLog() {
@@ -268,7 +270,7 @@ public class Utils {
         if (null == dnurl)
             return null;
 
-        Utils.beginTimeLog();
+        long time = System.currentTimeMillis();
         ByteArrayBuffer bab = null;
         try {
             URL url = new URL(dnurl);
@@ -298,7 +300,7 @@ public class Utils {
         } catch (IOException e) {
             throw new FeederException(Err.IONet);
         }
-        Utils.endTimeLog("Downloading [" + dnurl + "]");
+        logI("TIME: Downloading [" + dnurl + "] : " + (System.currentTimeMillis() - time));
         return bab;
     }
 
@@ -307,6 +309,7 @@ public class Utils {
         ByteArrayBuffer imgBab = null;
         imgBab = download(url);
 
+        long time;
         //
         // [ In case of RSS. ]
         // Lots of sites doesn't obey RSS spec. related with channel image.
@@ -317,19 +320,19 @@ public class Utils {
         // * shrink downloaded image and save it to DB.
         // (To save memory and increase performance.)
         if (null != imgBab && !imgBab.isEmpty()) {
-            Utils.beginTimeLog();
+            time = System.currentTimeMillis();
             Bitmap bm = Utils.decodeImage(imgBab.toByteArray(),
                     Feed.CHANNEL_IMAGE_MAX_WIDTH,
                     Feed.CHANNEL_IMAGE_MAX_HEIGHT);
-            Utils.endTimeLog("Decode Image");
+            logI("TIME: Decode Image : " + (System.currentTimeMillis() - time));
             if (null == bm)
                 return null;
 
-            Utils.beginTimeLog();
+            time = System.currentTimeMillis();
             ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
             bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);
             bm.recycle();
-            Utils.endTimeLog("Compress Image");
+            logI("TIME: Compress Image : " + (System.currentTimeMillis() - time));
             return baos.toByteArray();
         }
         return null;

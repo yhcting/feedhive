@@ -9,6 +9,7 @@
     <string name="refresh">refresh</string>
     <string name="all">All</string>
     <string name="update">Update</string>
+    <string name="full_update">Full update</string>
     <string name="enter_url">Enter URL</string>
     <string name="enter_name">Enter name</string>
     <string name="channel_url">Channel URL</string>
