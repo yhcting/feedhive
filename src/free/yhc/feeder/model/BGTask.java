@@ -38,12 +38,23 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
         this.onEvent = onEvent;
     }
 
+    // ==========================================
+    // Package Private
+    // ==========================================
     void
     resetResult() {
         eAssert(!isAlive());
         result = Err.NoErr;
     }
 
+    OnEvent
+    getOnEvent() {
+        return onEvent;
+    }
+
+    // ==========================================
+    // Open Interface
+    // ==========================================
     public Err
     getResult() {
         eAssert(null != result);
@@ -64,7 +75,7 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
     // Attach to current thread
     public void
     attach() {
-        this.handler = new Handler();
+        handler = new Handler();
     }
 
     public void
@@ -96,8 +107,10 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
 
         eAssert(null != handler && null != onEvent);
 
+        if (cancelled)
+            result = Err.UserCancelled;
+
         if (bInterrupted
-            || cancelled
             || Err.Interrupted == result
             || Err.UserCancelled == result) {
             handler.post(new Runnable() {

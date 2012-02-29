@@ -63,36 +63,70 @@ public class RTData {
         return idPrefix + cid + "/" + itemid + "/" + act.name();
     }
 
-    public void
+    public boolean
     registerChannUpdateTask(long cid, BGTask task) {
-        gbtm.register(Id(cid, Action.Update), task);
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.register(Id(cid, Action.Update), task);
+        }
     }
 
 
-    public void
+    public int
     unbindChannUpdateTask(long cid) {
-        gbtm.unbind(Id(cid, Action.Update));
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.unbind(Id(cid, Action.Update));
+        }
     }
 
-    public void
+    // Unbind all tasks whose event handler is 'onEvent'
+    public int
+    unbindTasks(BGTask.OnEvent onEvent) {
+        eAssert(null != onEvent);
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.unbind(onEvent);
+        }
+    }
+
+    // unbind tasks which have current thread as bind-owner.
+    public int
+    unbindTasks() {
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.unbind(Thread.currentThread());
+        }
+    }
+
+    public BGTask
     bindChannUpdateTask(long cid, BGTask.OnEvent onEvent) {
-        gbtm.bind(Id(cid, Action.Update), onEvent);
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.bind(Id(cid, Action.Update), onEvent);
+        }
     }
 
     public BGTask
     getChannUpdateTask(long cid) {
-        return gbtm.peek(Id(cid, Action.Update));
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.peek(Id(cid, Action.Update));
+        }
     }
 
-    public void
+    // 'unbind' then 'unregister'
+    public boolean
     unregisterChannUpdateTask(long cid) {
-        gbtm.unregister(Id(cid, Action.Update));
+        synchronized (gbtm.getSyncObj()) {
+            String id = Id(cid, Action.Update);
+            gbtm.unbind(id);
+            return gbtm.unregister(id);
+        }
     }
 
     // channel is updateing???
     public StateChann
     getChannState(long cid) {
-        BGTask task = gbtm.peek(Id(cid, Action.Update));
+        BGTask task;
+        synchronized (gbtm.getSyncObj()) {
+            task = gbtm.peek(Id(cid, Action.Update));
+        }
+
         if (null == task)
             return StateChann.Idle;
 
@@ -107,13 +141,18 @@ public class RTData {
     // result information is consumed. So, back to idle if possible.
     public void
     consumeResult(long cid) {
-        BGTask task = gbtm.peek(Id(cid, Action.Update));
+        BGTask task;
+        synchronized (gbtm.getSyncObj()) {
+            task = gbtm.peek(Id(cid, Action.Update));
+        }
         eAssert(!task.isAlive());
         task.resetResult();
     }
 
     public Err
     getChannBGTaskErr(long cid) {
-        return gbtm.peek(Id(cid, Action.Update)).getResult();
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.peek(Id(cid, Action.Update)).getResult();
+        }
     }
 }

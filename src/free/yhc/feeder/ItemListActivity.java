@@ -16,6 +16,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Layout;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -44,6 +45,7 @@ import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity {
     private long                cid     = -1; // channel id
+    private Handler             handler = new Handler();
     private Feed.Channel.Action action  = null; // action type of this channel
     private Feed.Channel.Order  order   = null;
     private DBPolicy            db      = DBPolicy.S();
@@ -89,8 +91,7 @@ public class ItemListActivity extends Activity {
         @Override
         public void
         onCancel(BGTask task, Object param, Object user) {
-            setUpdateButton();
-            RTData.S().unbindChannUpdateTask(cid);
+            requestSetUpdateButton();
         }
 
         @Override
@@ -102,8 +103,7 @@ public class ItemListActivity extends Activity {
         @Override
         public void
         onPostRun(BGTask task, Object user, Err result) {
-            setUpdateButton();
-            RTData.S().unbindChannUpdateTask(cid);
+            requestSetUpdateButton();
 
             if (Err.NoErr == result) {
                 RTData.S().unregisterChannUpdateTask(cid);
@@ -209,7 +209,7 @@ public class ItemListActivity extends Activity {
             @Override
             public void onClick(View v) {
                 ItemListActivity.this.updateItems();
-                setUpdateButton();
+                requestSetUpdateButton();
             }
         });
     }
@@ -222,7 +222,7 @@ public class ItemListActivity extends Activity {
                 BGTask task = RTData.S().getChannUpdateTask(cid);
                 if (null != task)
                     task.cancel(null);
-                setUpdateButton();
+                requestSetUpdateButton();
             }
         });
     }
@@ -245,7 +245,7 @@ public class ItemListActivity extends Activity {
                 LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
                 RTData.S().consumeResult(cid);
                 RTData.S().unregisterChannUpdateTask(cid);
-                setUpdateButton();
+                requestSetUpdateButton();
             }
         });
     }
@@ -420,6 +420,16 @@ public class ItemListActivity extends Activity {
     }
 
     private void
+    requestSetUpdateButton() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                setUpdateButton();
+            }
+        });
+    }
+
+    private void
     onContext_deleteDnFile(final long id, final int position) {
         // Create "Enter Url" dialog
         AlertDialog dialog =
@@ -584,6 +594,7 @@ public class ItemListActivity extends Activity {
     onDestroy() {
         getListAdapter().getCursor().close();
 
+        RTData.S().unbindTasks();
         RTData.StateChann state = RTData.S().getChannState(cid);
         if (RTData.StateChann.Idle != state) {
             RTData.S().unbindChannUpdateTask(cid);

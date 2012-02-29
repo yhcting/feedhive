@@ -59,11 +59,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     public static final int ResCReadChannelOk       = 0; // nothing special
     public static final int ResCReadChannelUpdating = 1;
 
-    // For swipe animation
-    private static final int SWIPE_MIN_DISTANCE = 120;
-    private static final int SWIPE_MAX_OFF_PATH = 250;
-    private static final int SWIPE_THRESHOLD_VELOCITY = 200;
-
     private ActionBar   ab;
     private Flipper     flipper;
 
@@ -82,6 +77,10 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         private GestureDetector gestureDetector;
 
         private class SwipeGestureDetector extends SimpleOnGestureListener {
+            // For swipe animation
+            private static final int SWIPE_MIN_DISTANCE = 120;
+            private static final int SWIPE_THRESHOLD_VELOCITY = 200;
+
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 try {
@@ -148,6 +147,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
                     intent.putExtra("channelid", id);
+                    if (null != RTData.S().getChannUpdateTask(id))
+                        RTData.S().unbindChannUpdateTask(id);
                     startActivityForResult(intent, ReqCReadChannel);
                 }
             });
@@ -228,7 +229,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         public void
         onCancel(BGTask task, Object param, Object user) {
             eAssert(cid >= 0);
-            RTData.S().unbindChannUpdateTask(cid);
             if (isChannelInSelectedCategory(cid))
                 // NOTE : refresh??? just 'notifying' is enough?
                 getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
@@ -245,12 +245,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         @Override
         public void
         onPostRun(BGTask task, Object user, Err result) {
+            eAssert(Err.UserCancelled != result);
             // In normal case, onPostExecute is not called in case of 'user-cancel'.
             // below code is for safety.
             if (Err.UserCancelled == result)
                 return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
-            RTData.S().unbindChannUpdateTask(cid);
             if (Err.NoErr == result)
                 RTData.S().unregisterChannUpdateTask(cid);
 

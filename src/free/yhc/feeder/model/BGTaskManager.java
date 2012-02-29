@@ -21,7 +21,8 @@ class BGTaskManager {
 
     // TaskMap Value
     private class TaskMapV {
-        BGTask<?, ?, ?> task = null;
+        Thread          owner = null;
+        BGTask<?, ?, ?> task  = null;
         TaskMapV(BGTask<?, ?, ?> task) {
             this.task = task;
         }
@@ -53,20 +54,19 @@ class BGTaskManager {
         @Override
         public void
         onPreRun(BGTask task, Object user) {
-            eAssert(false);
-            logW("onPreRun at BGTaskManager SHOULD NOT be called!");
+            logW("onPreRun at BGTaskManager will be IGNORED!");
         }
 
         @Override
         public void
         onPostRun(BGTask task, Object user, Err result) {
+            logW("onPostRun at BGTaskManager will be IGNORED!");
         }
 
         @Override
         public void
         onCancel(BGTask task, Object param, Object user) {
-            eAssert(false);
-            logW("onCancel at BGTaskManager SHOULD NOT be called!");
+            logW("onCancel at BGTaskManager will be IGNORED");
         }
 
         @Override
@@ -90,60 +90,102 @@ class BGTaskManager {
         }
     }
 
-    void
-    register(String taskId, BGTask<?, ?, ?> task) {
-        logI("BGTM : register :" + taskId);
-        synchronized (map) {
-            eAssert(null == map.get(taskId));
-            map.put(taskId, new TaskMapV(task));
-        }
+    Object
+    getSyncObj() {
+        return map;
     }
 
-    void
+    boolean
+    register(String taskId, BGTask<?, ?, ?> task) {
+        logI("BGTM : register :" + taskId);
+        if (null != map.get(taskId)) {
+            eAssert(false);
+            return false;
+        }
+        map.put(taskId, new TaskMapV(task));
+        return true;
+    }
+
+    private void
+    _unbind(TaskMapV v) {
+        v.owner = looper;
+        v.task.attach(looper.getEventLoopHandler());
+        v.task.setOnEventListener(eventListener);
+    }
+
+    int
     unbind(String taskId) {
         logI("BGTM : unbind :" + taskId);
-        synchronized (map) {
-            TaskMapV v = map.get(taskId);
-            eAssert(null != v);
-            synchronized (v) {
-                v.task.attach(looper.getEventLoopHandler());
-                v.task.setOnEventListener(eventListener);
+        TaskMapV v = map.get(taskId);
+        if (null == v)
+            return 0;
+        _unbind(v);
+        return 1;
+    }
+
+    int
+    unbind(BGTask.OnEvent onEvent) {
+        int        ret = 0;
+        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
+        for (TaskMapV v : vs)
+            if (v.task.getOnEvent().equals(onEvent)) {
+                _unbind(v);
+                ret++;
             }
-        }
+        return ret;
+    }
+
+    int
+    unbind(Thread owner) {
+        int        ret = 0;
+        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
+        for (TaskMapV v : vs)
+            if (v.owner.equals(owner)) {
+                _unbind(v);
+                ret++;
+            }
+        return ret;
     }
 
     BGTask
     peek(String taskId) {
         //logI("BGTM : peek [" + taskId);
-        TaskMapV v;
-        synchronized (map) {
-            v = map.get(taskId);
-        }
+        TaskMapV v = map.get(taskId);
         return (null == v)? null: v.task;
     }
 
     BGTask
     bind(String taskId, BGTask.OnEvent onEvent) {
         logI("BGTM : bind :" + taskId);
-        TaskMapV v;
-        synchronized (map) {
-            v = map.get(taskId);
-            if (null == v)
-                return null;
-        }
-        synchronized (v.task) {
-            v.task.attach();
-            v.task.setOnEventListener(onEvent);
-        }
+        TaskMapV v = map.get(taskId);
+        if (null == v)
+            return null;
+        v.owner = Thread.currentThread();
+        v.task.attach();
+        v.task.setOnEventListener(onEvent);
         return v.task;
     }
 
-    void
+    boolean
     unregister(String taskId) {
         logI("BGTM : unregister :" + taskId);
-        synchronized (map) {
-            eAssert(null != map.get(taskId));
-            map.remove(taskId);
-        }
+        if (null == map.get(taskId))
+            return false;
+        map.remove(taskId);
+        return true;
+    }
+
+    String[]
+    getTaskIds() {
+        return map.keySet().toArray(new String[0]);
+    }
+
+    BGTask[]
+    getTasks() {
+        TaskMapV[] mv = map.values().toArray(new TaskMapV[0]);
+        BGTask[] ts = new BGTask[mv.length];
+        for (int i = 0; i < ts.length; i++)
+            ts[i] = mv[i].task;
+        return ts;
     }
 }
