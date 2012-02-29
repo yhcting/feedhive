@@ -9,7 +9,6 @@ import android.os.AsyncTask;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.NetLoader;
-import free.yhc.feeder.model.Utils;
 
 public class SpinAsyncTask extends AsyncTask<Object, Integer, Err> implements
 DialogInterface.OnDismissListener,
@@ -53,7 +52,6 @@ DialogInterface.OnClickListener
     @Override
     protected Err
     doInBackground(Object... objs) {
-        Utils.resetTimeLog();
         logI("* Start background Job : SpinSyncTask\n");
         Err ret = Err.NoErr;
         if (null != onEvent)

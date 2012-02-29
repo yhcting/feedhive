@@ -13,7 +13,7 @@ import android.widget.ImageView;
 import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.RTData;
+import free.yhc.feeder.model.RTTask;
 
 public class ChannelListAdapter extends ResourceCursorAdapter {
     private OnAction  onAction = null;
@@ -63,16 +63,16 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
                 onAction.onUpdateClick(iv, iv.cid);
                 /*
                 Animation anim = iv.getAnimation();
-                RTData.StateChann state = RTData.S().getChannState(iv.cid);
-                if (RTData.StateChann.Idle == state) {
+                RTTask.StateUpdate state = RTTask.S().getChannState(iv.cid);
+                if (RTTask.StateUpdate.Idle == state) {
                     iv.setImageResource(R.drawable.ic_refresh);
                     iv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
-                } else if (RTData.StateChann.Updating == state) {
+                } else if (RTTask.StateUpdate.Updating == state) {
                     if (null != anim)
                         anim.cancel();
                     iv.setImageResource(R.drawable.ic_refresh);
                     iv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
-                } else if (RTData.StateChann.UpdateFailed == state) {
+                } else if (RTTask.StateUpdate.UpdateFailed == state) {
                     if (null != anim)
                         anim.cancel();
                     update.setImageResource(R.drawable.ic_info);
@@ -84,18 +84,18 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
 
         Animation anim = update.getAnimation();
 
-        RTData.StateChann state = RTData.S().getChannState(cid);
-        if (RTData.StateChann.Idle == state) {
+        RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
+        if (RTTask.StateUpdate.Idle == state) {
             if (null != anim)
                 anim.cancel();
             update.setImageResource(R.drawable.ic_refresh);
-        } else if (RTData.StateChann.Updating == state) {
+        } else if (RTTask.StateUpdate.Updating == state) {
             update.setImageResource(R.drawable.ic_refresh);
             update.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
-        } else if (RTData.StateChann.Canceling == state) {
+        } else if (RTTask.StateUpdate.Canceling == state) {
             update.setImageResource(R.drawable.ic_info);
             update.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
-        } else if (RTData.StateChann.UpdateFailed == state) {
+        } else if (RTTask.StateUpdate.UpdateFailed == state) {
             if (null != anim)
                 anim.cancel();
             update.setImageResource(R.drawable.ic_info);

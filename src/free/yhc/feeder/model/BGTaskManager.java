@@ -188,4 +188,13 @@ class BGTaskManager {
             ts[i] = mv[i].task;
         return ts;
     }
+
+    void
+    cancelAll() {
+        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
+        for (TaskMapV v : vs) {
+            _unbind(v);
+            v.task.cancel(null);
+        }
+    }
 }

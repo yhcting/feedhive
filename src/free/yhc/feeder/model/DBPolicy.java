@@ -273,6 +273,7 @@ public class DBPolicy {
                                 DB.ColumnItem.ENCLOSURE_URL,
                                 // runtime information of item.
                                 DB.ColumnItem.STATE,
+                                DB.ColumnItem.ID,
                             },
                             null, null, null, null, null);
         unlock();
@@ -281,6 +282,7 @@ public class DBPolicy {
         final int COLUMN_LINK           = 1;
         final int COLUMN_ENCLOSURE_URL  = 2;
         final int COLUMN_STATE          = 3;
+        final int COLUMN_ID             = 4;
 
         // Create HashMap for title lookup!
         HashMap<String, Feed.Item> m = new HashMap<String, Feed.Item>();
@@ -298,8 +300,16 @@ public class DBPolicy {
                 Feed.Item item = m.get(title);
                 if (null == item) {
                     // This is unlisted old-item.
-                    new File(UIPolicy.getItemFilePath(ch.dbD.id, title, c.getString(COLUMN_LINK))).delete();
-                    new File(UIPolicy.getItemFilePath(ch.dbD.id, title, c.getString(COLUMN_ENCLOSURE_URL))).delete();
+                    new File(UIPolicy.getItemFilePath(ch.dbD.id,
+                                                      c.getLong(COLUMN_ID),
+                                                      title,
+                                                      c.getString(COLUMN_LINK)))
+                        .delete();
+                    new File(UIPolicy.getItemFilePath(ch.dbD.id,
+                                                      c.getLong(COLUMN_ID),
+                                                      title,
+                                                      c.getString(COLUMN_ENCLOSURE_URL)))
+                        .delete();
                 } else {
                     // copy runtime information stored in DB.
                     item.dynD.state = Feed.Item.State.convert(c.getString(COLUMN_STATE));

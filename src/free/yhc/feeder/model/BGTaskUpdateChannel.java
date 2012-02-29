@@ -58,7 +58,7 @@ public class BGTaskUpdateChannel extends BGTask<Object, BGTaskUpdateChannel.Arg,
         // TODO
         //   After Per-Channel-DB-Lock is implemented,
         //     lock/unlock should be changed to Per-Channel-Lock/Unlock.
-        int retry = 20;
+        int retry = 5;
         try {
             DBPolicy.S().lock();
         } catch (InterruptedException e) {

@@ -69,8 +69,6 @@ public class Utils {
     };
 
     private static final int NR_TIMELOG_SCRATCH = 10;
-    private static int timeLogDepth = 0;
-    private static long timeLogScratch[] = new long[NR_TIMELOG_SCRATCH];
 
     public static void
     eAssert(boolean cond) {
@@ -105,32 +103,6 @@ public class Utils {
             return;
 
         Log.e(TAG, msg);
-    }
-
-    /*
-    public static void
-    beginTimeLog() {
-        if (!DBG)
-            return;
-        eAssert(timeLogDepth < NR_TIMELOG_SCRATCH);
-        timeLogScratch[timeLogDepth++] = System.currentTimeMillis();
-    }
-
-    public static void
-    endTimeLog(String msgPrefix) {
-        if (!DBG)
-            return;
-        eAssert(timeLogDepth > 0);
-        long taken = System.currentTimeMillis() - timeLogScratch[--timeLogDepth];
-        logI(msgPrefix + " : time taken = " + taken / 1000 + "s, " + taken % 1000 + "ms");
-    }
-    */
-
-    public static void
-    resetTimeLog() {
-        if (!DBG)
-            return;
-        timeLogDepth = 0;
     }
 
     public static boolean

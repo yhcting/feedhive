@@ -47,7 +47,7 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.FeederException;
-import free.yhc.feeder.model.RTData;
+import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements ActionBar.TabListener {
@@ -147,8 +147,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
                     intent.putExtra("channelid", id);
-                    if (null != RTData.S().getChannUpdateTask(id))
-                        RTData.S().unbindChannUpdateTask(id);
+                    if (null != RTTask.S().getUpdate(id))
+                        RTTask.S().unbindUpdate(id);
                     startActivityForResult(intent, ReqCReadChannel);
                 }
             });
@@ -252,7 +252,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
             if (Err.NoErr == result)
-                RTData.S().unregisterChannUpdateTask(cid);
+                RTTask.S().unregisterUpdate(cid);
 
             if (isChannelInSelectedCategory(cid))
                 // NOTE : refresh??? just 'notifying' is enough?
@@ -815,26 +815,26 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onBtn_channelUpdate(ImageView ibtn, long cid) {
-        RTData.StateChann state = RTData.S().getChannState(cid);
-        if (RTData.StateChann.Idle == state) {
+        RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
+        if (RTTask.StateUpdate.Idle == state) {
             logI("ChannelList : update : " + cid);
             UpdateBGTask task = new UpdateBGTask(null, cid);
-            RTData.S().registerChannUpdateTask(cid, task);
-            RTData.S().bindChannUpdateTask(cid, task);
+            RTTask.S().registerUpdate(cid, task);
+            RTTask.S().bindUpdate(cid, task);
             task.start(new BGTaskUpdateChannel.Arg(cid));
-        } else if (RTData.StateChann.Updating == state) {
+        } else if (RTTask.StateUpdate.Updating == state) {
             logI("ChannelList : cancel : " + cid);
-            BGTask task = RTData.S().getChannUpdateTask(cid);
+            BGTask task = RTTask.S().getUpdate(cid);
             task.cancel(null);
             // to change icon into "canceling"
             getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
-        } else if (RTData.StateChann.UpdateFailed == state) {
-            Err result = RTData.S().getChannBGTaskErr(cid);
+        } else if (RTTask.StateUpdate.UpdateFailed == state) {
+            Err result = RTTask.S().getUpdateErr(cid);
             LookAndFeel.showTextToast(this, result.getMsgId());
-            RTData.S().consumeResult(cid);
-            RTData.S().unregisterChannUpdateTask(cid);
+            RTTask.S().consumeUpdateResult(cid);
+            RTTask.S().unregisterUpdate(cid);
             getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
-        } else if (RTData.StateChann.Canceling == state) {
+        } else if (RTTask.StateUpdate.Canceling == state) {
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
         } else
             eAssert(false);
@@ -859,7 +859,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         case ResCReadChannelUpdating:
             long cid = data.getLongExtra("cid", -1);
             eAssert(cid >= 0);
-            RTData.S().bindChannUpdateTask(cid, new UpdateBGTask(null, cid));
+            RTTask.S().bindUpdate(cid, new UpdateBGTask(null, cid));
             break;
         }
     }

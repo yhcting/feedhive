@@ -67,15 +67,15 @@ public class UIPolicy {
     }
 
     public static String
-    getItemDownloadTempPath(long cid) {
-        return appRootDir + "____temp__" + cid + "___";
+    getItemDownloadTempPath(long cid, long id) {
+        return appRootDir + "____temp__" + cid + "___" + id + "__";
     }
 
     // postfix : usually, extension;
     // NOTE
     //   DB for channel item is fully updated
     public static String
-    getItemFilePath(long cid, String title, String url) {
+    getItemFilePath(long cid, long id, String title, String url) {
         eAssert(null != url && null != title);
 
         // we don't need to create valid filename with empty url value.
@@ -86,6 +86,11 @@ public class UIPolicy {
 
         // Title may include character that is not allowed as file name
         // (ex. '/')
+        // NOTE
+        //   DO NOT use 'id' as file name!
+        //   ID can be changed after updating.
+        //   In this case, this file becomes dangling one.
+        //   So, there is no way to delete this file excepting for deleting entire channel.
         String fname = Utils.convertToFilename(title);
         int endIndex = maxFileNameLength - ext.length() - 1; // '- 1' for '.'
         if (endIndex > fname.length())

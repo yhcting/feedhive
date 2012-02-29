@@ -7,12 +7,15 @@ import java.io.File;
 import android.content.Context;
 import android.database.Cursor;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 
 public class ItemListAdapter extends ResourceCursorAdapter {
@@ -50,6 +53,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         TextView length = (TextView)view.findViewById(R.id.length);
         ImageView img   = (ImageView)view.findViewById(R.id.image);
 
+        long id = c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName()));
         String title = c.getString(c.getColumnIndex(DB.ColumnItem.TITLE.getName()));
         String url = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_URL.getName()));
 
@@ -62,13 +66,29 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
         //   add proper icon (or representation...)
-        int icon;
-        if (new File(UIPolicy.getItemFilePath(cid, title, url)).exists())
-            icon = R.drawable.ondisk;
-        else
-            icon = R.drawable.onweb;;
+        if (new File(UIPolicy.getItemFilePath(cid, id, title, url)).exists())
+            img.setImageResource(R.drawable.ondisk);
+        else {
+            Animation anim = img.getAnimation();
+            RTTask.StateDownload dnState = RTTask.S().getDownloadState(cid, id);
+            if (RTTask.StateDownload.Idle == dnState) {
+                if (null != anim)
+                    anim.cancel();
+                img.setImageResource(R.drawable.onweb);
+            } else if (RTTask.StateDownload.Downloading == dnState) {
+                img.setImageResource(R.drawable.onweb);
+                img.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
+            } else if (RTTask.StateDownload.DownloadFailed == dnState) {
+                if (null != anim)
+                    anim.cancel();
+                img.setImageResource(R.drawable.ic_info);
+            } else if (RTTask.StateDownload.Canceling == dnState) {
+                img.setImageResource(R.drawable.ic_info);
+                img.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
+            } else
+                eAssert(false);
+        }
 
-        img.setImageResource(icon);
         titlev.setTextColor(context.getResources().getColor(state.getTitleColor()));
         descv.setTextColor(context.getResources().getColor(state.getTextColor()));
         date.setTextColor(context.getResources().getColor(state.getTextColor()));
