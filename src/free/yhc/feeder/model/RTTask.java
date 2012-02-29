@@ -129,27 +129,7 @@ public class RTTask {
         }
     }
 
-    // 'unbind' then 'unregister'
-    public boolean
-    unregisterUpdate(long cid) {
-        synchronized (gbtm.getSyncObj()) {
-            String id = Id(cid, Action.Update);
-            gbtm.unbind(id);
-            return gbtm.unregister(id);
-        }
-    }
-
-    // 'unbind' then 'unregister'
-    public boolean
-    unregisterDownload(long cid, long id) {
-        synchronized (gbtm.getSyncObj()) {
-            String idstr = Id(cid, id, Action.Download);
-            gbtm.unbind(idstr);
-            return gbtm.unregister(idstr);
-        }
-    }
-
-    // channel is updateing???
+    // channel is updating???
     public StateUpdate
     getUpdateState(long cid) {
         BGTask task;
@@ -157,14 +137,23 @@ public class RTTask {
             task = gbtm.peek(Id(cid, Action.Update));
         }
 
+        StateUpdate ret;
         if (null == task)
             return StateUpdate.Idle;
 
         if (task.isAlive()) {
             return task.isInterrupted()? StateUpdate.Canceling: StateUpdate.Updating;
-        } else if (Err.NoErr == task.getResult())
+        } else if (Err.NoErr == task.getResult()
+                   || Err.UserCancelled == task.getResult()) {
+            synchronized (gbtm.getSyncObj()) {
+                // remove from manager.
+                String id = Id(cid, Action.Update);
+                gbtm.unbind(id);
+                gbtm.unregister(id);
+            }            
             return StateUpdate.Idle;
-        else
+            
+        } else
             return StateUpdate.UpdateFailed;
     }
 
@@ -180,12 +169,16 @@ public class RTTask {
 
         if (task.isAlive()) {
             return task.isInterrupted()? StateDownload.Canceling: StateDownload.Downloading;
-        } else if (Err.NoErr == task.getResult())
+        } else if (Err.NoErr == task.getResult()) {
+            synchronized (gbtm.getSyncObj()) {
+                String idstr = Id(cid, id, Action.Download);
+                gbtm.unbind(idstr);
+                gbtm.unregister(idstr);
+            }
             return StateDownload.Idle;
-        else
+        } else
             return StateDownload.DownloadFailed;
     }
-
 
     // result information is consumed. So, back to idle if possible.
     public void

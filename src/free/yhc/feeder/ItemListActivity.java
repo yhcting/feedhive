@@ -21,6 +21,7 @@ import android.text.Layout;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -106,10 +107,8 @@ public class ItemListActivity extends Activity {
         onPostRun(BGTask task, Object user, Err result) {
             requestSetUpdateButton();
 
-            if (Err.NoErr == result) {
-                RTTask.S().unregisterUpdate(cid);
+            if (Err.NoErr == result)
                 refreshList();
-            }
         }
     }
 
@@ -139,11 +138,7 @@ public class ItemListActivity extends Activity {
         @Override
         public void
         onPostRun(BGTask task, BGTaskDownloadToFile.ItemInfo info, Err result) {
-            RTTask.S().unregisterDownload(info.cid, info.id);
             getListAdapter().notifyDataSetChanged();
-            if (Err.NoErr == result) {
-                RTTask.S().unregisterUpdate(cid);
-            }
         }
     }
 
@@ -268,8 +263,6 @@ public class ItemListActivity extends Activity {
             @Override
             public void onClick(View v) {
                 LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
-                RTTask.S().consumeUpdateResult(cid);
-                RTTask.S().unregisterUpdate(cid);
                 requestSetUpdateButton();
             }
         });
@@ -353,7 +346,7 @@ public class ItemListActivity extends Activity {
                         getResources().getText(R.string.warn_find_app_to_open).toString() + " [" + type + "]");
                 return;
             }
-            // chanage state as 'opened' at this moment.
+            // change state as 'opened' at this moment.
             changeItemState_opened(id, position);
         } else {
             RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
@@ -374,7 +367,6 @@ public class ItemListActivity extends Activity {
                 Err result = RTTask.S().getDownloadErr(cid, id);
                 LookAndFeel.showTextToast(this, result.getMsgId());
                 RTTask.S().consumeDownloadResult(cid, id);
-                RTTask.S().unregisterDownload(cid, id);
                 getListAdapter().notifyDataSetChanged();
             } else
                 eAssert(false);
@@ -436,10 +428,10 @@ public class ItemListActivity extends Activity {
         ImageView iv = (ImageView)bar.getCustomView().findViewById(R.id.update_button);
         Animation anim = iv.getAnimation();
 
+        if (null != anim)
+            anim.cancel();
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
-            if (null != anim)
-                anim.cancel();
             iv.setImageResource(R.drawable.ic_refresh);
             setOnClick_startUpdate(iv);
         } else if (RTTask.StateUpdate.Updating == state) {
@@ -451,8 +443,6 @@ public class ItemListActivity extends Activity {
             iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.rotate_spin));
             setOnClick_notification(iv, R.string.wait_cancel);
         } else if (RTTask.StateUpdate.UpdateFailed == state) {
-            if (null != anim)
-                anim.cancel();
             iv.setImageResource(R.drawable.ic_info);
             Err result = RTTask.S().getUpdateErr(cid);
             setOnClick_errResult(iv, result);
@@ -500,6 +490,65 @@ public class ItemListActivity extends Activity {
             }
         });
         dialog.show();
+    }
+
+    @Override
+    public boolean
+    onCreateOptionsMenu(Menu menu) {
+        return true;
+    }
+
+    @Override
+    public void
+    onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
+
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.item_context, menu);
+
+        // check for "Delete Downloaded File" option
+        if (Feed.Channel.Action.DNOPEN == action
+            && doesEnclosureDnFileExists(info.id, info.position))
+            menu.findItem(R.id.delete_dnfile).setVisible(true);
+
+        // Check for "Mark as unopened option"
+        if (Feed.Channel.Action.OPEN == action
+            && Feed.Item.State.OPENED == Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, info.position)))
+            menu.findItem(R.id.mark_unopened).setVisible(true);
+    }
+
+    @Override
+    public boolean
+    onContextItemSelected(MenuItem mItem) {
+        AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
+        switch (mItem.getItemId()) {
+        case R.id.delete_dnfile:
+            logI(" Delete Downloaded File : ID : " + info.id + " / " + info.position);
+            onContext_deleteDnFile(info.id, info.position);
+            return true;
+        case R.id.mark_unopened:
+            logI(" Mark As Unactioned : ID : " + info.id + " / " + info.position);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean
+    onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+
+        switch (item.getItemId()) {
+        }
+        return true;
+    }
+
+    @Override
+    public void
+    onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Do nothing!
     }
 
     @Override
@@ -559,7 +608,7 @@ public class ItemListActivity extends Activity {
         });
         registerForContextMenu(list);
 
-        setUpdateButton();
+        // Bind update task if needed
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle != state)
             RTTask.S().bindUpdate(cid, new UpdateBGTask(null));
@@ -578,88 +627,33 @@ public class ItemListActivity extends Activity {
         } catch (InterruptedException e) {
             return;
         }
-    }
-    @Override
-    public boolean
-    onCreateOptionsMenu(Menu menu) {
-        return true;
-    }
-
-    @Override
-    public void
-    onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-        super.onCreateContextMenu(menu, v, menuInfo);
-        AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
-
-        if (1 == info.id) {
-            // Do not show context menu for 'update' row - first item
-            eAssert(0 == info.position);
-            return;
-        }
-
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.item_context, menu);
-
-        // check for "Delete Downloaded File" option
-        if (Feed.Channel.Action.DNOPEN == action
-            && doesEnclosureDnFileExists(info.id, info.position))
-            menu.findItem(R.id.delete_dnfile).setVisible(true);
-
-        // Check for "Mark as unopened option"
-        if (Feed.Channel.Action.OPEN == action
-            && Feed.Item.State.OPENED == Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, info.position)))
-            menu.findItem(R.id.mark_unopened).setVisible(true);
+        
+        setUpdateButton();
     }
 
     @Override
     public boolean
-    onContextItemSelected(MenuItem mItem) {
-        AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
-        switch (mItem.getItemId()) {
-        case R.id.delete_dnfile:
-            logI(" Delete Downloaded File : ID : " + info.id + " / " + info.position);
-            onContext_deleteDnFile(info.id, info.position);
-            return true;
-        case R.id.mark_unopened:
-            logI(" Mark As Unactioned : ID : " + info.id + " / " + info.position);
-            return true;
+    onKeyDown(int keyCode, KeyEvent event) {
+        if (KeyEvent.KEYCODE_BACK == keyCode) {
+            RTTask.S().unbind();
+            RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
+            if (RTTask.StateUpdate.Idle != state) {
+                RTTask.S().unbindUpdate(cid);
+                Intent intent = new Intent();
+                intent.putExtra("cid", cid);
+                // '0' is temporal value. (reserved for future use)
+                setResult(ChannelListActivity.ResCReadChannelUpdating, intent);
+            } else {
+                setResult(ChannelListActivity.ResCReadChannelOk);
+            }
         }
-        return false;
+        return super.onKeyDown(keyCode, event);
     }
-
-    @Override
-    public boolean
-    onOptionsItemSelected(MenuItem item) {
-        super.onOptionsItemSelected(item);
-
-        switch (item.getItemId()) {
-        }
-        return true;
-    }
-
-    @Override
-    public void
-    onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        // Do nothing!
-    }
-
+    
     @Override
     protected void
     onDestroy() {
         getListAdapter().getCursor().close();
-
-        RTTask.S().unbind();
-        RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
-        if (RTTask.StateUpdate.Idle != state) {
-            RTTask.S().unbindUpdate(cid);
-            Intent intent = new Intent();
-            intent.putExtra("cid", cid);
-            // '0' is temporal value. (reserved for future use)
-            setResult(ChannelListActivity.ResCReadChannelUpdating, intent);
-        } else {
-            setResult(ChannelListActivity.ResCReadChannelOk);
-        }
         super.onDestroy();
     }
 }

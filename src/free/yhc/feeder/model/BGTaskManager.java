@@ -17,14 +17,15 @@ import android.os.Message;
 class BGTaskManager {
     private EventMessageLooper        looper = new EventMessageLooper();
     private HashMap<String, TaskMapV> map = new HashMap<String, TaskMapV>();
-    private OnEventListener           eventListener = new OnEventListener();
 
     // TaskMap Value
     private class TaskMapV {
-        Thread          owner = null;
-        BGTask<?, ?, ?> task  = null;
-        TaskMapV(BGTask<?, ?, ?> task) {
+        Thread          owner  = null;
+        String          taskId = null;
+        BGTask<?, ?, ?> task   = null;
+        TaskMapV(BGTask<?, ?, ?> task, String taskId) {
             this.task = task;
+            this.taskId = taskId;
         }
     }
 
@@ -51,6 +52,12 @@ class BGTaskManager {
     }
 
     private class OnEventListener implements BGTask.OnEvent<Object, Object, Object> {
+        private String taskId = null;
+        
+        OnEventListener(String taskId) {
+            this.taskId = taskId;
+        }
+        
         @Override
         public void
         onPreRun(BGTask task, Object user) {
@@ -102,7 +109,7 @@ class BGTaskManager {
             eAssert(false);
             return false;
         }
-        map.put(taskId, new TaskMapV(task));
+        map.put(taskId, new TaskMapV(task, taskId));
         return true;
     }
 
@@ -110,12 +117,12 @@ class BGTaskManager {
     _unbind(TaskMapV v) {
         v.owner = looper;
         v.task.attach(looper.getEventLoopHandler());
-        v.task.setOnEventListener(eventListener);
+        v.task.setOnEventListener(new OnEventListener(v.taskId));
+        logI("BGTM : unbind :" + v.taskId);
     }
 
     int
     unbind(String taskId) {
-        logI("BGTM : unbind :" + taskId);
         TaskMapV v = map.get(taskId);
         if (null == v)
             return 0;

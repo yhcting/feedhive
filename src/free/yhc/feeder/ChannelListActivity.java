@@ -251,9 +251,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             if (Err.UserCancelled == result)
                 return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
-            if (Err.NoErr == result)
-                RTTask.S().unregisterUpdate(cid);
-
             if (isChannelInSelectedCategory(cid))
                 // NOTE : refresh??? just 'notifying' is enough?
                 getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
@@ -832,7 +829,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             Err result = RTTask.S().getUpdateErr(cid);
             LookAndFeel.showTextToast(this, result.getMsgId());
             RTTask.S().consumeUpdateResult(cid);
-            RTTask.S().unregisterUpdate(cid);
             getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
         } else if (RTTask.StateUpdate.Canceling == state) {
             LookAndFeel.showTextToast(this, R.string.wait_cancel);

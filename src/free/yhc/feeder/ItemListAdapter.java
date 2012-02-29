@@ -66,21 +66,20 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
         //   add proper icon (or representation...)
-        if (new File(UIPolicy.getItemFilePath(cid, id, title, url)).exists())
+        Animation anim = img.getAnimation();
+        if (null != anim)
+            anim.cancel();
+
+        if (new File(UIPolicy.getItemFilePath(cid, id, title, url)).exists()) {
             img.setImageResource(R.drawable.ondisk);
-        else {
-            Animation anim = img.getAnimation();
+        } else {
             RTTask.StateDownload dnState = RTTask.S().getDownloadState(cid, id);
             if (RTTask.StateDownload.Idle == dnState) {
-                if (null != anim)
-                    anim.cancel();
                 img.setImageResource(R.drawable.onweb);
             } else if (RTTask.StateDownload.Downloading == dnState) {
                 img.setImageResource(R.drawable.onweb);
                 img.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
             } else if (RTTask.StateDownload.DownloadFailed == dnState) {
-                if (null != anim)
-                    anim.cancel();
                 img.setImageResource(R.drawable.ic_info);
             } else if (RTTask.StateDownload.Canceling == dnState) {
                 img.setImageResource(R.drawable.ic_info);

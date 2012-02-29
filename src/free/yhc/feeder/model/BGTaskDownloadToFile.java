@@ -119,6 +119,10 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.ItemInfo, 
             ostream.flush();
             ostream.close();
             istream.close();
+
+            if (!new File(arg.tempFile).renameTo(new File(arg.toFile)))
+                return Err.IOFile;
+
         } catch (IOException e) {
             // User's canceling operation close in/out stream in force.
             // And this leads to IOException here.
