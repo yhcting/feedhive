@@ -53,11 +53,11 @@ class BGTaskManager {
 
     private class OnEventListener implements BGTask.OnEvent<Object, Object, Object> {
         private String taskId = null;
-        
+
         OnEventListener(String taskId) {
             this.taskId = taskId;
         }
-        
+
         @Override
         public void
         onPreRun(BGTask task, Object user) {

@@ -15,7 +15,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.provider.MediaStore.MediaColumns;
 import android.text.TextUtils;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -55,9 +55,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private static final int ReqCReadChannel        = 0;
     private static final int ReqCPredefinedChannel  = 1;
     private static final int ReqCPickImage          = 2;
-
-    public static final int ResCReadChannelOk       = 0; // nothing special
-    public static final int ResCReadChannelUpdating = 1;
 
     private ActionBar   ab;
     private Flipper     flipper;
@@ -147,9 +144,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
                     intent.putExtra("channelid", id);
-                    if (null != RTTask.S().getUpdate(id))
-                        RTTask.S().unbindUpdate(id);
-                    startActivityForResult(intent, ReqCReadChannel);
+                    startActivity(intent);
                 }
             });
 
@@ -263,7 +258,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         onDoWork(SpinAsyncTask task, Object... objs) {
             Intent data = (Intent)objs[0];
             Uri selectedImage = data.getData();
-            String[] filePathColumn = {MediaStore.Images.Media.DATA};
+            String[] filePathColumn = {MediaColumns.DATA};
 
             Cursor c = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
             if (!c.moveToFirst()) {
@@ -845,59 +840,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         new SpinAsyncTask(this, new PickIconEventHandler(), R.string.pick_icon_progress).execute(data);
     }
 
-    private void
-    onResult_readChannel(int resultCode, Intent data) {
-        refreshList(ab.getSelectedTab());
-
-        switch (resultCode) {
-        case ResCReadChannelOk:
-            break;
-        case ResCReadChannelUpdating:
-            long cid = data.getLongExtra("cid", -1);
-            eAssert(cid >= 0);
-            RTTask.S().bindUpdate(cid, new UpdateBGTask(null, cid));
-            break;
-        }
-    }
-
-    @Override
-    public void
-    onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        Feed.Category[] cats;
-        try {
-            cats = DBPolicy.S().getCategories();
-        } catch (InterruptedException e) {
-            finish();
-            return;
-        }
-
-        eAssert(cats.length > 0);
-
-        // Setup list view
-        setContentView(R.layout.channel_list);
-
-        // Setup for swipe.
-        flipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
-
-
-
-        // Setup Tabs
-        ab = getActionBar();
-        ab.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-        ab.setDisplayShowTitleEnabled(false);
-        ab.setDisplayShowHomeEnabled(false);
-
-        for (Feed.Category cat : cats) {
-            Tab tab = addCategory(cat);
-            refreshList(tab); // create cursor adapters
-        }
-        // Select default category as current category.
-        selectDefaultAsSelected();
-        // 0 doesn't have meaning.
-        setResult(0);
-    }
-
     @Override
     public void
     onTabSelected(Tab tab, FragmentTransaction ft) {
@@ -998,9 +940,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-        case ReqCReadChannel:
-            onResult_readChannel(resultCode, data);
-            break;
         case ReqCPredefinedChannel:
             refreshList(ab.getSelectedTab());
             break;
@@ -1012,16 +951,117 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     @Override
     public void
-    onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        // Do nothing!
+    onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        logI("==> ChannelListActivity : onCreate");
+
+        Feed.Category[] cats;
+        try {
+            cats = DBPolicy.S().getCategories();
+        } catch (InterruptedException e) {
+            finish();
+            return;
+        }
+
+        eAssert(cats.length > 0);
+
+        // Setup list view
+        setContentView(R.layout.channel_list);
+
+        // Setup for swipe.
+        flipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
+
+
+
+        // Setup Tabs
+        ab = getActionBar();
+        ab.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        ab.setDisplayShowTitleEnabled(false);
+        ab.setDisplayShowHomeEnabled(false);
+
+        for (Feed.Category cat : cats) {
+            Tab tab = addCategory(cat);
+            refreshList(tab); // create cursor adapters
+        }
+        // Select default category as current category.
+        selectDefaultAsSelected();
+        // 0 doesn't have meaning.
+        setResult(0);
+    }
+
+    @Override
+    protected void
+    onStart() {
+        logI("==> ChannelListActivity : onStart");
+        super.onStart();
+
+    }
+
+    @Override
+    protected void
+    onResume() {
+        logI("==> ChannelListActivity : onResume");
+        super.onStart();
+
+        // Check channel state and bind it.
+        // Why here? Not 'onStart'.
+        // See comments in 'onPause()'
+        Cursor c;
+        try {
+            c = DBPolicy.S().queryChannel(-1, new DB.ColumnChannel[] { DB.ColumnChannel.ID });
+        } catch (InterruptedException e) {
+            return;
+        }
+        if (c.moveToFirst()) {
+            do {
+                long cid = c.getLong(0);
+                if (RTTask.StateUpdate.Idle != RTTask.S().getUpdateState(cid))
+                    RTTask.S().bindUpdate(cid, new UpdateBGTask(null, cid));
+            } while (c.moveToNext());
+        }
+        c.close();
+
+        getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+    }
+
+    @Override
+    protected void
+    onPause() {
+        logI("==> ChannelListActivity : onPause");
+        // Why This shoud be here (NOT 'onStop'!)
+        // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
+        // And when exiting from 'ItemListActivity' by back-key event, 'onStart' is called.
+        // But, during updating - there is background thread  - 'onResume' and 'onCancel' are called
+        //   instead of 'onStart' and 'onStop'.
+        // That is, if there is background running background thread, activity is NOT stopped but just paused.
+        // (This is experimental conclusion - NOT by analyzing framework source code.)
+        // I think this is Android's bug or implicit policy.
+        // Beause of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
+        RTTask.S().unbind();
+        super.onPause();
+    }
+
+    @Override
+    protected void
+    onStop() {
+        logI("==> ChannelListActivity : onStop");
+        super.onStop();
     }
 
     @Override
     protected void
     onDestroy() {
+        logI("==> ChannelListActivity : onDestroy");
         for (int i = 0; i < ab.getTabCount(); i++)
             getListAdapter(ab.getTabAt(i)).getCursor().close();
         super.onDestroy();
+    }
+
+    @Override
+    public void
+    onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Do nothing!
     }
 }

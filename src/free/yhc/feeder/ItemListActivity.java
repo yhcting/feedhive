@@ -21,7 +21,6 @@ import android.text.Layout;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -546,15 +545,10 @@ public class ItemListActivity extends Activity {
 
     @Override
     public void
-    onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        // Do nothing!
-    }
-
-    @Override
-    public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        logI("==> ItemListActivity : onCreate");
 
         cid = getIntent().getLongExtra("channelid", 0);
         logI("Item to read : " + cid + "\n");
@@ -608,6 +602,22 @@ public class ItemListActivity extends Activity {
         });
         registerForContextMenu(list);
 
+    }
+
+    @Override
+    protected void
+    onStart() {
+        logI("==> ItemListActivity : onStart");
+        super.onStart();
+    }
+
+    @Override
+    protected void
+    onResume() {
+        logI("==> ItemListActivity : onResume");
+        super.onResume();
+
+        // See comments in 'ChannelListActivity.onPause()'
         // Bind update task if needed
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle != state)
@@ -627,33 +637,41 @@ public class ItemListActivity extends Activity {
         } catch (InterruptedException e) {
             return;
         }
-        
+
         setUpdateButton();
+        getListAdapter().notifyDataSetChanged();
     }
 
     @Override
-    public boolean
-    onKeyDown(int keyCode, KeyEvent event) {
-        if (KeyEvent.KEYCODE_BACK == keyCode) {
-            RTTask.S().unbind();
-            RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
-            if (RTTask.StateUpdate.Idle != state) {
-                RTTask.S().unbindUpdate(cid);
-                Intent intent = new Intent();
-                intent.putExtra("cid", cid);
-                // '0' is temporal value. (reserved for future use)
-                setResult(ChannelListActivity.ResCReadChannelUpdating, intent);
-            } else {
-                setResult(ChannelListActivity.ResCReadChannelOk);
-            }
-        }
-        return super.onKeyDown(keyCode, event);
+    protected void
+    onPause() {
+        logI("==> ItemListActivity : onPause");
+        super.onPause();
+
+        // See comments in 'ChannelListActivity.onPause()'
+        RTTask.S().unbind();
     }
-    
+
+    @Override
+    protected void
+    onStop() {
+        logI("==> ItemListActivity : onStop");
+        super.onStop();
+    }
+
     @Override
     protected void
     onDestroy() {
+        logI("==> ItemListActivity : onDestroy");
         getListAdapter().getCursor().close();
         super.onDestroy();
     }
+
+    @Override
+    public void
+    onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Do nothing!
+    }
+
 }

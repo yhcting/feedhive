@@ -150,9 +150,9 @@ public class RTTask {
                 String id = Id(cid, Action.Update);
                 gbtm.unbind(id);
                 gbtm.unregister(id);
-            }            
+            }
             return StateUpdate.Idle;
-            
+
         } else
             return StateUpdate.UpdateFailed;
     }

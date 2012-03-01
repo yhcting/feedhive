@@ -83,11 +83,11 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         });
 
         Animation anim = update.getAnimation();
+        if (null != anim)
+            anim.cancel();
 
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
-            if (null != anim)
-                anim.cancel();
             update.setImageResource(R.drawable.ic_refresh);
         } else if (RTTask.StateUpdate.Updating == state) {
             update.setImageResource(R.drawable.ic_refresh);
@@ -96,8 +96,6 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
             update.setImageResource(R.drawable.ic_info);
             update.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
         } else if (RTTask.StateUpdate.UpdateFailed == state) {
-            if (null != anim)
-                anim.cancel();
             update.setImageResource(R.drawable.ic_info);
         } else
             eAssert(false);
