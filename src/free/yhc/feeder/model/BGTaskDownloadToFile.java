@@ -80,9 +80,12 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.ItemInfo, 
             try {
                 url = new URL(arg.url);
                 conn = url.openConnection();
+                conn.setConnectTimeout(1000);
                 conn.connect();
                 break; // done
-            } catch (IOException e) {
+            } catch (Exception e) {
+                // SocketTimeoutException
+                // IOException
                 if (Err.UserCancelled == getResult())
                     return Err.UserCancelled;
 

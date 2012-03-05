@@ -288,11 +288,11 @@ public class ItemListActivity extends Activity {
 
     private boolean
     changeItemState_opened(long id, int position) {
-        // chanage state as 'opened' at this moment.
+        // change state as 'opened' at this moment.
         Feed.Item.State state = Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, position));
         try {
             if (Feed.Item.State.NEW == state) {
-                db.setItemInfo_state(cid, id, Feed.Item.State.OPENED);
+                db.updateItem_state(cid, id, Feed.Item.State.OPENED);
                 getListAdapter().notifyDataSetChanged();
                 return true;
             }

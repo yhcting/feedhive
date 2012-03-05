@@ -107,7 +107,7 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
 
         eAssert(null != handler && null != onEvent);
 
-        if (cancelled)
+        if (cancelled && Err.NoErr != result)
             result = Err.UserCancelled;
 
         if (bInterrupted

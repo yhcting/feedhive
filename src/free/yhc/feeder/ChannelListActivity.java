@@ -871,6 +871,15 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         super.onCreateContextMenu(menu, v, menuInfo);
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.channel_context, menu);
+        AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
+        RTTask.StateUpdate updateState = RTTask.S().getUpdateState(mInfo.id);
+        if (RTTask.StateUpdate.Updating == updateState
+            || RTTask.StateUpdate.Canceling == updateState) {
+            menu.findItem(R.id.delete).setEnabled(false);
+            menu.findItem(R.id.reverse_order).setEnabled(false);
+            menu.findItem(R.id.pick_icon).setEnabled(false);
+            menu.findItem(R.id.full_update).setEnabled(false);
+        }
     }
 
     @Override
@@ -884,7 +893,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     @Override
     public boolean
     onContextItemSelected(MenuItem mItem) {
-        AdapterContextMenuInfo info = (AdapterContextMenuInfo) mItem.getMenuInfo();
+        AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
 
         switch (mItem.getItemId()) {
         case R.id.delete:

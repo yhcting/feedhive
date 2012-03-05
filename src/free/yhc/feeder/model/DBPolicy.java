@@ -2,13 +2,16 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+import static free.yhc.feeder.model.Utils.logW;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.ListIterator;
 import java.util.concurrent.Semaphore;
 
+import android.content.ContentValues;
 import android.database.Cursor;
-import android.database.DatabaseUtils;
 import android.database.SQLException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -23,9 +26,119 @@ public class DBPolicy {
     private Semaphore dbMutex = new Semaphore(1);
     private DB        db   = null;
 
+    private HashMap<Long, LinkedList<ItemUpdateRequest>> updatingChannels
+                                            = new HashMap<Long, LinkedList<ItemUpdateRequest>>();
+
+    private class ItemUpdateRequest {
+        long            id;
+        String          title;
+        ContentValues   cvs;
+        ItemUpdateRequest(long id, String title, ContentValues cvs) {
+            this.id = id;
+            this.title = title;
+            this.cvs = cvs;
+        }
+    }
+
+
     private DBPolicy() {
         db = DB.db();
     }
+
+
+    // ======================================================
+    //
+    // ======================================================
+    private ContentValues
+    itemToContentValues(Feed.Item item) {
+        ContentValues values = new ContentValues();
+
+        // information defined by spec.
+        values.put(ColumnItem.CHANNELID.getName(),           item.dbD.cid);
+        values.put(ColumnItem.TITLE.getName(),               item.parD.title);
+        values.put(ColumnItem.LINK.getName(),                item.parD.link);
+        values.put(ColumnItem.DESCRIPTION.getName(),         item.parD.description);
+        values.put(ColumnItem.PUBDATE.getName(),             item.parD.pubDate);
+        values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.parD.enclosureUrl);
+        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.parD.enclosureLength);
+        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.parD.enclosureType);
+        values.put(ColumnItem.STATE.getName(),               item.dynD.state.name());
+
+        return values;
+    }
+
+    private ContentValues
+    channelToContentValues(Feed.Channel ch) {
+        ContentValues values = new ContentValues();
+        // application's internal information
+        values.put(ColumnChannel.URL.getName(),              ch.profD.url);
+        values.put(ColumnChannel.ACTION.getName(),           ch.dynD.action.name());
+        values.put(ColumnChannel.ORDER.getName(),            ch.dynD.order.name());
+        values.put(ColumnChannel.CATEGORYID.getName(),       ch.dbD.categoryid);
+        values.put(ColumnChannel.LASTUPDATE.getName(),       ch.dbD.lastupdate);
+
+        // temporal : this column is for future use.
+        values.put(ColumnChannel.UNOPENEDCOUNT.getName(),    0);
+
+        if (null != ch.dynD.imageblob)
+            values.put(ColumnChannel.IMAGEBLOB.getName(),    ch.dynD.imageblob);
+
+        // information defined by spec.
+        values.put(ColumnChannel.TITLE.getName(),            ch.parD.title);
+        values.put(ColumnChannel.DESCRIPTION.getName(),      ch.parD.description);
+        return values;
+    }
+
+
+    private boolean
+    isUnderUpdating(long cid) {
+        return (null != updatingChannels.get(cid));
+    }
+
+
+    private long
+    prepareUpdateItemTable(long cid) {
+        // to make sure.
+        // This operation may return error.
+        db.dropTempItemTable(cid);
+
+        updatingChannels.put(cid, new LinkedList<ItemUpdateRequest>());
+        if (0 > db.createTempItemTable(cid)) {
+            updatingChannels.remove(cid);
+            return -1;
+        }
+        return 0;
+    }
+
+    private long
+    completeUpdateItemTable(long cid) {
+        // process delayed-updated-item
+        LinkedList<ItemUpdateRequest> ll = updatingChannels.get(cid);
+        if (null != ll) {
+            ListIterator<ItemUpdateRequest> iter = ll.listIterator();
+            while (iter.hasNext()) {
+                ItemUpdateRequest uItem = iter.next();
+                if (1 != db.updateItemToTemp(cid, uItem.title, 0, uItem.cvs));
+                    logW("Fail to delayed update : cid(" + cid + ") title(" + uItem.title + ")");
+            }
+        }
+
+        db.dropItemTable(cid);
+        db.alterItemTable_toMain(cid);
+        updatingChannels.remove(cid);
+        return 0;
+    }
+
+    private long
+    rollbackUpdateItemTable(long cid) {
+        db.dropTempItemTable(cid);
+        updatingChannels.remove(cid);
+        return 0;
+    }
+
+    // ======================================================
+    //
+    // ======================================================
 
     // S : Singleton instance
     public static DBPolicy
@@ -55,12 +168,9 @@ public class DBPolicy {
             throws InterruptedException {
         boolean ret = false;
         lock();
-        Cursor c = db.query(DB.TABLE_CATEGORY,
-                            new ColumnCategory[] {
-                                ColumnCategory.NAME
-                            },
-                            ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
-                            null, null, null, null);
+        Cursor c = db.queryCategory(ColumnCategory.NAME,
+                                    ColumnCategory.NAME,
+                                    name);
         unlock();
         if (0 < c.getCount())
             ret = true;
@@ -73,12 +183,9 @@ public class DBPolicy {
             throws InterruptedException {
         boolean ret = false;
         lock();
-        Cursor c = db.query(DB.TABLE_CHANNEL,
-                            new ColumnChannel[] {
-                                ColumnChannel.ID
-                            },
-                            ColumnChannel.URL.getName() + " = " + DatabaseUtils.sqlEscapeString(url),
-                            null, null, null, null);
+        Cursor c = db.queryChannel(ColumnChannel.ID,
+                                   ColumnChannel.URL,
+                                   url);
         unlock();
         if (0 < c.getCount())
             ret = true;
@@ -94,14 +201,11 @@ public class DBPolicy {
             throws InterruptedException {
         String ret = null;
         lock();
-        Cursor c = db.query(DB.getItemTableName(cid),
-                            // Column index is used below. So order is important.
-                            new ColumnItem[] {
-                                ColumnItem.ID,
-                                ColumnItem.STATE,
-                            },
-                            ColumnItem.TITLE.getName() + " = " + DatabaseUtils.sqlEscapeString(title),
-                            null, null, null, null);
+        Cursor c = db.queryItem(cid,
+                                // Column index is used below. So order is important.
+                                new ColumnItem[] { ColumnItem.ID, ColumnItem.STATE, },
+                                ColumnItem.TITLE,
+                                title);
         unlock();
         if (c.moveToFirst())
             ret = c.getString(1); // '1' is state.
@@ -142,13 +246,8 @@ public class DBPolicy {
     getCategories()
         throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.TABLE_CATEGORY,
-                            // Column index is used below. So order is important.
-                            new ColumnCategory[] {
-                                ColumnCategory.ID,
-                                ColumnCategory.NAME,
-                            },
-                            null, null, null, null, null);
+        // Column index is used below. So order is important.
+        Cursor c = db.queryCategory(new ColumnCategory[] { ColumnCategory.ID, ColumnCategory.NAME, });
         unlock();
 
         int i = 0;
@@ -191,7 +290,7 @@ public class DBPolicy {
             lock();
             logI("InsertChannel DB Section Start");
             // insert and update channel id.
-            cid = db.insertChannel(ch);
+            cid = db.insertChannel(channelToContentValues(ch));
             if (cid < 0) {
                 unlock();
                 return -1;
@@ -211,7 +310,8 @@ public class DBPolicy {
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
 
-                if (0 > db.insertItem(cid, item)) {
+                item.dbD.cid = cid;
+                if (0 > db.insertItem(cid, itemToContentValues(item))) {
                     // Fail to insert one of item => Rollback DB state.
                     db.deleteChannel(cid);
                     unlock();
@@ -265,17 +365,16 @@ public class DBPolicy {
 
         logI("UpdateChannel DB Section Start");
         lock();
-        Cursor c = db.query(DB.getItemTableName(ch.dbD.id),
-                            // Column index is used below. So order is important.
-                            new ColumnItem[] {
-                                DB.ColumnItem.TITLE,
-                                DB.ColumnItem.LINK,
-                                DB.ColumnItem.ENCLOSURE_URL,
-                                // runtime information of item.
-                                DB.ColumnItem.STATE,
-                                DB.ColumnItem.ID,
-                            },
-                            null, null, null, null, null);
+        Cursor c = db.queryItem(ch.dbD.id,
+                                // Column index is used below. So order is important.
+                                new ColumnItem[] {
+                                    DB.ColumnItem.TITLE,
+                                    DB.ColumnItem.LINK,
+                                    DB.ColumnItem.ENCLOSURE_URL,
+                                    // runtime information of item.
+                                    DB.ColumnItem.STATE,
+                                    DB.ColumnItem.ID,
+                                });
         unlock();
 
         final int COLUMN_TITLE          = 0;
@@ -320,19 +419,16 @@ public class DBPolicy {
 
         lock();
         // update channel information
-        db.updateChannel(ch.dbD.id,
-                         new ColumnChannel[] {
-                            ColumnChannel.TITLE,
-                            ColumnChannel.DESCRIPTION },
-                         new String[] {
-                            ch.parD.title,
-                            ch.parD.description });
+        ContentValues cvs = new ContentValues();
+        cvs.put(ColumnChannel.TITLE.getName(), ch.parD.title);
+        cvs.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
         if (updateImage)
-            db.updateChannel(ch.dbD.id, ColumnChannel.IMAGEBLOB, ch.dynD.imageblob);
+            cvs.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
+        db.updateChannel(ch.dbD.id, cvs);
         unlock();
 
         lock();
-        db.prepareUpdateItemTable(ch.dbD.id);
+        prepareUpdateItemTable(ch.dbD.id);
         try {
             int cnt = 0;
             for (Feed.Item item : ch.items) {
@@ -340,8 +436,9 @@ public class DBPolicy {
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
 
-                if (0 > db.insertItem(ch.dbD.id, item)) {
-                    db.rollbackUpdateItemTable(ch.dbD.id);
+                item.dbD.cid = ch.dbD.id;
+                if (0 > db.insertItemToTemp(ch.dbD.id, itemToContentValues(item))) {
+                    rollbackUpdateItemTable(ch.dbD.id);
                     unlock();
                     return -1;
                 }
@@ -354,12 +451,12 @@ public class DBPolicy {
                     lock();
                 }
             }
-            db.completeUpdateItemTable(ch.dbD.id);
+            completeUpdateItemTable(ch.dbD.id);
             // update lastupdate-time for this channel
             db.updateChannel(ch.dbD.id, ColumnChannel.LASTUPDATE, DateUtils.getCurrentDateString());
             unlock();
         } catch (InterruptedException e) {
-            db.rollbackUpdateItemTable(ch.dbD.id);
+            rollbackUpdateItemTable(ch.dbD.id);
             throw new InterruptedException();
         }
         logI("UpdateChannel DB Section End");
@@ -369,6 +466,7 @@ public class DBPolicy {
     public long
     updateChannel_category(long cid, long categoryid)
             throws InterruptedException {
+        eAssert(!isUnderUpdating(cid));
         try {
             return db.updateChannel(cid, ColumnChannel.CATEGORYID, categoryid);
         } catch (SQLException e) {
@@ -382,10 +480,7 @@ public class DBPolicy {
     updateChannel_reverseOrder(long cid)
             throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.TABLE_CHANNEL,
-                            new ColumnChannel[] { ColumnChannel.ORDER },
-                            ColumnChannel.ID.getName() + " = '" + cid + "'",
-                            null, null, null, null);
+        Cursor c = db.queryChannel(cid, ColumnChannel.ORDER);
         Feed.Channel.Order order = null;
         if (c.moveToFirst())
             order = Feed.Channel.Order.convert(c.getString(0));
@@ -398,8 +493,7 @@ public class DBPolicy {
         // reverse
         order = (Feed.Channel.Order.NORMAL == order)?
                     Feed.Channel.Order.REVERSE: Feed.Channel.Order.NORMAL;
-
-        db.updateChannel(cid, order);
+        db.updateChannel(cid, ColumnChannel.ORDER, order.name());
         unlock();
 
         return 1; // number of rows affected.
@@ -415,6 +509,7 @@ public class DBPolicy {
     public long
     updateChannel_image(long cid, byte[] data)
             throws InterruptedException {
+        eAssert(!isUnderUpdating(cid));
         return db.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
     }
 
@@ -425,14 +520,9 @@ public class DBPolicy {
         Cursor c;
         lock();
         if (0 > categoryid)
-            c = db.query(DB.TABLE_CHANNEL,
-                         columns, null,
-                         null, null, null, null);
+            c = db.queryChannel(columns);
         else
-            c = db.query(DB.TABLE_CHANNEL,
-                    columns,
-                    ColumnChannel.CATEGORYID.getName() + " = " + categoryid,
-                    null, null, null, null);
+            c = db.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid);
         unlock();
         return c;
     }
@@ -440,6 +530,7 @@ public class DBPolicy {
     public int
     deleteChannel(long cid)
             throws InterruptedException {
+        eAssert(!isUnderUpdating(cid));
         lock();
         long n = db.deleteChannel(cid);
         eAssert(0 == n || 1 == n);
@@ -457,11 +548,9 @@ public class DBPolicy {
     getChannelIds(long categoryid)
             throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.TABLE_CHANNEL,
-                            // Column index is used below. So order is important.
-                            new ColumnChannel[] { ColumnChannel.ID },
-                            ColumnChannel.CATEGORYID.getName() + " = '" + categoryid + "'",
-                            null, null, null, null);
+        Cursor c = db.queryChannel(ColumnChannel.ID,
+                                   ColumnChannel.CATEGORYID,
+                                   categoryid);
         unlock();
 
         long[] cids = new long[c.getCount()];
@@ -481,13 +570,8 @@ public class DBPolicy {
             throws InterruptedException {
         Long ret = null;
         lock();
-        Cursor c = db.query(DB.TABLE_CHANNEL,
-                            // Column index is used below. So order is important.
-                            new ColumnChannel[] {
-                                column
-                            },
-                            ColumnChannel.ID.getName() + " = '" + cid + "'",
-                            null, null, null, null);
+        // Column index is used below. So order is important.
+        Cursor c = db.queryChannel(cid, column);
         unlock();
         if (c.moveToFirst())
             ret = c.getLong(0);
@@ -501,13 +585,7 @@ public class DBPolicy {
             throws InterruptedException {
         String ret = null;
         lock();
-        Cursor c = db.query(DB.TABLE_CHANNEL,
-                            // Column index is used below. So order is important.
-                            new ColumnChannel[] {
-                                column
-                            },
-                            ColumnChannel.ID.getName() + " = '" + cid + "'",
-                            null, null, null, null);
+        Cursor c = db.queryChannel(cid, column);
         unlock();
         if (c.moveToFirst())
             ret = c.getString(0);
@@ -520,10 +598,7 @@ public class DBPolicy {
     getChannelInfoStrings(long cid, ColumnChannel[] columns)
             throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.TABLE_CHANNEL,
-                            columns,
-                            ColumnChannel.ID.getName() + " = '" + cid + "'",
-                            null, null, null, null);
+        Cursor c = db.queryChannel(cid, columns);
         unlock();
         if (!c.moveToFirst()) {
             c.close();
@@ -542,10 +617,7 @@ public class DBPolicy {
     getChannelImage(long cid)
             throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.TABLE_CHANNEL,
-                            new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
-                            ColumnChannel.ID.getName() + " = '" + cid + "'",
-                            null, null, null, null);
+        Cursor c = db.queryChannel(cid, ColumnChannel.IMAGEBLOB);
         unlock();
         if (!c.moveToFirst()) {
             c.close();
@@ -568,13 +640,7 @@ public class DBPolicy {
             throws InterruptedException {
         String ret = null;
         lock();
-        Cursor c = db.query(DB.getItemTableName(cid),
-                            // Column index is used below. So order is important.
-                            new ColumnItem[] {
-                                column
-                            },
-                            ColumnItem.ID.getName() + " = '" + id + "'",
-                            null, null, null, null);
+        Cursor c = db.queryItem(cid, id, column);
         unlock();
         if (c.moveToFirst())
             ret = c.getString(0);
@@ -588,10 +654,7 @@ public class DBPolicy {
             throws InterruptedException {
         lock();
         // Default is ASC order by ID
-        Cursor c = db.query(DB.getItemTableName(cid),
-                            columns,
-                            ColumnItem.ID.getName() + " = '" + id + "'",
-                            null, null, null, null);
+        Cursor c = db.queryItem(cid, id, columns);
         unlock();
         if (!c.moveToFirst()) {
             c.close();
@@ -607,20 +670,16 @@ public class DBPolicy {
     }
 
     public Cursor
-    queryItem(long channelid,
-              ColumnItem[] columns)
-                      throws InterruptedException {
+    queryItem(long cid, ColumnItem[] columns)
+            throws InterruptedException {
         lock();
-        Cursor c = db.query(DB.getItemTableName(channelid),
-                            columns, null,
-                            null, null, null,
-                            null);
+        Cursor c = db.queryItem(cid, columns);
         unlock();
         return c;
     }
 
     public Cursor
-    queryItem_reverse(long channelid,
+    queryItem_reverse(long cid,
                       ColumnItem[] columns)
                       throws InterruptedException {
         lock();
@@ -628,10 +687,14 @@ public class DBPolicy {
         // < "'" + DB.ColumnItem.ID.getName() + "' DESC" > as 'orderby'
         //   doesn't work!
         // Column name SHOULD NOT be wrapped by quotation mark!
-        Cursor c = db.query(DB.getItemTableName(channelid),
+        /*
+        Cursor c = db.query(DB.getItemTableName(cid),
                             columns, null,
                             null, null, null,
                             DB.ColumnItem.ID.getName() + " DESC");
+        */
+        // TODO : reverse doesn't deprecated....
+        Cursor c = queryItem(cid, columns);
         unlock();
         return c;
     }
@@ -639,10 +702,25 @@ public class DBPolicy {
 
     // return : old value
     public int
-    setItemInfo_state(long cid, long id, Feed.Item.State state)
+    updateItem_state(long cid, long id, Feed.Item.State state)
             throws InterruptedException {
         lock();
-        long n = db.updateItem(cid, id, state);
+        // Update item during 'updating channel' is not expected!!
+        // eAssert(!isUnderUpdating(cid));
+        ContentValues values = new ContentValues();
+        values.put(ColumnItem.STATE.getName(), state.name());
+        if (isUnderUpdating(cid)) {
+            LinkedList<ItemUpdateRequest> ll = updatingChannels.get(cid);
+            eAssert(null != ll);
+            Cursor c = db.queryItem(cid, id, ColumnItem.TITLE);
+            if (c.moveToFirst()) {
+                ll.addLast(new ItemUpdateRequest(id, c.getString(0), values));
+                c.close();
+                logW("update item is delayed- DB is under update now.");
+            } else
+                c.close();
+        }
+        long n = db.updateItem(cid, id, values);
         unlock();
         eAssert(0 == n || 1 == n);
         return (0 == n)? -1: 0;
