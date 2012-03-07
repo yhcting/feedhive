@@ -12,7 +12,8 @@
 		android:paddingRight="@dimen/list_item_left_padding"
 	    android:layout_gravity="center_vertical"
 	    >
-	    <ImageView
+	    <view
+	        class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
 	        android:id="@+id/image"
 	        android:layout_width="50dip"
 	        android:layout_height="50dip"
@@ -22,6 +23,7 @@
 	        android:gravity="center"
 	        android:scaleType="fitCenter"
 	        android:src="@drawable/ic_block"
+	        android:clickable="true"
 	        />
 	    <LinearLayout
 	        android:id="@+id/update_pannel"
@@ -31,6 +33,7 @@
 	        android:layout_centerVertical="true"
 	        android:layout_marginLeft="3dip"
 	        android:orientation="vertical"
+	        android:layout_gravity="center_vertical"
 	        >
 	        <TextView
 	            android:id="@+id/age"
@@ -42,16 +45,16 @@
 	            android:singleLine="true"
 	            android:ellipsize="end"
 	            />
-		    <view
-		        class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
-		        android:id="@+id/update_btn"
-		        android:layout_width="35dip"
-		        android:layout_height="35dip"
-		        android:scaleType="fitCenter"
-		        android:src="@drawable/ic_refresh"
-		        android:background="@null"
-		        android:clickable="true"
-		        />	        
+	        <TextView
+	            android:id="@+id/nr_unread"
+	            android:layout_width="35dip"
+	            android:layout_height="wrap_content"
+	            android:textSize="@dimen/desc_text_size"
+	            android:textColor="@color/title_color_new"
+	            android:text="@string/ok"
+	            android:singleLine="true"
+	            android:ellipsize="end"
+	            />
 		</LinearLayout>	  	    
 	    <LinearLayout
 	        android:layout_width="fill_parent"

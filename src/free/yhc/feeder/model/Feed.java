@@ -8,9 +8,9 @@ public class Feed {
     // It's just any value enough small.
     public static final String default_date = "THU, 1 Jan 1970 00:00:00 +0000";
 
-    // See spec.
-    public static final int CHANNEL_IMAGE_MAX_WIDTH  = 200;
-    public static final int CHANNEL_IMAGE_MAX_HEIGHT = 200;
+    // 150 x 150 is enough size for channel icon.
+    public static final int CHANNEL_IMAGE_MAX_WIDTH  = 150;
+    public static final int CHANNEL_IMAGE_MAX_HEIGHT = 150;
 
     public static class Item {
         ParD   parD;

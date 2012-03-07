@@ -52,62 +52,52 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         }
 
         long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
-        ImageViewEx update = ((ImageViewEx)view.findViewById(R.id.update_btn));
-        update.cid = cid;
-        update.setOnClickListener(new View.OnClickListener() {
+
+        ImageViewEx chIcon = (ImageViewEx)view.findViewById(R.id.image);
+        chIcon.cid = cid;
+        chIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (null == onAction)
                     return;
                 ImageViewEx iv = (ImageViewEx)v;
                 onAction.onUpdateClick(iv, iv.cid);
-                /*
-                Animation anim = iv.getAnimation();
-                RTTask.StateUpdate state = RTTask.S().getChannState(iv.cid);
-                if (RTTask.StateUpdate.Idle == state) {
-                    iv.setImageResource(R.drawable.ic_refresh);
-                    iv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
-                } else if (RTTask.StateUpdate.Updating == state) {
-                    if (null != anim)
-                        anim.cancel();
-                    iv.setImageResource(R.drawable.ic_refresh);
-                    iv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
-                } else if (RTTask.StateUpdate.UpdateFailed == state) {
-                    if (null != anim)
-                        anim.cancel();
-                    update.setImageResource(R.drawable.ic_info);
-                } else
-                    eAssert(false);
-                    */
             }
         });
 
-        Animation anim = update.getAnimation();
-        if (null != anim)
+        // NOTE
+        //   "anim.cancel -> anim.reset -> setAlpha(1.0f)", all these three are required
+        //     to restore from animation to normal image viewing.
+        //   without them, alpha value during animation remains even after animation is cancelled.
+        Animation anim = chIcon.getAnimation();
+        if (null != anim) {
             anim.cancel();
+            anim.reset();
+        }
+        chIcon.setAlpha(1.0f);
+
+        if (null == bm)
+            // fail to decode.
+            chIcon.setImageResource(R.drawable.ic_block);
+        else
+            chIcon.setImageBitmap(bm);
 
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
-            update.setImageResource(R.drawable.ic_refresh);
+            ;
         } else if (RTTask.StateUpdate.Updating == state) {
-            update.setImageResource(R.drawable.ic_refresh);
-            update.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
+            chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
         } else if (RTTask.StateUpdate.Canceling == state) {
-            update.setImageResource(R.drawable.ic_info);
-            update.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
+            chIcon.setImageResource(R.drawable.ic_info);
+            chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
         } else if (RTTask.StateUpdate.UpdateFailed == state) {
-            update.setImageResource(R.drawable.ic_info);
+            chIcon.setImageResource(R.drawable.ic_info);
         } else
             eAssert(false);
 
         ((TextView)view.findViewById(R.id.title)).setText(title);
         ((TextView)view.findViewById(R.id.description)).setText(desc);
         ((TextView)view.findViewById(R.id.date)).setText(date);
-        if (null == bm)
-            // fail to decode.
-            ((ImageView)view.findViewById(R.id.image)).setImageResource(R.drawable.ic_block);
-        else
-            ((ImageView)view.findViewById(R.id.image)).setImageBitmap(bm);
     }
 
 }
