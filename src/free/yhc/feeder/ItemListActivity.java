@@ -167,8 +167,7 @@ public class ItemListActivity extends Activity {
 
     private Cursor
     adapterCursorQuery(long cid) {
-        try {
-            DB.ColumnItem[] columns = new DB.ColumnItem[] {
+        DB.ColumnItem[] columns = new DB.ColumnItem[] {
                     DB.ColumnItem.ID, // Mandatory.
                     DB.ColumnItem.TITLE,
                     DB.ColumnItem.DESCRIPTION,
@@ -178,14 +177,10 @@ public class ItemListActivity extends Activity {
                     DB.ColumnItem.PUBDATE,
                     DB.ColumnItem.LINK,
                     DB.ColumnItem.STATE };
-            if (Feed.Channel.Order.NORMAL == order)
-                return db.queryItem(cid, columns);
-            else
-                return db.queryItem_reverse(cid, columns);
-        } catch (InterruptedException e) {
-            finish();
-        }
-        return null;
+        if (Feed.Channel.Order.NORMAL == order)
+            return db.queryItem(cid, columns);
+        else
+            return db.queryItem_reverse(cid, columns);
     }
 
     private String
@@ -262,6 +257,7 @@ public class ItemListActivity extends Activity {
             @Override
             public void onClick(View v) {
                 LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
+                RTTask.S().consumeUpdateResult(cid);
                 requestSetUpdateButton();
             }
         });
@@ -290,14 +286,10 @@ public class ItemListActivity extends Activity {
     changeItemState_opened(long id, int position) {
         // change state as 'opened' at this moment.
         Feed.Item.State state = Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, position));
-        try {
-            if (Feed.Item.State.NEW == state) {
-                db.updateItem_state(cid, id, Feed.Item.State.OPENED);
-                getListAdapter().notifyDataSetChanged();
-                return true;
-            }
-        } catch (InterruptedException e) {
-            finish();
+        if (Feed.Item.State.NEW == state) {
+            db.updateItem_state(cid, id, Feed.Item.State.OPENED);
+            getListAdapter().notifyDataSetChanged();
+            return true;
         }
         return false;
     }
@@ -557,18 +549,12 @@ public class ItemListActivity extends Activity {
         final int indexTITLE        = 0;
         final int indexACTION       = 1;
         final int indexORDER        = 2;
-        try {
-            s = db.getChannelInfoStrings(cid,
+        s = db.getChannelInfoStrings(cid,
                 new DB.ColumnChannel[] {
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.ACTION,
                     DB.ColumnChannel.ORDER,
                     });
-        } catch (InterruptedException e) {
-            finish();
-            return;
-        }
-
         action = Feed.Channel.Action.convert(s[indexACTION]);
         order = Feed.Channel.Order.convert(s[indexORDER]);
 
@@ -624,19 +610,15 @@ public class ItemListActivity extends Activity {
             RTTask.S().bindUpdate(cid, new UpdateBGTask(null));
 
         // Bind downloading tasks
-        try {
-            Cursor c = db.queryItem(cid, new DB.ColumnItem[] { DB.ColumnItem.ID });
-            if (c.moveToFirst()) {
-                do {
-                    long id = c.getLong(0);
-                    if (RTTask.StateDownload.Idle != RTTask.S().getDownloadState(cid, id))
-                        RTTask.S().bindDownload(cid, id, new DownloadToFileBGTask(new BGTaskDownloadToFile.ItemInfo(cid, id)));
-                } while (c.moveToNext());
-            }
-            c.close();
-        } catch (InterruptedException e) {
-            return;
+        Cursor c = db.queryItem(cid, new DB.ColumnItem[] { DB.ColumnItem.ID });
+        if (c.moveToFirst()) {
+            do {
+                long id = c.getLong(0);
+                if (RTTask.StateDownload.Idle != RTTask.S().getDownloadState(cid, id))
+                    RTTask.S().bindDownload(cid, id, new DownloadToFileBGTask(new BGTaskDownloadToFile.ItemInfo(cid, id)));
+            } while (c.moveToNext());
         }
+        c.close();
 
         setUpdateButton();
         getListAdapter().notifyDataSetChanged();

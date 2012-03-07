@@ -1,6 +1,5 @@
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
 public class BGTaskUpdateChannel extends BGTask<Object, BGTaskUpdateChannel.Arg, Object> {
@@ -10,7 +9,7 @@ public class BGTaskUpdateChannel extends BGTask<Object, BGTaskUpdateChannel.Arg,
     public static class Arg {
         boolean bFirstUpdate = false;
         long    cid     = -1;
-        long    catid   = -1; /* cateogry id */
+        long    catid   = -1; // category id
         String  url     = "";
 
         // For update
@@ -34,45 +33,32 @@ public class BGTaskUpdateChannel extends BGTask<Object, BGTaskUpdateChannel.Arg,
     @Override
     protected Err
     doBGTask(Arg arg) {
+        this.arg = arg;
         try {
             loader = new NetLoader();
             if (arg.bFirstUpdate)
                 return loader.initialLoad(arg.catid, arg.url, null);
             else
                 return loader.updateLoad(arg.cid, false);
-        } catch (InterruptedException e) {
+        } catch (FeederException e) {
             if (arg.bFirstUpdate)
                 logI("BGTaskUpdateChannel : Loading [" + arg.url + "] : interrupted!");
             else
                 logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
-            return Err.Interrupted;
+            return e.getError();
         }
     }
 
     @Override
     public boolean
     cancel(Object param) {
-        // Canceling background task may corrupt DB
+        // I may misunderstand that canceling background task may corrupt DB
         //   by interrupting in the middle of transaction.
-        // To avoid this case, start db transaction to cancel!.
-        // TODO
-        //   After Per-Channel-DB-Lock is implemented,
-        //     lock/unlock should be changed to Per-Channel-Lock/Unlock.
-        int retry = 5;
-        try {
-            DBPolicy.S().lock();
-        } catch (InterruptedException e) {
-            DBPolicy.S().unlock();
-            eAssert(false);
-            return false;
-        }
-
+        // But java thread doesn't interrupt it's executing.
+        // So, I don't worry about this (different from C.)
         super.cancel(param); // cancel thread
         if (null != loader)
             loader.cancel();     // This is HACK for fast-interrupt.
-        while (0 < retry-- && !super.cancel(param));
-        DBPolicy.S().unlock();
-
-        return (retry > 0)? true: false;
+        return true;
     }
 }

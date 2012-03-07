@@ -106,6 +106,14 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.ItemInfo, 
             istream = new BufferedInputStream(url.openStream());
             ostream = new FileOutputStream(arg.tempFile);
 
+            if (Thread.currentThread().isInterrupted()) {
+                cleanupStream();
+                if (Err.NoErr != getResult())
+                    return getResult();
+                else
+                    return Err.Interrupted;
+            }
+
             byte data[] = new byte[256*1024];
 
             long total = 0;
@@ -122,9 +130,13 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.ItemInfo, 
             ostream.flush();
             ostream.close();
             istream.close();
-
-            if (!new File(arg.tempFile).renameTo(new File(arg.toFile)))
-                return Err.IOFile;
+            if (total == lenghtOfFile) {
+                if (!new File(arg.tempFile).renameTo(new File(arg.toFile)))
+                    return Err.IOFile;
+                else
+                    return Err.NoErr;
+            } else
+                return Err.IONet;
 
         } catch (IOException e) {
             // User's canceling operation close in/out stream in force.
@@ -139,31 +151,15 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.ItemInfo, 
                 return Err.IONet;
             }
         }
-        return Err.NoErr;
     }
 
     @Override
     public boolean
     cancel(Object param) {
-        int retry = 5;
-
         // HACK for fast-interrupt
         // Raise IOException in force
-        try {
-            if (null != istream)
-                istream.close();
-            if (null != ostream)
-                ostream.close();
-        } catch (IOException e) {
-            ; // ignore
-        }
-
-        while (0 < retry-- && !super.cancel(true));
-        if (retry > 0) {
-            // if success
-            cleanupStream();
-            return true;
-        }
-        return false;
+        super.cancel(param);
+        cleanupStream();
+        return true;
     }
 }

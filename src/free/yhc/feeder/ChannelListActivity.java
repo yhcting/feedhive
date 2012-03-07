@@ -288,12 +288,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 eAssert(false);
                 return Err.Unknown; // something evil!!!
             } else {
-                try {
-                    DBPolicy.S().updateChannel_image(cid_pickImage, imageData);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    return Err.DBUnknown;
-                }
+                DBPolicy.S().updateChannel_image(cid_pickImage, imageData);
                 cid_pickImage = -1;
             }
             return Err.NoErr;
@@ -317,8 +312,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         onDoWork(SpinAsyncTask task, Object... objs) {
             try {
                 return task.initialLoad(null, objs);
-            } catch (InterruptedException e) {
-                return Err.Interrupted;
+            } catch (FeederException e) {
+                return e.getError();
             }
         }
 
@@ -339,8 +334,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         onDoWork(SpinAsyncTask task, Object... objs) {
             try {
                 return task.updateLoad(true, objs[0]);
-            } catch (InterruptedException e) {
-                return Err.Interrupted;
+            } catch (FeederException e) {
+                return e.getError();
             }
         }
 
@@ -396,40 +391,26 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     isChannelInSelectedCategory(long cid) {
         TabTag tag = (TabTag)ab.getSelectedTab().getTag();
         long catid;
-        try {
-            catid = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
-        } catch (InterruptedException e) {
-            return false;
-        }
+        catid = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
         return tag.categoryid == catid;
     }
 
     private Cursor
     adapterCursorQuery(long categoryid) {
-        try {
-            return DBPolicy.S().queryChannel(categoryid, new DB.ColumnChannel[] {
+        return DBPolicy.S().queryChannel(categoryid, new DB.ColumnChannel[] {
                     DB.ColumnChannel.ID, // Mandatory.
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.DESCRIPTION,
                     DB.ColumnChannel.LASTUPDATE,
                     DB.ColumnChannel.ORDER,
                     DB.ColumnChannel.IMAGEBLOB });
-        } catch (InterruptedException e) {
-            finish();
-        }
-        return null;
     }
 
     private boolean
     changeCategory(long cid, Tab from, Tab to) {
         if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
-        try {
-            DBPolicy.S().updateChannel_category(cid, getTag(to).categoryid);
-        } catch (InterruptedException e) {
-            finish();
-            return false;
-        }
+        DBPolicy.S().updateChannel_category(cid, getTag(to).categoryid);
         refreshList(from);
         refreshList(to);
         return true;
@@ -474,16 +455,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     deleteCategory(long categoryid) {
-        try {
-            long[] cids = DBPolicy.S().getChannelIds(categoryid);
-            for (long cid : cids)
-                DBPolicy.S().updateChannel_categoryToDefault(cid);
-
-            DBPolicy.S().deleteCategory(categoryid);
-        } catch (InterruptedException e) {
-            finish();
-            return;
-        }
+        DBPolicy.S().deleteCategory(categoryid);
         // channel list of default category is changed.
         refreshList(getDefaultTab());
 
@@ -513,12 +485,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private void
     deleteChannel(Tab tab, long cid) {
         eAssert(null != tab);
-        try {
-            DBPolicy.S().deleteChannel(cid);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            finish();
-        }
+        DBPolicy.S().deleteChannel(cid);
         refreshList(tab);
     }
 
@@ -617,21 +584,16 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                         return true;
                     }
 
-                    try {
-                        if (DBPolicy.S().isDuplicatedCategoryName(name)) {
-                            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
-                        } else {
-                            // TODO -- add to DB!!
-                            Feed.Category cat = new Feed.Category(name);
-                            if (0 > DBPolicy.S().insertCategory(cat))
-                                LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
-                            else {
-                                eAssert(cat.id >= 0);
-                                refreshList(addCategory(cat));
-                            }
+                    if (DBPolicy.S().isDuplicatedCategoryName(name)) {
+                        LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                    } else {
+                        Feed.Category cat = new Feed.Category(name);
+                        if (0 > DBPolicy.S().insertCategory(cat))
+                            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
+                        else {
+                            eAssert(cat.id >= 0);
+                            refreshList(addCategory(cat));
                         }
-                    } catch (InterruptedException e) {
-                        eAssert(false);
                     }
                     dialog.dismiss();
                     return true;
@@ -756,12 +718,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onContext_reverseOrder(final long cid) {
-        try {
-            DBPolicy.S().updateChannel_reverseOrder(cid);
-        } catch (InterruptedException e) {
-            finish();
-            return;
-        }
+        DBPolicy.S().updateChannel_reverseOrder(cid);
     }
 
     private void
@@ -966,12 +923,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         logI("==> ChannelListActivity : onCreate");
 
         Feed.Category[] cats;
-        try {
-            cats = DBPolicy.S().getCategories();
-        } catch (InterruptedException e) {
-            finish();
-            return;
-        }
+        cats = DBPolicy.S().getCategories();
 
         eAssert(cats.length > 0);
 
@@ -1016,12 +968,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
         // See comments in 'onPause()'
-        Cursor c;
-        try {
-            c = DBPolicy.S().queryChannel(-1, new DB.ColumnChannel[] { DB.ColumnChannel.ID });
-        } catch (InterruptedException e) {
-            return;
-        }
+        Cursor c = DBPolicy.S().queryChannel(-1, DB.ColumnChannel.ID);
         if (c.moveToFirst()) {
             do {
                 long cid = c.getLong(0);

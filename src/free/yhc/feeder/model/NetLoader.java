@@ -68,7 +68,7 @@ public class NetLoader {
      */
     public Err
     initialLoad(long categoryid, String url, long[] outcid)
-            throws InterruptedException {
+            throws FeederException {
 
         logI("Init Loading Channel : " + url);
 
@@ -135,7 +135,7 @@ public class NetLoader {
      */
     public Err
     updateLoad(long cid, boolean reloadImage)
-            throws InterruptedException {
+            throws FeederException {
         String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
         eAssert(null != url);
 

@@ -1,13 +1,12 @@
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.NetLoader;
 
 public class SpinAsyncTask extends AsyncTask<Object, Integer, Err> implements
@@ -17,6 +16,7 @@ DialogInterface.OnClickListener
 {
 
     private Context        context      = null;
+    private long           cid          = -1;
     private ProgressDialog dialog       = null;
     private int            msgid        = -1;
     private OnEvent        onEvent      = null;
@@ -36,16 +36,20 @@ DialogInterface.OnClickListener
 
     public Err
     initialLoad(long[] outcid, Object... objs)
-            throws InterruptedException {
+            throws FeederException {
         long categoryid = ((Long)objs[0]).longValue();
         String url      = (String)objs[1];
-        return new NetLoader().initialLoad(categoryid, url, outcid);
+        Err r = new NetLoader().initialLoad(categoryid, url, outcid);
+        if (Err.NoErr == r)
+            cid = outcid[0];
+        return r;
     }
 
     public Err
     updateLoad(boolean updateImage, Object obj)
-            throws InterruptedException {
-        return new NetLoader().updateLoad(((Long)obj).longValue(), updateImage);
+            throws FeederException {
+        cid = ((Long)obj).longValue();
+        return new NetLoader().updateLoad(cid, updateImage);
     }
 
     // return :
@@ -61,22 +65,10 @@ DialogInterface.OnClickListener
 
     private boolean
     cancelWork() {
+        // See comments in BGTaskUpdateChannel.cancel()
         userCancelled = true;
-        // Canceling backgroud task may corrupt DB
-        //   by interrupting in the middle of transaction.
-        // To avoid this case, start db transaction to cancel!.
-        int retry = 20;
-        try {
-            DBPolicy.S().lock();
-        } catch (InterruptedException e) {
-            DBPolicy.S().unlock();
-            eAssert(false);
-            return false;
-        }
-        while (0 < retry-- && !cancel(true));
-        DBPolicy.S().unlock();
-
-        return retry > 0? true: false;
+        cancel(true);
+        return true;
     }
 
     @Override

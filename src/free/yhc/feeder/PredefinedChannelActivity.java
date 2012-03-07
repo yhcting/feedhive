@@ -28,8 +28,8 @@ public class PredefinedChannelActivity extends Activity {
             long[] cid = new long[1];
             try {
                 err = task.initialLoad(cid, objs[0], objs[1]);
-            } catch (InterruptedException e) {
-                return Err.Interrupted;
+            } catch (FeederException e) {
+                return e.getError();
             }
 
             if (Err.NoErr != err)
@@ -51,12 +51,7 @@ public class PredefinedChannelActivity extends Activity {
                 return Err.CodecDecode;
             }
 
-            try {
-                DBPolicy.S().updateChannel_image(cid[0], imageData);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                return Err.DBUnknown;
-            }
+            DBPolicy.S().updateChannel_image(cid[0], imageData);
             return err;
         }
 

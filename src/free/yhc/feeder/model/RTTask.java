@@ -137,7 +137,6 @@ public class RTTask {
             task = gbtm.peek(Id(cid, Action.Update));
         }
 
-        StateUpdate ret;
         if (null == task)
             return StateUpdate.Idle;
 
@@ -169,7 +168,8 @@ public class RTTask {
 
         if (task.isAlive()) {
             return task.isInterrupted()? StateDownload.Canceling: StateDownload.Downloading;
-        } else if (Err.NoErr == task.getResult()) {
+        } else if (Err.NoErr == task.getResult()
+                || Err.UserCancelled == task.getResult()) {
             synchronized (gbtm.getSyncObj()) {
                 String idstr = Id(cid, id, Action.Download);
                 gbtm.unbind(idstr);

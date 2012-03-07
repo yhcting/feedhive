@@ -87,7 +87,7 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
     // main background task to do.
     protected Err
     doBGTask(RunParam runParam)
-        throws InterruptedException {
+        throws FeederException {
         return Err.NoErr;
     }
 
@@ -98,12 +98,13 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
         try {
             result =  doBGTask(runParam);
             eAssert(null != result);
-        } catch (InterruptedException e) {
-            bInterrupted = true;
+        } catch (FeederException e) {
+            if (Err.Interrupted == e.getError())
+                bInterrupted = true;
         }
 
         if (!bInterrupted)
-            bInterrupted = Thread.interrupted();
+            bInterrupted = Thread.currentThread().isInterrupted();
 
         eAssert(null != handler && null != onEvent);
 

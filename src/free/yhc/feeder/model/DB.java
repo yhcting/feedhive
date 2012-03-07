@@ -376,6 +376,11 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     Cursor
+    queryChannel(ColumnChannel column) {
+        return queryChannel(new ColumnChannel[] { column });
+    }
+
+    Cursor
     queryChannel(ColumnChannel[] columns) {
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
@@ -470,6 +475,9 @@ public final class DB extends SQLiteOpenHelper {
                          null);
     }
 
+    /*
+     * IMPORTANT : This is not one-transaction!!!
+     */
     long
     insertChannel(ContentValues values) {
         long cid = db.insert(TABLE_CHANNEL, null, values);

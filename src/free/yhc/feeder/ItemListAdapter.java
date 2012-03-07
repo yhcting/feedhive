@@ -105,15 +105,10 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         // TODO
         //   Do performance check on low-end-device.
         String statestr;
-        try {
-            statestr = dbp.getItemInfoString(
+        statestr = dbp.getItemInfoString(
                             cid,
                             c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName())),
                             DB.ColumnItem.STATE);
-        } catch (InterruptedException e) {
-            eAssert(false);
-            statestr = "NEW";
-        }
         Feed.Item.State state = Feed.Item.State.convert(statestr);
 
         switch (layout) {
