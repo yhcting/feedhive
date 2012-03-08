@@ -7,7 +7,6 @@ import static free.yhc.feeder.model.Utils.logW;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
-import java.util.concurrent.Semaphore;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -32,8 +31,8 @@ public class DBPolicy {
 
     // Channel RunTime
     private class ChannRT {
-        private long       cid      = -1;
-        private boolean    stateUpdating = false;
+        private          long       cid      = -1;
+        private volatile boolean    stateUpdating = false;
         // pending update request
         private LinkedList<ItemUpdateRequest> iur = new LinkedList<ItemUpdateRequest>();
 
@@ -94,9 +93,6 @@ public class DBPolicy {
     }
 
     private class ChannRTMap extends HashMap<Long, ChannRT> {
-        // mutex for channel table itself - not for channel item.
-        private Semaphore  mutex    = new Semaphore(1);
-
         @Override
         public ChannRT
         put(Long key, ChannRT v) {
@@ -219,17 +215,33 @@ public class DBPolicy {
     completeUpdateItemTable(long cid) {
         // process delayed-updated-item
         chrtmap.get(cid).processPendingItemUpdateRequest();
-        db.dropItemTable(cid);
-        db.alterItemTable_toMain(cid);
-        chrtmap.get(cid).setStateUpdating(false);
+        synchronized (chrtmap.get(cid)) {
+            // one more time to ensure there is not pending request
+            // Why twice?
+            // There may be lots pending request.
+            // Therefore, processing all pending request in 'mutex block' may lead to bad user experience.
+            // So, at first, do it outside of mutex block.
+            // And then again in the mutex block.
+            // At this moment, usually, we can expect that there are only several pending request.
+            chrtmap.get(cid).processPendingItemUpdateRequest();
+            db.dropItemTable(cid);
+            // This is the moment that "There is not table for 'cid'.
+            // Accessing 'cid' channel information during here
+            //   leads to SQLite exception.
+            // So, we need to synchronize here....
+            db.alterItemTable_toMain(cid);
+            chrtmap.get(cid).setStateUpdating(false);
+        }
         return 0;
     }
 
     private long
     rollbackUpdateItemTable(long cid) {
         db.dropTempItemTable(cid);
-        chrtmap.get(cid).clearPendingItemUpdateRequest();
-        chrtmap.get(cid).setStateUpdating(false);
+        synchronized (chrtmap.get(cid)) {
+            chrtmap.get(cid).clearPendingItemUpdateRequest();
+            chrtmap.get(cid).setStateUpdating(false);
+        }
         return 0;
     }
 
@@ -279,6 +291,7 @@ public class DBPolicy {
     // return : null if it's not duplicated.
     public String
     isDuplicatedItemTitleWithState(long cid, String title) {
+        eAssert(!chrtmap.get(cid).isUpdating());
         String ret = null;
         Cursor c = db.queryItem(cid,
                                 // Column index is used below. So order is important.
@@ -515,7 +528,6 @@ public class DBPolicy {
 
     public long
     updateChannel_category(long cid, long categoryid) {
-        eAssert(!chrtmap.get(cid).isUpdating());
         try {
             long r;
             r = db.updateChannel(cid, ColumnChannel.CATEGORYID, categoryid);
@@ -529,6 +541,7 @@ public class DBPolicy {
 
     public long
     updateChannel_reverseOrder(long cid) {
+        eAssert(!chrtmap.get(cid).isUpdating());
         Cursor c = db.queryChannel(cid, ColumnChannel.ORDER);
         Feed.Channel.Order order = null;
         if (c.moveToFirst())
@@ -606,7 +619,6 @@ public class DBPolicy {
     public Long
     getChannelInfoLong(long cid, ColumnChannel column) {
         Long ret = null;
-        // Column index is used below. So order is important.
         Cursor c = db.queryChannel(cid, column);
         if (c.moveToFirst())
             ret = c.getLong(0);
@@ -664,35 +676,40 @@ public class DBPolicy {
     public String
     getItemInfoString(long cid, long id, ColumnItem column) {
         String ret = null;
-        Cursor c = db.queryItem(cid, id, column);
-        if (c.moveToFirst())
-            ret = c.getString(0);
-
-        c.close();
+        synchronized (chrtmap.get(cid)) {
+            Cursor c = db.queryItem(cid, id, column);
+            if (c.moveToFirst())
+                ret = c.getString(0);
+            c.close();
+        }
         return ret;
     }
 
     public String[]
     getItemInfoStrings(long cid, long id, ColumnItem[] columns) {
         // Default is ASC order by ID
-        Cursor c = db.queryItem(cid, id, columns);
-        if (!c.moveToFirst()) {
-            c.close();
-            return null;
-        }
-        eAssert(c.getColumnCount() == columns.length);
-        String[] v = new String[columns.length];
-        for (int i = 0; i < c.getColumnCount(); i++)
-            v[i] = c.getString(i);
+        synchronized (chrtmap.get(cid)) {
+            Cursor c = db.queryItem(cid, id, columns);
+            if (!c.moveToFirst()) {
+                c.close();
+                return null;
+            }
+            eAssert(c.getColumnCount() == columns.length);
+            String[] v = new String[columns.length];
+            for (int i = 0; i < c.getColumnCount(); i++)
+                v[i] = c.getString(i);
 
-        c.close();
-        return v;
+            c.close();
+            return v;
+        }
     }
 
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
-        Cursor c = db.queryItem(cid, columns);
-        return c;
+        synchronized (chrtmap.get(cid)) {
+            Cursor c = db.queryItem(cid, columns);
+            return c;
+        }
     }
 
     public Cursor
@@ -708,8 +725,10 @@ public class DBPolicy {
                             DB.ColumnItem.ID.getName() + " DESC");
         */
         // TODO : reverse doesn't deprecated....
-        Cursor c = queryItem(cid, columns);
-        return c;
+        synchronized (chrtmap.get(cid)) {
+            Cursor c = queryItem(cid, columns);
+            return c;
+        }
     }
 
 
@@ -723,16 +742,19 @@ public class DBPolicy {
         // eAssert(!isUnderUpdating(cid));
         ContentValues values = new ContentValues();
         values.put(ColumnItem.STATE.getName(), state.name());
-        if (chrt.isUpdating()) {
-            Cursor c = db.queryItem(cid, id, ColumnItem.TITLE);
-            if (c.moveToFirst()) {
-                chrt.addItemUpdateRequest(new ItemUpdateRequest(id, c.getString(0), values));
-                c.close();
-                logW("update item is delayed- DB is under update now.");
-            } else
-                c.close();
+        long n;
+        synchronized (chrt) {
+            if (chrt.isUpdating()) {
+                Cursor c = db.queryItem(cid, id, ColumnItem.TITLE);
+                if (c.moveToFirst()) {
+                    chrt.addItemUpdateRequest(new ItemUpdateRequest(id, c.getString(0), values));
+                    c.close();
+                    logW("update item is delayed- DB is under update now.");
+                } else
+                    c.close();
+            }
+            n = db.updateItem(cid, id, values);
         }
-        long n = db.updateItem(cid, id, values);
         eAssert(0 == n || 1 == n);
         return (0 == n)? -1: 0;
 
