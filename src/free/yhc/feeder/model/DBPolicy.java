@@ -2,12 +2,11 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
-import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.ListIterator;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -18,10 +17,19 @@ import free.yhc.feeder.model.DB.ColumnCategory;
 import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DB.ColumnItem;
 
+//
 // DB synchronizing concept.
 // Each one SQLite operation is atomic.
 // Using this property of SQLite, all locks are removed.
 // (stress-testing is required to verify it.)
+//
+// For remaining cases for race-condition is blocked by UI.
+// (for example, during update channel items, 'deleteChannel' menu is disabled.)
+// So, in this module, checking race-condition by using 'eAssert' is enough for debugging!
+//
+// DEEP INVESTIGATION is required for RACE CONDITION WITHOUT LOCK!
+//
+//
 
 // Singleton
 public class DBPolicy {
@@ -35,7 +43,6 @@ public class DBPolicy {
         private          long       cid      = -1;
         private volatile boolean    stateUpdating = false;
         // pending update request
-        private LinkedList<ItemUpdateRequest> iur = new LinkedList<ItemUpdateRequest>();
 
         ChannRT(long cid) {
             this.cid = cid;
@@ -49,47 +56,6 @@ public class DBPolicy {
         void
         setStateUpdating(boolean state) {
             stateUpdating = state;
-        }
-
-        boolean
-        hasPendingItemUpdateRequest() {
-            synchronized (iur) {
-                return !iur.isEmpty();
-            }
-        }
-
-        void
-        clearPendingItemUpdateRequest() {
-            synchronized (iur) {
-                iur.clear();
-            }
-        }
-
-        void
-        addItemUpdateRequest(ItemUpdateRequest req) {
-            eAssert(stateUpdating);
-            synchronized (iur) {
-                iur.addLast(req);
-            }
-        }
-
-        void
-        processPendingItemUpdateRequest() {
-            ListIterator<ItemUpdateRequest> iter;
-            synchronized (iur) {
-                iter = iur.listIterator();
-            }
-            while (true) {
-                ItemUpdateRequest uItem;
-                synchronized (iur) {
-                    if (!iter.hasNext())
-                        break;
-                    uItem = iter.next();
-                }
-                if (1 != db.updateItemToTemp(cid, uItem.title, 0, uItem.cvs))
-                    logW("Fail to delayed update : cid(" + cid + ") title(" + uItem.title + ")");
-            }
-            clearPendingItemUpdateRequest();
         }
     }
 
@@ -131,18 +97,6 @@ public class DBPolicy {
             c.close();
         }
     }
-
-    private class ItemUpdateRequest {
-        long            id;
-        String          title;
-        ContentValues   cvs;
-        ItemUpdateRequest(long id, String title, ContentValues cvs) {
-            this.id = id;
-            this.title = title;
-            this.cvs = cvs;
-        }
-    }
-
 
     // ======================================================
     //
@@ -198,54 +152,6 @@ public class DBPolicy {
         return values;
     }
 
-    private long
-    prepareUpdateItemTable(long cid) {
-        // to make sure.
-        // This operation may return error.
-        db.dropTempItemTable(cid);
-
-        chrtmap.get(cid).setStateUpdating(true);
-        if (0 > db.createTempItemTable(cid)) {
-            chrtmap.get(cid).setStateUpdating(false);
-            return -1;
-        }
-        return 0;
-    }
-
-    private long
-    completeUpdateItemTable(long cid) {
-        // process delayed-updated-item
-        chrtmap.get(cid).processPendingItemUpdateRequest();
-        synchronized (chrtmap.get(cid)) {
-            // one more time to ensure there is not pending request
-            // Why twice?
-            // There may be lots pending request.
-            // Therefore, processing all pending request in 'mutex block' may lead to bad user experience.
-            // So, at first, do it outside of mutex block.
-            // And then again in the mutex block.
-            // At this moment, usually, we can expect that there are only several pending request.
-            chrtmap.get(cid).processPendingItemUpdateRequest();
-            db.dropItemTable(cid);
-            // This is the moment that "There is not table for 'cid'.
-            // Accessing 'cid' channel information during here
-            //   leads to SQLite exception.
-            // So, we need to synchronize here....
-            db.alterItemTable_toMain(cid);
-            chrtmap.get(cid).setStateUpdating(false);
-        }
-        return 0;
-    }
-
-    private long
-    rollbackUpdateItemTable(long cid) {
-        db.dropTempItemTable(cid);
-        synchronized (chrtmap.get(cid)) {
-            chrtmap.get(cid).clearPendingItemUpdateRequest();
-            chrtmap.get(cid).setStateUpdating(false);
-        }
-        return 0;
-    }
-
     // ======================================================
     //
     // ======================================================
@@ -287,9 +193,19 @@ public class DBPolicy {
         return ret;
     }
 
+    // return : true(same) / false(not same)
+    public boolean
+    compareItem(String title0, String pubDate0, String title1, String pubDate1) {
+        if (pubDate0.isEmpty() && pubDate1.isEmpty()) {
+            return title0.equals(title1);
+        } else
+            return false; // different
+    }
+
     // This function is dirty for performance.
     // (To reduce access)
     // return : null if it's not duplicated.
+    /*
     public String
     isDuplicatedItemTitleWithState(long cid, String title) {
         eAssert(!chrtmap.get(cid).isUpdating());
@@ -304,6 +220,7 @@ public class DBPolicy {
         c.close();
         return ret;
     }
+    */
 
     public long
     getDefaultCategoryId() {
@@ -439,88 +356,96 @@ public class DBPolicy {
     updateChannel(Feed.Channel ch, boolean updateImage)
             throws FeederException {
         eAssert(null != ch.items);
-
         logI("UpdateChannel DB Section Start");
-        Cursor c = db.queryItem(ch.dbD.id,
-                                // Column index is used below. So order is important.
-                                new ColumnItem[] {
-                                    DB.ColumnItem.TITLE,
-                                    DB.ColumnItem.LINK,
-                                    DB.ColumnItem.ENCLOSURE_URL,
-                                    // runtime information of item.
-                                    DB.ColumnItem.STATE,
-                                    DB.ColumnItem.ID,
-                                });
 
-        final int COLUMN_TITLE          = 0;
-        final int COLUMN_LINK           = 1;
-        final int COLUMN_ENCLOSURE_URL  = 2;
-        final int COLUMN_STATE          = 3;
-        final int COLUMN_ID             = 4;
-
-        // Create HashMap for title lookup!
-        HashMap<String, Feed.Item> m = new HashMap<String, Feed.Item>();
-        for (Feed.Item item : ch.items) {
-            // ignore not-verified item
-            if (!UIPolicy.verifyConstraints(item))
-                continue;
-            m.put(item.parD.title, item);
-        }
-
-        checkInterrupted();
-        LinkedList<String> dnFiles = new LinkedList<String>();
-        // Delete unlisted item.
-        if (c.moveToFirst()) {
-            do {
-                String title = c.getString(COLUMN_TITLE);
-                Feed.Item item = m.get(title);
-                if (null == item) {
-                    dnFiles.add(UIPolicy.getItemFilePath(ch.dbD.id,
-                                                         c.getLong(COLUMN_ID),
-                                                         title,
-                                                         c.getString(COLUMN_LINK)));
-                    dnFiles.add(UIPolicy.getItemFilePath(ch.dbD.id,
-                                                         c.getLong(COLUMN_ID),
-                                                         title,
-                                                         c.getString(COLUMN_ENCLOSURE_URL)));
-                } else {
-                    // copy runtime information stored in DB.
-                    item.dynD.state = Feed.Item.State.convert(c.getString(COLUMN_STATE));
-                }
-            } while (c.moveToNext());
-        }
-        c.close();
-
-        checkInterrupted();
-        // update channel information
-        ContentValues channelUpdateValues = new ContentValues();
-        channelUpdateValues.put(ColumnChannel.TITLE.getName(), ch.parD.title);
-        channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
-        if (updateImage)
-            channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
-
-        prepareUpdateItemTable(ch.dbD.id);
+        // walk items parsed with checking item is in DB or not
+        chrtmap.get(ch.dbD.id).setStateUpdating(true);
         try {
-            int cnt = 0;
+            LinkedList<Feed.Item> newItems = new LinkedList<Feed.Item>();
             for (Feed.Item item : ch.items) {
                 // ignore not-verified item
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
 
-                item.dbD.cid = ch.dbD.id;
-                if (0 > db.insertItemToTemp(ch.dbD.id, itemToContentValues(item))) {
-                    rollbackUpdateItemTable(ch.dbD.id);
-                    return -1;
+                // TODO
+                //   Correct algorithm to check duplicated item.
+                //     - store last item id(say LID) in last update to channel column.
+                //     - if (there is duplicated item 'A') then
+                //           if (A.id < LID)
+                //               then duplicated
+                //           else
+                //               then this is not duplicated.
+                //
+                //   What this means?
+                //   Even if title, description etc are same, this is newly updated item.
+                //   So, this newly updated item should be listed as 'new item'.
+                //
+                //   But at this moment, I think this is over-engineering.
+                //   So, below simple algorithm is used.
+
+                // TODO
+                //   Lots of items for WHERE clause may lead to...
+                //     Pros : increase correctness.
+                //     Cons : drop performance.
+                //   So, I need to tune it.
+                //   At this moment, correctness is more important than performance.
+                Cursor c = db.queryItem(ch.dbD.id,
+                                        new ColumnItem[] { ColumnItem.ID },
+                                        new ColumnItem[] { ColumnItem.TITLE,
+                                                           ColumnItem.PUBDATE,
+                                                           ColumnItem.LINK,
+                                                           ColumnItem.DESCRIPTION,
+                                                           ColumnItem.ENCLOSURE_URL },
+                                        new String[] { item.parD.title,
+                                                       item.parD.pubDate,
+                                                       item.parD.link,
+                                                       item.parD.description,
+                                                       item.parD.enclosureUrl });
+                if (c.getCount() > 0) {
+                    c.close();
+                    continue; // duplicated
                 }
 
-                cnt++;
+                c.close();
+
+                // NOTE
+                //   Why add to First?
+                //   Usually, recent item is located at top of item list in the feed.
+                //   So, to make bottom item have smaller ID, 'addFirst' is used.
+                newItems.addFirst(item);
+
                 checkInterrupted();
             }
-            completeUpdateItemTable(ch.dbD.id);
+
+            // update channel information
+            ContentValues channelUpdateValues = new ContentValues();
+            channelUpdateValues.put(ColumnChannel.TITLE.getName(), ch.parD.title);
+            channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
+            if (updateImage)
+                channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
+
+            // NOTE
+            //   Since here, rollback is not implemented!
+            //   Why?
+            //   'checkInterrupt()' is for 'fast-canceling'
+            //   But, rollback itself should block 'canceling'.
+            //   So, it's non-sense!
+            Iterator<Feed.Item> iter = newItems.iterator();
+            while (iter.hasNext()) {
+                Feed.Item item = iter.next();
+
+                item.dbD.cid = ch.dbD.id;
+                if (0 > db.insertItem(ch.dbD.id, itemToContentValues(item))) {
+                    chrtmap.get(ch.dbD.id).setStateUpdating(false);
+                    return -1;
+                }
+                checkInterrupted();
+            }
             channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), new Date().getTime());
             db.updateChannel(ch.dbD.id, channelUpdateValues);
+            chrtmap.get(ch.dbD.id).setStateUpdating(false);
         } catch (FeederException e) {
-            rollbackUpdateItemTable(ch.dbD.id);
+            chrtmap.get(ch.dbD.id).setStateUpdating(false);
             throw e;
         }
         logI("UpdateChannel DB Section End");
@@ -677,40 +602,33 @@ public class DBPolicy {
     public String
     getItemInfoString(long cid, long id, ColumnItem column) {
         String ret = null;
-        synchronized (chrtmap.get(cid)) {
-            Cursor c = db.queryItem(cid, id, column);
-            if (c.moveToFirst())
-                ret = c.getString(0);
-            c.close();
-        }
+        Cursor c = db.queryItem(cid, id, column);
+        if (c.moveToFirst())
+            ret = c.getString(0);
+        c.close();
         return ret;
     }
 
     public String[]
     getItemInfoStrings(long cid, long id, ColumnItem[] columns) {
         // Default is ASC order by ID
-        synchronized (chrtmap.get(cid)) {
-            Cursor c = db.queryItem(cid, id, columns);
-            if (!c.moveToFirst()) {
-                c.close();
-                return null;
-            }
-            eAssert(c.getColumnCount() == columns.length);
-            String[] v = new String[columns.length];
-            for (int i = 0; i < c.getColumnCount(); i++)
-                v[i] = c.getString(i);
-
+        Cursor c = db.queryItem(cid, id, columns);
+        if (!c.moveToFirst()) {
             c.close();
-            return v;
+            return null;
         }
+        eAssert(c.getColumnCount() == columns.length);
+        String[] v = new String[columns.length];
+        for (int i = 0; i < c.getColumnCount(); i++)
+            v[i] = c.getString(i);
+
+        c.close();
+        return v;
     }
 
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
-        synchronized (chrtmap.get(cid)) {
-            Cursor c = db.queryItem(cid, columns);
-            return c;
-        }
+        return db.queryItem(cid, columns);
     }
 
     public Cursor
@@ -726,10 +644,7 @@ public class DBPolicy {
                             DB.ColumnItem.ID.getName() + " DESC");
         */
         // TODO : reverse doesn't deprecated....
-        synchronized (chrtmap.get(cid)) {
-            Cursor c = queryItem(cid, columns);
-            return c;
-        }
+        return queryItem(cid, columns);
     }
 
 
@@ -743,21 +658,20 @@ public class DBPolicy {
         // eAssert(!isUnderUpdating(cid));
         ContentValues values = new ContentValues();
         values.put(ColumnItem.STATE.getName(), state.name());
-        long n;
-        synchronized (chrt) {
-            if (chrt.isUpdating()) {
-                Cursor c = db.queryItem(cid, id, ColumnItem.TITLE);
-                if (c.moveToFirst()) {
-                    chrt.addItemUpdateRequest(new ItemUpdateRequest(id, c.getString(0), values));
-                    c.close();
-                    logW("update item is delayed- DB is under update now.");
-                } else
-                    c.close();
-            }
+        long n = 0;
+        Cursor c = db.queryItem(cid, id, ColumnItem.TITLE);
+        if (c.moveToFirst()) {
             n = db.updateItem(cid, id, values);
         }
         eAssert(0 == n || 1 == n);
         return (0 == n)? -1: 0;
 
+    }
+
+    // delete downloaded files etc.
+    public int
+    cleanItemContents(long cid, long id) {
+        eAssert(false); // Not implemented yet!
+        return -1;
     }
 }

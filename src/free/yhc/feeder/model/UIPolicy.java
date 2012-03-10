@@ -86,12 +86,9 @@ public class UIPolicy {
 
         // Title may include character that is not allowed as file name
         // (ex. '/')
-        // NOTE
-        //   DO NOT use 'id' as file name!
-        //   ID can be changed after updating.
-        //   In this case, this file becomes dangling one.
-        //   So, there is no way to delete this file excepting for deleting entire channel.
-        String fname = Utils.convertToFilename(title);
+        // Item is id is preserved even after update.
+        // So, item ID can be used as file name to match item and file.
+        String fname = Utils.convertToFilename(title) + "_" + id;
         int endIndex = maxFileNameLength - ext.length() - 1; // '- 1' for '.'
         if (endIndex > fname.length())
             endIndex = fname.length();

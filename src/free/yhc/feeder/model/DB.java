@@ -144,11 +144,6 @@ public final class DB extends SQLiteOpenHelper {
         return TABLE_ITEM + channelid;
     }
 
-    private static String
-    getTempItemTableName(long channelid) {
-        return TABLE_ITEM + "temp" + channelid;
-    }
-
     /**************************************
      * Data
      **************************************/
@@ -267,40 +262,6 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    createTempItemTable(long cid) {
-        try {
-            db.execSQL(buildTableSQL(getTempItemTableName(cid), ColumnItem.values()));
-        } catch (SQLException e) {
-            logI(e.getMessage());
-            return -1;
-        }
-        return 0;
-    }
-
-
-    long
-    alterItemTable_toTemp(long cid) {
-        try {
-            db.execSQL("ALTER TABLE '" + getItemTableName(cid) + "' RENAME TO '" + getTempItemTableName(cid) + "';");
-        } catch (SQLException e) {
-            logI(e.getMessage());
-            return -1;
-        }
-        return 0;
-    }
-
-    long
-    alterItemTable_toMain(long cid) {
-        try {
-            db.execSQL("ALTER TABLE '" + getTempItemTableName(cid) + "' RENAME TO '" + getItemTableName(cid) + "';");
-        } catch (SQLException e) {
-            logI(e.getMessage());
-            return -1;
-        }
-        return 0;
-    }
-
-    long
     dropItemTable(long cid) {
         try {
             db.execSQL("DROP TABLE '" + getItemTableName(cid) + "';");
@@ -310,18 +271,6 @@ public final class DB extends SQLiteOpenHelper {
         }
         return 0;
     }
-
-    long
-    dropTempItemTable(long cid) {
-        try {
-            db.execSQL("DROP TABLE '" + getTempItemTableName(cid) + "';");
-        } catch (SQLException e) {
-            logI(e.getMessage());
-            return -1;
-        }
-        return 0;
-    }
-
 
     /*
     Cursor
@@ -441,17 +390,32 @@ public final class DB extends SQLiteOpenHelper {
     Cursor
     queryItem(long cid, long id, ColumnItem[] columns) {
         return db.query(getItemTableName(cid),
-                getColumnNames(columns),
-                ColumnItem.ID.getName() + " = '" + id + "'",
-                null, null, null, null);
+                        getColumnNames(columns),
+                        ColumnItem.ID.getName() + " = '" + id + "'",
+                        null, null, null, null);
     }
 
     Cursor
     queryItem(long cid, ColumnItem[] columns, ColumnItem where, String value) {
+        return queryItem(cid, columns, new ColumnItem[] { where }, new String[] { value });
+    }
+
+    Cursor
+    queryItem(long cid, ColumnItem[] columns, ColumnItem[] wheres, String[] values) {
+        eAssert(wheres.length == values.length);
+        String whereStr = "";
+        for (int i = 0; i < wheres.length;) {
+            whereStr += wheres[i].getName() + " = " + DatabaseUtils.sqlEscapeString(values[i]);
+            if (++i < wheres.length)
+                whereStr += " AND ";
+        }
+
+        // recently inserted item is located at top of rows.
         return db.query(getItemTableName(cid),
-                getColumnNames(columns),
-                where.getName() + " = " + DatabaseUtils.sqlEscapeString(value),
-                null, null, null, null);
+                        getColumnNames(columns),
+                        whereStr,
+                        null, null, null,
+                        DB.ColumnItem.ID.getName() + " DESC");
     }
 
     long
@@ -500,10 +464,8 @@ public final class DB extends SQLiteOpenHelper {
         long r = db.delete(TABLE_CHANNEL,
                            ColumnChannel.ID.getName() + " = " + cid,
                            null);
-        if (0 != r) {
+        if (0 != r)
             dropItemTable(cid);
-            dropTempItemTable(cid);
-        }
 
         return r;
     }
@@ -543,11 +505,6 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    insertItemToTemp(long cid, ContentValues values) {
-        return db.insert(getTempItemTableName(cid), null, values);
-    }
-
-    long
     updateItem(long cid, long id, ContentValues values) {
         return db.update(getItemTableName(cid),
                          values,
@@ -570,27 +527,10 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    updateItemToTemp(long cid, long id, ContentValues values) {
-        return db.update(getTempItemTableName(cid),
-                         values,
-                         ColumnItem.ID.getName() + " = " + id,
-                         null);
-    }
-
-    long
     updateItem(long cid, String title, long pubTime , ContentValues values) {
         return db.update(getItemTableName(cid),
                          values,
                          ColumnItem.TITLE.getName() + " = " + DatabaseUtils.sqlEscapeString(title),
                          null);
     }
-
-    long
-    updateItemToTemp(long cid, String title, long pubTime, ContentValues values) {
-        return db.update(getTempItemTableName(cid),
-                         values,
-                         ColumnItem.TITLE.getName() + " = " + DatabaseUtils.sqlEscapeString(title),
-                         null);
-    }
-
 }

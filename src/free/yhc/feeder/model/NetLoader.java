@@ -168,20 +168,6 @@ public class NetLoader {
         }
 
         time = System.currentTimeMillis();
-        String state;
-        for (Feed.Item item : ch.items) {
-            // ignore empty-titled item
-            if (null == item.parD.title || item.parD.title.isEmpty())
-                continue;
-            state = dbp.isDuplicatedItemTitleWithState(cid, item.parD.title);
-            if (null != state)
-                item.dynD.state = Feed.Item.State.convert(state);
-            else
-                item.dynD.state = Feed.Item.State.NEW;
-        }
-        logI("TIME: Comparing with DB data : " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
         dbp.updateChannel(ch, null != ch.dynD.imageblob);
         logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
 
