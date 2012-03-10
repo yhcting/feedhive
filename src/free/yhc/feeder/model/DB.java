@@ -72,7 +72,7 @@ public final class DB extends SQLiteOpenHelper {
 
         // Columns for internal use.
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
-        LASTUPDATE      ("lastupdate",      "text",     "not null"), // time when channel is updated, lastly
+        LASTUPDATE      ("lastupdate",      "integer",  "not null"), // time when channel is updated, lastly
         ACTION          ("action",          "text",     "not null"),
         // 'order' is reserved word at DB. so make it's column name as 'listing order'
         ORDER           ("listingorder",    "text",     "not null"), // normal / reverse

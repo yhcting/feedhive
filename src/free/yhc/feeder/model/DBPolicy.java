@@ -4,6 +4,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 import static free.yhc.feeder.model.Utils.logW;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -369,7 +370,7 @@ public class DBPolicy {
         long cid = -1;
 
         // update with current data.
-        ch.dbD.lastupdate = DateUtils.getCurrentDateString();
+        ch.dbD.lastupdate = new Date().getTime();
 
         try { // Big block
 
@@ -516,7 +517,7 @@ public class DBPolicy {
                 checkInterrupted();
             }
             completeUpdateItemTable(ch.dbD.id);
-            channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), DateUtils.getCurrentDateString());
+            channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), new Date().getTime());
             db.updateChannel(ch.dbD.id, channelUpdateValues);
         } catch (FeederException e) {
             rollbackUpdateItemTable(ch.dbD.id);

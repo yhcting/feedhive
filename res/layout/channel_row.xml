@@ -37,7 +37,7 @@
 	        >
 	        <TextView
 	            android:id="@+id/age"
-	            android:layout_width="35dip"
+	            android:layout_width="50dip"
 	            android:layout_height="wrap_content"
 	            android:textSize="@dimen/desc_text_size"
 	            android:textColor="@color/title_color_new"
@@ -47,7 +47,7 @@
 	            />
 	        <TextView
 	            android:id="@+id/nr_unread"
-	            android:layout_width="35dip"
+	            android:layout_width="50dip"
 	            android:layout_height="wrap_content"
 	            android:textSize="@dimen/desc_text_size"
 	            android:textColor="@color/title_color_new"

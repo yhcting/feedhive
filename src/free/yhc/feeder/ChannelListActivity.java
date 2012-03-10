@@ -527,24 +527,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                         dialog.dismiss();
                         return true;
                     }
-                    // Perform action on key press
-                    // Toast.makeText(this, "hahah", Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                     addChannel(url);
-                    // url = "http://old.ddanzi.com/appstream/ddradio.xml";
-                    // url = "file:///data/test/total_news.xml";
-                    // url = "http://www.khan.co.kr/rss/rssdata/total_news.xml";
-                    // http://cast.vop.co.kr/kfline.xml
-                    // addChannel("http://old.ddanzi.com/appstream/ddradio.xml");
-                    // // out-of spec.
-                    // addChannel("http://cast.vop.co.kr/kfline.xml"); // good
-                    // addChannel("http://cast.vop.co.kr/heenews.xml"); // good
-                    // addChannel("http://www.khan.co.kr/rss/rssdata/total_news.xml");
-                    // // large xml
-                    // addChannel("http://cbspodcast.com/podcast/sisa/sisa.xml");
-                    // // large xml
-                    // addChannel("file:///sdcard/tmp/heenews.xml");
-                    // addChannel("file:///sdcard/tmp/total_news.xml");
                     return true;
                 }
                 return false;

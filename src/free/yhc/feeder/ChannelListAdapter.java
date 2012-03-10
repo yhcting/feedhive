@@ -1,6 +1,10 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.text.DateFormat;
+import java.util.Date;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -41,13 +45,24 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
     bindView(View view, final Context context, final Cursor c) {
         String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
         String desc  = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
-        String date  = c.getString(c.getColumnIndex(DB.ColumnChannel.LASTUPDATE.getName()));
+
+        // date to readable string
+        Date lastupdate = new Date(c.getLong(c.getColumnIndex(DB.ColumnChannel.LASTUPDATE.getName())));
+        String date = DateFormat.getInstance().format(lastupdate);
+
+        // calculate age and convert to readable string.
+        long ageTime = new Date().getTime() - lastupdate.getTime();
+        // Show "day:hours"
+        long ageHours = ageTime/ (1000 * 60 * 60);
+        long ageDay = ageHours / 24;
+        ageHours %= 24;
+        String age = String.format("%2d:%2d", ageDay, ageHours);
 
         int ci; // column index;
         ci = c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName());
         Bitmap bm = null;
         if (Cursor.FIELD_TYPE_NULL != c.getType(ci)) {
-            byte[] imgRaw= c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
+            byte[] imgRaw = c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
             bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
         }
 
@@ -98,6 +113,7 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         ((TextView)view.findViewById(R.id.title)).setText(title);
         ((TextView)view.findViewById(R.id.description)).setText(desc);
         ((TextView)view.findViewById(R.id.date)).setText(date);
+        ((TextView)view.findViewById(R.id.age)).setText(age);
     }
 
 }

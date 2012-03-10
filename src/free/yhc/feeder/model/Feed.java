@@ -170,7 +170,7 @@ public class Feed {
         static class DbD {
             long   id           = -1;
             long   categoryid   = -1;
-            String lastupdate   = ""; // date when item DB is updated lastly
+            long   lastupdate   = -1; // date when item DB is updated lastly
         }
 
         // Dynamic data - changed in runtime dynamically (usually by user action).

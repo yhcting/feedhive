@@ -42,7 +42,7 @@ public class UIPolicy {
 
     static boolean
     verifyConstraints(Feed.Channel ch) {
-        if (!isValidValue(ch.parD.title) || !isValidValue(ch.dbD.lastupdate))
+        if (!isValidValue(ch.parD.title))
             return false;
 
         return true;
