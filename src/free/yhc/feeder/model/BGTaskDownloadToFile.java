@@ -13,20 +13,10 @@ import java.net.URL;
 import java.net.URLConnection;
 
 
-public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.ItemInfo, BGTaskDownloadToFile.Arg, Object> {
+public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
     private InputStream    istream  = null;
     private OutputStream   ostream  = null;
     private Arg            arg      = null;
-
-    public static class ItemInfo {
-        public long  cid;
-        public long  id;
-
-        public ItemInfo(long cid, long id) {
-            this.cid = cid;
-            this.id = id;
-        }
-    }
 
     public static class Arg {
         String      url         = null;
@@ -62,8 +52,8 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.ItemInfo, 
     }
 
     public
-    BGTaskDownloadToFile(ItemInfo item) {
-        super(item);
+    BGTaskDownloadToFile() {
+        super();
     }
 
     @Override

@@ -69,27 +69,17 @@ public class RTTask {
         }
     }
 
-
     public int
     unbindUpdate(long cid) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.unbind(Id(cid, Action.Update));
+            return gbtm.unbind(Thread.currentThread(), Id(cid, Action.Update));
         }
     }
 
     public int
     unbindDownload(long cid, long id) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.unbind(Id(cid, id, Action.Download));
-        }
-    }
-
-    // Unbind all tasks whose event handler is 'onEvent'
-    public int
-    unbind(BGTask.OnEvent onEvent) {
-        eAssert(null != onEvent);
-        synchronized (gbtm.getSyncObj()) {
-            return gbtm.unbind(onEvent);
+            return gbtm.unbind(Thread.currentThread(), Id(cid, id, Action.Download));
         }
     }
 
@@ -147,7 +137,7 @@ public class RTTask {
             synchronized (gbtm.getSyncObj()) {
                 // remove from manager.
                 String id = Id(cid, Action.Update);
-                gbtm.unbind(id);
+                gbtm.clear(id);
                 gbtm.unregister(id);
             }
             return StateUpdate.Idle;
@@ -172,7 +162,7 @@ public class RTTask {
                 || Err.UserCancelled == task.getResult()) {
             synchronized (gbtm.getSyncObj()) {
                 String idstr = Id(cid, id, Action.Download);
-                gbtm.unbind(idstr);
+                gbtm.clear(idstr);
                 gbtm.unregister(idstr);
             }
             return StateDownload.Idle;

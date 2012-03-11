@@ -27,5 +27,7 @@
         <activity android:name=".PredefinedChannelActivity"
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   />
-        </application>
+        <service android:name=".ScheduledUpdater"
+				 />
+    </application>
 </manifest>

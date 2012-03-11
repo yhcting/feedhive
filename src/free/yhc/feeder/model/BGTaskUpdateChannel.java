@@ -2,7 +2,7 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.logI;
 
-public class BGTaskUpdateChannel extends BGTask<Object, BGTaskUpdateChannel.Arg, Object> {
+public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
     private volatile NetLoader loader = null;
     private Arg                arg    = null;
 
@@ -26,8 +26,8 @@ public class BGTaskUpdateChannel extends BGTask<Object, BGTaskUpdateChannel.Arg,
     }
 
     public
-    BGTaskUpdateChannel(Object userObj) {
-        super(userObj);
+    BGTaskUpdateChannel() {
+        super();
     }
 
     @Override

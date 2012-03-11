@@ -206,23 +206,23 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
-    public class UpdateBGTask extends BGTaskUpdateChannel implements
+    private class UpdateBGTask extends BGTaskUpdateChannel implements
     BGTask.OnEvent {
         private long    cid = -1;
 
-        UpdateBGTask(Object userObj, long cid) {
-            super(userObj);
+        UpdateBGTask(long cid) {
+            super();
             this.cid = cid;
         }
 
         @Override
         public void
-        onProgress(BGTask task, Object user, int progress) {
+        onProgress(BGTask task, int progress) {
         }
 
         @Override
         public void
-        onCancel(BGTask task, Object param, Object user) {
+        onCancel(BGTask task, Object param) {
             eAssert(cid >= 0);
             if (isChannelInSelectedCategory(cid))
                 // NOTE : refresh??? just 'notifying' is enough?
@@ -231,7 +231,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         @Override
         public void
-        onPreRun(BGTask task, Object user) {
+        onPreRun(BGTask task) {
             if (isChannelInSelectedCategory(cid))
                 // NOTE : refresh??? just 'notifying' is enough?
                 getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
@@ -239,7 +239,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         @Override
         public void
-        onPostRun(BGTask task, Object user, Err result) {
+        onPostRun(BGTask task, Err result) {
             eAssert(Err.UserCancelled != result);
             // In normal case, onPostExecute is not called in case of 'user-cancel'.
             // below code is for safety.
@@ -748,10 +748,14 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onBtn_channelUpdate(ImageView ibtn, long cid) {
+        /*
+        ScheduledUpdater.setUpdateSchedule(this, cid);
+        return;
+        */
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
             logI("ChannelList : update : " + cid);
-            UpdateBGTask task = new UpdateBGTask(null, cid);
+            UpdateBGTask task = new UpdateBGTask(cid);
             RTTask.S().registerUpdate(cid, task);
             RTTask.S().bindUpdate(cid, task);
             task.start(new BGTaskUpdateChannel.Arg(cid));
@@ -957,7 +961,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             do {
                 long cid = c.getLong(0);
                 if (RTTask.StateUpdate.Idle != RTTask.S().getUpdateState(cid))
-                    RTTask.S().bindUpdate(cid, new UpdateBGTask(null, cid));
+                    RTTask.S().bindUpdate(cid, new UpdateBGTask(cid));
             } while (c.moveToNext());
         }
         c.close();

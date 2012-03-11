@@ -22,8 +22,8 @@ class BGTaskManager {
     private class TaskMapV {
         Thread          owner  = null;
         String          taskId = null;
-        BGTask<?, ?, ?> task   = null;
-        TaskMapV(BGTask<?, ?, ?> task, String taskId) {
+        BGTask          task   = null;
+        TaskMapV(BGTask task, String taskId) {
             this.task = task;
             this.taskId = taskId;
         }
@@ -51,38 +51,6 @@ class BGTaskManager {
         }
     }
 
-    private class OnEventListener implements BGTask.OnEvent<Object, Object, Object> {
-        private String taskId = null;
-
-        OnEventListener(String taskId) {
-            this.taskId = taskId;
-        }
-
-        @Override
-        public void
-        onPreRun(BGTask task, Object user) {
-            logW("onPreRun at BGTaskManager will be IGNORED!");
-        }
-
-        @Override
-        public void
-        onPostRun(BGTask task, Object user, Err result) {
-            logW("onPostRun at BGTaskManager will be IGNORED!");
-        }
-
-        @Override
-        public void
-        onCancel(BGTask task, Object param, Object user) {
-            logW("onCancel at BGTaskManager will be IGNORED");
-        }
-
-        @Override
-        public void
-        onProgress(BGTask task, Object user, int progress) {
-            // nothing to do.
-        }
-    }
-
     BGTaskManager() {
         looper.start();
         while (true) {
@@ -103,7 +71,7 @@ class BGTaskManager {
     }
 
     boolean
-    register(String taskId, BGTask<?, ?, ?> task) {
+    register(String taskId, BGTask task) {
         logI("BGTM : register :" + taskId);
         if (null != map.get(taskId)) {
             eAssert(false);
@@ -113,33 +81,15 @@ class BGTaskManager {
         return true;
     }
 
-    private void
-    _unbind(TaskMapV v) {
-        v.owner = looper;
-        v.task.attach(looper.getEventLoopHandler());
-        v.task.setOnEventListener(new OnEventListener(v.taskId));
-        logI("BGTM : unbind :" + v.taskId);
-    }
-
     int
-    unbind(String taskId) {
+    unbind(Thread owner, String taskId) {
+        logI("BGTM : bind :" + taskId);
         TaskMapV v = map.get(taskId);
-        if (null == v)
+        if (null == v || v.owner != owner)
             return 0;
-        _unbind(v);
-        return 1;
-    }
 
-    int
-    unbind(BGTask.OnEvent onEvent) {
-        int        ret = 0;
-        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
-        for (TaskMapV v : vs)
-            if (v.task.getOnEvent().equals(onEvent)) {
-                _unbind(v);
-                ret++;
-            }
-        return ret;
+        v.task.unregisterEventListener(owner);
+        return 1;
     }
 
     int
@@ -147,8 +97,8 @@ class BGTaskManager {
         int        ret = 0;
         TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
         for (TaskMapV v : vs)
-            if (v.owner.equals(owner)) {
-                _unbind(v);
+            if (v.owner == owner) {
+                v.task.unregisterEventListener(owner);
                 ret++;
             }
         return ret;
@@ -168,9 +118,17 @@ class BGTaskManager {
         if (null == v)
             return null;
         v.owner = Thread.currentThread();
-        v.task.attach();
-        v.task.setOnEventListener(onEvent);
+        v.task.registerEventListener(onEvent);
         return v.task;
+    }
+
+    int
+    clear(String taskId) {
+        TaskMapV v = map.get(taskId);
+        if (null == v)
+            return 0;
+        v.task.clearEventListener();
+        return 1;
     }
 
     boolean
@@ -200,7 +158,7 @@ class BGTaskManager {
     cancelAll() {
         TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
         for (TaskMapV v : vs) {
-            _unbind(v);
+            v.task.clearEventListener();
             v.task.cancel(null);
         }
     }

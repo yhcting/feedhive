@@ -1,43 +1,67 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.util.Iterator;
+import java.util.LinkedList;
+
 import android.os.Handler;
 
-public class BGTask<User, RunParam, CancelParam> extends Thread {
-    // volatile is used to be thread safe.
-    // (handler and onEvent is used in and out side of 'run()').
-    private volatile Handler handler = null;
-    private volatile OnEvent onEvent = null;
+public class BGTask<RunParam, CancelParam> extends Thread {
+    private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
     private volatile Err     result  = Err.NoErr;
     private volatile boolean cancelled = false;
 
-    private User             userObj     = null;
     private RunParam         runParam    = null;
     private CancelParam      cancelParam = null;
 
-    public interface OnEvent<User, RunParam, CancelParam> {
+    public interface OnEvent<RunParam, CancelParam> {
         // return : false (DO NOT run this task)
-        void onPreRun  (BGTask<User, RunParam, CancelParam> task, User user);
-        void onPostRun (BGTask<User, RunParam, CancelParam> task, User user, Err result);
-        void onCancel  (BGTask<User, RunParam, CancelParam> task, CancelParam param, User user);
-        void onProgress(BGTask<User, RunParam, CancelParam> task, User user, int progress);
+        void onPreRun  (BGTask<RunParam, CancelParam> task);
+        void onPostRun (BGTask<RunParam, CancelParam> task, Err result);
+        void onCancel  (BGTask<RunParam, CancelParam> task, CancelParam param);
+        void onProgress(BGTask<RunParam, CancelParam> task, int progress);
     }
 
-    public BGTask(User obj) {
+    public static class EventListener {
+        private Handler     handler;
+        private OnEvent     onEvent;
+
+        EventListener(Handler handler, OnEvent onEvent) {
+            this.handler = handler;
+            this.onEvent = onEvent;
+        }
+
+        Handler getHandler() {
+            return handler;
+        }
+
+        OnEvent getOnEvent() {
+            return onEvent;
+        }
+    }
+
+    public BGTask() {
         super();
-        userObj = obj;
-        // context of default handler is current(caller) thread!
-        handler = new Handler();
     }
 
-    public BGTask(OnEvent onEvent, User obj) {
+    public BGTask(OnEvent onEvent) {
         super();
-        userObj = obj;
-        // context of default handler is current(caller) thread!
-        handler = new Handler();
-        this.onEvent = onEvent;
+        synchronized (listenerList) {
+            EventListener listener = new EventListener(new Handler(), onEvent);
+            listenerList.addLast(listener);
+        }
     }
 
+    // ==========================================
+    // Package Private
+    // ==========================================
+    private EventListener[]
+    getListeners() {
+        synchronized (listenerList) {
+            return listenerList.toArray(new EventListener[0]);
+        }
+    }
     // ==========================================
     // Package Private
     // ==========================================
@@ -45,11 +69,6 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
     resetResult() {
         eAssert(!isAlive());
         result = Err.NoErr;
-    }
-
-    OnEvent
-    getOnEvent() {
-        return onEvent;
     }
 
     // ==========================================
@@ -61,27 +80,32 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
         return result;
     }
 
-    public User
-    getUserObject() {
-        return userObj;
-    }
-
-    // Attach to given thread handler.
     public void
-    attach(Handler handler) {
-        this.handler = handler;
-    }
-
-    // Attach to current thread
-    public void
-    attach() {
-        handler = new Handler();
-    }
-
-    public void
-    setOnEventListener(OnEvent<?, ?, ?> onEvent) {
+    registerEventListener(OnEvent onEvent) {
         // This is atomic expression
-        this.onEvent = onEvent;
+        synchronized (listenerList) {
+            EventListener listener = new EventListener(new Handler(), onEvent);
+            listenerList.addLast(listener);
+        }
+    }
+
+    public void
+    unregisterEventListener(Thread owner) {
+        synchronized (listenerList) {
+            Iterator<EventListener> iter = listenerList.iterator();
+            while (iter.hasNext()) {
+                EventListener listener = iter.next();
+                if (listener.getHandler().getLooper().getThread() == owner)
+                    iter.remove();
+            }
+        }
+    }
+
+    public void
+    clearEventListener() {
+        synchronized (listenerList) {
+            listenerList.clear();
+        }
     }
 
     // main background task to do.
@@ -106,46 +130,58 @@ public class BGTask<User, RunParam, CancelParam> extends Thread {
         if (!bInterrupted)
             bInterrupted = Thread.currentThread().isInterrupted();
 
-        eAssert(null != handler && null != onEvent);
-
         if (cancelled && Err.NoErr != result)
             result = Err.UserCancelled;
 
         if (bInterrupted
             || Err.Interrupted == result
             || Err.UserCancelled == result) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    onEvent.onCancel(BGTask.this, cancelParam, userObj);
-                }
-            });
-
+            for (EventListener listener : getListeners()) {
+                final OnEvent onEvent = listener.getOnEvent();
+                listener.getHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onEvent.onCancel(BGTask.this, cancelParam);
+                    }
+                });
+            }
         } else {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    onEvent.onPostRun(BGTask.this, userObj, result);
-                }
-            });
+            for (EventListener listener : getListeners()) {
+                final OnEvent onEvent = listener.getOnEvent();
+                listener.getHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onEvent.onPostRun(BGTask.this, result);
+                    }
+                });
+            }
         }
     }
 
     public void
     publishProgress(final int progress) {
-        eAssert(null != handler && null != onEvent);
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                onEvent.onProgress(BGTask.this, userObj, progress);
-            }
-        });
+        for (EventListener listener : getListeners()) {
+            final OnEvent onEvent = listener.getOnEvent();
+            listener.getHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    onEvent.onProgress(BGTask.this, progress);
+                }
+            });
+        }
     }
 
     public final void
     start(RunParam runParam) {
-        eAssert(null != onEvent);
-        onEvent.onPreRun(BGTask.this, userObj);
+        for (EventListener listener : getListeners()) {
+            final OnEvent onEvent = listener.getOnEvent();
+            listener.getHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    onEvent.onPreRun(BGTask.this);
+                }
+            });
+        }
         this.runParam = runParam;
         super.start();
     }

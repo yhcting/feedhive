@@ -74,10 +74,27 @@ public final class DB extends SQLiteOpenHelper {
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "integer",  "not null"), // time when channel is updated, lastly
         ACTION          ("action",          "text",     "not null"),
+        // time(seconds)/time... base on 00:00:00. ex. 3600/7200/ => update 1 and 2 hour every day
+        UPDATETIME      ("updatetime",      "text",     "not null"),
+        // old last item id.
+        // This is usually, last item id before update.
+        // This will be updated to current last item id when user recognizes newly update items.
+        // Why this is possible?
+        // NOTE (WARNING)
+        //   Recently inserted items SHOULD NOT be removed!
+        //   So, implement 'delete items' should be consider this constraints!
+        //
+        // NOT USED YET! For future use.
+        OLDLAST_ITEMID  ("oldlastitemid",   "integer",  "not null"),
+        // number of items to keep in item table.
+        // This is not hard-limit but soft-limit!
+        // (There is no reason to support hard-limit. Soft-limit is enough!)
+        //
+        // NOT USED YET! For future use.
+        NRITEMS_SOFTMAX ("nritemssoftmax",  "integer",  "not null"),
         // 'order' is reserved word at DB. so make it's column name as 'listing order'
         ORDER           ("listingorder",    "text",     "not null"), // normal / reverse
         URL             ("url",             "text",     "not null"), // channel url of this rss.
-        UNOPENEDCOUNT   ("unopenedcount",   "integer",  "not null"),
         CATEGORYID      ("categoryid",      "integer",  ""),
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
                 + "FOREIGN KEY(categoryid) REFERENCES " + TABLE_CATEGORY + "(" + ColumnCategory.ID.getName() + ")");

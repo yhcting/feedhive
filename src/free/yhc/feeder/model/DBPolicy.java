@@ -140,9 +140,6 @@ public class DBPolicy {
         values.put(ColumnChannel.CATEGORYID.getName(),       ch.dbD.categoryid);
         values.put(ColumnChannel.LASTUPDATE.getName(),       ch.dbD.lastupdate);
 
-        // temporal : this column is for future use.
-        values.put(ColumnChannel.UNOPENEDCOUNT.getName(),    0);
-
         if (null != ch.dynD.imageblob)
             values.put(ColumnChannel.IMAGEBLOB.getName(),    ch.dynD.imageblob);
 
@@ -192,35 +189,6 @@ public class DBPolicy {
         c.close();
         return ret;
     }
-
-    // return : true(same) / false(not same)
-    public boolean
-    compareItem(String title0, String pubDate0, String title1, String pubDate1) {
-        if (pubDate0.isEmpty() && pubDate1.isEmpty()) {
-            return title0.equals(title1);
-        } else
-            return false; // different
-    }
-
-    // This function is dirty for performance.
-    // (To reduce access)
-    // return : null if it's not duplicated.
-    /*
-    public String
-    isDuplicatedItemTitleWithState(long cid, String title) {
-        eAssert(!chrtmap.get(cid).isUpdating());
-        String ret = null;
-        Cursor c = db.queryItem(cid,
-                                // Column index is used below. So order is important.
-                                new ColumnItem[] { ColumnItem.ID, ColumnItem.STATE, },
-                                ColumnItem.TITLE,
-                                title);
-        if (c.moveToFirst())
-            ret = c.getString(1); // '1' is state.
-        c.close();
-        return ret;
-    }
-    */
 
     public long
     getDefaultCategoryId() {

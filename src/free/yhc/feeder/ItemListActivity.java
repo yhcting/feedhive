@@ -79,31 +79,31 @@ public class ItemListActivity extends Activity {
         }
     }
 
-    public class UpdateBGTask extends BGTaskUpdateChannel implements BGTask.OnEvent<Object, Long, Object> {
-        UpdateBGTask(Object userObj) {
-            super(userObj);
+    public class UpdateBGTask extends BGTaskUpdateChannel implements BGTask.OnEvent<Long, Object> {
+        UpdateBGTask() {
+            super();
         }
 
         @Override
         public void
-        onProgress(BGTask task, Object user, int progress) {
+        onProgress(BGTask task, int progress) {
         }
 
         @Override
         public void
-        onCancel(BGTask task, Object param, Object user) {
+        onCancel(BGTask task, Object param) {
             requestSetUpdateButton();
         }
 
         @Override
         public void
-        onPreRun(BGTask task, Object user) {
+        onPreRun(BGTask task) {
             ; // nothing to do
         }
 
         @Override
         public void
-        onPostRun(BGTask task, Object user, Err result) {
+        onPostRun(BGTask task, Err result) {
             requestSetUpdateButton();
 
             if (Err.NoErr == result)
@@ -112,31 +112,31 @@ public class ItemListActivity extends Activity {
     }
 
     private class DownloadToFileBGTask extends BGTaskDownloadToFile implements
-    BGTaskDownloadToFile.OnEvent<BGTaskDownloadToFile.ItemInfo, BGTaskDownloadToFile.Arg, Object> {
-        DownloadToFileBGTask(BGTaskDownloadToFile.ItemInfo item) {
-            super(item);
+    BGTaskDownloadToFile.OnEvent<BGTaskDownloadToFile.Arg, Object> {
+        DownloadToFileBGTask() {
+            super();
         }
 
         @Override
         public void
-        onProgress(BGTask task, BGTaskDownloadToFile.ItemInfo info, int progress) {
+        onProgress(BGTask task, int progress) {
         }
 
         @Override
         public void
-        onCancel(BGTask task, Object param, BGTaskDownloadToFile.ItemInfo info) {
+        onCancel(BGTask task, Object param) {
             getListAdapter().notifyDataSetChanged();
         }
 
         @Override
         public void
-        onPreRun(BGTask task, BGTaskDownloadToFile.ItemInfo info) {
+        onPreRun(BGTask task) {
             ; // nothing to do
         }
 
         @Override
         public void
-        onPostRun(BGTask task, BGTaskDownloadToFile.ItemInfo info, Err result) {
+        onPostRun(BGTask task, Err result) {
             getListAdapter().notifyDataSetChanged();
         }
     }
@@ -296,7 +296,7 @@ public class ItemListActivity extends Activity {
 
     private void
     updateItems() {
-        UpdateBGTask updateTask = new UpdateBGTask(null);
+        UpdateBGTask updateTask = new UpdateBGTask();
         RTTask.S().registerUpdate(cid, updateTask);
         RTTask.S().bindUpdate(cid, updateTask);
         updateTask.start(new BGTaskUpdateChannel.Arg(cid));
@@ -342,7 +342,7 @@ public class ItemListActivity extends Activity {
         } else {
             RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
             if (RTTask.StateDownload.Idle == state) {
-                DownloadToFileBGTask dnTask = new DownloadToFileBGTask(new BGTaskDownloadToFile.ItemInfo(cid, id));
+                DownloadToFileBGTask dnTask = new DownloadToFileBGTask();
                 RTTask.S().registerDownload(cid, id, dnTask);
                 RTTask.S().bindDownload(cid, id, dnTask);
                 dnTask.start(new BGTaskDownloadToFile.Arg(enclosureUrl, fpath,
@@ -607,7 +607,7 @@ public class ItemListActivity extends Activity {
         // Bind update task if needed
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle != state)
-            RTTask.S().bindUpdate(cid, new UpdateBGTask(null));
+            RTTask.S().bindUpdate(cid, new UpdateBGTask());
 
         // Bind downloading tasks
         Cursor c = db.queryItem(cid, new DB.ColumnItem[] { DB.ColumnItem.ID });
@@ -615,7 +615,7 @@ public class ItemListActivity extends Activity {
             do {
                 long id = c.getLong(0);
                 if (RTTask.StateDownload.Idle != RTTask.S().getDownloadState(cid, id))
-                    RTTask.S().bindDownload(cid, id, new DownloadToFileBGTask(new BGTaskDownloadToFile.ItemInfo(cid, id)));
+                    RTTask.S().bindDownload(cid, id, new DownloadToFileBGTask());
             } while (c.moveToNext());
         }
         c.close();
