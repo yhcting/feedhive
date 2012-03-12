@@ -14,6 +14,7 @@
     <string name="enter_url">URL 입력</string>
     <string name="enter_name">이름 입력</string>
     <string name="channel_url">채널 URL</string>
+    <string name="setting">설정</string>
     <string name="wait_cancel">취소가 완료되길 기다리고 있습니다.</string>
     <string name="load_progress">로드 중입니다. 데이터의 크기와 네트웤 사정에 따라 최대 수 분정도 소요될 수도 있습니다.</string>
     <string name="pick_icon_progress">그림을 로드 중입니다.  이미지 크기와 네트웤 사정에 따라 최대 수 분 정도 소요될 수도 있습니다.</string>
@@ -35,7 +36,7 @@
     <string name="delete_downloaded_file">내려받은 파일 삭제</string>
     <string name="delete_channel">채널 삭제</string>
     <string name="update_channel">채널 업데이트</string>
-    <string name="mark_as_unopened">읽지 않음 으로 표시</string>
+    <string name="mark_as_unopened">열지 않음 으로 표시</string>
     <string name="delete_channel_msg">이 채널을 삭제하시겠습니까?</string>
     <string name="delete_category_msg">이 카테고리를 삭제하시겠습니까? 이 카테고리의 모든 채널들은 기본 카테고리로 이동됩니다.</string>
     <string name="delete_downloaded_file_msg">내려 받은 파일을 삭제하시겠습니까?</string>
@@ -54,8 +55,9 @@
     <string name="default_category_name">미분류</string>
     <string name="change_category">카테고리 변경</string>
     <string name="select_category">카테고리 선택</string>
-    <string name="reverse_order">리스트 순서 변경</string>
     <string name="select_predefined_channel">추천 채널에서 고르기</string>
     <string name="pick_icon">아이콘 선택</string>
     <string name="open_link">원문보기</string>
+    <string name="setting_scheduled_update">예약 업데이트 설정</string>
+    <string name="setting_nritem_softmax">아이템 최대 개수 설정</string>
 </resources>

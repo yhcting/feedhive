@@ -17,6 +17,7 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     private InputStream    istream  = null;
     private OutputStream   ostream  = null;
     private Arg            arg      = null;
+    private volatile int   progress = 0;
 
     public static class Arg {
         String      url         = null;
@@ -54,6 +55,13 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     public
     BGTaskDownloadToFile() {
         super();
+    }
+
+    @Override
+    public void
+    registerEventListener(Object key, OnEvent onEvent) {
+        super.registerEventListener(key, onEvent);
+        publishProgress(progress);
     }
 
     @Override
@@ -114,7 +122,8 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
                     break;
                 ostream.write(data, 0, count);
                 total += count;
-                publishProgress((int) (total * 100 / lenghtOfFile));
+                progress = (int)(total * 100 / lenghtOfFile);
+                publishProgress(progress);
             }
 
             ostream.flush();

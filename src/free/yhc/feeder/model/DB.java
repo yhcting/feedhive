@@ -92,8 +92,6 @@ public final class DB extends SQLiteOpenHelper {
         //
         // NOT USED YET! For future use.
         NRITEMS_SOFTMAX ("nritemssoftmax",  "integer",  "not null"),
-        // 'order' is reserved word at DB. so make it's column name as 'listing order'
-        ORDER           ("listingorder",    "text",     "not null"), // normal / reverse
         URL             ("url",             "text",     "not null"), // channel url of this rss.
         CATEGORYID      ("categoryid",      "integer",  ""),
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "

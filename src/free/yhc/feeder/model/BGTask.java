@@ -24,12 +24,18 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     }
 
     public static class EventListener {
+        private Object      key;
         private Handler     handler;
         private OnEvent     onEvent;
 
-        EventListener(Handler handler, OnEvent onEvent) {
+        EventListener(Object key, Handler handler, OnEvent onEvent) {
+            this.key = key;
             this.handler = handler;
             this.onEvent = onEvent;
+        }
+
+        Object getKey() {
+            return key;
         }
 
         Handler getHandler() {
@@ -45,10 +51,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         super();
     }
 
-    public BGTask(OnEvent onEvent) {
+    public BGTask(Object onEventKey, OnEvent onEvent) {
         super();
         synchronized (listenerList) {
-            EventListener listener = new EventListener(new Handler(), onEvent);
+            EventListener listener = new EventListener(onEventKey, new Handler(), onEvent);
             listenerList.addLast(listener);
         }
     }
@@ -81,10 +87,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     }
 
     public void
-    registerEventListener(OnEvent onEvent) {
+    registerEventListener(Object key, OnEvent onEvent) {
         // This is atomic expression
         synchronized (listenerList) {
-            EventListener listener = new EventListener(new Handler(), onEvent);
+            EventListener listener = new EventListener(key, new Handler(), onEvent);
             listenerList.addLast(listener);
         }
     }
@@ -96,6 +102,19 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             while (iter.hasNext()) {
                 EventListener listener = iter.next();
                 if (listener.getHandler().getLooper().getThread() == owner)
+                    iter.remove();
+            }
+        }
+    }
+
+    public void
+    unregisterEventListener(Thread owner, Object onEventKey) {
+        synchronized (listenerList) {
+            Iterator<EventListener> iter = listenerList.iterator();
+            while (iter.hasNext()) {
+                EventListener listener = iter.next();
+                if (listener.getHandler().getLooper().getThread() == owner
+                    && listener.getKey() == onEventKey)
                     iter.remove();
             }
         }

@@ -37,6 +37,23 @@
 	            android:scaleType="fitCenter"
 	            android:src="@drawable/icon"
 	            />
+			<view
+				class="free.yhc.feeder.ItemListAdapter$ProgressTextView"
+				android:id="@+id/progress"
+				android:layout_width="30dip"
+				android:layout_height="30dip"
+				android:layout_marginRight="2dip"
+				android:layout_alignParentLeft="true"
+				android:layout_alignParentTop="true"
+				android:layout_alignBottom="@id/image"
+				android:layout_alignRight="@id/image"
+				android:gravity="center"
+				android:textSize="@dimen/dnprogress_text_size"
+				android:textColor="@color/dnprogress_text_color"
+				android:singleLine="true"
+				android:ellipsize="end"
+				android:visibility="gone"
+				/>
 	        <TextView
         		android:id="@+id/date"
         		android:layout_width="fill_parent"

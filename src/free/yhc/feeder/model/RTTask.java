@@ -45,6 +45,11 @@ public class RTTask {
         return instance;
     }
 
+
+    // ===============================
+    // Privates
+    // ===============================
+
     private String
     Id(long cid, Action act) {
         return idPrefix + cid + "/" + act.name();
@@ -54,6 +59,19 @@ public class RTTask {
     Id(long cid, long itemid, Action act) {
         return idPrefix + cid + "/" + itemid + "/" + act.name();
     }
+
+    private void
+    unregister(String id) {
+        synchronized (gbtm.getSyncObj()) {
+            // remove from manager.
+            gbtm.clear(id);
+            gbtm.unregister(id);
+        }
+    }
+
+    // ===============================
+    // Publics
+    // ===============================
 
     public boolean
     registerUpdate(long cid, BGTask task) {
@@ -83,6 +101,13 @@ public class RTTask {
         }
     }
 
+    public int
+    unbind(Object onEventKey) {
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.unbind(Thread.currentThread(), onEventKey);
+        }
+    }
+
     // unbind tasks which have current thread as bind-owner.
     public int
     unbind() {
@@ -92,17 +117,27 @@ public class RTTask {
     }
 
     public BGTask
-    bindUpdate(long cid, BGTask.OnEvent onEvent) {
+    bindUpdate(long cid, Object onEventKey, BGTask.OnEvent onEvent) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.bind(Id(cid, Action.Update), onEvent);
+            return gbtm.bind(Id(cid, Action.Update), onEventKey, onEvent);
+        }
+    }
+
+    public BGTask
+    bindUpdate(long cid, BGTask.OnEvent onEvent) {
+        return bindUpdate(cid, null, onEvent);
+    }
+
+    public BGTask
+    bindDownload(long cid, long id, Object onEventKey, BGTask.OnEvent onEvent) {
+        synchronized (gbtm.getSyncObj()) {
+            return gbtm.bind(Id(cid, id, Action.Download), onEventKey, onEvent);
         }
     }
 
     public BGTask
     bindDownload(long cid, long id, BGTask.OnEvent onEvent) {
-        synchronized (gbtm.getSyncObj()) {
-            return gbtm.bind(Id(cid, id, Action.Download), onEvent);
-        }
+        return bindDownload(cid, id, null, onEvent);
     }
 
     public BGTask
@@ -134,12 +169,7 @@ public class RTTask {
             return task.isInterrupted()? StateUpdate.Canceling: StateUpdate.Updating;
         } else if (Err.NoErr == task.getResult()
                    || Err.UserCancelled == task.getResult()) {
-            synchronized (gbtm.getSyncObj()) {
-                // remove from manager.
-                String id = Id(cid, Action.Update);
-                gbtm.clear(id);
-                gbtm.unregister(id);
-            }
+            unregister(Id(cid, Action.Update));
             return StateUpdate.Idle;
 
         } else
@@ -160,11 +190,7 @@ public class RTTask {
             return task.isInterrupted()? StateDownload.Canceling: StateDownload.Downloading;
         } else if (Err.NoErr == task.getResult()
                 || Err.UserCancelled == task.getResult()) {
-            synchronized (gbtm.getSyncObj()) {
-                String idstr = Id(cid, id, Action.Download);
-                gbtm.clear(idstr);
-                gbtm.unregister(idstr);
-            }
+            unregister(Id(cid, id, Action.Download));
             return StateDownload.Idle;
         } else
             return StateDownload.DownloadFailed;
@@ -177,6 +203,9 @@ public class RTTask {
         synchronized (gbtm.getSyncObj()) {
             task = gbtm.peek(Id(cid, Action.Update));
         }
+        if (null == task)
+            return;
+
         eAssert(!task.isAlive());
         task.resetResult();
     }
@@ -187,8 +216,29 @@ public class RTTask {
         synchronized (gbtm.getSyncObj()) {
             task = gbtm.peek(Id(cid, id, Action.Download));
         }
+        if (null == task)
+            return;
+
         eAssert(!task.isAlive());
         task.resetResult();
+    }
+
+    // @return : true(success), false(fail)
+    public boolean
+    unregisterUpdate(long cid) {
+        BGTask task;
+        synchronized (gbtm.getSyncObj()) {
+            task = gbtm.peek(Id(cid, Action.Update));
+        }
+
+        if (null == task)
+            return true; // nothing to do - already unregistered.
+
+        if (task.isAlive())
+            return false;
+
+        unregister(Id(cid, Action.Update));
+        return true;
     }
 
     public Err

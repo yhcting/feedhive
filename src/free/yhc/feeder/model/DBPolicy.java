@@ -136,7 +136,6 @@ public class DBPolicy {
         // application's internal information
         values.put(ColumnChannel.URL.getName(),              ch.profD.url);
         values.put(ColumnChannel.ACTION.getName(),           ch.dynD.action.name());
-        values.put(ColumnChannel.ORDER.getName(),            ch.dynD.order.name());
         values.put(ColumnChannel.CATEGORYID.getName(),       ch.dbD.categoryid);
         values.put(ColumnChannel.LASTUPDATE.getName(),       ch.dbD.lastupdate);
 
@@ -146,6 +145,11 @@ public class DBPolicy {
         // information defined by spec.
         values.put(ColumnChannel.TITLE.getName(),            ch.parD.title);
         values.put(ColumnChannel.DESCRIPTION.getName(),      ch.parD.description);
+
+        // Fill reserved values as default
+        values.put(ColumnChannel.UPDATETIME.getName(),       "3600");
+        values.put(ColumnChannel.OLDLAST_ITEMID.getName(),   0);
+        values.put(ColumnChannel.NRITEMS_SOFTMAX.getName(),  999999);
         return values;
     }
 
@@ -434,27 +438,6 @@ public class DBPolicy {
     }
 
     public long
-    updateChannel_reverseOrder(long cid) {
-        eAssert(!chrtmap.get(cid).isUpdating());
-        Cursor c = db.queryChannel(cid, ColumnChannel.ORDER);
-        Feed.Channel.Order order = null;
-        if (c.moveToFirst())
-            order = Feed.Channel.Order.convert(c.getString(0));
-        else {
-            eAssert(false);
-            return -1;
-        }
-        c.close();
-
-        // reverse
-        order = (Feed.Channel.Order.NORMAL == order)?
-                    Feed.Channel.Order.REVERSE: Feed.Channel.Order.NORMAL;
-        db.updateChannel(cid, ColumnChannel.ORDER, order.name());
-
-        return 1; // number of rows affected.
-    }
-
-    public long
     updateChannel_image(long cid, byte[] data) {
         eAssert(!chrtmap.get(cid).isUpdating());
         long r;
@@ -598,23 +581,6 @@ public class DBPolicy {
     queryItem(long cid, ColumnItem[] columns) {
         return db.queryItem(cid, columns);
     }
-
-    public Cursor
-    queryItem_reverse(long cid, ColumnItem[] columns) {
-        // NOTE!!
-        // < "'" + DB.ColumnItem.ID.getName() + "' DESC" > as 'orderby'
-        //   doesn't work!
-        // Column name SHOULD NOT be wrapped by quotation mark!
-        /*
-        Cursor c = db.query(DB.getItemTableName(cid),
-                            columns, null,
-                            null, null, null,
-                            DB.ColumnItem.ID.getName() + " DESC");
-        */
-        // TODO : reverse doesn't deprecated....
-        return queryItem(cid, columns);
-    }
-
 
     public int
     updateItem_state(long cid, long id, Feed.Item.State state) {

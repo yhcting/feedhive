@@ -2,20 +2,14 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
-import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.HashMap;
-
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 
 
 
 // Used only at 'RTData'
 // This should be THREAD-SAFE
 class BGTaskManager {
-    private EventMessageLooper        looper = new EventMessageLooper();
     private HashMap<String, TaskMapV> map = new HashMap<String, TaskMapV>();
 
     // TaskMap Value
@@ -29,40 +23,7 @@ class BGTaskManager {
         }
     }
 
-    private class EventMessageLooper extends Thread {
-        private Handler handler = null;
-
-        Handler
-        getEventLoopHandler() {
-            return handler;
-        }
-
-        @Override
-        public void run() {
-            logI("BGTaskManager EventLoop started!");
-            Looper.prepare();
-            handler = new Handler() {
-                @Override
-                public void handleMessage(Message msg) {
-                    super.handleMessage(msg);
-                }
-            };
-            Looper.loop();
-        }
-    }
-
     BGTaskManager() {
-        looper.start();
-        while (true) {
-            if (null != looper.getEventLoopHandler())
-                break;
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                logW("BGTaskManager Initialization is interrupted.")
-                ;
-            }
-        }
     }
 
     Object
@@ -83,11 +44,11 @@ class BGTaskManager {
 
     int
     unbind(Thread owner, String taskId) {
-        logI("BGTM : bind :" + taskId);
+        logI("BGTM : unbind :" + taskId);
         TaskMapV v = map.get(taskId);
         if (null == v || v.owner != owner)
             return 0;
-
+        logI("BGTM : unbind :" + v.taskId);
         v.task.unregisterEventListener(owner);
         return 1;
     }
@@ -99,6 +60,20 @@ class BGTaskManager {
         for (TaskMapV v : vs)
             if (v.owner == owner) {
                 v.task.unregisterEventListener(owner);
+                logI("BGTM : unbind (owner):" + v.taskId);
+                ret++;
+            }
+        return ret;
+    }
+
+    int
+    unbind(Thread owner, Object onEventKey) {
+        int        ret = 0;
+        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
+        for (TaskMapV v : vs)
+            if (v.owner == owner) {
+                v.task.unregisterEventListener(owner, onEventKey);
+                logI("BGTM : unbind (onEventKey) :" + v.taskId);
                 ret++;
             }
         return ret;
@@ -112,13 +87,13 @@ class BGTaskManager {
     }
 
     BGTask
-    bind(String taskId, BGTask.OnEvent onEvent) {
+    bind(String taskId, Object onEventKey, BGTask.OnEvent onEvent) {
         logI("BGTM : bind :" + taskId);
         TaskMapV v = map.get(taskId);
         if (null == v)
             return null;
         v.owner = Thread.currentThread();
-        v.task.registerEventListener(onEvent);
+        v.task.registerEventListener(onEventKey, onEvent);
         return v.task;
     }
 
@@ -127,6 +102,7 @@ class BGTaskManager {
         TaskMapV v = map.get(taskId);
         if (null == v)
             return 0;
+        logI("BGTM : clear :" + v.taskId);
         v.task.clearEventListener();
         return 1;
     }

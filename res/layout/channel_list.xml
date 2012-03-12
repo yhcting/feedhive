@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/flipper"
-    android:layout_width="fill_parent" 
-    android:layout_height="fill_parent"
-    >
-</ViewFlipper>        
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="50dip"
+        android:layout_alignParentBottom="true"
+        android:textSize="@dimen/desc_text_size"
+        android:textColor="@color/text_color_new"
+        android:text="자주 사용되는 button을 위치 시킬 영역..."
+        />
+	<ViewFlipper
+		android:id="@+id/flipper"
+		android:layout_width="fill_parent" 
+		android:layout_height="fill_parent"
+		android:layout_alignParentTop="true"
+		>
+	</ViewFlipper>
+</RelativeLayout>

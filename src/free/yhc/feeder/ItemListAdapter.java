@@ -6,14 +6,18 @@ import java.io.File;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
+import free.yhc.feeder.model.BGTask;
+import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
@@ -23,10 +27,67 @@ public class ItemListAdapter extends ResourceCursorAdapter {
     private long      cid    = -1;
     private DBPolicy  dbp    = DBPolicy.S();
 
+    // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
+    // See "DownloadProgressOnEvent" for details
+    private TextView  dummyTextView;
+
+    public static class ProgressTextView extends TextView {
+        private DownloadProgressOnEvent onEvent = null;
+
+        public ProgressTextView(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        void switchOnEvent(DownloadProgressOnEvent newOnEvent) {
+            if (null != onEvent)
+                onEvent.setTextView(null);
+            onEvent = newOnEvent;
+            newOnEvent.setTextView(this);
+        }
+    }
+
+    private class DownloadProgressOnEvent implements BGTask.OnEvent<BGTaskDownloadToFile.Arg, Object> {
+        // dummyTextView is used for default 'tv' value.
+        // If not, 'null' should be used.
+        // In this case, code in 'onProgress' should be like below
+        //     if (null != tv)
+        //         tv.setText(....)
+        // Then, above two line of code should be preserved with mutex or 'synchronized'
+        // Why?
+        // 'tv' value can be changed after (null != tv) comparison.
+        // To avoid this synchronization, dummyTextView is used.
+        // Keep in mind that assigning reference is atomic operation in Java.
+        private volatile TextView tv = dummyTextView;
+
+        DownloadProgressOnEvent(TextView tv) {
+            this.tv = tv;
+        }
+
+        void setTextView(TextView tv) {
+            if (null == tv)
+                this.tv = dummyTextView;
+            else
+                this.tv = tv;
+        }
+
+        @Override
+        public void onPreRun(BGTask task) {}
+        @Override
+        public void onPostRun(BGTask task, Err result) {}
+        @Override
+        public void onCancel(BGTask task, Object param) {}
+        @Override
+        public void onProgress(BGTask task, int progress) {
+            tv.setText(progress + "%");
+            tv.postInvalidate();
+        }
+    }
+
     public ItemListAdapter(Context context, int layout, Cursor c, long cid) {
         super(context, layout, c);
         this.layout = layout;
         this.cid = cid;
+        dummyTextView = new TextView(context);
     }
 
     private void
@@ -49,6 +110,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
     bindViewEnclosure(View view, Context context, Cursor c, Feed.Item.State state) {
         TextView titlev = (TextView)view.findViewById(R.id.title);
         TextView descv  = (TextView)view.findViewById(R.id.description);
+        ProgressTextView progress = (ProgressTextView)view.findViewById(R.id.progress);
         TextView date   = (TextView)view.findViewById(R.id.date);
         TextView length = (TextView)view.findViewById(R.id.length);
         ImageView img   = (ImageView)view.findViewById(R.id.image);
@@ -69,6 +131,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         Animation anim = img.getAnimation();
         if (null != anim)
             anim.cancel();
+        progress.setVisibility(View.GONE);
 
         if (new File(UIPolicy.getItemFilePath(cid, id, title, url)).exists()) {
             img.setImageResource(R.drawable.ondisk);
@@ -79,6 +142,13 @@ public class ItemListAdapter extends ResourceCursorAdapter {
             } else if (RTTask.StateDownload.Downloading == dnState) {
                 img.setImageResource(R.drawable.onweb);
                 img.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
+
+                // bind event listener to show progress
+                DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progress);
+                progress.switchOnEvent(onEvent);
+                RTTask.S().unbind(progress);
+                RTTask.S().bindDownload(cid, id, progress, onEvent);
+                progress.setVisibility(View.VISIBLE);
             } else if (RTTask.StateDownload.DownloadFailed == dnState) {
                 img.setImageResource(R.drawable.ic_info);
             } else if (RTTask.StateDownload.Canceling == dnState) {

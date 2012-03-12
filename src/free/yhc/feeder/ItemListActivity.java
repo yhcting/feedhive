@@ -48,7 +48,6 @@ public class ItemListActivity extends Activity {
     private long                cid     = -1; // channel id
     private Handler             handler = new Handler();
     private Feed.Channel.Action action  = null; // action type of this channel
-    private Feed.Channel.Order  order   = null;
     private DBPolicy            db      = DBPolicy.S();
     private ListView            list;
 
@@ -177,10 +176,7 @@ public class ItemListActivity extends Activity {
                     DB.ColumnItem.PUBDATE,
                     DB.ColumnItem.LINK,
                     DB.ColumnItem.STATE };
-        if (Feed.Channel.Order.NORMAL == order)
-            return db.queryItem(cid, columns);
-        else
-            return db.queryItem_reverse(cid, columns);
+        return db.queryItem(cid, columns);
     }
 
     private String
@@ -381,6 +377,12 @@ public class ItemListActivity extends Activity {
                     bEllipsed = true;
         }
 
+        // UIPolicy
+        //   To support same-experience, description dialog is always shown to user.
+        //   Ignoring above checking for 'eclipsed' is intentional here.
+        //   Someday, I need to clean up code. But not now.
+        //   Remained garbage code is for future reference and for history!
+        bEllipsed = true;
         if (bEllipsed) {
             // Description is end-ellipsis
             // open text view dialog to see details...
@@ -548,15 +550,12 @@ public class ItemListActivity extends Activity {
         String[] s = null;
         final int indexTITLE        = 0;
         final int indexACTION       = 1;
-        final int indexORDER        = 2;
         s = db.getChannelInfoStrings(cid,
                 new DB.ColumnChannel[] {
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.ACTION,
-                    DB.ColumnChannel.ORDER,
                     });
         action = Feed.Channel.Action.convert(s[indexACTION]);
-        order = Feed.Channel.Order.convert(s[indexORDER]);
 
         setContentView(R.layout.item_list);
         setTitle(s[indexTITLE]);

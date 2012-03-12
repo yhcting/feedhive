@@ -402,7 +402,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.DESCRIPTION,
                     DB.ColumnChannel.LASTUPDATE,
-                    DB.ColumnChannel.ORDER,
                     DB.ColumnChannel.IMAGEBLOB });
     }
 
@@ -701,8 +700,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     }
 
     private void
-    onContext_reverseOrder(final long cid) {
-        DBPolicy.S().updateChannel_reverseOrder(cid);
+    onContext_setting(final long cid) {
+
     }
 
     private void
@@ -821,7 +820,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         if (RTTask.StateUpdate.Updating == updateState
             || RTTask.StateUpdate.Canceling == updateState) {
             menu.findItem(R.id.delete).setEnabled(false);
-            menu.findItem(R.id.reverse_order).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
             menu.findItem(R.id.full_update).setEnabled(false);
         }
@@ -850,8 +848,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             onContext_changeCategory(info.id);
             return true;
 
-        case R.id.reverse_order:
-            onContext_reverseOrder(info.id);
+        case R.id.setting:
+            onContext_setting(info.id);
             return true;
 
         case R.id.pick_icon:
