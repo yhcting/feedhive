@@ -248,7 +248,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
             if (isChannelInSelectedCategory(cid))
                 // NOTE : refresh??? just 'notifying' is enough?
-                getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+                // It should be 'refresh' due to after successful update,
+                //   some channel information in DB may be changed.
+                refreshList(ab.getSelectedTab());
         }
     }
 
@@ -300,6 +302,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             if (Err.NoErr == result)
                 //NOTE
                 //  "getListAdapter().notifyDataSetChanged();" doesn't works here... why??
+                //  DB data may be changed! So, we need to re-create cursor again.
+                //  'notifyDataSetChanged' is just for recreating list item view.
+                //  (DB item doens't reloaded!)
                 refreshList(ab.getSelectedTab());
             else
                 LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
@@ -804,8 +809,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         getTabTextView(tab).setEllipsize(TextUtils.TruncateAt.MARQUEE);
         if (!getTag(tab).fromGesture)
             flipper.show(tab);
-        else
-            getTag(tab).fromGesture = false;
+        getTag(tab).fromGesture = false;
         registerForContextMenu(getTag(tab).listView);
     }
 
@@ -964,7 +968,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
         c.close();
 
-        getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+        // Database data may be changed.
+        // So refresh all list
+        for (int i = 0; i < ab.getTabCount(); i++)
+            refreshList(ab.getTabAt(i));
+        // 'notifyDataSetChanged' doesn't lead to refreshing channel row info
+        //   in case of database is changed!
     }
 
     @Override
@@ -979,7 +988,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // That is, if there is background running background thread, activity is NOT stopped but just paused.
         // (This is experimental conclusion - NOT by analyzing framework source code.)
         // I think this is Android's bug or implicit policy.
-        // Beause of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
+        // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
         RTTask.S().unbind();
         super.onPause();
     }

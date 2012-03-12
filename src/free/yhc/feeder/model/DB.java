@@ -37,6 +37,7 @@ public final class DB extends SQLiteOpenHelper {
     private static final String TABLE_CHANNEL   = "channel";
     private static final String TABLE_ITEM      = "item";
 
+    private static final String itemQueryDefaltOrder = DB.ColumnItem.ID.getName() + " DESC";
 
     public interface Column {
         String getName();
@@ -394,7 +395,8 @@ public final class DB extends SQLiteOpenHelper {
     queryItem(long cid, ColumnItem[] columns) {
         return db.query(getItemTableName(cid),
                         getColumnNames(columns),
-                        null, null, null, null, null);
+                        null, null, null, null,
+                        itemQueryDefaltOrder);
     }
 
     Cursor
@@ -430,7 +432,7 @@ public final class DB extends SQLiteOpenHelper {
                         getColumnNames(columns),
                         whereStr,
                         null, null, null,
-                        DB.ColumnItem.ID.getName() + " DESC");
+                        itemQueryDefaltOrder);
     }
 
     long

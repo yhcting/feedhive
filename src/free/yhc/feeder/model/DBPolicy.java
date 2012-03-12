@@ -282,13 +282,16 @@ public class DBPolicy {
             int cnt = 0;
 
             checkInterrupted();
-            for (Feed.Item item : ch.items) {
+            // Insert items in reverse-order
+            // For details, see comments of line which includes 'newItems.addFirst(item);'
+            //   at updateChannel() in this file.
+            for (int i = ch.items.length - 1; i >= 0; i--) {
                 // ignore not-verified item
-                if (!UIPolicy.verifyConstraints(item))
+                if (!UIPolicy.verifyConstraints(ch.items[i]))
                     continue;
 
-                item.dbD.cid = cid;
-                if (0 > db.insertItem(cid, itemToContentValues(item))) {
+                ch.items[i].dbD.cid = cid;
+                if (0 > db.insertItem(cid, itemToContentValues(ch.items[i]))) {
                     // Fail to insert one of item => Rollback DB state.
                     db.deleteChannel(cid);
                     chrtmap.remove(cid);
@@ -413,6 +416,7 @@ public class DBPolicy {
                 }
                 checkInterrupted();
             }
+            logI("DBPolicy : new " + newItems.size() + " items are inserted");
             channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), new Date().getTime());
             db.updateChannel(ch.dbD.id, channelUpdateValues);
             chrtmap.get(ch.dbD.id).setStateUpdating(false);
