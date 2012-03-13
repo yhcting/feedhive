@@ -752,9 +752,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onBtn_channelUpdate(ImageView ibtn, long cid) {
-        ScheduledUpdater.setNextScheduledUpdate(this, cid);
-        return;
-        /*
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
             logI("ChannelList : update : " + cid);
@@ -777,7 +774,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
         } else
             eAssert(false);
-        */
+
     }
 
     private void
