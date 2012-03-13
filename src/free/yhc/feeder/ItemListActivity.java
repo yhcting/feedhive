@@ -48,7 +48,7 @@ public class ItemListActivity extends Activity {
     private long                cid     = -1; // channel id
     private Handler             handler = new Handler();
     private Feed.Channel.Action action  = null; // action type of this channel
-    private DBPolicy            db      = DBPolicy.S();
+    private final DBPolicy      db      = DBPolicy.S();
     private ListView            list;
 
     private class ActionInfo {
@@ -166,6 +166,11 @@ public class ItemListActivity extends Activity {
 
     private Cursor
     adapterCursorQuery(long cid) {
+        // 'State' of item may be changed often dynamically (ex. when open item)
+        // So, to synchronized cursor information with item state, we need to refresh cursor
+        //   whenever item state is changed.
+        // But it's big overhead.
+        // So, in case STATE, it didn't included in list cursor, but read from DB if needed.
         DB.ColumnItem[] columns = new DB.ColumnItem[] {
                     DB.ColumnItem.ID, // Mandatory.
                     DB.ColumnItem.TITLE,
@@ -174,13 +179,12 @@ public class ItemListActivity extends Activity {
                     DB.ColumnItem.ENCLOSURE_URL,
                     DB.ColumnItem.ENCLOSURE_TYPE,
                     DB.ColumnItem.PUBDATE,
-                    DB.ColumnItem.LINK,
-                    DB.ColumnItem.STATE };
+                    DB.ColumnItem.LINK};
         return db.queryItem(cid, columns);
     }
 
     private String
-    getInfoString(DB.ColumnItem column, int position) {
+    getCursorInfoString(DB.ColumnItem column, int position) {
         Cursor c = getListAdapter().getCursor();
         if (!c.moveToPosition(position)) {
             eAssert(false);
@@ -263,8 +267,8 @@ public class ItemListActivity extends Activity {
     doesEnclosureDnFileExists(long id, int position) {
         // enclosure-url is link of downloaded file.
         String f = UIPolicy.getItemFilePath(cid, id,
-                                            getInfoString(DB.ColumnItem.TITLE, position),
-                                            getInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
+                                            getCursorInfoString(DB.ColumnItem.TITLE, position),
+                                            getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
         return new File(f).exists();
     }
 
@@ -272,8 +276,8 @@ public class ItemListActivity extends Activity {
     deleteEnclosureDnFile(long id, int position) {
         // enclosure-url is link of downloaded file.
         String f = UIPolicy.getItemFilePath(cid, id,
-                                            getInfoString(DB.ColumnItem.TITLE, position),
-                                            getInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
+                                            getCursorInfoString(DB.ColumnItem.TITLE, position),
+                                            getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
 
         return new File(f).delete();
     }
@@ -281,7 +285,7 @@ public class ItemListActivity extends Activity {
     private boolean
     changeItemState_opened(long id, int position) {
         // change state as 'opened' at this moment.
-        Feed.Item.State state = Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, position));
+        Feed.Item.State state = Feed.Item.State.convert(db.getItemInfoString(cid, id, DB.ColumnItem.STATE));
         if (Feed.Item.State.NEW == state) {
             db.updateItem_state(cid, id, Feed.Item.State.OPENED);
             getListAdapter().notifyDataSetChanged();
@@ -301,10 +305,10 @@ public class ItemListActivity extends Activity {
     // 'public' to use java reflection
     public void
     onActionDnOpen(View view, long id, int position) {
-        String enclosureUrl = getInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
+        String enclosureUrl = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
         String fpath = UIPolicy.getItemFilePath(cid, id,
-                                                getInfoString(DB.ColumnItem.TITLE, position),
+                                                getCursorInfoString(DB.ColumnItem.TITLE, position),
                                                 enclosureUrl);
         eAssert(null != fpath);
         File f = new File(fpath);
@@ -313,7 +317,7 @@ public class ItemListActivity extends Activity {
             // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
             String type = Utils.guessMimeTypeFromUrl(enclosureUrl);
             if (null == type)
-                type = getInfoString(DB.ColumnItem.ENCLOSURE_TYPE, position);
+                type = getCursorInfoString(DB.ColumnItem.ENCLOSURE_TYPE, position);
 
             if (!Utils.isMimeType(type))
                 type = "text/plain"; // this is default.
@@ -393,7 +397,7 @@ public class ItemListActivity extends Activity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     startActivity(new Intent(Intent.ACTION_VIEW)
-                                    .setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position))));
+                                    .setData(Uri.parse(getCursorInfoString(DB.ColumnItem.LINK, position))));
                     dialog.dismiss();
                 }
             });
@@ -409,7 +413,7 @@ public class ItemListActivity extends Activity {
             // Full text is already shown at 'description' summary.
             // So, open link directly!
             startActivity(new Intent(Intent.ACTION_VIEW)
-                            .setData(Uri.parse(getInfoString(DB.ColumnItem.LINK, position))));
+                            .setData(Uri.parse(getCursorInfoString(DB.ColumnItem.LINK, position))));
         }
 
         changeItemState_opened(id, position);
@@ -507,7 +511,7 @@ public class ItemListActivity extends Activity {
 
         // Check for "Mark as unopened option"
         if (Feed.Channel.Action.OPEN == action
-            && Feed.Item.State.OPENED == Feed.Item.State.convert(getInfoString(DB.ColumnItem.STATE, info.position)))
+            && Feed.Item.State.OPENED == Feed.Item.State.convert(db.getItemInfoString(cid, info.id, DB.ColumnItem.STATE)))
             menu.findItem(R.id.mark_unopened).setVisible(true);
     }
 

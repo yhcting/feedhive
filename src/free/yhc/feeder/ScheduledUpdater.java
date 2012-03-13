@@ -9,9 +9,11 @@ import java.util.Calendar;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
+import android.os.PowerManager;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.Err;
@@ -25,6 +27,43 @@ public class ScheduledUpdater extends Service {
     static final long dayInMs = 24 * 60 * 60 * 1000;
 
     static final int ReqCUpdate     = 0;
+
+    static final String WLTag = "freee.yhc.feeder.ScheduledUpdater";
+
+    static PowerManager.WakeLock wl = null;
+    static int                   wlcnt = 0;
+
+    // Why broadcast receiver?
+    // Using pendingIntent from "PendingIntent.getService()" doesn't guarantee that
+    //   given service gets controls before device falls into sleep.
+    // But broadcast receiver guarantee that device doesn't fall into sleep before returning from 'onReceive'
+    // (This is described at Android document)
+    // So, broadcast receiver is used event if it's more complex than using "PendingIntent.getService()" directly.
+    public static class AlarmReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            logI("AlarmReceiver : onReceive");
+
+            Intent svc = new Intent(context, ScheduledUpdater.class);
+            long cid = intent.getLongExtra("cid", -1);
+            if (cid < 0)
+                return;
+            svc.putExtra("cid", cid);
+
+            synchronized (wl) {
+                eAssert(wlcnt >= 0);
+                if (null == wl) {
+                    wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
+                            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
+                    wl.acquire();
+                    logI("ScheduledUpdater : WakeLock created and aquired");
+                }
+                wlcnt++;
+                logI("ScheduledUpdater : current WakeLock count: " + wlcnt);
+            }
+            context.startService(svc);
+        }
+    }
 
     private class UpdateBGTask extends BGTaskUpdateChannel implements
     BGTask.OnEvent {
@@ -107,13 +146,14 @@ public class ScheduledUpdater extends Service {
 
         long nextMs = secToNextNearest(secs);
 
-        Intent intent = new Intent(context, ScheduledUpdater.class);
+        Intent intent = new Intent(context, AlarmReceiver.class);
         intent.putExtra("cid", cid);
-        PendingIntent sender = PendingIntent.getService(context, 192837, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+        PendingIntent pIntent = PendingIntent.getBroadcast(context, 192837, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
         // Get the AlarmManager service
         AlarmManager am = (AlarmManager)context.getSystemService(ALARM_SERVICE);
-        am.set(AlarmManager.RTC_WAKEUP, nextMs, sender);
+        am.set(AlarmManager.RTC_WAKEUP, nextMs, pIntent);
+        //am.set(AlarmManager.RTC_WAKEUP, 1000, pIntent);
     }
 
     @Override
@@ -140,6 +180,8 @@ public class ScheduledUpdater extends Service {
 
         // register next scheduled-update.
         setNextScheduledUpdate(this, cid);
+
+        stopSelf();
         return START_NOT_STICKY;
     }
 
@@ -154,5 +196,14 @@ public class ScheduledUpdater extends Service {
     public void
     onDestroy() {
         logI("ScheduledUpdater : onDestroy");
+        synchronized (wl) {
+            eAssert(wlcnt >= 0);
+            wlcnt--;
+            logI("ScheduledUpdater : current WakeLock count: " + wlcnt);
+            if (0 == wlcnt) {
+                wl.release();
+                logI("ScheduledUpdater : WakeLock is released");
+            }
+        }
     }
 }
