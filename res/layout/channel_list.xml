@@ -2,20 +2,74 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical" >
-    <TextView
-        android:layout_width="fill_parent"
-        android:layout_height="50dip"
-        android:layout_alignParentBottom="true"
-        android:textSize="@dimen/desc_text_size"
-        android:textColor="@color/text_color_new"
-        android:text="자주 사용되는 button을 위치 시킬 영역..."
-        />
+    >
+	<HorizontalScrollView
+        android:id="@+id/toolbutton"
+  		android:layout_width="fill_parent"
+  		android:layout_height="wrap_content"
+  		android:layout_alignParentBottom="true"
+  		>    
+	    <LinearLayout
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:orientation="horizontal"
+	        >
+			<Button
+				android:id="@+id/dbg0"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg0"		    
+			    />
+			<Button
+				android:id="@+id/dbg1"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg1"		    
+			    />        
+			<Button
+				android:id="@+id/dbg2"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg2"		    
+			    />        
+			<Button
+				android:id="@+id/dbg3"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg3"		    
+			    />        
+			<Button
+				android:id="@+id/dbg4"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg4"		    
+			    />        
+			<Button
+				android:id="@+id/dbg5"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg5"		    
+			    />        
+			<Button
+				android:id="@+id/dbg6"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg6"		    
+			    />        
+			<Button
+				android:id="@+id/dbg7"
+				android:layout_width="80dip"
+				android:layout_height="wrap_content"
+				android:text="dbg7"		    
+			    />        
+	    </LinearLayout>
+	</HorizontalScrollView>
 	<ViewFlipper
 		android:id="@+id/flipper"
 		android:layout_width="fill_parent" 
 		android:layout_height="fill_parent"
 		android:layout_alignParentTop="true"
+		android:layout_above="@id/toolbutton"
 		>
 	</ViewFlipper>
 </RelativeLayout>

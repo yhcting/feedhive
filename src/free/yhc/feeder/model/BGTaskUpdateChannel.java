@@ -1,8 +1,14 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.logI;
+import android.content.Context;
+import android.os.PowerManager;
 
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
+    private static final String WLTag = "free.yhc.feeder.BGTaskUpdateChannel";
+
+    private Context            context;
+    private PowerManager.WakeLock wl;
     private volatile NetLoader loader = null;
     private Arg                arg    = null;
 
@@ -26,9 +32,31 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     }
 
     public
-    BGTaskUpdateChannel() {
+    BGTaskUpdateChannel(Context context) {
         super();
+        this.context = context;
+        wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
     }
+
+    @Override
+    protected void
+    onPreRun() {
+        wl.acquire();
+    }
+
+    @Override
+    protected void
+    onPostRun (Err result) {
+        wl.release();
+    }
+
+    @Override
+    protected void
+    onCancel(Object param) {
+        wl.release();
+    }
+
 
     @Override
     protected Err

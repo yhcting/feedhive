@@ -12,8 +12,14 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
+import android.content.Context;
+import android.os.PowerManager;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
+    private static final String WLTag = "free.yhc.feeder.BGTaskDownloadToFile";
+
+    private Context        context;
+    private PowerManager.WakeLock wl;
     private InputStream    istream  = null;
     private OutputStream   ostream  = null;
     private Arg            arg      = null;
@@ -53,8 +59,12 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     }
 
     public
-    BGTaskDownloadToFile() {
+    BGTaskDownloadToFile(Context context) {
         super();
+        this.context = context;
+        wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
+                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
+
     }
 
     @Override
@@ -62,6 +72,24 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     registerEventListener(Object key, OnEvent onEvent) {
         super.registerEventListener(key, onEvent);
         publishProgress(progress);
+    }
+
+    @Override
+    protected void
+    onPreRun() {
+        wl.acquire();
+    }
+
+    @Override
+    protected void
+    onPostRun (Err result) {
+        wl.release();
+    }
+
+    @Override
+    protected void
+    onCancel(Object param) {
+        wl.release();
     }
 
     @Override

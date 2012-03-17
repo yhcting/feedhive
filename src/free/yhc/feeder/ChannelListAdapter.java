@@ -17,6 +17,8 @@ import android.widget.ImageView;
 import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import free.yhc.feeder.model.DB;
+import free.yhc.feeder.model.DB.ColumnChannel;
+import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.RTTask;
 
 public class ChannelListAdapter extends ResourceCursorAdapter {
@@ -43,6 +45,8 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
     @Override
     public void
     bindView(View view, final Context context, final Cursor c) {
+        long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
+
         String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
         String desc  = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
 
@@ -50,13 +54,21 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         Date lastupdate = new Date(c.getLong(c.getColumnIndex(DB.ColumnChannel.LASTUPDATE.getName())));
         String date = DateFormat.getInstance().format(lastupdate);
 
+        // === Set 'age' ===
         // calculate age and convert to readable string.
-        long ageTime = new Date().getTime() - lastupdate.getTime();
-        // Show "day:hours"
-        long ageHours = ageTime/ (1000 * 60 * 60);
-        long ageDay = ageHours / 24;
-        ageHours %= 24;
-        String age = String.format("%2d:%2d", ageDay, ageHours);
+        String age;
+        { // just for temporal variable scope
+            long ageTime = new Date().getTime() - lastupdate.getTime();
+            // Show "day:hours"
+            long ageHours = ageTime/ (1000 * 60 * 60);
+            long ageDay = ageHours / 24;
+            ageHours %= 24;
+            age = String.format("%2d:%2d", ageDay, ageHours);
+        }
+
+        // === Set 'nr_new' ===
+        String nrNew = "" + (DBPolicy.S().getItemInfoLastId(cid)
+                              - DBPolicy.S().getChannelInfoLong(cid, ColumnChannel.OLDLAST_ITEMID));
 
         int ci; // column index;
         ci = c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName());
@@ -65,8 +77,6 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
             byte[] imgRaw = c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
             bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
         }
-
-        long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
 
         ImageViewEx chIcon = (ImageViewEx)view.findViewById(R.id.image);
         chIcon.cid = cid;
@@ -114,6 +124,7 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         ((TextView)view.findViewById(R.id.description)).setText(desc);
         ((TextView)view.findViewById(R.id.date)).setText(date);
         ((TextView)view.findViewById(R.id.age)).setText(age);
+        ((TextView)view.findViewById(R.id.nr_new)).setText(nrNew);
     }
 
 }

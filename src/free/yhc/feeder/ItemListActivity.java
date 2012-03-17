@@ -78,11 +78,7 @@ public class ItemListActivity extends Activity {
         }
     }
 
-    public class UpdateBGTask extends BGTaskUpdateChannel implements BGTask.OnEvent<Long, Object> {
-        UpdateBGTask() {
-            super();
-        }
-
+    public class UpdateBGTaskOnEvent implements BGTask.OnEvent<Long, Object> {
         @Override
         public void
         onProgress(BGTask task, int progress) {
@@ -110,12 +106,8 @@ public class ItemListActivity extends Activity {
         }
     }
 
-    private class DownloadToFileBGTask extends BGTaskDownloadToFile implements
+    private class DownloadToFileBGTaskOnEvent implements
     BGTaskDownloadToFile.OnEvent<BGTaskDownloadToFile.Arg, Object> {
-        DownloadToFileBGTask() {
-            super();
-        }
-
         @Override
         public void
         onProgress(BGTask task, int progress) {
@@ -138,6 +130,27 @@ public class ItemListActivity extends Activity {
         onPostRun(BGTask task, Err result) {
             getListAdapter().notifyDataSetChanged();
         }
+    }
+
+
+    private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
+        @Override
+        public void
+        onUpdateBGTaskRegister(long cid, BGTask task) {
+            RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent());
+        }
+
+        @Override
+        public void onUpdateBGTaskUnregister(long cid, BGTask task) { }
+
+        @Override
+        public void
+        onDownloadBGTaskRegster(long cid, long id, BGTask task) {
+            RTTask.S().bindDownload(cid, id, new DownloadToFileBGTaskOnEvent());
+        }
+
+        @Override
+        public void onDownloadBGTaskUnegster(long cid, long id, BGTask task) { }
     }
 
     // Putting these information inside 'Feed.ActionType' directly, is not good
@@ -296,9 +309,9 @@ public class ItemListActivity extends Activity {
 
     private void
     updateItems() {
-        UpdateBGTask updateTask = new UpdateBGTask();
+        BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(this);
         RTTask.S().registerUpdate(cid, updateTask);
-        RTTask.S().bindUpdate(cid, updateTask);
+        RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent());
         updateTask.start(new BGTaskUpdateChannel.Arg(cid));
     }
 
@@ -342,9 +355,8 @@ public class ItemListActivity extends Activity {
         } else {
             RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
             if (RTTask.StateDownload.Idle == state) {
-                DownloadToFileBGTask dnTask = new DownloadToFileBGTask();
+                BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this);
                 RTTask.S().registerDownload(cid, id, dnTask);
-                RTTask.S().bindDownload(cid, id, dnTask);
                 dnTask.start(new BGTaskDownloadToFile.Arg(enclosureUrl, fpath,
                                                           UIPolicy.getItemDownloadTempPath(cid, id)));
                 getListAdapter().notifyDataSetChanged();
@@ -548,7 +560,7 @@ public class ItemListActivity extends Activity {
 
         logI("==> ItemListActivity : onCreate");
 
-        cid = getIntent().getLongExtra("channelid", 0);
+        cid = getIntent().getLongExtra("cid", 0);
         logI("Item to read : " + cid + "\n");
 
         String[] s = null;
@@ -591,6 +603,8 @@ public class ItemListActivity extends Activity {
         });
         registerForContextMenu(list);
 
+        // Update "OLDLAST_ITEMID" when user opens item views.
+        DBPolicy.S().updateChannel_LastItemId(cid);
     }
 
     @Override
@@ -610,7 +624,7 @@ public class ItemListActivity extends Activity {
         // Bind update task if needed
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle != state)
-            RTTask.S().bindUpdate(cid, new UpdateBGTask());
+            RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent());
 
         // Bind downloading tasks
         Cursor c = db.queryItem(cid, new DB.ColumnItem[] { DB.ColumnItem.ID });
@@ -618,7 +632,7 @@ public class ItemListActivity extends Activity {
             do {
                 long id = c.getLong(0);
                 if (RTTask.StateDownload.Idle != RTTask.S().getDownloadState(cid, id))
-                    RTTask.S().bindDownload(cid, id, new DownloadToFileBGTask());
+                    RTTask.S().bindDownload(cid, id, new DownloadToFileBGTaskOnEvent());
             } while (c.moveToNext());
         }
         c.close();

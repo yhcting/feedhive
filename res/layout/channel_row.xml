@@ -27,7 +27,7 @@
 	        />
 	    <LinearLayout
 	        android:id="@+id/update_pannel"
-	        android:layout_width="35dip"
+	        android:layout_width="50dip"
 	        android:layout_height="wrap_content"
 	        android:layout_alignParentRight="true"
 	        android:layout_centerVertical="true"
@@ -41,17 +41,17 @@
 	            android:layout_height="wrap_content"
 	            android:textSize="@dimen/desc_text_size"
 	            android:textColor="@color/title_color_new"
-	            android:text="@string/ok"
+				android:gravity="center"	            
 	            android:singleLine="true"
 	            android:ellipsize="end"
 	            />
 	        <TextView
-	            android:id="@+id/nr_unread"
+	            android:id="@+id/nr_new"
 	            android:layout_width="50dip"
 	            android:layout_height="wrap_content"
 	            android:textSize="@dimen/desc_text_size"
 	            android:textColor="@color/title_color_new"
-	            android:text="@string/ok"
+	            android:gravity="center"
 	            android:singleLine="true"
 	            android:ellipsize="end"
 	            />

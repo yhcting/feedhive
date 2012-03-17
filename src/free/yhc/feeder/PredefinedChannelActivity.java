@@ -1,5 +1,8 @@
 package free.yhc.feeder;
 import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.util.Calendar;
+
 import android.app.Activity;
 import android.content.res.Configuration;
 import android.os.Bundle;
@@ -10,6 +13,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.FeederException;
@@ -51,7 +55,7 @@ public class PredefinedChannelActivity extends Activity {
                 return Err.CodecDecode;
             }
 
-            DBPolicy.S().updateChannel_image(cid[0], imageData);
+            DBPolicy.S().updateChannel(cid[0], DB.ColumnChannel.IMAGEBLOB, imageData);
             return err;
         }
 
@@ -60,6 +64,8 @@ public class PredefinedChannelActivity extends Activity {
         onPostExecute(SpinAsyncTask task, Err result) {
             if (Err.NoErr != result)
                 LookAndFeel.showTextToast(PredefinedChannelActivity.this, result.getMsgId());
+                ScheduledUpdater.scheduleNextUpdate(PredefinedChannelActivity.this,
+                                                    Calendar.getInstance());
         }
     }
 
@@ -122,7 +128,5 @@ public class PredefinedChannelActivity extends Activity {
     protected void
     onDestroy() {
         super.onDestroy();
-        // FIXME : '0' is temporal value.
-        setResult(0);
     }
 }

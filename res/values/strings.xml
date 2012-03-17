@@ -15,6 +15,8 @@
     <string name="enter_name">이름 입력</string>
     <string name="channel_url">채널 URL</string>
     <string name="setting">설정</string>
+    <string name="oclock">시</string>
+    <string name="time_spinner_prompt">시간 선택(시)</string>
     <string name="wait_cancel">취소가 완료되길 기다리고 있습니다.</string>
     <string name="load_progress">로드 중입니다. 데이터의 크기와 네트웤 사정에 따라 최대 수 분정도 소요될 수도 있습니다.</string>
     <string name="pick_icon_progress">그림을 로드 중입니다.  이미지 크기와 네트웤 사정에 따라 최대 수 분 정도 소요될 수도 있습니다.</string>
@@ -59,5 +61,6 @@
     <string name="pick_icon">아이콘 선택</string>
     <string name="open_link">원문보기</string>
     <string name="setting_scheduled_update">예약 업데이트 설정</string>
+    <string name="setting_everyday">매일</string>
     <string name="setting_nritem_softmax">아이템 최대 개수 설정</string>
 </resources>

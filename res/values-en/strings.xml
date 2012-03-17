@@ -14,6 +14,8 @@
     <string name="enter_name">Enter name</string>
     <string name="channel_url">Channel URL</string>
     <string name="setting">Setting</string>
+    <string name="oclock">o\'clock</string>
+    <string name="time_spinner_prompt">Choose time(hour)</string>
     <string name="wait_cancel">Please wait for canceling</string>
     <string name="load_progress">Loading in progress. It may takes long time (up to several minutes?) based on size of feeds of given site.</string>
     <string name="pick_icon_progress">Loading image in progress. It may takes long time based on size of selected image.</string>
@@ -59,5 +61,6 @@
     <string name="pick_icon">Pick icon</string>
     <string name="open_link">Open link</string>
     <string name="setting_scheduled_update">Scheduled update setting</string>
+    <string name="setting_everyday">everyday</string>
     <string name="setting_nritem_softmax">Soft maximum number of item to keep</string>
 </resources>

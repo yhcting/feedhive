@@ -3,6 +3,7 @@ package free.yhc.feeder.model;
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,7 +11,6 @@ import java.util.LinkedList;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import free.yhc.feeder.model.DB.ColumnCategory;
@@ -33,6 +33,8 @@ import free.yhc.feeder.model.DB.ColumnItem;
 
 // Singleton
 public class DBPolicy {
+    private static final String defaultSchedUpdateTime = "" + (3 * 3600); // 3 o'clock
+
     //private static Semaphore dbMutex = new Semaphore(1);
     private static DBPolicy instance = null;
     private DB          db       = null;
@@ -127,6 +129,10 @@ public class DBPolicy {
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.parD.enclosureType);
         values.put(ColumnItem.STATE.getName(),               item.dynD.state.name());
 
+        // This function is called for insert item.
+        // So, update insert time value here.
+        values.put(ColumnItem.INSTIME.getName(),             Calendar.getInstance().getTimeInMillis());
+
         return values;
     }
 
@@ -147,7 +153,8 @@ public class DBPolicy {
         values.put(ColumnChannel.DESCRIPTION.getName(),      ch.parD.description);
 
         // Fill reserved values as default
-        values.put(ColumnChannel.UPDATETIME.getName(),       "3600");
+        // This need to match ChannelSettingActivity's setting value.
+        values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  defaultSchedUpdateTime); // default (03 o'clock)
         values.put(ColumnChannel.OLDLAST_ITEMID.getName(),   0);
         values.put(ColumnChannel.NRITEMS_SOFTMAX.getName(),  999999);
         return values;
@@ -219,7 +226,7 @@ public class DBPolicy {
         //  => channel has category id as one of it's foreign key.)
         long[] cids = getChannelIds(id);
         for (long cid : cids)
-            updateChannel_category(cid, DB.getDefaultCategoryId());
+            updateChannel(cid, DB.ColumnChannel.CATEGORYID, DB.getDefaultCategoryId());
         return (1 == db.deleteCategory(id))? 0: -1;
     }
 
@@ -292,7 +299,7 @@ public class DBPolicy {
 
                 ch.items[i].dbD.cid = cid;
                 if (0 > db.insertItem(cid, itemToContentValues(ch.items[i]))) {
-                    // Fail to insert one of item => Rollback DB state.
+                    // Fail to insert one of item
                     db.deleteChannel(cid);
                     chrtmap.remove(cid);
                     return -1;
@@ -369,12 +376,12 @@ public class DBPolicy {
                                         new ColumnItem[] { ColumnItem.TITLE,
                                                            ColumnItem.PUBDATE,
                                                            ColumnItem.LINK,
-                                                           ColumnItem.DESCRIPTION,
+                                                           //ColumnItem.DESCRIPTION,
                                                            ColumnItem.ENCLOSURE_URL },
                                         new String[] { item.parD.title,
                                                        item.parD.pubDate,
                                                        item.parD.link,
-                                                       item.parD.description,
+                                                       //item.parD.description,
                                                        item.parD.enclosureUrl });
                 if (c.getCount() > 0) {
                     c.close();
@@ -429,24 +436,41 @@ public class DBPolicy {
     }
 
     public long
-    updateChannel_category(long cid, long categoryid) {
-        try {
-            long r;
-            r = db.updateChannel(cid, ColumnChannel.CATEGORYID, categoryid);
-            return r;
-        } catch (SQLException e) {
-            // Error!
-            eAssert(false);
-            return -1;
-        }
+    updateChannel(long cid, ColumnChannel column, long value) {
+        // Fields those are allowed to be updated.
+        eAssert(ColumnChannel.CATEGORYID == column
+                || ColumnChannel.OLDLAST_ITEMID == column);
+        return db.updateChannel(cid, column, value);
     }
 
     public long
-    updateChannel_image(long cid, byte[] data) {
+    updateChannel(long cid, ColumnChannel column, byte[] data) {
         eAssert(!chrtmap.get(cid).isUpdating());
-        long r;
-        r = db.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
-        return r;
+
+        // Fields those are allowed to be updated.
+        eAssert(ColumnChannel.IMAGEBLOB == column);
+        return db.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
+    }
+
+    public long
+    updateChannel_schedUpdate(long cid, long sec) {
+        return updateChannel_schedUpdate(cid, new long[] { sec });
+    }
+
+    public long
+    updateChannel_schedUpdate(long cid, long[] secs) {
+        // verify values SECONDS_OF_DAY
+        for (long s : secs)
+            eAssert(0 <= s && s <= 60 * 60 * 24);
+        return db.updateChannel(cid, ColumnChannel.SCHEDUPDATETIME, Utils.nrsToNString(secs));
+    }
+
+    // "update OLDLAST_ITEMID to up-to-date"
+    public long
+    updateChannel_LastItemId(long cid) {
+        long lastId = getItemInfoLastId(cid);
+        updateChannel(cid, ColumnChannel.OLDLAST_ITEMID, lastId);
+        return lastId;
     }
 
     public Cursor
@@ -454,15 +478,20 @@ public class DBPolicy {
         return queryChannel(categoryid, new ColumnChannel[] { column });
     }
 
-    // "categoryid < 0" measn all channel.
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
-        Cursor c;
-        if (0 > categoryid)
-            c = db.queryChannel(columns);
-        else
-            c = db.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid);
-        return c;
+        eAssert(categoryid >= 0);
+        return db.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid);
+    }
+
+    public Cursor
+    queryChannel(ColumnChannel column) {
+        return db.queryChannel(column);
+    }
+
+    public Cursor
+    queryChannel(ColumnChannel[] columns) {
+        return db.queryChannel(columns);
     }
 
     public int
@@ -552,6 +581,20 @@ public class DBPolicy {
         c.close();
 
         return bm;
+    }
+
+    public long
+    getItemInfoLastId(long cid) {
+        Cursor c = db.queryItem(cid, new ColumnItem[] { ColumnItem.ID }, 1);
+        if (!c.moveToFirst())
+            return 0; // there is no item!
+
+        // Why?
+        // Default order of item query is 'descending order by ID'.
+        // So, this one is last item id.
+        long lastId = c.getLong(0);
+        c.close();
+        return lastId;
     }
 
     public String

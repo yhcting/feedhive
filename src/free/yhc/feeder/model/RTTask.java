@@ -2,6 +2,9 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
+import java.util.Iterator;
+import java.util.LinkedList;
+
 // Singleton
 // Runtime Data
 //   : Data that SHOULD NOT be stored at DataBase.
@@ -13,6 +16,14 @@ public class RTTask {
     private static RTTask  instance = null;
 
     private BGTaskManager  gbtm = null;
+    private LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
+
+    public interface OnRTTaskManagerEvent {
+        void onUpdateBGTaskRegister(long cid, BGTask task);
+        void onUpdateBGTaskUnregister(long cid, BGTask task);
+        void onDownloadBGTaskRegster(long cid, long id, BGTask task);
+        void onDownloadBGTaskUnegster(long cid, long id, BGTask task);
+    }
 
     public static enum StateUpdate {
         Idle,
@@ -31,6 +42,15 @@ public class RTTask {
     private enum Action {
         Update,
         Download,
+    }
+
+    private class ManagerEventListener {
+        Object               key;
+        OnRTTaskManagerEvent listener;
+        ManagerEventListener(Object key, OnRTTaskManagerEvent listener) {
+            this.key = key;
+            this.listener = listener;
+        }
     }
 
     private RTTask() {
@@ -60,30 +80,59 @@ public class RTTask {
         return idPrefix + cid + "/" + itemid + "/" + act.name();
     }
 
-    private void
+    private boolean
     unregister(String id) {
         synchronized (gbtm.getSyncObj()) {
             // remove from manager.
             gbtm.clear(id);
-            gbtm.unregister(id);
+            return gbtm.unregister(id);
         }
     }
 
     // ===============================
     // Publics
     // ===============================
+    public void
+    registerManagerEventListener(Object key, OnRTTaskManagerEvent listener) {
+        eAssert(null != key && null != listener);
+        eventListenerl.add(new ManagerEventListener(key, listener));
+    }
+
+    public long
+    unregisterManagerEventListener(Object key) {
+        Iterator<ManagerEventListener> itr = eventListenerl.iterator();
+        long ret = 0;
+        while (itr.hasNext()) {
+            ManagerEventListener el = itr.next();
+            if (key == el.key) {
+                itr.remove();
+                ret++;
+            }
+        }
+        return ret;
+    }
 
     public boolean
     registerUpdate(long cid, BGTask task) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.register(Id(cid, Action.Update), task);
+            boolean r = gbtm.register(Id(cid, Action.Update), task);
+            if (r) {
+                for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
+                    el.listener.onUpdateBGTaskRegister(cid, task);
+            }
+            return r;
         }
     }
 
     public boolean
     registerDownload(long cid, long id, BGTask task) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.register(Id(cid, id, Action.Download), task);
+            boolean r = gbtm.register(Id(cid, id, Action.Download), task);
+            if (r) {
+                for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
+                    el.listener.onDownloadBGTaskRegster(cid, id, task);
+            }
+            return r;
         }
     }
 
@@ -169,7 +218,11 @@ public class RTTask {
             return task.isInterrupted()? StateUpdate.Canceling: StateUpdate.Updating;
         } else if (Err.NoErr == task.getResult()
                    || Err.UserCancelled == task.getResult()) {
-            unregister(Id(cid, Action.Update));
+            boolean r = unregister(Id(cid, Action.Update));
+            if (r) {
+                for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
+                    el.listener.onUpdateBGTaskUnregister(cid, task);
+            }
             return StateUpdate.Idle;
 
         } else
@@ -190,7 +243,11 @@ public class RTTask {
             return task.isInterrupted()? StateDownload.Canceling: StateDownload.Downloading;
         } else if (Err.NoErr == task.getResult()
                 || Err.UserCancelled == task.getResult()) {
-            unregister(Id(cid, id, Action.Download));
+            boolean r = unregister(Id(cid, id, Action.Download));
+            if (r) {
+                for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
+                    el.listener.onDownloadBGTaskUnegster(cid, id, task);
+            }
             return StateDownload.Idle;
         } else
             return StateDownload.DownloadFailed;
@@ -237,8 +294,12 @@ public class RTTask {
         if (task.isAlive())
             return false;
 
-        unregister(Id(cid, Action.Update));
-        return true;
+        boolean r = unregister(Id(cid, Action.Update));
+        if (r) {
+            for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
+                el.listener.onUpdateBGTaskUnregister(cid, task);
+        }
+        return r;
     }
 
     public Err

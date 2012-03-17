@@ -75,17 +75,15 @@ public final class DB extends SQLiteOpenHelper {
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "integer",  "not null"), // time when channel is updated, lastly
         ACTION          ("action",          "text",     "not null"),
-        // time(seconds)/time... base on 00:00:00. ex. 3600/7200/ => update 1 and 2 hour every day
-        UPDATETIME      ("updatetime",      "text",     "not null"),
+        // time string of SECONDS OF DAY (0 - 23:59:59). ex. "3600/7200" => update 1 and 2 hour every day
+        SCHEDUPDATETIME ("schedupdatetime", "text",     "not null"),
         // old last item id.
         // This is usually, last item id before update.
         // This will be updated to current last item id when user recognizes newly update items.
-        // Why this is possible?
         // NOTE (WARNING)
         //   Recently inserted items SHOULD NOT be removed!
+        //   (item ID indicated by 'OLDLAST_ITEMID' should be valid!)
         //   So, implement 'delete items' should be consider this constraints!
-        //
-        // NOT USED YET! For future use.
         OLDLAST_ITEMID  ("oldlastitemid",   "integer",  "not null"),
         // number of items to keep in item table.
         // This is not hard-limit but soft-limit!
@@ -127,6 +125,8 @@ public final class DB extends SQLiteOpenHelper {
 
         // Columns for internal use.
         STATE           ("state",           "text",     "not null"), // new, read etc
+        // time when this item is inserted.(milliseconds since 1970.1.1....)
+        INSTIME         ("instime",         "integer",  "not null"),
         CHANNELID       ("channelid",       "integer",  ""),
         // add foreign key
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
@@ -397,6 +397,15 @@ public final class DB extends SQLiteOpenHelper {
                         getColumnNames(columns),
                         null, null, null, null,
                         itemQueryDefaltOrder);
+    }
+
+    Cursor
+    queryItem(long cid, ColumnItem[] columns, long limit) {
+        return db.query(getItemTableName(cid),
+                        getColumnNames(columns),
+                        null, null, null, null,
+                        itemQueryDefaltOrder,
+                        "" + limit);
     }
 
     Cursor

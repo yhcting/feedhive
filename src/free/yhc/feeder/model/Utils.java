@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Calendar;
 
 import org.apache.http.util.ByteArrayBuffer;
 
@@ -22,6 +25,10 @@ public class Utils {
     public static final boolean DBG = true;
     private static final String TAG = "[Feeder]";
 
+    // Format of nString (Number String)
+    // <number>/<number>/ ... '/' is delimiter between number.
+    private static final String nStringDelimiter = "/";
+    private static final long   dayInMs = 24 * 60 * 60 * 1000;
     // Characters that is not allowed as filename in Android.
     private static final char[] noFileNameChars = new char[] {
         '/', '?', '"', '*', '|', '\\', '<', '>'
@@ -68,8 +75,36 @@ public class Utils {
             "video",
     };
 
-    private static final int NR_TIMELOG_SCRATCH = 10;
+    private static final SimpleDateFormat dateFormats[] = new SimpleDateFormat[] {
+            new SimpleDateFormat("EEE, d MMM yy HH:mm:ss z"),
+            new SimpleDateFormat("EEE, d MMM yy HH:mm z"),
+            new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z"),
+            new SimpleDateFormat("EEE, d MMM yyyy HH:mm z"),
+            new SimpleDateFormat("d MMM yy HH:mm z"),
+            new SimpleDateFormat("d MMM yy HH:mm:ss z"),
+            new SimpleDateFormat("d MMM yyyy HH:mm z"),
+            new SimpleDateFormat("d MMM yyyy HH:mm:ss z"),
+        };
 
+    // =======================
+    // Private
+    // =======================
+    private static Bitmap
+    decodeImageRaw(Object image, BitmapFactory.Options opt) {
+        if (image instanceof String) {
+            return BitmapFactory.decodeFile((String) image, opt);
+        } else if (image instanceof byte[]) {
+            byte[] data = (byte[]) image;
+            return BitmapFactory.decodeByteArray(data, 0, data.length, opt);
+        }
+        eAssert(false);
+        return null;
+    }
+
+
+    // =======================
+    // Public
+    // =======================
     public static void
     eAssert(boolean cond) {
         if (!DBG)
@@ -115,16 +150,41 @@ public class Utils {
         return (int) (dp * context.getResources().getDisplayMetrics().density);
     }
 
-    private static Bitmap
-    decodeImageRaw(Object image, BitmapFactory.Options opt) {
-        if (image instanceof String) {
-            return BitmapFactory.decodeFile((String) image, opt);
-        } else if (image instanceof byte[]) {
-            byte[] data = (byte[]) image;
-            return BitmapFactory.decodeByteArray(data, 0, data.length, opt);
+
+    public static long
+    hourToMs(long hour) {
+        return hour * 60 * 60 * 1000;
+    }
+
+    public static long
+    secToMs(long sec) {
+        return sec * 1000;
+    }
+
+    public static long[]
+    nStringToNrs(String timeString) {
+        String[] timestrs = timeString.split(nStringDelimiter);
+        long[] times = new long[timestrs.length];
+        try {
+            for (int i = 0; i < times.length; i++)
+                times[i] = Long.parseLong(timestrs[i]);
+        } catch (NumberFormatException e) {
+            logW("Invalid time string! [" + timeString + "]");
+            eAssert(false);
         }
-        eAssert(false);
-        return null;
+        return times;
+    }
+
+    public static String
+    nrsToNString(long[] nrs) {
+        String nrstr = "";
+        if (nrs.length < 1)
+            return "";
+
+        for (int i = 0; i < nrs.length - 1; i ++)
+            nrstr += nrs[i] + nStringDelimiter;
+        nrstr += nrs[nrs.length - 1];
+        return nrstr;
     }
 
     //
@@ -310,25 +370,6 @@ public class Utils {
         return null;
     }
 
-    public static boolean
-    isMimeType(String str) {
-        // Let's reuse Android class
-        return MimeTypeMap.getSingleton().hasMimeType(str);
-
-        /* -- obsoleted implementation.
-        int idx = str.lastIndexOf("/");
-        if (idx < 0)
-            return false;
-
-        String type = str.substring(0, idx);
-        for (String t : mimeTypes)
-            if (type.equalsIgnoreCase(t))
-                return true;
-
-        return false;
-        */
-    }
-
     public static String
     getExtentionFromUrl(String url) {
         return MimeTypeMap.getFileExtensionFromUrl(url);
@@ -356,6 +397,26 @@ public class Utils {
         return null;
         */
     }
+
+    public static boolean
+    isMimeType(String str) {
+        // Let's reuse Android class
+        return MimeTypeMap.getSingleton().hasMimeType(str);
+
+        /* -- obsoleted implementation.
+        int idx = str.lastIndexOf("/");
+        if (idx < 0)
+            return false;
+
+        String type = str.substring(0, idx);
+        for (String t : mimeTypes)
+            if (type.equalsIgnoreCase(t))
+                return true;
+
+        return false;
+        */
+    }
+
 
     // convert give string to filename-form
     public static String
@@ -395,5 +456,55 @@ public class Utils {
             return ni.isConnectedOrConnecting();
         else
             return false;
+    }
+
+
+    public static long
+    dayBaseMs(Calendar cal) {
+        Calendar temp = Calendar.getInstance();
+        temp.setTime(cal.getTime());
+        // Set to 00:00:00:000
+        temp.set(Calendar.HOUR_OF_DAY, 0);
+        temp.set(Calendar.MINUTE, 0);
+        temp.set(Calendar.SECOND, 0);
+        temp.set(Calendar.MILLISECOND, 0);
+        return temp.getTimeInMillis();
+    }
+
+    // SIDE EFFECT!
+    //   'secs' is sorted by ascending numerical order!!
+    //
+    // @secs
+    //      00:00:00 based value.
+    //      seconds since 00:00:00 (12:00 AM)
+    //      (negative value is NOT ALLOWED)
+    //      Order may be changed (sorted) to ascending order.
+    // @return : time to next nearest time (ms based on 1970....)
+    public static long
+    nextNearestTime(Calendar calNow, long[] secs) {
+        eAssert(secs.length > 0);
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(calNow.getTime());
+
+        long now = cal.getTimeInMillis();
+        cal.set(Calendar.HOUR, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        long dayBase = cal.getTimeInMillis();
+        long dayTime = now - dayBase;
+        if (dayTime < 0)
+            dayTime = 0; // To compensate error from '/' operation.
+
+        Arrays.sort(secs);
+        // Just linear search... it's enough.
+        // Binary search is not considered yet.(over-engineering)
+        for (long s : secs) {
+            eAssert(s >= 0);
+            if (s * 1000 > dayTime)
+                return dayTime + s * 1000;
+        }
+        // All scheduled time is passed for day.
+        // smallest of tomorrow is nearest one.
+        return dayBase + dayInMs + secs[0] * 1000;
     }
 }

@@ -2,6 +2,10 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+
+import java.util.Calendar;
+import java.util.Date;
+
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -34,6 +38,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -43,6 +48,7 @@ import android.widget.ViewFlipper;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
+import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
@@ -52,9 +58,8 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements ActionBar.TabListener {
     // Request codes.
-    private static final int ReqCReadChannel        = 0;
-    private static final int ReqCPredefinedChannel  = 1;
-    private static final int ReqCPickImage          = 2;
+    private static final int ReqCPredefinedChannel  = 0;
+    private static final int ReqCPickImage          = 1;
 
     private ActionBar   ab;
     private Flipper     flipper;
@@ -134,7 +139,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 @Override
                 public void onUpdateClick(ImageView ibtn, long cid) {
                     logI("ChannelList : update cid : " + cid);
-                    onBtn_channelUpdate(ibtn, cid);
+                    onContextBtn_channelUpdate(ibtn, cid);
 
                 }
             }));
@@ -143,7 +148,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 public void
                 onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-                    intent.putExtra("channelid", id);
+                    intent.putExtra("cid", id);
                     startActivity(intent);
                 }
             });
@@ -206,12 +211,19 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
-    private class UpdateBGTask extends BGTaskUpdateChannel implements
-    BGTask.OnEvent {
+    private class UpdateBGTask extends BGTaskUpdateChannel {
         private long    cid = -1;
 
         UpdateBGTask(long cid) {
-            super();
+            super(ChannelListActivity.this);
+            this.cid = cid;
+        }
+    }
+
+    private class UpdateBGTaskOnEvent implements BGTask.OnEvent {
+        private long    cid = -1;
+
+        UpdateBGTaskOnEvent(long cid) {
             this.cid = cid;
         }
 
@@ -254,6 +266,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
+
     private class PickIconEventHandler implements SpinAsyncTask.OnEvent {
         @Override
         public Err
@@ -290,7 +303,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 eAssert(false);
                 return Err.Unknown; // something evil!!!
             } else {
-                DBPolicy.S().updateChannel_image(cid_pickImage, imageData);
+                DBPolicy.S().updateChannel(cid_pickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
                 cid_pickImage = -1;
             }
             return Err.NoErr;
@@ -325,9 +338,11 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         @Override
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
-            if (Err.NoErr == result)
+            if (Err.NoErr == result) {
                 refreshList(ab.getSelectedTab());
-            else
+                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this,
+                                                    Calendar.getInstance());
+            } else
                 LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
     }
@@ -352,6 +367,20 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             else
                 LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
+    }
+
+    private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
+        @Override
+        public void
+        onUpdateBGTaskRegister(long cid, BGTask task) {
+            RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent(cid));
+        }
+        @Override
+        public void onUpdateBGTaskUnregister(long cid, BGTask task) { }
+        @Override
+        public void onDownloadBGTaskRegster(long cid, long id, BGTask task) { }
+        @Override
+        public void onDownloadBGTaskUnegster(long cid, long id, BGTask task) { }
     }
 
     class TabTag {
@@ -414,7 +443,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     changeCategory(long cid, Tab from, Tab to) {
         if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
-        DBPolicy.S().updateChannel_category(cid, getTag(to).categoryid);
+        DBPolicy.S().updateChannel(cid, DB.ColumnChannel.CATEGORYID, getTag(to).categoryid);
         refreshList(from);
         refreshList(to);
         return true;
@@ -491,6 +520,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         eAssert(null != tab);
         DBPolicy.S().deleteChannel(cid);
         refreshList(tab);
+        ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this,
+                                            Calendar.getInstance());
     }
 
     private void
@@ -706,7 +737,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onContext_setting(final long cid) {
-
+        Intent intent = new Intent(this, ChannelSettingActivity.class);
+        intent.putExtra("cid", cid);
+        startActivity(intent);
     }
 
     private void
@@ -751,13 +784,16 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     }
 
     private void
-    onBtn_channelUpdate(ImageView ibtn, long cid) {
+    onContextBtn_channelUpdate(ImageView ibtn, long cid) {
+        /* code for test...
+        ScheduledUpdater.setNextScheduledUpdate(this, cid);
+        return;
+        */
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
             logI("ChannelList : update : " + cid);
             UpdateBGTask task = new UpdateBGTask(cid);
             RTTask.S().registerUpdate(cid, task);
-            RTTask.S().bindUpdate(cid, task);
             task.start(new BGTaskUpdateChannel.Arg(cid));
         } else if (RTTask.StateUpdate.Updating == state) {
             logI("ChannelList : cancel : " + cid);
@@ -774,7 +810,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
         } else
             eAssert(false);
-
     }
 
     private void
@@ -784,6 +819,83 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // this may takes quite long time (if image size is big!).
         // So, let's do it in background.
         new SpinAsyncTask(this, new PickIconEventHandler(), R.string.pick_icon_progress).execute(data);
+    }
+
+    private void
+    setupToolButtons() {
+        ((Button)findViewById(R.id.dbg0)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
+            }
+        });
+
+        ((Button)findViewById(R.id.dbg1)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Cursor c = DBPolicy.S().queryChannel(ColumnChannel.ID);
+                if (!c.moveToFirst()) {
+                    c.close();
+                    return;
+                }
+                do {
+                    DBPolicy.S().updateChannel_schedUpdate(c.getLong(0), 3600 * 3); // back to 3 o'clock
+                } while (c.moveToNext());
+                c.close();
+                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
+            }
+        });
+
+        ((Button)findViewById(R.id.dbg2)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                long     dayms;
+                Calendar cal = Calendar.getInstance();
+
+
+                Cursor c = DBPolicy.S().queryChannel(ColumnChannel.ID);
+                if (!c.moveToFirst()) {
+                    c.close();
+                    return;
+                }
+
+                long cnt = 0;
+                do {
+                    if (0 == cnt % 3)
+                        cal.add(Calendar.MINUTE, 7); // every 7 minutes (3 channel have same time value.)
+                    dayms = Utils.dayBaseMs(cal);
+                    DBPolicy.S().updateChannel_schedUpdate(c.getLong(0),
+                                                           (cal.getTimeInMillis() - dayms) / 1000);
+                    cnt++;
+                } while (c.moveToNext());
+                c.close();
+                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
+            }
+        });
+
+        ((Button)findViewById(R.id.dbg3)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Cursor c = DBPolicy.S().queryChannel(new ColumnChannel[] {
+                        ColumnChannel.ID,
+                        ColumnChannel.TITLE,
+                        ColumnChannel.SCHEDUPDATETIME,
+                        ColumnChannel.LASTUPDATE,
+                });
+                if (!c.moveToFirst()) {
+                    c.close();
+                    return;
+                }
+                do {
+                    Date schedDate = new Date(c.getLong(2));
+                    Date lastUpdate = new Date(c.getLong(3));
+                    logI("----------- Channel " + c.getLong(0) + " --------------\n" +
+                         "    - Title : " + c.getString(1) + "\n" +
+                         "    - Shced : " + schedDate.toGMTString() + "\n" +
+                         "    - Last  : " + lastUpdate.toGMTString() + "\n");
+                } while (c.moveToNext());
+            }
+        });
     }
 
     @Override
@@ -893,9 +1005,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-        case ReqCPredefinedChannel:
-            refreshList(ab.getSelectedTab());
-            break;
         case ReqCPickImage:
             onResult_pickImage(resultCode, data);
             break;
@@ -934,6 +1043,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
         // Select default category as current category.
         selectDefaultAsSelected();
+        setupToolButtons();
+
         // 0 doesn't have meaning.
         setResult(0);
     }
@@ -955,12 +1066,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
         // See comments in 'onPause()'
-        Cursor c = DBPolicy.S().queryChannel(-1, DB.ColumnChannel.ID);
+        Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
         if (c.moveToFirst()) {
             do {
                 long cid = c.getLong(0);
                 if (RTTask.StateUpdate.Idle != RTTask.S().getUpdateState(cid))
-                    RTTask.S().bindUpdate(cid, new UpdateBGTask(cid));
+                    RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent(cid));
             } while (c.moveToNext());
         }
         c.close();
@@ -971,13 +1082,14 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             refreshList(ab.getTabAt(i));
         // 'notifyDataSetChanged' doesn't lead to refreshing channel row info
         //   in case of database is changed!
+        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
     }
 
     @Override
     protected void
     onPause() {
         logI("==> ChannelListActivity : onPause");
-        // Why This shoud be here (NOT 'onStop'!)
+        // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
         // And when exiting from 'ItemListActivity' by back-key event, 'onStart' is called.
         // But, during updating - there is background thread  - 'onResume' and 'onCancel' are called
@@ -987,6 +1099,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // I think this is Android's bug or implicit policy.
         // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
         RTTask.S().unbind();
+        RTTask.S().unregisterManagerEventListener(this);
         super.onPause();
     }
 

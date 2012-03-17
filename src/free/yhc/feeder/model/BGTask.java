@@ -134,6 +134,18 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         return Err.NoErr;
     }
 
+    protected void
+    onPreRun() {}
+
+    protected void
+    onPostRun (Err result) {}
+
+    protected void
+    onCancel(CancelParam param) {}
+
+    protected void
+    onProgress(int progress) {}
+
     @Override
     public final void
     run() {
@@ -155,6 +167,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         if (bInterrupted
             || Err.Interrupted == result
             || Err.UserCancelled == result) {
+            onCancel(cancelParam);
             for (EventListener listener : getListeners()) {
                 final OnEvent onEvent = listener.getOnEvent();
                 listener.getHandler().post(new Runnable() {
@@ -165,6 +178,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 });
             }
         } else {
+            onPostRun(result);
             for (EventListener listener : getListeners()) {
                 final OnEvent onEvent = listener.getOnEvent();
                 listener.getHandler().post(new Runnable() {
@@ -179,6 +193,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
     public void
     publishProgress(final int progress) {
+        onProgress(progress);
         for (EventListener listener : getListeners()) {
             final OnEvent onEvent = listener.getOnEvent();
             listener.getHandler().post(new Runnable() {
@@ -192,6 +207,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
     public final void
     start(RunParam runParam) {
+        onPreRun();
         for (EventListener listener : getListeners()) {
             final OnEvent onEvent = listener.getOnEvent();
             listener.getHandler().post(new Runnable() {
