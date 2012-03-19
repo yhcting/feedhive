@@ -13,60 +13,30 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import free.yhc.feeder.model.DB;
+import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DBPolicy;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.FeederException;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.model.RTTask;
 
 
 public class PredefinedChannelActivity extends Activity {
     private ListView    list;
 
-    class SpinAsyncEventHandler implements SpinAsyncTask.OnEvent {
-        @Override
-        public Err
-        onDoWork(SpinAsyncTask task, Object... objs) {
-            Err err = Err.NoErr;
-            String imageref = (String)objs[2];
-            long[] cid = new long[1];
-            try {
-                err = task.initialLoad(cid, objs[0], objs[1]);
-            } catch (FeederException e) {
-                return e.getError();
-            }
-
-            if (Err.NoErr != err)
-                return err;
-
-            if (imageref.isEmpty())
-                return Err.NoErr; // Ignore icon
-            // TODO
-            //   do something to update imageblob from imageref.
-            // Make url string from file path
-            byte[] imageData = null;
-            try {
-                imageData = Utils.getDecodedImageData(imageref);
-            } catch (FeederException e) {
-                return e.getError();
-            }
-
-            if (null == imageData) {
-                return Err.CodecDecode;
-            }
-
-            DBPolicy.S().updateChannel(cid[0], DB.ColumnChannel.IMAGEBLOB, imageData);
-            return err;
+    private void
+    addChannel(String url, String imageref) {
+        eAssert(url != null);
+        long cid = DBPolicy.S().insertNewChannel(DBPolicy.S().getDefaultCategoryId(), url);
+        if (cid < 0) {
+            LookAndFeel.showTextToast(this, R.string.warn_add_channel);
+            return;
         }
-
-        @Override
-        public void
-        onPostExecute(SpinAsyncTask task, Err result) {
-            if (Err.NoErr != result)
-                LookAndFeel.showTextToast(PredefinedChannelActivity.this, result.getMsgId());
-                ScheduledUpdater.scheduleNextUpdate(PredefinedChannelActivity.this,
-                                                    Calendar.getInstance());
-        }
+        // full update for this newly inserted channel
+        BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
+        RTTask.S().registerUpdate(cid, task);
+        if (imageref.isEmpty())
+            task.start(new BGTaskUpdateChannel.Arg(cid, true));
+        else
+            task.start(new BGTaskUpdateChannel.Arg(cid, imageref));
+        ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
     }
 
     @Override
@@ -110,9 +80,7 @@ public class PredefinedChannelActivity extends Activity {
             public void
             onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 PredefinedValues.Channel ch = (PredefinedValues.Channel)list.getAdapter().getItem(position);
-                new SpinAsyncTask(PredefinedChannelActivity.this, new SpinAsyncEventHandler(), R.string.load_progress)
-                    .execute(DBPolicy.S().getDefaultCategoryId(),
-                            ch.url, ch.imageref);
+                addChannel(ch.url, ch.imageref);
             }
         });
     }

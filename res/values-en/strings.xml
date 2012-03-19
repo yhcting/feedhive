@@ -52,6 +52,7 @@
     <string name="warn_add_category_first">There is no available category to add into. Please add category first.</string>
     <string name="warn_delete_default_category">Deleting default category is not allowed!</string>
     <string name="warn_add_category">Fail to add category!</string>
+    <string name="warn_add_channel">Fail to add new channel</string>
     <string name="warn_find_app_to_open">Fail to find application to open file.</string>
     <string name="warn_find_gallery_app">Fail to find media gallery application to select image.</string>
     <string name="default_category_name">Default</string>

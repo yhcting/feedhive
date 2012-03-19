@@ -13,22 +13,25 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     private Arg                arg    = null;
 
     public static class Arg {
-        boolean bFirstUpdate = false;
-        long    cid     = -1;
-        long    catid   = -1; // category id
-        String  url     = "";
+        long    cid        = -1;
+        boolean updateIcon = false;
+        String  customIconref = null;
 
-        // For update
         public Arg(long cid) {
             this.cid = cid;
         }
 
-        // For initial load
-        public Arg(long catid, String url) {
-            bFirstUpdate = true;
-            this.catid = catid;
-            this.url = url;
+        public Arg(long cid, boolean updateIcon) {
+            this.cid = cid;
+            this.updateIcon = updateIcon;
         }
+
+        public Arg(long cid, String customIconref) {
+            this.cid = cid;
+            this.updateIcon = true;
+            this.customIconref = customIconref;
+        }
+
     }
 
     public
@@ -64,15 +67,12 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
         this.arg = arg;
         try {
             loader = new NetLoader();
-            if (arg.bFirstUpdate)
-                return loader.initialLoad(arg.catid, arg.url, null);
+            if (null == arg.customIconref)
+                return loader.updateLoad(arg.cid, arg.updateIcon);
             else
-                return loader.updateLoad(arg.cid, false);
+                return loader.updateLoad(arg.cid, arg.customIconref);
         } catch (FeederException e) {
-            if (arg.bFirstUpdate)
-                logI("BGTaskUpdateChannel : Loading [" + arg.url + "] : interrupted!");
-            else
-                logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
+            logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
             return e.getError();
         }
     }

@@ -136,20 +136,6 @@ public class Feed {
             }
         }
 
-        public static enum Order {
-            NORMAL,  // item will be listed by same order with xml.
-            REVERSE; // reverse.
-
-            public static Order
-            convert(String s) {
-                for (Order a : Order.values())
-                    if (s.equals(a.name()))
-                        return a;
-                eAssert(false);
-                return null;
-            }
-        }
-
         // Profile data.
         static class ProfD {
             String url          = ""; // channel url.
@@ -170,13 +156,12 @@ public class Feed {
         static class DbD {
             long   id           = -1;
             long   categoryid   = -1;
-            long   lastupdate   = -1; // date when item DB is updated lastly
+            long   lastupdate   = 0; // date when item DB is updated lastly
         }
 
         // Dynamic data - changed in runtime dynamically (usually by user action).
         static class DynD {
             Action action       = Action.OPEN;
-            Order  order        = Order.NORMAL;
             byte[] imageblob    = null;
         }
 

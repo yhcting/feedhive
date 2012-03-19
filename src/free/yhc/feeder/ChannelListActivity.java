@@ -54,6 +54,7 @@ import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
+import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements ActionBar.TabListener {
@@ -211,15 +212,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
-    private class UpdateBGTask extends BGTaskUpdateChannel {
-        private long    cid = -1;
-
-        UpdateBGTask(long cid) {
-            super(ChannelListActivity.this);
-            this.cid = cid;
-        }
-    }
-
     private class UpdateBGTaskOnEvent implements BGTask.OnEvent {
         private long    cid = -1;
 
@@ -324,51 +316,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
-    private class AddChannelEventHandler implements SpinAsyncTask.OnEvent {
-        @Override
-        public Err
-        onDoWork(SpinAsyncTask task, Object... objs) {
-            try {
-                return task.initialLoad(null, objs);
-            } catch (FeederException e) {
-                return e.getError();
-            }
-        }
-
-        @Override
-        public void
-        onPostExecute(SpinAsyncTask task, Err result) {
-            if (Err.NoErr == result) {
-                refreshList(ab.getSelectedTab());
-                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this,
-                                                    Calendar.getInstance());
-            } else
-                LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
-        }
-    }
-
-
-    private class UpdateEventHandler implements SpinAsyncTask.OnEvent {
-        @Override
-        public Err
-        onDoWork(SpinAsyncTask task, Object... objs) {
-            try {
-                return task.updateLoad(true, objs[0]);
-            } catch (FeederException e) {
-                return e.getError();
-            }
-        }
-
-        @Override
-        public void
-        onPostExecute(SpinAsyncTask task, Err result) {
-            if (Err.NoErr == result)
-                refreshList(ab.getSelectedTab());
-            else
-                LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
-        }
-    }
-
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
         @Override
         public void
@@ -436,7 +383,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.DESCRIPTION,
                     DB.ColumnChannel.LASTUPDATE,
-                    DB.ColumnChannel.IMAGEBLOB });
+                    DB.ColumnChannel.IMAGEBLOB,
+                    DB.ColumnChannel.URL });
     }
 
     private boolean
@@ -511,8 +459,30 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private void
     addChannel(String url) {
         eAssert(url != null);
-        new SpinAsyncTask(this, new AddChannelEventHandler(), R.string.load_progress)
-                .execute(getCurrentCategoryId(), url);
+        long cid = DBPolicy.S().insertNewChannel(getCurrentCategoryId(), url);
+        if (cid < 0) {
+            LookAndFeel.showTextToast(this, R.string.warn_add_channel);
+            return;
+        }
+        // full update for this newly inserted channel
+        BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
+        RTTask.S().registerUpdate(cid, task);
+        task.start(new BGTaskUpdateChannel.Arg(cid, true));
+        ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
+
+        // refresh current category.
+        refreshList(ab.getSelectedTab());
+
+        // Move to bottom of the list where newly inserted channel is located on.
+        // (This is for feedback to user saying "new channel is now adding").
+        final ListView lv = getTag(ab.getSelectedTab()).listView;
+        lv.post(new Runnable() {
+            @Override
+            public void run() {
+                // Select the last row so it will scroll into view...
+                lv.setSelection(lv.getCount() - 1);
+            }
+        });
     }
 
     private void
@@ -520,8 +490,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         eAssert(null != tab);
         DBPolicy.S().deleteChannel(cid);
         refreshList(tab);
-        ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this,
-                                            Calendar.getInstance());
+        ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
     }
 
     private void
@@ -552,6 +521,11 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         dialog.setTitle(R.string.channel_url);
         // Set action for dialog.
         EditText edit = (EditText) layout.findViewById(R.id.editbox);
+
+        // start edit box with 'http://'
+        final String prefix = "http://";
+        edit.setText(prefix);
+        edit.setSelection(prefix.length());
         edit.setOnKeyListener(new View.OnKeyListener() {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
@@ -687,6 +661,15 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     }
 
     private void
+    onContext_deleteDownloaded(final long cid) {
+        // delete entire channel directory and re-make it.
+        // Why?
+        // All and only downloaded files are located in channel directory.
+        UIPolicy.removeChannelDir(cid);
+        UIPolicy.makeChannelDir(cid);
+    }
+
+    private void
     onContext_changeCategory(final long cid) {
         final LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         LinearLayout layout = (LinearLayout)inflater.inflate(R.layout.select_list_dialog, null);
@@ -770,7 +753,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                new SpinAsyncTask(ChannelListActivity.this, new UpdateEventHandler(), R.string.load_progress).execute(cid);
+                BGTaskUpdateChannel task = new BGTaskUpdateChannel(ChannelListActivity.this);
+                RTTask.S().registerUpdate(cid, task);
+                task.start(new BGTaskUpdateChannel.Arg(cid, true));
             }
         });
         dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
@@ -792,7 +777,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
             logI("ChannelList : update : " + cid);
-            UpdateBGTask task = new UpdateBGTask(cid);
+            BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
             RTTask.S().registerUpdate(cid, task);
             task.start(new BGTaskUpdateChannel.Arg(cid));
         } else if (RTTask.StateUpdate.Updating == state) {
@@ -955,6 +940,10 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         case R.id.delete:
             logI(" ID : " + info.id + " / " + info.position);
             onContext_deleteChannel(info.id);
+            return true;
+
+        case R.id.delete_downloaded:
+            onContext_deleteDownloaded(info.id);
             return true;
 
         case R.id.change_category:

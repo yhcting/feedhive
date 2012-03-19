@@ -251,81 +251,35 @@ public class DBPolicy {
         return cats;
     }
 
+    // Insert new channel - url.
+    // This is to insert channel url and holding place for this new channel at DB.
     //
-    // Progress is hard-coded...
-    // Any better way???
+    // @url    : url of new channel
+    // @return : success : cid / fails : -1 (invalid cid)
     //
-    // @cid : out value (channel id of DB)
-    // @ch  : constant
-    // @return 0 : successfully inserted and DB is changed.
-    //        -1 : fails. Error!
-    //
-    public int
-    insertChannel(Feed.Channel ch)
-            throws FeederException {
+    public long
+    insertNewChannel(long categoryid, String url) {
         long cid = -1;
 
-        // update with current data.
+        logI("InsertNewChannel DB Section Start");
+        // insert and update channel id.
+
+        // Create empty channel information.
+        Feed.Channel ch = new Feed.Channel();
+        ch.profD.url = url;
+        ch.dbD.categoryid = categoryid;
         ch.dbD.lastupdate = new Date().getTime();
+        cid = db.insertChannel(channelToContentValues(ch));
+        if (cid < 0)
+            return -1;
 
-        try { // Big block
-
-            if (!UIPolicy.verifyConstraints(ch))
-                return -1;
-
-            logI("InsertChannel DB Section Start");
-            // insert and update channel id.
-            cid = db.insertChannel(channelToContentValues(ch));
-            if (cid < 0) {
-                return -1;
-            }
-
-            if (!UIPolicy.makeChannelDir(cid)) {
-                db.deleteChannel(cid);
-                return -1;
-            }
-            chrtmap.put(cid, new ChannRT(cid));
-
-            int cnt = 0;
-
-            checkInterrupted();
-            // Insert items in reverse-order
-            // For details, see comments of line which includes 'newItems.addFirst(item);'
-            //   at updateChannel() in this file.
-            for (int i = ch.items.length - 1; i >= 0; i--) {
-                // ignore not-verified item
-                if (!UIPolicy.verifyConstraints(ch.items[i]))
-                    continue;
-
-                ch.items[i].dbD.cid = cid;
-                if (0 > db.insertItem(cid, itemToContentValues(ch.items[i]))) {
-                    // Fail to insert one of item
-                    db.deleteChannel(cid);
-                    chrtmap.remove(cid);
-                    return -1;
-                }
-
-                cnt++;
-                checkInterrupted();
-                // logI("Inserting item----");
-            }
-            logI("InsertChannel DB Section End (Success)");
-
-            // All values in 'ch' should be keep untouched until operation is successfully completed.
-            // So, setting values of 'ch' should be put here - at the end of successful operation.
-            ch.dbD.id = cid;
-            for (Feed.Item item : ch.items)
-                item.dbD.cid = cid;
-
-            return 0;
-
-        } catch (FeederException e) {
-            if (cid >= 0) {
-                db.deleteChannel(cid);
-                chrtmap.remove(cid);
-            }
-            throw e;
+        if (!UIPolicy.makeChannelDir(cid)) {
+            db.deleteChannel(cid);
+            return -1;
         }
+        chrtmap.put(cid, new ChannRT(cid));
+
+        return cid;
     }
 
     //
@@ -401,8 +355,9 @@ public class DBPolicy {
 
             // update channel information
             ContentValues channelUpdateValues = new ContentValues();
-            channelUpdateValues.put(ColumnChannel.TITLE.getName(), ch.parD.title);
+            channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.parD.title);
             channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
+            channelUpdateValues.put(ColumnChannel.ACTION.getName(),      ch.dynD.action.name());
             if (updateImage)
                 channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
 

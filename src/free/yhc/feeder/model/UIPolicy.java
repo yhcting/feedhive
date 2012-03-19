@@ -15,14 +15,16 @@ public class UIPolicy {
     // So, maximum character for filename in java on extN is 127.
     private static final int    maxFileNameLength = 127;
 
-    static void
-    setAsDefaultActionType(Feed.Channel ch) {
-        // default is "open link"
-        ch.dynD.action = Feed.Channel.Action.OPEN;
-        if (Feed.Channel.Type.MEDIA == ch.parD.type
-            && isValidValue(ch.items[0].parD.enclosureUrl)) {
-            ch.dynD.action = Feed.Channel.Action.DNOPEN;
-        }
+    static Feed.Channel.Action
+    decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
+        if (Feed.Channel.Type.MEDIA == cParD.type) {
+            if (null != iParD)
+                return isValidValue(iParD.enclosureUrl)? Feed.Channel.Action.DNOPEN: Feed.Channel.Action.OPEN;
+            else
+                return Feed.Channel.Action.DNOPEN;
+        } else
+            // default is "open link"
+            return Feed.Channel.Action.OPEN;
     }
 
     // check and fix if possible.

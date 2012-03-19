@@ -522,9 +522,11 @@ public class ItemListActivity extends Activity {
             menu.findItem(R.id.delete_dnfile).setVisible(true);
 
         // Check for "Mark as unopened option"
+        /* - Reserved for future improvement. Not enable this menu yet.
         if (Feed.Channel.Action.OPEN == action
             && Feed.Item.State.OPENED == Feed.Item.State.convert(db.getItemInfoString(cid, info.id, DB.ColumnItem.STATE)))
             menu.findItem(R.id.mark_unopened).setVisible(true);
+         */
     }
 
     @Override
@@ -605,6 +607,9 @@ public class ItemListActivity extends Activity {
 
         // Update "OLDLAST_ITEMID" when user opens item views.
         DBPolicy.S().updateChannel_LastItemId(cid);
+
+        // Register to get notification regarding RTTask.
+        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
     }
 
     @Override

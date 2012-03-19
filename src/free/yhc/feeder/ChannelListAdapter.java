@@ -48,7 +48,16 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
 
         String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
-        String desc  = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
+        String desc;
+
+        // If title is empty, Just show URL of this channel.
+        // (This is to show that "this url is not normal or well-formatted.")
+        if (title.isEmpty()) {
+            title = c.getString(c.getColumnIndex(DB.ColumnChannel.URL.getName()));
+            desc = title;
+        } else {
+            desc  = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
+        }
 
         // date to readable string
         Date lastupdate = new Date(c.getLong(c.getColumnIndex(DB.ColumnChannel.LASTUPDATE.getName())));

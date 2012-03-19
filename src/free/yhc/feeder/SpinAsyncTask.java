@@ -35,17 +35,6 @@ DialogInterface.OnClickListener
     }
 
     public Err
-    initialLoad(long[] outcid, Object... objs)
-            throws FeederException {
-        long categoryid = ((Long)objs[0]).longValue();
-        String url      = (String)objs[1];
-        Err r = new NetLoader().initialLoad(categoryid, url, outcid);
-        if (Err.NoErr == r)
-            cid = outcid[0];
-        return r;
-    }
-
-    public Err
     updateLoad(boolean updateImage, Object obj)
             throws FeederException {
         cid = ((Long)obj).longValue();
