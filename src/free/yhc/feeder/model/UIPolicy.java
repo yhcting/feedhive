@@ -10,6 +10,7 @@ import java.io.File;
  */
 public class UIPolicy {
     private static final String appRootDir = "/sdcard/yhcFeeder/";
+    private static final String predefinedChannelsFile = appRootDir + "channels.xml";
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
@@ -53,6 +54,11 @@ public class UIPolicy {
     public static void
     makeAppRootDir() {
         new File(appRootDir).mkdirs();
+    }
+
+    public static String
+    getPredefinedChannelsFilePath() {
+        return predefinedChannelsFile;
     }
 
     public static boolean

@@ -10,6 +10,7 @@ import java.net.URL;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -51,6 +52,8 @@ public class NetLoader {
                 if (retry <= 0)
                     throw new FeederException(Err.IONet);
                 ; // continue next retry
+            } catch (DOMException e) {
+                throw new FeederException(Err.ParserUnsupportedFormat);
             } catch (SAXException e) {
                 e.printStackTrace();
                 throw new FeederException(Err.ParserUnsupportedFormat);

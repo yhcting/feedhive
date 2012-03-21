@@ -11,8 +11,6 @@ import java.util.LinkedList;
 //       but, need to be check in runtime.
 // Should be THREAD-SAFE
 public class RTTask {
-    private static final String idPrefix = "/";
-
     private static RTTask  instance = null;
 
     private BGTaskManager  gbtm = null;
@@ -71,13 +69,13 @@ public class RTTask {
     // ===============================
 
     private String
-    Id(long cid, Action act) {
-        return idPrefix + cid + "/" + act.name();
+    Id(Action act, long cid) {
+        return act.name() + "/" + cid;
     }
 
     private String
-    Id(long cid, long itemid, Action act) {
-        return idPrefix + cid + "/" + itemid + "/" + act.name();
+    Id(Action act, long cid, long itemid) {
+        return Id(act, cid) + "/" + itemid;
     }
 
     private boolean
@@ -115,7 +113,7 @@ public class RTTask {
     public boolean
     registerUpdate(long cid, BGTask task) {
         synchronized (gbtm.getSyncObj()) {
-            boolean r = gbtm.register(Id(cid, Action.Update), task);
+            boolean r = gbtm.register(Id(Action.Update, cid), task);
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
                     el.listener.onUpdateBGTaskRegister(cid, task);
@@ -127,7 +125,7 @@ public class RTTask {
     public boolean
     registerDownload(long cid, long id, BGTask task) {
         synchronized (gbtm.getSyncObj()) {
-            boolean r = gbtm.register(Id(cid, id, Action.Download), task);
+            boolean r = gbtm.register(Id(Action.Download, cid, id), task);
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
                     el.listener.onDownloadBGTaskRegster(cid, id, task);
@@ -139,14 +137,14 @@ public class RTTask {
     public int
     unbindUpdate(long cid) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.unbind(Thread.currentThread(), Id(cid, Action.Update));
+            return gbtm.unbind(Thread.currentThread(), Id(Action.Update, cid));
         }
     }
 
     public int
     unbindDownload(long cid, long id) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.unbind(Thread.currentThread(), Id(cid, id, Action.Download));
+            return gbtm.unbind(Thread.currentThread(), Id(Action.Download, cid, id));
         }
     }
 
@@ -168,7 +166,7 @@ public class RTTask {
     public BGTask
     bindUpdate(long cid, Object onEventKey, BGTask.OnEvent onEvent) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.bind(Id(cid, Action.Update), onEventKey, onEvent);
+            return gbtm.bind(Id(Action.Update, cid), onEventKey, onEvent);
         }
     }
 
@@ -180,7 +178,7 @@ public class RTTask {
     public BGTask
     bindDownload(long cid, long id, Object onEventKey, BGTask.OnEvent onEvent) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.bind(Id(cid, id, Action.Download), onEventKey, onEvent);
+            return gbtm.bind(Id(Action.Download, cid, id), onEventKey, onEvent);
         }
     }
 
@@ -192,14 +190,14 @@ public class RTTask {
     public BGTask
     getUpdate(long cid) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.peek(Id(cid, Action.Update));
+            return gbtm.peek(Id(Action.Update, cid));
         }
     }
 
     public BGTask
     getDownload(long cid, long id) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.peek(Id(cid, id, Action.Download));
+            return gbtm.peek(Id(Action.Download, cid, id));
         }
     }
 
@@ -208,7 +206,7 @@ public class RTTask {
     getUpdateState(long cid) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(cid, Action.Update));
+            task = gbtm.peek(Id(Action.Update, cid));
         }
 
         if (null == task)
@@ -218,7 +216,7 @@ public class RTTask {
             return task.isInterrupted()? StateUpdate.Canceling: StateUpdate.Updating;
         } else if (Err.NoErr == task.getResult()
                    || Err.UserCancelled == task.getResult()) {
-            boolean r = unregister(Id(cid, Action.Update));
+            boolean r = unregister(Id(Action.Update, cid));
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
                     el.listener.onUpdateBGTaskUnregister(cid, task);
@@ -233,7 +231,7 @@ public class RTTask {
     getDownloadState(long cid, long id) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(cid, id, Action.Download));
+            task = gbtm.peek(Id(Action.Download, cid, id));
         }
 
         if (null == task)
@@ -243,7 +241,7 @@ public class RTTask {
             return task.isInterrupted()? StateDownload.Canceling: StateDownload.Downloading;
         } else if (Err.NoErr == task.getResult()
                 || Err.UserCancelled == task.getResult()) {
-            boolean r = unregister(Id(cid, id, Action.Download));
+            boolean r = unregister(Id(Action.Download, cid, id));
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
                     el.listener.onDownloadBGTaskUnegster(cid, id, task);
@@ -253,12 +251,28 @@ public class RTTask {
             return StateDownload.DownloadFailed;
     }
 
+    public boolean
+    isDownloadRunning(long cid) {
+        String[] tids;
+        synchronized (gbtm.getSyncObj()) {
+            tids = gbtm.getTaskIds();
+            for (String tid : tids) {
+                if (tid.startsWith(Id(Action.Download, cid))) {
+                    BGTask task = gbtm.peek(tid);
+                    if (null != task && task.isAlive())
+                        return true;
+                }
+            }
+            return false;
+        }
+    }
+
     // result information is consumed. So, back to idle if possible.
     public void
     consumeUpdateResult(long cid) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(cid, Action.Update));
+            task = gbtm.peek(Id(Action.Update, cid));
         }
         if (null == task)
             return;
@@ -271,7 +285,7 @@ public class RTTask {
     consumeDownloadResult(long cid, long id) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(cid, id, Action.Download));
+            task = gbtm.peek(Id(Action.Download, cid, id));
         }
         if (null == task)
             return;
@@ -285,7 +299,7 @@ public class RTTask {
     unregisterUpdate(long cid) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(cid, Action.Update));
+            task = gbtm.peek(Id(Action.Update, cid));
         }
 
         if (null == task)
@@ -294,7 +308,7 @@ public class RTTask {
         if (task.isAlive())
             return false;
 
-        boolean r = unregister(Id(cid, Action.Update));
+        boolean r = unregister(Id(Action.Update, cid));
         if (r) {
             for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
                 el.listener.onUpdateBGTaskUnregister(cid, task);
@@ -305,14 +319,14 @@ public class RTTask {
     public Err
     getUpdateErr(long cid) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.peek(Id(cid, Action.Update)).getResult();
+            return gbtm.peek(Id(Action.Update, cid)).getResult();
         }
     }
 
     public Err
     getDownloadErr(long cid, long id) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.peek(Id(cid, id, Action.Download)).getResult();
+            return gbtm.peek(Id(Action.Download, cid, id)).getResult();
         }
     }
 

@@ -4,7 +4,6 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
 import java.util.Calendar;
-import java.util.Date;
 
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
@@ -38,7 +37,6 @@ import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -48,7 +46,6 @@ import android.widget.ViewFlipper;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
@@ -808,6 +805,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     setupToolButtons() {
+        // Nothing to do... reserved for future use
+        /*
         ((Button)findViewById(R.id.dbg0)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -881,6 +880,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 } while (c.moveToNext());
             }
         });
+        */
     }
 
     @Override
@@ -915,11 +915,17 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
         RTTask.StateUpdate updateState = RTTask.S().getUpdateState(mInfo.id);
+
         if (RTTask.StateUpdate.Updating == updateState
             || RTTask.StateUpdate.Canceling == updateState) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
             menu.findItem(R.id.full_update).setEnabled(false);
+        }
+
+        if (RTTask.S().isDownloadRunning(mInfo.id)) {
+            menu.findItem(R.id.delete).setEnabled(false);
+            menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
     }
 
@@ -942,7 +948,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             onContext_deleteChannel(info.id);
             return true;
 
-        case R.id.delete_downloaded:
+        case R.id.delete_dnfile:
             onContext_deleteDownloaded(info.id);
             return true;
 

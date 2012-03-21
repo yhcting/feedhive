@@ -4,7 +4,7 @@
     android:layout_height="fill_parent"
     android:orientation="vertical"
     >
-	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	<LinearLayout
     	android:layout_width="fill_parent"
     	android:layout_height="fill_parent"
         android:paddingLeft="@dimen/list_item_left_padding"
@@ -50,6 +50,7 @@
 				android:gravity="center"
 				android:textSize="@dimen/dnprogress_text_size"
 				android:textColor="@color/dnprogress_text_color"
+				android:textStyle="bold"
 				android:singleLine="true"
 				android:ellipsize="end"
 				android:visibility="gone"

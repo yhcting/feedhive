@@ -28,8 +28,8 @@
     <string name="err_iofile">파일 접근 혹은 처리에 실패했습니다.</string>
     <string name="err_media_get">미디어 데이터를 가져오는데 실패했습니다.</string>
     <string name="err_codec_decode">디코딩에 실패했습니다.</string>
-    <string name="err_parse_unsupported_format">채널 피드를 분석하는데 실패했습니다. 지원하지 않는 포멧입니다.</string>
-    <string name="err_parse_unsupported_version">채널 피드를 분석하는데 실패했습니다. 지원하지 않는 버젼입니다.</string>
+    <string name="err_parse_unsupported_format">분석에 실패했습니다. 지원하지 않는 포멧입니다.</string>
+    <string name="err_parse_unsupported_version">분석에 실패했습니다. 지원하지 않는 버젼입니다.</string>
     <string name="err_duplicated_channel">이미 등록된 채널입니다.</string>
     <string name="err_dbunknown">데이터베이스에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
@@ -55,6 +55,7 @@
     <string name="warn_add_channel">채널 추가에 실패했습니다.</string>
     <string name="warn_find_app_to_open">파일을 열기 위한 프로그램을 찾을 수 없습니다.</string>
     <string name="warn_find_gallery_app">이미지 갤러리 프로그램을 찾을 수 없습니다.</string>
+    <string name="warn_no_predefined_channel">저장된 채널 정보가 없습니다.</string>
     <string name="default_category_name">미분류</string>
     <string name="change_category">카테고리 변경</string>
     <string name="select_category">카테고리 선택</string>

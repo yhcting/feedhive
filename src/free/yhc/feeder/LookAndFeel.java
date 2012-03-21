@@ -12,7 +12,7 @@ import android.widget.Toast;
 public class LookAndFeel {
     private static void
     showToast(Context context, ViewGroup root) {
-        Toast t = Toast.makeText(context, "", Toast.LENGTH_LONG);
+        Toast t = Toast.makeText(context, "", Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.setView(root);
         t.show();
@@ -37,14 +37,14 @@ public class LookAndFeel {
 
     public static void
     showTextToast(Context context, String text) {
-        Toast t = Toast.makeText(context, text, Toast.LENGTH_LONG);
+        Toast t = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.show();
     }
 
     public static void
     showTextToast(Context context, int textid) {
-        Toast t = Toast.makeText(context, textid, Toast.LENGTH_LONG);
+        Toast t = Toast.makeText(context, textid, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.show();
         /*
