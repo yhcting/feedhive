@@ -37,7 +37,8 @@ public final class DB extends SQLiteOpenHelper {
     private static final String TABLE_CHANNEL   = "channel";
     private static final String TABLE_ITEM      = "item";
 
-    private static final String itemQueryDefaltOrder = DB.ColumnItem.ID.getName() + " DESC";
+    private static final String itemQueryDefaultOrder = ColumnItem.ID.getName() + " DESC";
+    private static final String channelQueryDefaultOrder = ColumnChannel.POSITION.getName() + " ASC";
 
     public interface Column {
         String getName();
@@ -93,6 +94,7 @@ public final class DB extends SQLiteOpenHelper {
         NRITEMS_SOFTMAX ("nritemssoftmax",  "integer",  "not null"),
         URL             ("url",             "text",     "not null"), // channel url of this rss.
         CATEGORYID      ("categoryid",      "integer",  ""),
+        POSITION        ("position",        "integer",  "not null"), // position order used by UI.
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
                 + "FOREIGN KEY(categoryid) REFERENCES " + TABLE_CATEGORY + "(" + ColumnCategory.ID.getName() + ")");
 
@@ -322,7 +324,7 @@ public final class DB extends SQLiteOpenHelper {
 
     Cursor
     queryCategory(ColumnCategory[] columns) {
-        return db.query(DB.TABLE_CATEGORY,
+        return db.query(TABLE_CATEGORY,
                         getColumnNames(columns),
                         null, null, null, null, null);
     }
@@ -334,7 +336,7 @@ public final class DB extends SQLiteOpenHelper {
 
     Cursor
     queryCategory(ColumnCategory[] columns, ColumnCategory where, String value) {
-        return db.query(DB.TABLE_CATEGORY,
+        return db.query(TABLE_CATEGORY,
                         getColumnNames(columns),
                         where.getName() + " = " + DatabaseUtils.sqlEscapeString(value),
                         null, null, null, null);
@@ -349,7 +351,8 @@ public final class DB extends SQLiteOpenHelper {
     queryChannel(ColumnChannel[] columns) {
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
-                        null, null, null, null, null);
+                        null, null, null, null,
+                        channelQueryDefaultOrder);
     }
 
     Cursor
@@ -362,7 +365,8 @@ public final class DB extends SQLiteOpenHelper {
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
                         ColumnChannel.ID.getName() + " = '" + cid + "'",
-                        null, null, null, null);
+                        null, null, null,
+                        channelQueryDefaultOrder);
     }
 
     Cursor
@@ -375,7 +379,8 @@ public final class DB extends SQLiteOpenHelper {
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
                         where.getName() + " = " + DatabaseUtils.sqlEscapeString(value),
-                        null, null, null, null);
+                        null, null, null,
+                        channelQueryDefaultOrder);
     }
 
     Cursor
@@ -388,7 +393,38 @@ public final class DB extends SQLiteOpenHelper {
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
                         where.getName() + " = '" + value + "'",
-                        null, null, null, null);
+                        null, null, null,
+                        channelQueryDefaultOrder);
+    }
+
+    Cursor
+    queryChannel(ColumnChannel column, ColumnChannel orderColumn, boolean bAsc, long limit) {
+        return queryChannel(new ColumnChannel[] { column }, orderColumn, bAsc, limit);
+    }
+
+    Cursor
+    queryChannel(ColumnChannel[] columns, ColumnChannel orderColumn, boolean bAsc, long limit) {
+        String order = orderColumn.getName() + (bAsc? " ASC": " DESC");
+        return db.query(TABLE_CHANNEL,
+                        getColumnNames(columns),
+                        null, null, null, null,
+                        order,
+                        "" + limit);
+    }
+
+    long
+    queryChannelMaxId() {
+        Cursor c = db.query(TABLE_CHANNEL,
+                            new String[] { ColumnChannel.ID.getName() },
+                            null, null, null, null,
+                            ColumnChannel.ID.getName() + " DESC",
+                            "1");
+        long ret = 0;
+        if (c.moveToFirst())
+            ret = c.getLong(0);
+        c.close();
+
+        return ret;
     }
 
     Cursor
@@ -396,7 +432,7 @@ public final class DB extends SQLiteOpenHelper {
         return db.query(getItemTableName(cid),
                         getColumnNames(columns),
                         null, null, null, null,
-                        itemQueryDefaltOrder);
+                        itemQueryDefaultOrder);
     }
 
     Cursor
@@ -404,7 +440,7 @@ public final class DB extends SQLiteOpenHelper {
         return db.query(getItemTableName(cid),
                         getColumnNames(columns),
                         null, null, null, null,
-                        itemQueryDefaltOrder,
+                        itemQueryDefaultOrder,
                         "" + limit);
     }
 
@@ -441,7 +477,7 @@ public final class DB extends SQLiteOpenHelper {
                         getColumnNames(columns),
                         whereStr,
                         null, null, null,
-                        itemQueryDefaltOrder);
+                        itemQueryDefaultOrder);
     }
 
     long
@@ -462,6 +498,17 @@ public final class DB extends SQLiteOpenHelper {
     deleteCategory(String name) {
         return db.delete(TABLE_CATEGORY,
                          ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
+                         null);
+    }
+
+    long
+    updateCategory(long id, String name) {
+        eAssert(Utils.isValidValue(name));
+        ContentValues cvs = new ContentValues();
+        cvs.put(ColumnCategory.NAME.getName(), name);
+        return db.update(TABLE_CATEGORY,
+                         cvs,
+                         ColumnCategory.ID.getName() + " = " + id,
                          null);
     }
 

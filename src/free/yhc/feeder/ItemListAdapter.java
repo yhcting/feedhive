@@ -6,6 +6,7 @@ import java.io.File;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.drawable.AnimationDrawable;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.Animation;
@@ -129,20 +130,22 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         // TODO:
         //   add proper icon (or representation...)
         Animation anim = img.getAnimation();
-        if (null != anim)
+        if (null != anim) {
             anim.cancel();
+            anim.reset();
+        }
+        img.setAlpha(1.0f);
         progress.setVisibility(View.GONE);
 
         if (new File(UIPolicy.getItemFilePath(cid, id, title, url)).exists()) {
-            img.setImageResource(R.drawable.ondisk);
+            img.setImageResource(R.drawable.ic_save);
         } else {
             RTTask.StateDownload dnState = RTTask.S().getDownloadState(cid, id);
             if (RTTask.StateDownload.Idle == dnState) {
-                img.setImageResource(R.drawable.onweb);
+                img.setImageResource(R.drawable.download_anim0);
             } else if (RTTask.StateDownload.Downloading == dnState) {
-                img.setImageResource(R.drawable.onweb);
-                img.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
-
+                img.setImageResource(R.drawable.download);
+                ((AnimationDrawable)img.getDrawable()).start();
                 // bind event listener to show progress
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progress);
                 progress.switchOnEvent(onEvent);
@@ -152,8 +155,8 @@ public class ItemListAdapter extends ResourceCursorAdapter {
             } else if (RTTask.StateDownload.DownloadFailed == dnState) {
                 img.setImageResource(R.drawable.ic_info);
             } else if (RTTask.StateDownload.Canceling == dnState) {
-                img.setImageResource(R.drawable.ic_info);
-                img.startAnimation(AnimationUtils.loadAnimation(context, R.anim.rotate_spin));
+                img.setImageResource(R.drawable.ic_block);
+                img.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
             } else
                 eAssert(false);
         }

@@ -114,6 +114,7 @@ public class DBPolicy {
             throw new FeederException(Err.Interrupted);
     }
 
+    // This is used only for new 'insertion'
     private ContentValues
     itemToContentValues(Feed.Item item) {
         ContentValues values = new ContentValues();
@@ -136,6 +137,7 @@ public class DBPolicy {
         return values;
     }
 
+    // This is used only for new 'insertion'
     private ContentValues
     channelToContentValues(Feed.Channel ch) {
         ContentValues values = new ContentValues();
@@ -157,6 +159,7 @@ public class DBPolicy {
         values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  defaultSchedUpdateTime); // default (03 o'clock)
         values.put(ColumnChannel.OLDLAST_ITEMID.getName(),   0);
         values.put(ColumnChannel.NRITEMS_SOFTMAX.getName(),  999999);
+        values.put(ColumnChannel.POSITION.getName(),         getChannelInfoMaxId() + 1); // add to last position in terms of UI.
         return values;
     }
 
@@ -228,6 +231,11 @@ public class DBPolicy {
         for (long cid : cids)
             updateChannel(cid, DB.ColumnChannel.CATEGORYID, DB.getDefaultCategoryId());
         return (1 == db.deleteCategory(id))? 0: -1;
+    }
+
+    public long
+    updateCategory(long id, String name) {
+        return db.updateCategory(id, name);
     }
 
     public Feed.Category[]
@@ -408,6 +416,17 @@ public class DBPolicy {
     }
 
     public long
+    updatechannel_switchPosition(long cid0, long cid1) {
+        Long pos0 = getChannelInfoLong(cid0, ColumnChannel.POSITION);
+        Long pos1 = getChannelInfoLong(cid1, ColumnChannel.POSITION);
+        if (null == pos0 || null == pos1)
+            return 0;
+        db.updateChannel(cid0, ColumnChannel.POSITION, pos1);
+        db.updateChannel(cid1, ColumnChannel.POSITION, pos0);
+        return 2;
+    }
+
+    public long
     updateChannel_schedUpdate(long cid, long sec) {
         return updateChannel_schedUpdate(cid, new long[] { sec });
     }
@@ -423,9 +442,9 @@ public class DBPolicy {
     // "update OLDLAST_ITEMID to up-to-date"
     public long
     updateChannel_LastItemId(long cid) {
-        long lastId = getItemInfoLastId(cid);
-        updateChannel(cid, ColumnChannel.OLDLAST_ITEMID, lastId);
-        return lastId;
+        long maxId = getItemInfoMaxId(cid);
+        updateChannel(cid, ColumnChannel.OLDLAST_ITEMID, maxId);
+        return maxId;
     }
 
     public Cursor
@@ -519,6 +538,17 @@ public class DBPolicy {
         return v;
     }
 
+    public long
+    getChannelInfoMaxId() {
+        Cursor c = db.queryChannel(ColumnChannel.ID, ColumnChannel.ID, false, 1);
+        if (!c.moveToFirst())
+            return 0; // there is no item!
+
+        long max = c.getLong(0);
+        c.close();
+        return max;
+    }
+
     public Bitmap
     getChannelImage(long cid) {
         Cursor c = db.queryChannel(cid, ColumnChannel.IMAGEBLOB);
@@ -539,7 +569,7 @@ public class DBPolicy {
     }
 
     public long
-    getItemInfoLastId(long cid) {
+    getItemInfoMaxId(long cid) {
         Cursor c = db.queryItem(cid, new ColumnItem[] { ColumnItem.ID }, 1);
         if (!c.moveToFirst())
             return 0; // there is no item!

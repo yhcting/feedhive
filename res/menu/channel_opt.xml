@@ -12,6 +12,10 @@
           android:title="@string/delete_category"
           android:visible="true"
           />
+    <item android:id="@+id/modify_category"
+          android:title="@string/modify_category_name"
+          android:visible="true"
+          />
     <item android:id="@+id/select_predefined_channel"
           android:title="@string/select_predefined_channel"
           android:visible="true"

@@ -9,6 +9,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.AnimationDrawable;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.Animation;
@@ -75,9 +76,8 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
             age = String.format("%2d:%2d", ageDay, ageHours);
         }
 
-        // === Set 'nr_new' ===
-        String nrNew = "" + (DBPolicy.S().getItemInfoLastId(cid)
-                              - DBPolicy.S().getChannelInfoLong(cid, ColumnChannel.OLDLAST_ITEMID));
+        long nrNew = DBPolicy.S().getItemInfoMaxId(cid)
+                        - DBPolicy.S().getChannelInfoLong(cid, ColumnChannel.OLDLAST_ITEMID);
 
         int ci; // column index;
         ci = c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName());
@@ -112,7 +112,7 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
 
         if (null == bm)
             // fail to decode.
-            chIcon.setImageResource(R.drawable.ic_block);
+            chIcon.setImageResource(R.drawable.ic_warn_image);
         else
             chIcon.setImageBitmap(bm);
 
@@ -120,9 +120,10 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         if (RTTask.StateUpdate.Idle == state) {
             ;
         } else if (RTTask.StateUpdate.Updating == state) {
-            chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
+            chIcon.setImageResource(R.drawable.download);
+            ((AnimationDrawable)chIcon.getDrawable()).start();
         } else if (RTTask.StateUpdate.Canceling == state) {
-            chIcon.setImageResource(R.drawable.ic_info);
+            chIcon.setImageResource(R.drawable.ic_block);
             chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
         } else if (RTTask.StateUpdate.UpdateFailed == state) {
             chIcon.setImageResource(R.drawable.ic_info);
@@ -133,7 +134,11 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         ((TextView)view.findViewById(R.id.description)).setText(desc);
         ((TextView)view.findViewById(R.id.date)).setText(date);
         ((TextView)view.findViewById(R.id.age)).setText(age);
-        ((TextView)view.findViewById(R.id.nr_new)).setText(nrNew);
+        ImageView msgImage = ((ImageView)view.findViewById(R.id.msg_img));
+        if (nrNew > 0)
+            msgImage.setVisibility(View.VISIBLE);
+        else
+            msgImage.setVisibility(View.GONE);
     }
 
 }

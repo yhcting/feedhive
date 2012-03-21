@@ -2,6 +2,7 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Calendar;
 
@@ -225,17 +226,15 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         public void
         onCancel(BGTask task, Object param) {
             eAssert(cid >= 0);
-            if (isChannelInSelectedCategory(cid))
-                // NOTE : refresh??? just 'notifying' is enough?
-                getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+            // NOTE : refresh??? just 'notifying' is enough?
+            getListAdapter(getMyTab(cid)).notifyDataSetChanged();
         }
 
         @Override
         public void
         onPreRun(BGTask task) {
-            if (isChannelInSelectedCategory(cid))
-                // NOTE : refresh??? just 'notifying' is enough?
-                getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+            // NOTE : refresh??? just 'notifying' is enough?
+            getListAdapter(getMyTab(cid)).notifyDataSetChanged();
         }
 
         @Override
@@ -247,11 +246,10 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             if (Err.UserCancelled == result)
                 return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
-            if (isChannelInSelectedCategory(cid))
-                // NOTE : refresh??? just 'notifying' is enough?
-                // It should be 'refresh' due to after successful update,
-                //   some channel information in DB may be changed.
-                refreshList(ab.getSelectedTab());
+            // NOTE : refresh??? just 'notifying' is enough?
+            // It should be 'refresh' due to after successful update,
+            //   some channel information in DB may be changed.
+            refreshList(getMyTab(cid));
         }
     }
 
@@ -365,12 +363,15 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         return getCategoryId(ab.getSelectedTab());
     }
 
-    private boolean
-    isChannelInSelectedCategory(long cid) {
-        TabTag tag = (TabTag)ab.getSelectedTab().getTag();
-        long catid;
-        catid = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
-        return tag.categoryid == catid;
+    private Tab
+    getMyTab(long cid) {
+        long catid = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
+        for (int i = 0; i < ab.getTabCount(); i++)
+            if (getTag(ab.getTabAt(i)).categoryid == catid)
+                return ab.getTabAt(i);
+
+        logW("getMyTab : Wrong cid(" + cid + ")!!");
+        return ab.getSelectedTab(); // return selected tab by default;
     }
 
     private Cursor
@@ -414,9 +415,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         // Add new tab to action bar
         Tab tab = ab.newTab()
-                .setCustomView(createTabView(text))
-                .setTag(cat.id)
-                .setTabListener(this);
+                    .setCustomView(createTabView(text))
+                    .setTag(cat.id)
+                    .setTabListener(this);
 
         LinearLayout layout = flipper.addListLayout();
 
@@ -558,7 +559,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(layout);
         final AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.enter_name);
+        dialog.setTitle(R.string.add_category);
         // Set action for dialog.
         EditText edit = (EditText)layout.findViewById(R.id.editbox);
         edit.setHint(R.string.enter_name);
@@ -626,6 +627,44 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         });
         dialog.show();
 
+    }
+
+    private void
+    onOpt_modifyCategory() {
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        View layout = inflater.inflate(R.layout.oneline_editbox_dialog, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setView(layout);
+        final AlertDialog dialog = builder.create();
+        dialog.setTitle(R.string.modify_category_name);
+        // Set action for dialog.
+        EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        edit.setHint(R.string.enter_name);
+        edit.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean
+            onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
+                    String name = ((EditText) v).getText().toString();
+                    if (name.isEmpty()) {
+                        dialog.dismiss();
+                        return true;
+                    }
+
+                    if (DBPolicy.S().isDuplicatedCategoryName(name)) {
+                        LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                    } else {
+                        ((TextView)ab.getSelectedTab().getCustomView().findViewById(R.id.text)).setText(name);
+                        DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
+                    }
+                    dialog.dismiss();
+                    return true;
+                }
+                return false;
+            }
+        });
+        dialog.show();
     }
 
     private void
@@ -805,82 +844,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     setupToolButtons() {
-        // Nothing to do... reserved for future use
-        /*
-        ((Button)findViewById(R.id.dbg0)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
-            }
-        });
-
-        ((Button)findViewById(R.id.dbg1)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Cursor c = DBPolicy.S().queryChannel(ColumnChannel.ID);
-                if (!c.moveToFirst()) {
-                    c.close();
-                    return;
-                }
-                do {
-                    DBPolicy.S().updateChannel_schedUpdate(c.getLong(0), 3600 * 3); // back to 3 o'clock
-                } while (c.moveToNext());
-                c.close();
-                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
-            }
-        });
-
-        ((Button)findViewById(R.id.dbg2)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                long     dayms;
-                Calendar cal = Calendar.getInstance();
-
-
-                Cursor c = DBPolicy.S().queryChannel(ColumnChannel.ID);
-                if (!c.moveToFirst()) {
-                    c.close();
-                    return;
-                }
-
-                long cnt = 0;
-                do {
-                    if (0 == cnt % 3)
-                        cal.add(Calendar.MINUTE, 7); // every 7 minutes (3 channel have same time value.)
-                    dayms = Utils.dayBaseMs(cal);
-                    DBPolicy.S().updateChannel_schedUpdate(c.getLong(0),
-                                                           (cal.getTimeInMillis() - dayms) / 1000);
-                    cnt++;
-                } while (c.moveToNext());
-                c.close();
-                ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
-            }
-        });
-
-        ((Button)findViewById(R.id.dbg3)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Cursor c = DBPolicy.S().queryChannel(new ColumnChannel[] {
-                        ColumnChannel.ID,
-                        ColumnChannel.TITLE,
-                        ColumnChannel.SCHEDUPDATETIME,
-                        ColumnChannel.LASTUPDATE,
-                });
-                if (!c.moveToFirst()) {
-                    c.close();
-                    return;
-                }
-                do {
-                    Date schedDate = new Date(c.getLong(2));
-                    Date lastUpdate = new Date(c.getLong(3));
-                    logI("----------- Channel " + c.getLong(0) + " --------------\n" +
-                         "    - Title : " + c.getString(1) + "\n" +
-                         "    - Shced : " + schedDate.toGMTString() + "\n" +
-                         "    - Last  : " + lastUpdate.toGMTString() + "\n");
-                } while (c.moveToNext());
-            }
-        });
-        */
+        // this is for future use.
     }
 
     @Override
@@ -985,6 +949,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             break;
         case R.id.delete_category:
             onOpt_deleteCategory();
+            break;
+        case R.id.modify_category:
+            onOpt_modifyCategory();
             break;
         case R.id.select_predefined_channel:
             onOpt_selectPredefinedChannel();

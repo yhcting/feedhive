@@ -39,6 +39,7 @@
     <string name="delete_channel">채널 삭제</string>
     <string name="update_channel">채널 업데이트</string>
     <string name="mark_as_unopened">열지 않음 으로 표시</string>
+    <string name="modify_category_name">카테고리 이름 수정</string>
     <string name="delete_channel_msg">이 채널을 삭제하시겠습니까?</string>
     <string name="delete_category_msg">이 카테고리를 삭제하시겠습니까? 이 카테고리의 모든 채널들은 기본 카테고리로 이동됩니다.</string>
     <string name="delete_downloaded_file_msg">내려 받은 파일을 삭제하시겠습니까?</string>

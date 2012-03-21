@@ -14,6 +14,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -214,20 +215,6 @@ public class ItemListActivity extends Activity {
         Cursor newCursor = adapterCursorQuery(cid);
         getListAdapter().swapCursor(newCursor).close();
         getListAdapter().notifyDataSetChanged();
-    }
-
-    private void
-    startUpdatingAnim(ImageView btn) {
-        btn.startAnimation(AnimationUtils.loadAnimation(this, R.anim.rotate_spin));
-    }
-
-    private void
-    endUpdatingAnim(ImageView btn, boolean bCancel) {
-        btn.getAnimation().cancel();
-        if (bCancel)
-            btn.setImageResource(R.drawable.ic_info);
-        else
-            btn.setImageResource(R.drawable.ic_refresh);
     }
 
     private void
@@ -437,19 +424,22 @@ public class ItemListActivity extends Activity {
         ImageView iv = (ImageView)bar.getCustomView().findViewById(R.id.update_button);
         Animation anim = iv.getAnimation();
 
-        if (null != anim)
+        if (null != anim) {
             anim.cancel();
+            anim.reset();
+        }
+        iv.setAlpha(1.0f);
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
             iv.setImageResource(R.drawable.ic_refresh);
             setOnClick_startUpdate(iv);
         } else if (RTTask.StateUpdate.Updating == state) {
-            iv.setImageResource(R.drawable.ic_refresh);
-            iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.rotate_spin));
+            iv.setImageResource(R.drawable.download);
+            ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
         } else if (RTTask.StateUpdate.Canceling == state) {
-            iv.setImageResource(R.drawable.ic_info);
-            iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.rotate_spin));
+            iv.setImageResource(R.drawable.ic_block);
+            iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
             setOnClick_notification(iv, R.string.wait_cancel);
         } else if (RTTask.StateUpdate.UpdateFailed == state) {
             iv.setImageResource(R.drawable.ic_info);
@@ -520,13 +510,6 @@ public class ItemListActivity extends Activity {
         if (Feed.Channel.Action.DNOPEN == action
             && doesEnclosureDnFileExists(info.id, info.position))
             menu.findItem(R.id.delete_dnfile).setVisible(true);
-
-        // Check for "Mark as unopened option"
-        /* - Reserved for future improvement. Not enable this menu yet.
-        if (Feed.Channel.Action.OPEN == action
-            && Feed.Item.State.OPENED == Feed.Item.State.convert(db.getItemInfoString(cid, info.id, DB.ColumnItem.STATE)))
-            menu.findItem(R.id.mark_unopened).setVisible(true);
-         */
     }
 
     @Override
