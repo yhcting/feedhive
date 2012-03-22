@@ -352,7 +352,7 @@ public class ItemListActivity extends Activity {
                 task.cancel(null);
                 getListAdapter().notifyDataSetChanged();
             } else if (RTTask.StateDownload.Canceling == state) {
-                LookAndFeel.showTextToast(this, R.string.cancel_processing);
+                LookAndFeel.showTextToast(this, R.string.wait_cancel);
             } else if (RTTask.StateDownload.DownloadFailed == state) {
                 Err result = RTTask.S().getDownloadErr(cid, id);
                 LookAndFeel.showTextToast(this, result.getMsgId());

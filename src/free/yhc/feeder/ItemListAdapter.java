@@ -109,12 +109,12 @@ public class ItemListAdapter extends ResourceCursorAdapter {
 
     private void
     bindViewEnclosure(View view, Context context, Cursor c, Feed.Item.State state) {
-        TextView titlev = (TextView)view.findViewById(R.id.title);
-        TextView descv  = (TextView)view.findViewById(R.id.description);
-        ProgressTextView progress = (ProgressTextView)view.findViewById(R.id.progress);
-        TextView date   = (TextView)view.findViewById(R.id.date);
-        TextView length = (TextView)view.findViewById(R.id.length);
-        ImageView img   = (ImageView)view.findViewById(R.id.image);
+        final TextView titlev = (TextView)view.findViewById(R.id.title);
+        final TextView descv  = (TextView)view.findViewById(R.id.description);
+        final ProgressTextView progress = (ProgressTextView)view.findViewById(R.id.progress);
+        final TextView date   = (TextView)view.findViewById(R.id.date);
+        final TextView length = (TextView)view.findViewById(R.id.length);
+        final ImageView img   = (ImageView)view.findViewById(R.id.image);
 
         long id = c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName()));
         String title = c.getString(c.getColumnIndex(DB.ColumnItem.TITLE.getName()));
@@ -145,7 +145,27 @@ public class ItemListAdapter extends ResourceCursorAdapter {
                 img.setImageResource(R.drawable.download_anim0);
             } else if (RTTask.StateDownload.Downloading == dnState) {
                 img.setImageResource(R.drawable.download);
+                // Why "post runnable and start animation?"
+                // In Android 4.0.3 (ICS)
+                //   putting "((AnimationDrawable)img.getDrawable()).start();" is enough.
+                //   So, below code works well enough.
                 ((AnimationDrawable)img.getDrawable()).start();
+                //
+                // In Android 3.2 (HC)
+                //   without using 'post', animation doesn't start when start itemListActivity.
+                //   It's definitely HC bug.
+                //   In this case, below code works.
+                //
+                // This program's target platform is ICS
+                /*
+                img.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        ((AnimationDrawable)img.getDrawable()).start();
+                    }
+                });
+                */
+
                 // bind event listener to show progress
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progress);
                 progress.switchOnEvent(onEvent);

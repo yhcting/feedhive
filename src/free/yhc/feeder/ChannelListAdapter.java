@@ -9,7 +9,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.AnimationDrawable;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.Animation;
@@ -120,8 +119,7 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         if (RTTask.StateUpdate.Idle == state) {
             ;
         } else if (RTTask.StateUpdate.Updating == state) {
-            chIcon.setImageResource(R.drawable.download);
-            ((AnimationDrawable)chIcon.getDrawable()).start();
+            chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
         } else if (RTTask.StateUpdate.Canceling == state) {
             chIcon.setImageResource(R.drawable.ic_block);
             chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
