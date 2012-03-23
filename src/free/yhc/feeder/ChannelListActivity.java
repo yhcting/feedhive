@@ -134,14 +134,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             ListView list = ((ListView)ll.findViewById(R.id.list));
             eAssert(null != list);
             list.setAdapter(new ChannelListAdapter(context, R.layout.channel_row, null,
-                                                    new ChannelListAdapter.OnAction() {
-                @Override
-                public void onUpdateClick(ImageView ibtn, long cid) {
-                    logI("ChannelList : update cid : " + cid);
-                    onContextBtn_channelUpdate(ibtn, cid);
-
-                }
-            }));
+                                                   new OnAdapterActionHandler()));
             list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void
@@ -325,6 +318,52 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         public void onDownloadBGTaskUnegster(long cid, long id, BGTask task) { }
     }
 
+    private class OnAdapterActionHandler implements ChannelListAdapter.OnAction {
+        @Override
+        public void
+        onUpdateClick(ImageView ibtn, long cid) {
+            logI("ChannelList : update cid : " + cid);
+            onContextBtn_channelUpdate(ibtn, cid);
+        }
+
+        @Override
+        public void
+        onMoveUpClick(ImageView ibtn, long cid) {
+            ChannelListAdapter adapter = getCurrentListAdapter();
+            int pos = getPosition(adapter, cid);
+            if (pos < 0) {
+                eAssert(false);
+                return;
+            }
+            if (0 == pos)
+                return; // nothing to do
+
+
+            DBPolicy.S().updatechannel_switchPosition(adapter.getItemId(pos - 1),
+                                                      adapter.getItemId(pos));
+            refreshList(ab.getSelectedTab());
+        }
+
+        @Override
+        public void
+        onMoveDownClick(ImageView ibtn, long cid) {
+            ChannelListAdapter adapter = getCurrentListAdapter();
+            int pos = getPosition(adapter, cid);
+            int cnt = adapter.getCount();
+            if (pos >= cnt) {
+                eAssert(false);
+                return;
+            }
+            if (cnt - 1 == pos)
+                return; // nothing to do
+
+
+            DBPolicy.S().updatechannel_switchPosition(adapter.getItemId(pos),
+                                                      adapter.getItemId(pos + 1));
+            refreshList(ab.getSelectedTab());
+        }
+    }
+
     class TabTag {
         long         categoryid;
         boolean      fromGesture = false;
@@ -351,6 +390,20 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private ChannelListAdapter
     getListAdapter(Tab tab) {
         return (ChannelListAdapter)getTag(tab).listView.getAdapter();
+    }
+
+    private ChannelListAdapter
+    getCurrentListAdapter() {
+        return getListAdapter(ab.getSelectedTab());
+    }
+
+    private int
+    getPosition(ChannelListAdapter adapter, long cid) {
+        for (int i = 0; i < adapter.getCount(); i++) {
+            if (adapter.getItemId(i) == cid)
+                return i;
+        }
+        return -1;
     }
 
     private long
@@ -821,12 +874,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             BGTask task = RTTask.S().getUpdate(cid);
             task.cancel(null);
             // to change icon into "canceling"
-            getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+            getCurrentListAdapter().notifyDataSetChanged();
         } else if (RTTask.StateUpdate.UpdateFailed == state) {
             Err result = RTTask.S().getUpdateErr(cid);
             LookAndFeel.showTextToast(this, result.getMsgId());
             RTTask.S().consumeUpdateResult(cid);
-            getListAdapter(ab.getSelectedTab()).notifyDataSetChanged();
+            getCurrentListAdapter().notifyDataSetChanged();
         } else if (RTTask.StateUpdate.Canceling == state) {
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
         } else

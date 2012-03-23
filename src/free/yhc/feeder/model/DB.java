@@ -290,33 +290,6 @@ public final class DB extends SQLiteOpenHelper {
         return 0;
     }
 
-    /*
-    Cursor
-    query(String table,
-          String[] columns,
-          String selection,
-          String[] selectionArgs,
-          String groupBy,
-          String having,
-          String orderBy,
-          String limit) {
-        eAssert(false); // do not use if possible.
-        return db.query(table, columns, selection, selectionArgs, groupBy, having, orderBy, limit);
-    }
-
-    Cursor
-    query(String table,
-          String[] columns,
-          String selection,
-          String[] selectionArgs,
-          String groupBy,
-          String having,
-          String orderBy) {
-        eAssert(false); // do not use if possible.
-        return db.query(table, columns, selection, selectionArgs, groupBy, having, orderBy);
-    }
-    */
-
     Cursor
     queryCategory(ColumnCategory column) {
         return queryCategory(new ColumnCategory[] { column });
@@ -412,19 +385,9 @@ public final class DB extends SQLiteOpenHelper {
                         "" + limit);
     }
 
-    long
-    queryChannelMaxId() {
-        Cursor c = db.query(TABLE_CHANNEL,
-                            new String[] { ColumnChannel.ID.getName() },
-                            null, null, null, null,
-                            ColumnChannel.ID.getName() + " DESC",
-                            "1");
-        long ret = 0;
-        if (c.moveToFirst())
-            ret = c.getLong(0);
-        c.close();
-
-        return ret;
+    Cursor
+    queryChannelMax(ColumnChannel column) {
+        return db.rawQuery("SELECT MAX(" + column.getName() + ") FROM " + TABLE_CHANNEL +"", null);
     }
 
     Cursor

@@ -159,7 +159,8 @@ public class DBPolicy {
         values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  defaultSchedUpdateTime); // default (03 o'clock)
         values.put(ColumnChannel.OLDLAST_ITEMID.getName(),   0);
         values.put(ColumnChannel.NRITEMS_SOFTMAX.getName(),  999999);
-        values.put(ColumnChannel.POSITION.getName(),         getChannelInfoMaxId() + 1); // add to last position in terms of UI.
+        // add to last position in terms of UI.
+        values.put(ColumnChannel.POSITION.getName(),         getChannelInfoMaxLong(ColumnChannel.POSITION) + 1);
         return values;
     }
 
@@ -539,10 +540,13 @@ public class DBPolicy {
     }
 
     public long
-    getChannelInfoMaxId() {
-        Cursor c = db.queryChannel(ColumnChannel.ID, ColumnChannel.ID, false, 1);
-        if (!c.moveToFirst())
-            return 0; // there is no item!
+    getChannelInfoMaxLong(ColumnChannel column) {
+        eAssert(column.getType().equals("integer"));
+        Cursor c = db.queryChannelMax(column);
+        if (!c.moveToFirst()) {
+            c.close();
+            return 0;
+        }
 
         long max = c.getLong(0);
         c.close();

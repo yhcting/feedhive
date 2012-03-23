@@ -26,6 +26,8 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
 
     interface OnAction {
         void onUpdateClick(ImageView ibtn, long cid);
+        void onMoveUpClick(ImageView ibtn, long cid);
+        void onMoveDownClick(ImageView ibtn, long cid);
     }
 
     public static class ImageViewEx extends ImageView {
@@ -97,6 +99,31 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
                 onAction.onUpdateClick(iv, iv.cid);
             }
         });
+
+        ImageViewEx ibtn = (ImageViewEx)view.findViewById(R.id.imgup);
+        ibtn.cid = cid;
+        ibtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null == onAction)
+                    return;
+                ImageViewEx iv = (ImageViewEx)v;
+                onAction.onMoveUpClick(iv, iv.cid);
+            }
+        });
+
+        ibtn = (ImageViewEx)view.findViewById(R.id.imgdown);
+        ibtn.cid = cid;
+        ibtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null == onAction)
+                    return;
+                ImageViewEx iv = (ImageViewEx)v;
+                onAction.onMoveDownClick(iv, iv.cid);
+            }
+        });
+
 
         // NOTE
         //   "anim.cancel -> anim.reset -> setAlpha(1.0f)", all these three are required
