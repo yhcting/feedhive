@@ -1,46 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    >
 	<TextView
+	    android:id="@+id/sched_title"
        	android:layout_width="wrap_content"
        	android:layout_height="wrap_content"
 		android:layout_marginLeft="5dip"
+		android:layout_marginTop="5dip"
        	android:text="@string/setting_scheduled_update"
 		android:textAppearance="?android:attr/textAppearanceLarge"
 		/>
-	<RelativeLayout
-    	android:layout_width="match_parent"
-    	android:layout_height="wrap_content"
-		android:layout_marginTop="3dip"
-		android:layout_marginLeft="20dip"
-    	>
-    	<TextView
-    	    android:id="@+id/text_everyday"
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:layout_centerVertical="true"
-        	android:gravity="center"
-        	android:text="@string/setting_everyday"
-        	android:textAppearance="?android:attr/textAppearanceMedium"
-        	/>
-		<Spinner 
-        	android:id="@+id/time_choose_spinner"
-        	android:layout_width="80dip"
-        	android:layout_height="wrap_content"
-        	android:layout_toRightOf="@id/text_everyday"
-        	android:layout_gravity="center"
-        	android:prompt="@string/time_spinner_prompt"
-    		/>
-		<TextView
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:layout_toRightOf="@id/time_choose_spinner"
-        	android:layout_centerVertical="true"
-        	android:gravity="center"
-        	android:text="@string/oclock"
-        	android:textAppearance="?android:attr/textAppearanceMedium"
-        	/>
-    </RelativeLayout>
-</LinearLayout>
+	<ImageView
+	    android:id="@+id/add_sched"
+       	android:layout_width="30dip"
+       	android:layout_height="0dip"
+       	android:layout_alignTop="@id/sched_title"
+       	android:layout_alignBottom="@id/sched_title"
+       	android:layout_alignParentRight="true"
+       	android:layout_marginRight="5dip"
+        android:scaleType="fitCenter"
+        android:clickable="true"
+       	android:src="@drawable/ic_add"
+	    />
+	<LinearLayout
+	    android:id="@+id/sched_layout"
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_below="@id/sched_title"
+	    android:layout_marginLeft="25dip"
+	    android:layout_marginRight="5dip"
+	    android:orientation="vertical"
+	    >
+	</LinearLayout>
+</RelativeLayout>

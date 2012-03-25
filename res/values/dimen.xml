@@ -14,5 +14,6 @@
     <dimen name="desc_text_size">12dip</dimen>
     <dimen name="misc_text_size">10dip</dimen>
     <dimen name="small_text_size">9dip</dimen>
+    <dimen name="spinner_text_size">20dip</dimen>
     <dimen name="dnprogress_text_size">14dip</dimen>
 </resources>
