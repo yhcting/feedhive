@@ -51,6 +51,7 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.FeederException;
+import free.yhc.feeder.model.NetLoader;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
@@ -518,7 +519,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // full update for this newly inserted channel
         BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
         RTTask.S().registerUpdate(cid, task);
-        task.start(new BGTaskUpdateChannel.Arg(cid, true));
+        task.start(new BGTaskUpdateChannel.Arg(cid, NetLoader.UPD_INIT));
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
@@ -844,7 +845,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 dialog.dismiss();
                 BGTaskUpdateChannel task = new BGTaskUpdateChannel(ChannelListActivity.this);
                 RTTask.S().registerUpdate(cid, task);
-                task.start(new BGTaskUpdateChannel.Arg(cid, true));
+                task.start(new BGTaskUpdateChannel.Arg(cid, NetLoader.UPD_LOAD_IMG));
             }
         });
         dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {

@@ -31,6 +31,10 @@
         <activity android:name=".ChannelSettingActivity"
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   />
+        <activity android:name=".ItemViewActivity"
+            	  android:theme="@android:style/Theme.NoTitleBar"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  />
         <service android:name=".ScheduledUpdater"
 				 />
         <receiver android:name=".ScheduledUpdater$AlarmReceiver"

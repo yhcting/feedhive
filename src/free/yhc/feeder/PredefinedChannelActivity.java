@@ -36,6 +36,7 @@ import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.NetLoader;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 
@@ -140,9 +141,9 @@ public class PredefinedChannelActivity extends Activity {
         BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
         RTTask.S().registerUpdate(cid, task);
         if (imageref.isEmpty())
-            task.start(new BGTaskUpdateChannel.Arg(cid, true));
+            task.start(new BGTaskUpdateChannel.Arg(cid, NetLoader.UPD_INIT));
         else
-            task.start(new BGTaskUpdateChannel.Arg(cid, imageref));
+            task.start(new BGTaskUpdateChannel.Arg(cid, NetLoader.UPD_INIT, imageref));
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
         chMap.put(url, true);
         ((ArrayAdapter)list.getAdapter()).notifyDataSetChanged();

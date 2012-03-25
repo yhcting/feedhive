@@ -18,7 +18,6 @@ import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.Layout;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
@@ -34,7 +33,6 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
@@ -53,11 +51,11 @@ public class ItemListActivity extends Activity {
     private ListView            list;
 
     private class ActionInfo {
-        private int layout;
-        private Method method;
+        private Feed.Channel.Action act;
+        private Method              method;
 
-        ActionInfo(int layout, String methodName) {
-            this.layout = layout;
+        ActionInfo(Feed.Channel.Action act, String methodName) {
+            this.act = act;
             try {
                 method = ItemListActivity.this.getClass()
                             .getMethod(methodName, android.view.View.class, long.class, int.class);
@@ -66,8 +64,8 @@ public class ItemListActivity extends Activity {
             }
         }
 
-        int getLayout() {
-            return layout;
+        Feed.Channel.Action getAction() {
+            return act;
         }
 
         void invokeAction(View view, long id, int position) {
@@ -164,10 +162,10 @@ public class ItemListActivity extends Activity {
     // used.
     private ActionInfo
     getActionInfo(Feed.Channel.Action action) {
-        if (Feed.Channel.Action.OPEN == action)
-            return new ActionInfo(R.layout.item_row_link, "onActionOpen");
-        else if (Feed.Channel.Action.DNOPEN == action)
-            return new ActionInfo(R.layout.item_row_enclosure, "onActionDnOpen");
+        if (Feed.Channel.Action.LINK == action)
+            return new ActionInfo(action, "onActionLink");
+        else if (Feed.Channel.Action.DN_ENCLOSURE == action)
+            return new ActionInfo(action, "onActionDnEnclosure");
         else
             eAssert(false);
         return null;
@@ -304,7 +302,7 @@ public class ItemListActivity extends Activity {
 
     // 'public' to use java reflection
     public void
-    onActionDnOpen(View view, long id, int position) {
+    onActionDnEnclosure(View view, long id, int position) {
         String enclosureUrl = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
         String fpath = UIPolicy.getItemFilePath(cid, id,
@@ -365,55 +363,20 @@ public class ItemListActivity extends Activity {
 
     // 'public' to use java reflection
     public void
-    onActionOpen(View view, long id, final int position) {
+    onActionLink(View view, long id, final int position) {
+        RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
+        if (RTTask.StateDownload.DownloadFailed == state) {
+            LookAndFeel.showTextToast(this, RTTask.S().getDownloadErr(cid, id).getMsgId());
+            RTTask.S().consumeDownloadResult(cid, id);
+            getListAdapter().notifyDataSetChanged();
+            return;
+        }
+
         // 'link' is used.
-
-        // Description is "end ellipsis"
-        boolean bEllipsed = false;
-        // See R.layout.item_row_link for below code.
-        TextView desc = (TextView)((LinearLayout)view).findViewById(R.id.description);
-        Layout l = desc.getLayout();
-        if (null != l){
-            int lines = l.getLineCount();
-            if (lines > 0)
-                if (l.getEllipsisCount(lines - 1) > 0)
-                    bEllipsed = true;
-        }
-
-        // UIPolicy
-        //   To support same-experience, description dialog is always shown to user.
-        //   Ignoring above checking for 'eclipsed' is intentional here.
-        //   Someday, I need to clean up code. But not now.
-        //   Remained garbage code is for future reference and for history!
-        bEllipsed = true;
-        if (bEllipsed) {
-            // Description is end-ellipsis
-            // open text view dialog to see details...
-            TextView title = (TextView)((LinearLayout)view).findViewById(R.id.title);
-            final AlertDialog dialog = LookAndFeel.createAlertDialog(this, 0, title.getText(), desc.getText());
-            dialog.setButton(getResources().getText(R.string.open_link),
-                             new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    startActivity(new Intent(Intent.ACTION_VIEW)
-                                    .setData(Uri.parse(getCursorInfoString(DB.ColumnItem.LINK, position))));
-                    dialog.dismiss();
-                }
-            });
-            dialog.setButton2(getResources().getText(R.string.ok),
-                    new DialogInterface.OnClickListener() {
-               @Override
-               public void onClick(DialogInterface dialog, int which) {
-                   dialog.dismiss();
-               }
-           });
-            dialog.show();
-        } else {
-            // Full text is already shown at 'description' summary.
-            // So, open link directly!
-            startActivity(new Intent(Intent.ACTION_VIEW)
-                            .setData(Uri.parse(getCursorInfoString(DB.ColumnItem.LINK, position))));
-        }
+        Intent intent = new Intent(this, ItemViewActivity.class);
+        intent.putExtra("cid", cid);
+        intent.putExtra("itemId", id);
+        startActivity(intent);
 
         changeItemState_opened(id, position);
     }
@@ -429,6 +392,7 @@ public class ItemListActivity extends Activity {
             anim.reset();
         }
         iv.setAlpha(1.0f);
+        iv.setClickable(true);
         RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
         if (RTTask.StateUpdate.Idle == state) {
             iv.setImageResource(R.drawable.ic_refresh);
@@ -440,6 +404,7 @@ public class ItemListActivity extends Activity {
         } else if (RTTask.StateUpdate.Canceling == state) {
             iv.setImageResource(R.drawable.ic_block);
             iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
+            iv.setClickable(false);
             setOnClick_notification(iv, R.string.wait_cancel);
         } else if (RTTask.StateUpdate.UpdateFailed == state) {
             iv.setImageResource(R.drawable.ic_info);
@@ -507,7 +472,7 @@ public class ItemListActivity extends Activity {
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        if (Feed.Channel.Action.DNOPEN == action
+        if (Feed.Channel.Action.DN_ENCLOSURE == action
             && doesEnclosureDnFileExists(info.id, info.position))
             menu.findItem(R.id.delete_dnfile).setVisible(true);
     }
@@ -578,7 +543,8 @@ public class ItemListActivity extends Activity {
 
         list = ((ListView)findViewById(R.id.list));
         eAssert(null != list);
-        list.setAdapter(new ItemListAdapter(this, getActionInfo(action).getLayout(), adapterCursorQuery(cid), cid));
+        list.setAdapter(new ItemListAdapter(this, R.layout.item_row, adapterCursorQuery(cid),
+                                            getActionInfo(action).getAction(), cid));
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void
@@ -589,7 +555,7 @@ public class ItemListActivity extends Activity {
         registerForContextMenu(list);
 
         // Update "OLDLAST_ITEMID" when user opens item views.
-        DBPolicy.S().updateChannel_LastItemId(cid);
+        DBPolicy.S().updateChannel_lastItemId(cid);
 
         // Register to get notification regarding RTTask.
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());

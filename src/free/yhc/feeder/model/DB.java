@@ -76,6 +76,7 @@ public final class DB extends SQLiteOpenHelper {
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "integer",  "not null"), // time when channel is updated, lastly
         ACTION          ("action",          "text",     "not null"),
+        UPDATETYPE      ("updatetype",      "text",     "not null"),
         // time string of SECONDS OF DAY (0 - 23:59:59). ex. "3600/7200" => update 1 and 2 hour every day
         SCHEDUPDATETIME ("schedupdatetime", "text",     "not null"),
         // old last item id.
@@ -127,6 +128,7 @@ public final class DB extends SQLiteOpenHelper {
 
         // Columns for internal use.
         STATE           ("state",           "text",     "not null"), // new, read etc
+        RAWDATA         ("rawdata",         "blob",     "not null"),
         // time when this item is inserted.(milliseconds since 1970.1.1....)
         INSTIME         ("instime",         "integer",  "not null"),
         CHANNELID       ("channelid",       "integer",  ""),
@@ -506,6 +508,14 @@ public final class DB extends SQLiteOpenHelper {
         return r;
     }
 
+    /**
+     * This function doesn't do any sanity check for passing arguments.
+     * So, if there is invalid column name in ContentValues, this function issues exception.
+     * Please be careful when use this function!
+     * @param cid
+     * @param values
+     * @return
+     */
     long
     updateChannel(long cid, ContentValues values) {
         return db.update(TABLE_CHANNEL,
@@ -563,10 +573,9 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    updateItem(long cid, String title, long pubTime , ContentValues values) {
-        return db.update(getItemTableName(cid),
-                         values,
-                         ColumnItem.TITLE.getName() + " = " + DatabaseUtils.sqlEscapeString(title),
-                         null);
+    updateItem(long cid, long id, ColumnItem field, byte[] v) {
+        ContentValues cvs = new ContentValues();
+        cvs.put(field.getName(), v);
+        return updateItem(cid, id, cvs);
     }
 }

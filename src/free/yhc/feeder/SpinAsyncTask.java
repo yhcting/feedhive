@@ -38,7 +38,8 @@ DialogInterface.OnClickListener
     updateLoad(boolean updateImage, Object obj)
             throws FeederException {
         cid = ((Long)obj).longValue();
-        return new NetLoader().updateLoad(cid, updateImage);
+        return new NetLoader().updateLoad(cid,
+                                          updateImage? NetLoader.UPD_LOAD_IMG: NetLoader.UPD_DEFAULT);
     }
 
     // return :
@@ -100,7 +101,7 @@ DialogInterface.OnClickListener
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         dialog.setCanceledOnTouchOutside(false);
         //dialog.setCancelable(false);
-        dialog.setButton(context.getResources().getText(R.string.cancel_processing), this);
+        dialog.setButton(context.getResources().getText(R.string.cancel), this);
         dialog.setOnCancelListener(this);
         dialog.setOnDismissListener(this);
         dialog.show();

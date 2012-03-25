@@ -1,25 +1,23 @@
 package free.yhc.feeder.model;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
-
-import org.apache.http.util.ByteArrayBuffer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.text.Layout;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.widget.TextView;
 
 public class Utils {
     public static final boolean DBG = true;
@@ -297,49 +295,13 @@ public class Utils {
         return decodeImageRaw(image, opt);
     }
 
-    public static ByteArrayBuffer
-    download(String dnurl) throws FeederException {
-        if (null == dnurl)
-            return null;
-
-        long time = System.currentTimeMillis();
-        ByteArrayBuffer bab = null;
-        try {
-            URL url = new URL(dnurl);
-
-            //
-            // long startTime = System.currentTimeMillis();
-            // logI("Start Downloading : " + dnurl);
-            //
-
-            // Open a connection to that URL.
-            URLConnection ucon = url.openConnection();
-            // Define InputStreams to read from the URLConnection.
-            InputStream is = ucon.getInputStream();
-            BufferedInputStream bis = new BufferedInputStream(is);
-
-            // Read bytes to the Buffer until there is nothing more to read(-1).
-            bab = new ByteArrayBuffer(1024);
-            int current = 0;
-            while ((current = bis.read()) != -1)
-                bab.append((byte) current);
-
-            //
-            // logI("End Downloading : " + ((System.currentTimeMillis() -
-            // startTime) / 1000) + " sec");
-            //
-
-        } catch (IOException e) {
-            throw new FeederException(Err.IONet);
-        }
-        logI("TIME: Downloading [" + dnurl + "] : " + (System.currentTimeMillis() - time));
-        return bab;
-    }
 
     public static byte[]
     getDecodedImageData(String url) throws FeederException {
-        ByteArrayBuffer imgBab = null;
-        imgBab = download(url);
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        Err result = new NetLoader().download(os, url, null);
+        if (Err.NoErr != result)
+            return null;
 
         long time;
         //
@@ -351,9 +313,9 @@ public class Utils {
         // Solution used below is
         // * shrink downloaded image and save it to DB.
         // (To save memory and increase performance.)
-        if (null != imgBab && !imgBab.isEmpty()) {
+        if (os.size() > 0) {
             time = System.currentTimeMillis();
-            Bitmap bm = Utils.decodeImage(imgBab.toByteArray(),
+            Bitmap bm = Utils.decodeImage(os.toByteArray(),
                     Feed.CHANNEL_IMAGE_MAX_WIDTH,
                     Feed.CHANNEL_IMAGE_MAX_HEIGHT);
             logI("TIME: Decode Image : " + (System.currentTimeMillis() - time));
@@ -368,6 +330,33 @@ public class Utils {
             return baos.toByteArray();
         }
         return null;
+    }
+
+    public static boolean
+    isEllipsed(TextView tv) {
+        Layout l = tv.getLayout();
+        if (null != l){
+            int lines = l.getLineCount();
+            if (lines > 0)
+                if (l.getEllipsisCount(lines - 1) > 0)
+                    return true;
+        }
+        return false;
+    }
+
+    public static Err
+    writeToFile(String file, byte[] data) {
+        try
+        {
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(data);
+            fos.close();
+        } catch(FileNotFoundException e) {
+            return Err.IOFile;
+        } catch(IOException e) {
+            return Err.IOFile;
+        }
+        return Err.NoErr;
     }
 
     public static String

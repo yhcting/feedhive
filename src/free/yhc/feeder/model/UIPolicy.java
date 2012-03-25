@@ -18,14 +18,16 @@ public class UIPolicy {
 
     static Feed.Channel.Action
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
-        if (Feed.Channel.Type.MEDIA == cParD.type) {
+        if (Feed.Channel.ItemType.MEDIA == cParD.type) {
             if (null != iParD)
-                return isValidValue(iParD.enclosureUrl)? Feed.Channel.Action.DNOPEN: Feed.Channel.Action.OPEN;
+                return isValidValue(iParD.enclosureUrl)?
+                        Feed.Channel.Action.DN_ENCLOSURE:
+                        Feed.Channel.Action.LINK;
             else
-                return Feed.Channel.Action.DNOPEN;
+                return Feed.Channel.Action.DN_ENCLOSURE;
         } else
             // default is "open link"
-            return Feed.Channel.Action.OPEN;
+            return Feed.Channel.Action.LINK;
     }
 
     // check and fix if possible.

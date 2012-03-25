@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import android.os.Handler;
 
 public class BGTask<RunParam, CancelParam> extends Thread {
+    private Handler          ownerHandler = new Handler();
     private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
     private volatile Err     result  = Err.NoErr;
     private volatile boolean cancelled = false;
@@ -44,6 +45,45 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
         OnEvent getOnEvent() {
             return onEvent;
+        }
+    }
+
+    private class BGTaskPost implements Runnable {
+        private boolean bCancelled;
+        BGTaskPost(boolean bCancelled) {
+            this.bCancelled = bCancelled;
+        }
+
+        @Override
+        public void run() {
+            if (BGTask.this.isAlive()) {
+                ownerHandler.post(new BGTaskPost(bCancelled));
+                return;
+            }
+
+            if (bCancelled) {
+                BGTask.this.onCancel(cancelParam);
+                for (EventListener listener : getListeners()) {
+                    final OnEvent onEvent = listener.getOnEvent();
+                    listener.getHandler().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            onEvent.onCancel(BGTask.this, cancelParam);
+                        }
+                    });
+                }
+            } else {
+                BGTask.this.onPostRun(result);
+                for (EventListener listener : getListeners()) {
+                    final OnEvent onEvent = listener.getOnEvent();
+                    listener.getHandler().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            onEvent.onPostRun(BGTask.this, result);
+                        }
+                    });
+                }
+            }
         }
     }
 
@@ -166,29 +206,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
         if (bInterrupted
             || Err.Interrupted == result
-            || Err.UserCancelled == result) {
-            onCancel(cancelParam);
-            for (EventListener listener : getListeners()) {
-                final OnEvent onEvent = listener.getOnEvent();
-                listener.getHandler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        onEvent.onCancel(BGTask.this, cancelParam);
-                    }
-                });
-            }
-        } else {
-            onPostRun(result);
-            for (EventListener listener : getListeners()) {
-                final OnEvent onEvent = listener.getOnEvent();
-                listener.getHandler().post(new Runnable() {
-                    @Override
-                    public void run() {
-                        onEvent.onPostRun(BGTask.this, result);
-                    }
-                });
-            }
-        }
+            || Err.UserCancelled == result)
+            ownerHandler.post(new BGTaskPost(true));
+        else
+            ownerHandler.post(new BGTaskPost(false));
     }
 
     public void

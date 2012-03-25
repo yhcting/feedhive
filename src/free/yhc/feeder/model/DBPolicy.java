@@ -5,7 +5,6 @@ import static free.yhc.feeder.model.Utils.logI;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -38,74 +37,12 @@ public class DBPolicy {
     //private static Semaphore dbMutex = new Semaphore(1);
     private static DBPolicy instance = null;
     private DB          db       = null;
-    private ChannRTMap  chrtmap  = new ChannRTMap();
-
-    // Channel RunTime
-    private class ChannRT {
-        private          long       cid      = -1;
-        private volatile boolean    stateUpdating = false;
-        // pending update request
-
-        ChannRT(long cid) {
-            this.cid = cid;
-        }
-
-        boolean
-        isUpdating() {
-            return stateUpdating;
-        }
-
-        void
-        setStateUpdating(boolean state) {
-            stateUpdating = state;
-        }
-    }
-
-    private class ChannRTMap extends HashMap<Long, ChannRT> {
-        @Override
-        public ChannRT
-        put(Long key, ChannRT v) {
-            synchronized (this) {
-                return super.put(key, v);
-            }
-        }
-
-        @Override
-        public ChannRT
-        get(Object key) {
-            synchronized (this) {
-                return super.get(key);
-            }
-        }
-
-        @Override
-        public ChannRT
-        remove(Object key) {
-            return super.remove(key);
-        }
-
-        ChannRTMap() {
-            super();
-        }
-
-        void initialise() {
-            Cursor c = db.queryChannel(ColumnChannel.ID);
-            if (c.moveToFirst()) {
-                do {
-                    long cid = c.getLong(0);
-                    put(cid, new ChannRT(cid));
-                } while (c.moveToNext());
-            }
-            c.close();
-        }
-    }
 
     // ======================================================
     //
     // ======================================================
     private DBPolicy() {
         db = DB.db();
-        chrtmap.initialise();
     }
 
     private void
@@ -129,6 +66,7 @@ public class DBPolicy {
         values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.parD.enclosureLength);
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.parD.enclosureType);
         values.put(ColumnItem.STATE.getName(),               item.dynD.state.name());
+        values.put(ColumnItem.RAWDATA.getName(),             item.dynD.rawdata);
 
         // This function is called for insert item.
         // So, update insert time value here.
@@ -144,6 +82,7 @@ public class DBPolicy {
         // application's internal information
         values.put(ColumnChannel.URL.getName(),              ch.profD.url);
         values.put(ColumnChannel.ACTION.getName(),           ch.dynD.action.name());
+        values.put(ColumnChannel.UPDATETYPE.getName(),       ch.dynD.updatetype.name());
         values.put(ColumnChannel.CATEGORYID.getName(),       ch.dbD.categoryid);
         values.put(ColumnChannel.LASTUPDATE.getName(),       ch.dbD.lastupdate);
 
@@ -286,28 +225,16 @@ public class DBPolicy {
             db.deleteChannel(cid);
             return -1;
         }
-        chrtmap.put(cid, new ChannRT(cid));
-
         return cid;
     }
 
-    //
-    // Progress is hard-coded...
-    // Any better way???
-    //
-    // return: -1 (for fail to update)
-    //
-    public int
-    updateChannel(Feed.Channel ch, boolean updateImage)
-            throws FeederException {
-        eAssert(null != ch.items);
+    public Err
+    getNewItems(long cid, Feed.Item[] items, LinkedList<Feed.Item> newItems) {
+        eAssert(null != items);
         logI("UpdateChannel DB Section Start");
 
-        // walk items parsed with checking item is in DB or not
-        chrtmap.get(ch.dbD.id).setStateUpdating(true);
         try {
-            LinkedList<Feed.Item> newItems = new LinkedList<Feed.Item>();
-            for (Feed.Item item : ch.items) {
+            for (Feed.Item item : items) {
                 // ignore not-verified item
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
@@ -334,7 +261,7 @@ public class DBPolicy {
                 //     Cons : drop performance.
                 //   So, I need to tune it.
                 //   At this moment, correctness is more important than performance.
-                Cursor c = db.queryItem(ch.dbD.id,
+                Cursor c = db.queryItem(cid,
                                         new ColumnItem[] { ColumnItem.ID },
                                         new ColumnItem[] { ColumnItem.TITLE,
                                                            ColumnItem.PUBDATE,
@@ -361,13 +288,31 @@ public class DBPolicy {
 
                 checkInterrupted();
             }
+        } catch (FeederException e) {
+            return e.getError();
+        }
+        return Err.NoErr;
+    }
 
+    //
+    // Progress is hard-coded...
+    // Any better way???
+    //
+    // return: -1 (for fail to update)
+    //
+    public int
+    updateChannel(Feed.Channel ch, LinkedList<Feed.Item> newItems)
+            throws FeederException {
+        eAssert(null != ch.items);
+        logI("UpdateChannel DB Section Start : " + ch.dbD.id);
+
+        try {
             // update channel information
             ContentValues channelUpdateValues = new ContentValues();
             channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.parD.title);
             channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
             channelUpdateValues.put(ColumnChannel.ACTION.getName(),      ch.dynD.action.name());
-            if (updateImage)
+            if (null != ch.dynD.imageblob)
                 channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
 
             // NOTE
@@ -381,18 +326,15 @@ public class DBPolicy {
                 Feed.Item item = iter.next();
 
                 item.dbD.cid = ch.dbD.id;
-                if (0 > db.insertItem(ch.dbD.id, itemToContentValues(item))) {
-                    chrtmap.get(ch.dbD.id).setStateUpdating(false);
+                if (0 > db.insertItem(ch.dbD.id, itemToContentValues(item)))
                     return -1;
-                }
+
                 checkInterrupted();
             }
             logI("DBPolicy : new " + newItems.size() + " items are inserted");
             channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), new Date().getTime());
             db.updateChannel(ch.dbD.id, channelUpdateValues);
-            chrtmap.get(ch.dbD.id).setStateUpdating(false);
         } catch (FeederException e) {
-            chrtmap.get(ch.dbD.id).setStateUpdating(false);
             throw e;
         }
         logI("UpdateChannel DB Section End");
@@ -409,8 +351,6 @@ public class DBPolicy {
 
     public long
     updateChannel(long cid, ColumnChannel column, byte[] data) {
-        eAssert(!chrtmap.get(cid).isUpdating());
-
         // Fields those are allowed to be updated.
         eAssert(ColumnChannel.IMAGEBLOB == column);
         return db.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
@@ -442,10 +382,15 @@ public class DBPolicy {
 
     // "update OLDLAST_ITEMID to up-to-date"
     public long
-    updateChannel_LastItemId(long cid) {
+    updateChannel_lastItemId(long cid) {
         long maxId = getItemInfoMaxId(cid);
         updateChannel(cid, ColumnChannel.OLDLAST_ITEMID, maxId);
         return maxId;
+    }
+
+    public long
+    updateChannel_updateType(long cid, Feed.Channel.UpdateType utype) {
+        return db.updateChannel(cid, ColumnChannel.UPDATETYPE, utype.name());
     }
 
     public Cursor
@@ -471,16 +416,13 @@ public class DBPolicy {
 
     public int
     deleteChannel(long cid) {
-        eAssert(!chrtmap.get(cid).isUpdating());
         long n = db.deleteChannel(cid);
         eAssert(0 == n || 1 == n);
         if (1 == n) {
             UIPolicy.removeChannelDir(cid);
-            chrtmap.remove(cid);
             return 0;
-        } else {
+        } else
             return -1;
-        }
     }
 
     public long[]
@@ -553,6 +495,18 @@ public class DBPolicy {
         return max;
     }
 
+    public Feed.Channel.Action
+    getChannelInfoAction(long cid) {
+        String actstr = getChannelInfoString(cid, ColumnChannel.ACTION);
+        return Feed.Channel.Action.convert(actstr);
+    }
+
+    public Feed.Channel.UpdateType
+    getChannelInfoUpdateType(long cid) {
+        String utype = getChannelInfoString(cid, ColumnChannel.UPDATETYPE);
+        return Feed.Channel.UpdateType.convert(utype);
+    }
+
     public Bitmap
     getChannelImage(long cid) {
         Cursor c = db.queryChannel(cid, ColumnChannel.IMAGEBLOB);
@@ -613,29 +567,32 @@ public class DBPolicy {
         return v;
     }
 
+    public byte[]
+    getItemInfoData(long cid, long id, ColumnItem column) {
+        eAssert(ColumnItem.RAWDATA == column);
+        byte[] ret = null;
+        Cursor c = db.queryItem(cid, id, column);
+        if (c.moveToFirst())
+            ret = c.getBlob(0);
+        c.close();
+        return ret;
+    }
+
+
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
         return db.queryItem(cid, columns);
     }
 
-    public int
+    public long
     updateItem_state(long cid, long id, Feed.Item.State state) {
-        ChannRT chrt = chrtmap.get(cid);
-        if (null == chrt)
-            return -1;
-
         // Update item during 'updating channel' is not expected!!
-        // eAssert(!isUnderUpdating(cid));
-        ContentValues values = new ContentValues();
-        values.put(ColumnItem.STATE.getName(), state.name());
-        long n = 0;
-        Cursor c = db.queryItem(cid, id, ColumnItem.TITLE);
-        if (c.moveToFirst()) {
-            n = db.updateItem(cid, id, values);
-        }
-        eAssert(0 == n || 1 == n);
-        return (0 == n)? -1: 0;
+        return db.updateItem(cid, id, ColumnItem.STATE, state.name());
+    }
 
+    public long
+    updateItem_data(long cid, long id, byte[] data) {
+        return db.updateItem(cid, id, ColumnItem.RAWDATA, data);
     }
 
     // delete downloaded files etc.

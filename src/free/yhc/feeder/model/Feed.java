@@ -72,7 +72,8 @@ public class Feed {
 
         // Dynamic data - changed in runtime dynamically (usually by user action.
         static class DynD {
-            State  state        = State.NEW;
+            State  state = State.NEW;
+            byte[] rawdata = new byte[0];
         }
 
         Item() {
@@ -110,8 +111,8 @@ public class Feed {
         Item[] items;
 
         public static enum Action {
-            OPEN,   // open link
-            DNOPEN; // download/open link or enclosure
+            LINK,         // open link
+            DN_ENCLOSURE; // download/open enclosure
 
             public static Action
             convert(String s) {
@@ -122,13 +123,26 @@ public class Feed {
             }
         }
 
-        public static enum Type {
+        public static enum UpdateType {
+            NORMAL,    // feed
+            DN_LINK; // download link
+
+            public static UpdateType
+            convert(String s) {
+                for (UpdateType a : UpdateType.values())
+                    if (s.equals(a.name()))
+                        return a;
+                return null;
+            }
+        }
+
+        public static enum ItemType {
             NORMAL, // normal feed - ex. news feed.
             MEDIA;  // media-based feed - ex. podcast.
 
-            public static Type
+            public static ItemType
             convert(String s) {
-                for (Type a : Type.values())
+                for (ItemType a : ItemType.values())
                     if (s.equals(a.name()))
                         return a;
                 eAssert(false);
@@ -146,10 +160,10 @@ public class Feed {
             // Type is usually determined by which namespace is used at XML.
             // For example.
             //   xmlns:itunes -> Media
-            Type   type         = Type.NORMAL;
-            String title        = "";
-            String description  = "";
-            String imageref     = "";
+            ItemType type         = ItemType.NORMAL;
+            String   title        = "";
+            String   description  = "";
+            String   imageref     = "";
         }
 
         // DB related data
@@ -161,8 +175,9 @@ public class Feed {
 
         // Dynamic data - changed in runtime dynamically (usually by user action).
         static class DynD {
-            Action action       = Action.OPEN;
-            byte[] imageblob    = null;
+            Action      action       = Action.LINK;
+            UpdateType  updatetype   = UpdateType.NORMAL;
+            byte[]      imageblob    = null;
         }
 
         Channel() {

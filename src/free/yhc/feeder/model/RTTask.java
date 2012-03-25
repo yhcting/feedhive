@@ -251,6 +251,28 @@ public class RTTask {
             return StateDownload.DownloadFailed;
     }
 
+    /**
+     * Is download task is running state? (Canceling or Downloading)
+     * @cid channel id
+     * @id  item id
+     */
+    public boolean
+    isDownloadRunning(long cid, long id) {
+        BGTask task;
+        synchronized (gbtm.getSyncObj()) {
+            task = gbtm.peek(Id(Action.Download, cid, id));
+        }
+
+        if (null == task)
+            return false;
+
+        return task.isAlive();
+    }
+
+    /**
+     * Is there any downloading task belongs to this channel?
+     * @cid channel id
+     */
     public boolean
     isDownloadRunning(long cid) {
         String[] tids;
@@ -323,6 +345,9 @@ public class RTTask {
         }
     }
 
+    /**
+     * Get download error of latest download bg task.
+     */
     public Err
     getDownloadErr(long cid, long id) {
         synchronized (gbtm.getSyncObj()) {

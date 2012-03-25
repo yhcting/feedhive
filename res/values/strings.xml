@@ -5,6 +5,8 @@
     <string name="yes">예</string>
     <string name="no">아니오</string>
     <string name="url">Url</string>
+    <string name="download">다운로드</string>
+    <string name="downloading">내려받는 중</string>
     <string name="add_channel">채널추가</string>
     <string name="delete">삭제</string>
     <string name="refresh">새로고침</string>
@@ -20,7 +22,9 @@
     <string name="wait_cancel">취소가 완료되길 기다리고 있습니다.</string>
     <string name="load_progress">로드 중입니다. 데이터의 크기와 네트웤 사정에 따라 최대 수 분정도 소요될 수도 있습니다.</string>
     <string name="pick_icon_progress">그림을 로드 중입니다.  이미지 크기와 네트웤 사정에 따라 최대 수 분 정도 소요될 수도 있습니다.</string>
-    <string name="cancel_processing">취소</string>
+    <string name="cancel">취소</string>
+    <string name="canceling">취소 중</string>
+    <string name="cancel_downloading">내려받기 취소.</string>
     <string name="update_cancelled">업데이트가 취소 혹은 중단 되었습니다.</string>
     <string name="update_error">업데이트 도중 심각한 문제가 발생했습니다. 채널을 지우기를 권장합니다.</string>
     <string name="err_interrupted">동작이 취소 혹은 중단 되었습니다.</string>
@@ -33,7 +37,6 @@
     <string name="err_duplicated_channel">이미 등록된 채널입니다.</string>
     <string name="err_dbunknown">데이터베이스에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
-    <string name="cancel_downloading">내려받기 취소.</string>
     <string name="err_user_cancelled">동작이 취소되었습니다.</string>
     <string name="delete_downloaded_file">내려받은 파일 삭제</string>
     <string name="delete_channel">채널 삭제</string>
@@ -45,7 +48,6 @@
     <string name="delete_downloaded_file_msg">내려 받은 파일을 삭제하시겠습니까?</string>
     <string name="update_channel_msg">전체 채널정보를 업데이트 하시겠습니까? 설정된 채널 아이콘이 권장 아이콘으로 바뀔 수 있습니다.</string>
     <string name="add_category">카테고리 추가</string>
-    <string name="downloading">내려받는 중</string>
     <string name="delete_category">카테고리 삭제</string>
     <string name="etc">기타</string>
     <string name="warn_network_unavailable">네트웤을 사용할 수 없습니다.</string>
@@ -57,6 +59,7 @@
     <string name="warn_find_app_to_open">파일을 열기 위한 프로그램을 찾을 수 없습니다.</string>
     <string name="warn_find_gallery_app">이미지 갤러리 프로그램을 찾을 수 없습니다.</string>
     <string name="warn_no_predefined_channel">저장된 채널 정보가 없습니다.</string>
+    <string name="warn_no_downloaded_page">내려받은 페이지 정보가 없습니다.</string>
     <string name="default_category_name">미분류</string>
     <string name="change_category">카테고리 변경</string>
     <string name="select_category">카테고리 선택</string>

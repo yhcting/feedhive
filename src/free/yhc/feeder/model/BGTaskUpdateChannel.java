@@ -14,21 +14,21 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
 
     public static class Arg {
         long    cid        = -1;
-        boolean updateIcon = false;
+        int     flag       = NetLoader.UPD_DEFAULT;
         String  customIconref = null;
 
         public Arg(long cid) {
             this.cid = cid;
         }
 
-        public Arg(long cid, boolean updateIcon) {
+        public Arg(long cid, int flag) {
             this.cid = cid;
-            this.updateIcon = updateIcon;
+            this.flag = flag;
         }
 
-        public Arg(long cid, String customIconref) {
+        public Arg(long cid, int flag, String customIconref) {
             this.cid = cid;
-            this.updateIcon = true;
+            this.flag = flag;
             this.customIconref = customIconref;
         }
 
@@ -68,9 +68,9 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
         try {
             loader = new NetLoader();
             if (null == arg.customIconref)
-                return loader.updateLoad(arg.cid, arg.updateIcon);
+                return loader.updateLoad(arg.cid, arg.flag);
             else
-                return loader.updateLoad(arg.cid, arg.customIconref);
+                return loader.updateLoad(arg.cid, arg.flag, arg.customIconref);
         } catch (FeederException e) {
             logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
             return e.getError();
