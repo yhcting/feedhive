@@ -494,7 +494,7 @@ public class RSSParser {
             NSParser p = null;
             if (s.equals("itunes")) {
                 p = new NSItunesParser();
-                res.channel.type = Feed.Channel.ItemType.MEDIA;
+                res.channel.type = Feed.Channel.ChannTypeMedia;
             } else if (s.equals("dc"))
                 p = new NSDcParser();
             else

@@ -103,15 +103,20 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
             eAssert(false);
         }
 
-        Err result = loader.download(ostream, arg.url,
-                new NetLoader.OnProgress() {
-            @Override
-            public void onProgress(int prog) {
-                // TODO Auto-generated method stub
-                progress = prog;
-                publishProgress(prog);
-            }
-        });
+        Err result = Err.NoErr;
+        try {
+            loader.download(ostream, arg.url,
+                    new NetLoader.OnProgress() {
+                @Override
+                public void onProgress(int prog) {
+                    // TODO Auto-generated method stub
+                    progress = prog;
+                    publishProgress(prog);
+                }
+            });
+        } catch (FeederException e) {
+            result = e.getError();
+        }
 
         if (Err.NoErr == result)
             if (!new File(arg.tempFile).renameTo(new File(arg.toFile)))

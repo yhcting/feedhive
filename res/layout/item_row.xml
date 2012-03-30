@@ -91,7 +91,7 @@
         android:layout_height="2dip"
         android:layout_marginLeft="@dimen/divider_horizonal_margin"
         android:layout_marginRight="@dimen/divider_horizonal_margin"
-        android:layout_marginTop="1dip"
+        android:layout_marginTop="3dip"
         android:scaleType="fitXY"
         android:src="@drawable/divider_horizontal_bright"
         />

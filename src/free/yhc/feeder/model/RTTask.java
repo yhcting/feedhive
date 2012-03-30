@@ -19,8 +19,8 @@ public class RTTask {
     public interface OnRTTaskManagerEvent {
         void onUpdateBGTaskRegister(long cid, BGTask task);
         void onUpdateBGTaskUnregister(long cid, BGTask task);
-        void onDownloadBGTaskRegster(long cid, long id, BGTask task);
-        void onDownloadBGTaskUnegster(long cid, long id, BGTask task);
+        void onDownloadBGTaskRegster(long id, BGTask task);
+        void onDownloadBGTaskUnegster(long id, BGTask task);
     }
 
     public static enum StateUpdate {
@@ -39,7 +39,15 @@ public class RTTask {
 
     private enum Action {
         Update,
-        Download,
+        Download;
+
+        static Action convert(String act) {
+            for (Action a : Action.values()) {
+                if (a.name().equals(act))
+                    return a;
+            }
+            return null;
+        }
     }
 
     private class ManagerEventListener {
@@ -69,13 +77,20 @@ public class RTTask {
     // ===============================
 
     private String
-    Id(Action act, long cid) {
-        return act.name() + "/" + cid;
+    Id(Action act, long id) {
+        return act.name() + "/" + id;
     }
 
-    private String
-    Id(Action act, long cid, long itemid) {
-        return Id(act, cid) + "/" + itemid;
+    private Action
+    actionFromId(String id) {
+        int i = id.indexOf('/');
+        return Action.convert(id.substring(0, i));
+    }
+
+    private long
+    idFromId(String id) {
+        int i = id.indexOf('/');
+        return Long.parseLong(id.substring(i + 1));
     }
 
     private boolean
@@ -123,12 +138,12 @@ public class RTTask {
     }
 
     public boolean
-    registerDownload(long cid, long id, BGTask task) {
+    registerDownload(long id, BGTask task) {
         synchronized (gbtm.getSyncObj()) {
-            boolean r = gbtm.register(Id(Action.Download, cid, id), task);
+            boolean r = gbtm.register(Id(Action.Download, id), task);
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
-                    el.listener.onDownloadBGTaskRegster(cid, id, task);
+                    el.listener.onDownloadBGTaskRegster(id, task);
             }
             return r;
         }
@@ -142,9 +157,9 @@ public class RTTask {
     }
 
     public int
-    unbindDownload(long cid, long id) {
+    unbindDownload(long id) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.unbind(Thread.currentThread(), Id(Action.Download, cid, id));
+            return gbtm.unbind(Thread.currentThread(), Id(Action.Download, id));
         }
     }
 
@@ -176,15 +191,15 @@ public class RTTask {
     }
 
     public BGTask
-    bindDownload(long cid, long id, Object onEventKey, BGTask.OnEvent onEvent) {
+    bindDownload(long id, Object onEventKey, BGTask.OnEvent onEvent) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.bind(Id(Action.Download, cid, id), onEventKey, onEvent);
+            return gbtm.bind(Id(Action.Download, id), onEventKey, onEvent);
         }
     }
 
     public BGTask
-    bindDownload(long cid, long id, BGTask.OnEvent onEvent) {
-        return bindDownload(cid, id, null, onEvent);
+    bindDownload(long id, BGTask.OnEvent onEvent) {
+        return bindDownload(id, null, onEvent);
     }
 
     public BGTask
@@ -195,9 +210,9 @@ public class RTTask {
     }
 
     public BGTask
-    getDownload(long cid, long id) {
+    getDownload(long id) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.peek(Id(Action.Download, cid, id));
+            return gbtm.peek(Id(Action.Download, id));
         }
     }
 
@@ -228,10 +243,10 @@ public class RTTask {
     }
 
     public StateDownload
-    getDownloadState(long cid, long id) {
+    getDownloadState(long id) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(Action.Download, cid, id));
+            task = gbtm.peek(Id(Action.Download, id));
         }
 
         if (null == task)
@@ -241,10 +256,10 @@ public class RTTask {
             return task.isInterrupted()? StateDownload.Canceling: StateDownload.Downloading;
         } else if (Err.NoErr == task.getResult()
                 || Err.UserCancelled == task.getResult()) {
-            boolean r = unregister(Id(Action.Download, cid, id));
+            boolean r = unregister(Id(Action.Download, id));
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
-                    el.listener.onDownloadBGTaskUnegster(cid, id, task);
+                    el.listener.onDownloadBGTaskUnegster(id, task);
             }
             return StateDownload.Idle;
         } else
@@ -257,10 +272,10 @@ public class RTTask {
      * @id  item id
      */
     public boolean
-    isDownloadRunning(long cid, long id) {
+    isDownloadRunning(long id) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(Action.Download, cid, id));
+            task = gbtm.peek(Id(Action.Download, id));
         }
 
         if (null == task)
@@ -274,14 +289,16 @@ public class RTTask {
      * @cid channel id
      */
     public boolean
-    isDownloadRunning(long cid) {
+    isDownloadRunningInChannel(long cid) {
         String[] tids;
         synchronized (gbtm.getSyncObj()) {
             tids = gbtm.getTaskIds();
             for (String tid : tids) {
-                if (tid.startsWith(Id(Action.Download, cid))) {
+                if (Action.Download == actionFromId(tid)) {
                     BGTask task = gbtm.peek(tid);
-                    if (null != task && task.isAlive())
+                    long id = idFromId(tid);
+                    if (null != task && task.isAlive()
+                        && cid == DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID))
                         return true;
                 }
             }
@@ -304,10 +321,10 @@ public class RTTask {
     }
 
     public void
-    consumeDownloadResult(long cid, long id) {
+    consumeDownloadResult(long id) {
         BGTask task;
         synchronized (gbtm.getSyncObj()) {
-            task = gbtm.peek(Id(Action.Download, cid, id));
+            task = gbtm.peek(Id(Action.Download, id));
         }
         if (null == task)
             return;
@@ -349,9 +366,9 @@ public class RTTask {
      * Get download error of latest download bg task.
      */
     public Err
-    getDownloadErr(long cid, long id) {
+    getDownloadErr(long id) {
         synchronized (gbtm.getSyncObj()) {
-            return gbtm.peek(Id(Action.Download, cid, id)).getResult();
+            return gbtm.peek(Id(Action.Download, id)).getResult();
         }
     }
 

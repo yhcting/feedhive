@@ -46,15 +46,15 @@ import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity {
     private long                cid     = -1; // channel id
     private Handler             handler = new Handler();
-    private Feed.Channel.Action action  = null; // action type of this channel
+    private long                action  = Feed.Channel.FActDefault; // action type of this channel
     private final DBPolicy      db      = DBPolicy.S();
     private ListView            list;
 
     private class ActionInfo {
-        private Feed.Channel.Action act;
-        private Method              method;
+        private long    act;
+        private Method  method;
 
-        ActionInfo(Feed.Channel.Action act, String methodName) {
+        ActionInfo(long act, String methodName) {
             this.act = act;
             try {
                 method = ItemListActivity.this.getClass()
@@ -64,7 +64,7 @@ public class ItemListActivity extends Activity {
             }
         }
 
-        Feed.Channel.Action getAction() {
+        long getAction() {
             return act;
         }
 
@@ -100,8 +100,14 @@ public class ItemListActivity extends Activity {
         onPostRun(BGTask task, Err result) {
             requestSetUpdateButton();
 
-            if (Err.NoErr == result)
+            if (Err.NoErr == result) {
+                // Update "OLDLAST_ITEMID"
+                // User already know that there is new feed because
+                //   user starts to update in feed screen!.
+                // So, we can assume that user knows latest updates here.
+                DBPolicy.S().updateChannel_lastItemId(cid);
                 refreshList();
+            }
         }
     }
 
@@ -144,12 +150,12 @@ public class ItemListActivity extends Activity {
 
         @Override
         public void
-        onDownloadBGTaskRegster(long cid, long id, BGTask task) {
-            RTTask.S().bindDownload(cid, id, new DownloadToFileBGTaskOnEvent());
+        onDownloadBGTaskRegster(long id, BGTask task) {
+            RTTask.S().bindDownload(id, new DownloadToFileBGTaskOnEvent());
         }
 
         @Override
-        public void onDownloadBGTaskUnegster(long cid, long id, BGTask task) { }
+        public void onDownloadBGTaskUnegster(long id, BGTask task) { }
     }
 
     // Putting these information inside 'Feed.ActionType' directly, is not good
@@ -161,10 +167,10 @@ public class ItemListActivity extends Activity {
     // So, instead of putting this data to 'Feed.ActionType', below function is
     // used.
     private ActionInfo
-    getActionInfo(Feed.Channel.Action action) {
-        if (Feed.Channel.Action.LINK == action)
+    getActionInfo(long action) {
+        if (Feed.Channel.isActTgtLink(action))
             return new ActionInfo(action, "onActionLink");
-        else if (Feed.Channel.Action.DN_ENCLOSURE == action)
+        else if (Feed.Channel.isActTgtEnclosure(action))
             return new ActionInfo(action, "onActionDnEnclosure");
         else
             eAssert(false);
@@ -264,7 +270,7 @@ public class ItemListActivity extends Activity {
     private boolean
     doesEnclosureDnFileExists(long id, int position) {
         // enclosure-url is link of downloaded file.
-        String f = UIPolicy.getItemFilePath(cid, id,
+        String f = UIPolicy.getItemFilePath(id,
                                             getCursorInfoString(DB.ColumnItem.TITLE, position),
                                             getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
         return new File(f).exists();
@@ -273,7 +279,7 @@ public class ItemListActivity extends Activity {
     private boolean
     deleteEnclosureDnFile(long id, int position) {
         // enclosure-url is link of downloaded file.
-        String f = UIPolicy.getItemFilePath(cid, id,
+        String f = UIPolicy.getItemFilePath(id,
                                             getCursorInfoString(DB.ColumnItem.TITLE, position),
                                             getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
 
@@ -283,9 +289,9 @@ public class ItemListActivity extends Activity {
     private boolean
     changeItemState_opened(long id, int position) {
         // change state as 'opened' at this moment.
-        Feed.Item.State state = Feed.Item.State.convert(db.getItemInfoString(cid, id, DB.ColumnItem.STATE));
-        if (Feed.Item.State.NEW == state) {
-            db.updateItem_state(cid, id, Feed.Item.State.OPENED);
+        long state = db.getItemInfoLong(id, DB.ColumnItem.STATE);
+        if (Feed.Item.isStateNew(state)) {
+            db.updateItem_state(id, Feed.Item.FStatOpened);
             getListAdapter().notifyDataSetChanged();
             return true;
         }
@@ -305,7 +311,7 @@ public class ItemListActivity extends Activity {
     onActionDnEnclosure(View view, long id, int position) {
         String enclosureUrl = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
-        String fpath = UIPolicy.getItemFilePath(cid, id,
+        String fpath = UIPolicy.getItemFilePath(id,
                                                 getCursorInfoString(DB.ColumnItem.TITLE, position),
                                                 enclosureUrl);
         eAssert(null != fpath);
@@ -338,23 +344,23 @@ public class ItemListActivity extends Activity {
             // change state as 'opened' at this moment.
             changeItemState_opened(id, position);
         } else {
-            RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
+            RTTask.StateDownload state = RTTask.S().getDownloadState(id);
             if (RTTask.StateDownload.Idle == state) {
                 BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this);
-                RTTask.S().registerDownload(cid, id, dnTask);
+                RTTask.S().registerDownload(id, dnTask);
                 dnTask.start(new BGTaskDownloadToFile.Arg(enclosureUrl, fpath,
                                                           UIPolicy.getItemDownloadTempPath(cid, id)));
                 getListAdapter().notifyDataSetChanged();
             } else if (RTTask.StateDownload.Downloading == state) {
-                BGTask task = RTTask.S().getDownload(cid, id);
+                BGTask task = RTTask.S().getDownload(id);
                 task.cancel(null);
                 getListAdapter().notifyDataSetChanged();
             } else if (RTTask.StateDownload.Canceling == state) {
                 LookAndFeel.showTextToast(this, R.string.wait_cancel);
             } else if (RTTask.StateDownload.DownloadFailed == state) {
-                Err result = RTTask.S().getDownloadErr(cid, id);
+                Err result = RTTask.S().getDownloadErr(id);
                 LookAndFeel.showTextToast(this, result.getMsgId());
-                RTTask.S().consumeDownloadResult(cid, id);
+                RTTask.S().consumeDownloadResult(id);
                 getListAdapter().notifyDataSetChanged();
             } else
                 eAssert(false);
@@ -364,18 +370,17 @@ public class ItemListActivity extends Activity {
     // 'public' to use java reflection
     public void
     onActionLink(View view, long id, final int position) {
-        RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
+        RTTask.StateDownload state = RTTask.S().getDownloadState(id);
         if (RTTask.StateDownload.DownloadFailed == state) {
-            LookAndFeel.showTextToast(this, RTTask.S().getDownloadErr(cid, id).getMsgId());
-            RTTask.S().consumeDownloadResult(cid, id);
+            LookAndFeel.showTextToast(this, RTTask.S().getDownloadErr(id).getMsgId());
+            RTTask.S().consumeDownloadResult(id);
             getListAdapter().notifyDataSetChanged();
             return;
         }
 
         // 'link' is used.
         Intent intent = new Intent(this, ItemViewActivity.class);
-        intent.putExtra("cid", cid);
-        intent.putExtra("itemId", id);
+        intent.putExtra("id", id);
         startActivity(intent);
 
         changeItemState_opened(id, position);
@@ -472,7 +477,7 @@ public class ItemListActivity extends Activity {
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        if (Feed.Channel.Action.DN_ENCLOSURE == action
+        if (Feed.Channel.isActTgtEnclosure(action)
             && doesEnclosureDnFileExists(info.id, info.position))
             menu.findItem(R.id.delete_dnfile).setVisible(true);
     }
@@ -513,18 +518,11 @@ public class ItemListActivity extends Activity {
         cid = getIntent().getLongExtra("cid", 0);
         logI("Item to read : " + cid + "\n");
 
-        String[] s = null;
-        final int indexTITLE        = 0;
-        final int indexACTION       = 1;
-        s = db.getChannelInfoStrings(cid,
-                new DB.ColumnChannel[] {
-                    DB.ColumnChannel.TITLE,
-                    DB.ColumnChannel.ACTION,
-                    });
-        action = Feed.Channel.Action.convert(s[indexACTION]);
+        final String title = db.getChannelInfoString(cid, DB.ColumnChannel.TITLE);
+        final long   action = db.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
 
         setContentView(R.layout.item_list);
-        setTitle(s[indexTITLE]);
+        setTitle(title);
 
         // TODO
         //   How to use custom view + default option menu ???
@@ -544,7 +542,7 @@ public class ItemListActivity extends Activity {
         list = ((ListView)findViewById(R.id.list));
         eAssert(null != list);
         list.setAdapter(new ItemListAdapter(this, R.layout.item_row, adapterCursorQuery(cid),
-                                            getActionInfo(action).getAction(), cid));
+                                            getActionInfo(action).getAction()));
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void
@@ -585,7 +583,7 @@ public class ItemListActivity extends Activity {
         if (c.moveToFirst()) {
             do {
                 long id = c.getLong(0);
-                if (RTTask.StateDownload.Idle != RTTask.S().getDownloadState(cid, id))
+                if (RTTask.StateDownload.Idle != RTTask.S().getDownloadState(id))
                     RTTask.S().bindDownload(cid, id, new DownloadToFileBGTaskOnEvent());
             } while (c.moveToNext());
         }

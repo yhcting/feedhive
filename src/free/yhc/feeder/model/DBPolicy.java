@@ -36,7 +36,12 @@ public class DBPolicy {
 
     //private static Semaphore dbMutex = new Semaphore(1);
     private static DBPolicy instance = null;
-    private DB          db       = null;
+    private DB              db       = null;
+
+
+    interface ItemDataOp {
+        byte[] getData(Feed.Item item) throws FeederException;
+    }
 
     // ======================================================
     //
@@ -65,7 +70,7 @@ public class DBPolicy {
         values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.parD.enclosureUrl);
         values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.parD.enclosureLength);
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.parD.enclosureType);
-        values.put(ColumnItem.STATE.getName(),               item.dynD.state.name());
+        values.put(ColumnItem.STATE.getName(),               item.dynD.state);
         values.put(ColumnItem.RAWDATA.getName(),             item.dynD.rawdata);
 
         // This function is called for insert item.
@@ -81,8 +86,9 @@ public class DBPolicy {
         ContentValues values = new ContentValues();
         // application's internal information
         values.put(ColumnChannel.URL.getName(),              ch.profD.url);
-        values.put(ColumnChannel.ACTION.getName(),           ch.dynD.action.name());
-        values.put(ColumnChannel.UPDATETYPE.getName(),       ch.dynD.updatetype.name());
+        values.put(ColumnChannel.ACTION.getName(),           ch.dynD.action);
+        values.put(ColumnChannel.UPDATETYPE.getName(),       ch.dynD.updatetype);
+        values.put(ColumnChannel.STATE.getName(),            Feed.Channel.FStatDefault);
         values.put(ColumnChannel.CATEGORYID.getName(),       ch.dbD.categoryid);
         values.put(ColumnChannel.LASTUPDATE.getName(),       ch.dbD.lastupdate);
 
@@ -101,6 +107,33 @@ public class DBPolicy {
         // add to last position in terms of UI.
         values.put(ColumnChannel.POSITION.getName(),         getChannelInfoMaxLong(ColumnChannel.POSITION) + 1);
         return values;
+    }
+
+    /**
+     * Find channel
+     * @param state[out]
+     * @param url
+     * @return -1 (fail to find) / channel id (success)
+     */
+    private long
+    findChannel(long[] state, String url) {
+        long ret = -1;
+        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID, ColumnChannel.URL, ColumnChannel.STATE});
+        if (!c.moveToFirst()) {
+            c.close();
+            return -1;
+        }
+        do {
+            if (url.equals(c.getString(1))) {
+                if (null != state)
+                    state[0] = c.getLong(2);
+                ret = c.getLong(0);
+                break;
+            }
+        } while(c.moveToNext());
+
+        c.close();
+        return ret;
     }
 
     // ======================================================
@@ -133,15 +166,12 @@ public class DBPolicy {
     }
 
     public boolean
-    isDuplicatedChannelUrl(String url) {
-        boolean ret = false;
-        Cursor c = db.queryChannel(ColumnChannel.ID,
-                                   ColumnChannel.URL,
-                                   url);
-        if (0 < c.getCount())
-            ret = true;
-        c.close();
-        return ret;
+    isChannelUrlUsed(String url) {
+        long[] state = new long[1];
+        long cid = findChannel(state, url);
+        if (cid < 0 || !Feed.Channel.isStatUsed(state[0]))
+            return false;
+        return true;
     }
 
     public long
@@ -203,11 +233,33 @@ public class DBPolicy {
     // This is to insert channel url and holding place for this new channel at DB.
     //
     // @url    : url of new channel
-    // @return : success : cid / fails : -1 (invalid cid)
+    // @return : success : cid
+    //           failed  : -1 (including duplicated channel)
     //
     public long
     insertNewChannel(long categoryid, String url) {
-        long cid = -1;
+
+        long[] chState = new long[1];
+        long cid = findChannel(chState, url);
+
+        if (cid >= 0 && Feed.Channel.isStatUsed(chState[0]))
+            return -1;
+
+        if (cid >= 0 && !Feed.Channel.isStatUsed(chState[0])) {
+            if (!UIPolicy.makeChannelDir(cid)) {
+                return -1;
+            }
+            // There is unused existing channel.
+            // Let's reuse it.
+            ContentValues cvs = new ContentValues();
+            cvs.put(ColumnChannel.STATE.getName(),      Feed.Channel.FStatUsed);
+            // We didn't verify 'categoryid' here.
+            cvs.put(ColumnChannel.CATEGORYID.getName(), categoryid);
+            db.updateChannel(cid, cvs);
+            return cid;
+        }
+
+        // Real insertion!
 
         logI("InsertNewChannel DB Section Start");
         // insert and update channel id.
@@ -218,18 +270,17 @@ public class DBPolicy {
         ch.dbD.categoryid = categoryid;
         ch.dbD.lastupdate = new Date().getTime();
         cid = db.insertChannel(channelToContentValues(ch));
-        if (cid < 0)
-            return -1;
-
+        // check duplication...
         if (!UIPolicy.makeChannelDir(cid)) {
             db.deleteChannel(cid);
             return -1;
         }
+
         return cid;
     }
 
     public Err
-    getNewItems(long cid, Feed.Item[] items, LinkedList<Feed.Item> newItems) {
+    getNewItems(Feed.Item[] items, LinkedList<Feed.Item> newItems) {
         eAssert(null != items);
         logI("UpdateChannel DB Section Start");
 
@@ -261,8 +312,7 @@ public class DBPolicy {
                 //     Cons : drop performance.
                 //   So, I need to tune it.
                 //   At this moment, correctness is more important than performance.
-                Cursor c = db.queryItem(cid,
-                                        new ColumnItem[] { ColumnItem.ID },
+                Cursor c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
                                         new ColumnItem[] { ColumnItem.TITLE,
                                                            ColumnItem.PUBDATE,
                                                            ColumnItem.LINK,
@@ -301,42 +351,46 @@ public class DBPolicy {
     // return: -1 (for fail to update)
     //
     public int
-    updateChannel(Feed.Channel ch, LinkedList<Feed.Item> newItems)
+    updateChannel(Feed.Channel ch, LinkedList<Feed.Item> newItems, ItemDataOp idop)
             throws FeederException {
         eAssert(null != ch.items);
         logI("UpdateChannel DB Section Start : " + ch.dbD.id);
 
-        try {
-            // update channel information
-            ContentValues channelUpdateValues = new ContentValues();
-            channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.parD.title);
-            channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
-            channelUpdateValues.put(ColumnChannel.ACTION.getName(),      ch.dynD.action.name());
-            if (null != ch.dynD.imageblob)
-                channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
+        // update channel information
+        ContentValues channelUpdateValues = new ContentValues();
+        channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.parD.title);
+        channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
+        channelUpdateValues.put(ColumnChannel.ACTION.getName(),      ch.dynD.action);
+        if (null != ch.dynD.imageblob)
+            channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
 
-            // NOTE
-            //   Since here, rollback is not implemented!
-            //   Why?
-            //   'checkInterrupt()' is for 'fast-canceling'
-            //   But, rollback itself should block 'canceling'.
-            //   So, it's non-sense!
-            Iterator<Feed.Item> iter = newItems.iterator();
-            while (iter.hasNext()) {
-                Feed.Item item = iter.next();
+        // NOTE
+        //   Since here, rollback is not implemented!
+        //   Why?
+        //   'checkInterrupt()' is for 'fast-canceling'
+        //   But, rollback itself should block 'canceling'.
+        //   So, it's non-sense!
+        Iterator<Feed.Item> iter = newItems.iterator();
+        while (iter.hasNext()) {
+            Feed.Item item = iter.next();
+            item.dbD.cid = ch.dbD.id;
 
-                item.dbD.cid = ch.dbD.id;
-                if (0 > db.insertItem(ch.dbD.id, itemToContentValues(item)))
-                    return -1;
+            if (null != idop)
+                item.dynD.rawdata = idop.getData(item);
 
-                checkInterrupted();
-            }
-            logI("DBPolicy : new " + newItems.size() + " items are inserted");
-            channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), new Date().getTime());
-            db.updateChannel(ch.dbD.id, channelUpdateValues);
-        } catch (FeederException e) {
-            throw e;
+            if (0 > db.insertItem(itemToContentValues(item)))
+                return -1;
+
+            // lots of channel-update can be run simultaneously.
+            // So, reduce top-usage of heap memory, de-reference memory here!
+            // Because, 'rawdata' information is not used anymore!
+            item.dynD.rawdata = null;
+            checkInterrupted();
         }
+        logI("DBPolicy : new " + newItems.size() + " items are inserted");
+        channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), new Date().getTime());
+        db.updateChannel(ch.dbD.id, channelUpdateValues);
+
         logI("UpdateChannel DB Section End");
         return 0;
     }
@@ -389,8 +443,8 @@ public class DBPolicy {
     }
 
     public long
-    updateChannel_updateType(long cid, Feed.Channel.UpdateType utype) {
-        return db.updateChannel(cid, ColumnChannel.UPDATETYPE, utype.name());
+    updateChannel_updateType(long cid, long utype) {
+        return db.updateChannel(cid, ColumnChannel.UPDATETYPE, utype);
     }
 
     public Cursor
@@ -416,6 +470,8 @@ public class DBPolicy {
 
     public int
     deleteChannel(long cid) {
+        // Just mark as 'unused' - for future
+        //long n = db.updateChannel(cid, ColumnChannel.STATE, Feed.Channel.FStatUnused);
         long n = db.deleteChannel(cid);
         eAssert(0 == n || 1 == n);
         if (1 == n) {
@@ -495,18 +551,6 @@ public class DBPolicy {
         return max;
     }
 
-    public Feed.Channel.Action
-    getChannelInfoAction(long cid) {
-        String actstr = getChannelInfoString(cid, ColumnChannel.ACTION);
-        return Feed.Channel.Action.convert(actstr);
-    }
-
-    public Feed.Channel.UpdateType
-    getChannelInfoUpdateType(long cid) {
-        String utype = getChannelInfoString(cid, ColumnChannel.UPDATETYPE);
-        return Feed.Channel.UpdateType.convert(utype);
-    }
-
     public Bitmap
     getChannelImage(long cid) {
         Cursor c = db.queryChannel(cid, ColumnChannel.IMAGEBLOB);
@@ -540,10 +584,22 @@ public class DBPolicy {
         return lastId;
     }
 
+    public long
+    getItemInfoLong(long id, ColumnItem column) {
+        long ret = -1;
+        Cursor c = db.queryItem2(id, column);
+        if (c.moveToFirst())
+            ret = c.getLong(0);
+        else
+            eAssert(false);
+        c.close();
+        return ret;
+    }
+
     public String
-    getItemInfoString(long cid, long id, ColumnItem column) {
+    getItemInfoString(long id, ColumnItem column) {
         String ret = null;
-        Cursor c = db.queryItem(cid, id, column);
+        Cursor c = db.queryItem2(id, column);
         if (c.moveToFirst())
             ret = c.getString(0);
         c.close();
@@ -551,9 +607,9 @@ public class DBPolicy {
     }
 
     public String[]
-    getItemInfoStrings(long cid, long id, ColumnItem[] columns) {
+    getItemInfoStrings(long id, ColumnItem[] columns) {
         // Default is ASC order by ID
-        Cursor c = db.queryItem(cid, id, columns);
+        Cursor c = db.queryItem2(id, columns);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -568,10 +624,10 @@ public class DBPolicy {
     }
 
     public byte[]
-    getItemInfoData(long cid, long id, ColumnItem column) {
+    getItemInfoData(long id, ColumnItem column) {
         eAssert(ColumnItem.RAWDATA == column);
         byte[] ret = null;
-        Cursor c = db.queryItem(cid, id, column);
+        Cursor c = db.queryItem2(id, column);
         if (c.moveToFirst())
             ret = c.getBlob(0);
         c.close();
@@ -585,20 +641,22 @@ public class DBPolicy {
     }
 
     public long
-    updateItem_state(long cid, long id, Feed.Item.State state) {
+    updateItem_state(long id, long state) {
         // Update item during 'updating channel' is not expected!!
-        return db.updateItem(cid, id, ColumnItem.STATE, state.name());
+        return db.updateItem(id, ColumnItem.STATE, state);
     }
 
     public long
-    updateItem_data(long cid, long id, byte[] data) {
-        return db.updateItem(cid, id, ColumnItem.RAWDATA, data);
+    updateItem_data(long id, byte[] data) {
+        return db.updateItem(id, ColumnItem.RAWDATA, data);
     }
 
     // delete downloaded files etc.
+    /*
     public int
     cleanItemContents(long cid, long id) {
         eAssert(false); // Not implemented yet!
         return -1;
     }
+    */
 }

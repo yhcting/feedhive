@@ -17,6 +17,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore.MediaColumns;
@@ -50,7 +51,6 @@ import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.NetLoader;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
@@ -269,16 +269,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             logI("Pick Icon : file [" + filePath + "]");
 
             // Make url string from file path
-            byte[] imageData = null;
-            try {
-                imageData = Utils.getDecodedImageData("file://" + filePath);
-            } catch (FeederException e) {
-                return e.getError();
-            }
+            Bitmap bm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
+            byte[] imageData = Utils.compressBitmap(bm);
+            bm.recycle();
 
-            if (null == imageData) {
+            if (null == imageData)
                 return Err.CodecDecode;
-            }
 
             if (cid_pickImage < 0) {
                 eAssert(false);
@@ -314,9 +310,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         @Override
         public void onUpdateBGTaskUnregister(long cid, BGTask task) { }
         @Override
-        public void onDownloadBGTaskRegster(long cid, long id, BGTask task) { }
+        public void onDownloadBGTaskRegster(long id, BGTask task) { }
         @Override
-        public void onDownloadBGTaskUnegster(long cid, long id, BGTask task) { }
+        public void onDownloadBGTaskUnegster(long id, BGTask task) { }
     }
 
     private class OnAdapterActionHandler implements ChannelListAdapter.OnAction {
@@ -941,7 +937,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             menu.findItem(R.id.full_update).setEnabled(false);
         }
 
-        if (RTTask.S().isDownloadRunning(mInfo.id)) {
+        if (RTTask.S().isDownloadRunningInChannel(mInfo.id)) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }

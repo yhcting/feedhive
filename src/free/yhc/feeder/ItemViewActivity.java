@@ -24,7 +24,6 @@ import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.Utils;
 
 public class ItemViewActivity extends Activity {
-    private long    cid = -1;
     private long    id  = -1;
     private String  netUrl = "";
     private String  fileUrl = "";
@@ -48,12 +47,12 @@ public class ItemViewActivity extends Activity {
 
         @Override
         public void
-        onDownloadBGTaskRegster(long cid, long id, BGTask task) {
-            RTTask.S().bindDownload(cid, id, new DownloadToDBBGTaskOnEvent());
+        onDownloadBGTaskRegster(long id, BGTask task) {
+            RTTask.S().bindDownload(id, new DownloadToDBBGTaskOnEvent());
         }
 
         @Override
-        public void onDownloadBGTaskUnegster(long cid, long id, BGTask task) { }
+        public void onDownloadBGTaskUnegster(long id, BGTask task) { }
     }
 
     private class DownloadToDBBGTaskOnEvent implements
@@ -83,22 +82,22 @@ public class ItemViewActivity extends Activity {
     private void
     startDownload() {
         BGTaskDownloadToDB dnTask = new BGTaskDownloadToDB(this);
-        RTTask.S().registerDownload(cid, id, dnTask);
-        dnTask.start(new BGTaskDownloadToDB.Arg(netUrl, cid, id,
+        RTTask.S().registerDownload(id, dnTask);
+        dnTask.start(new BGTaskDownloadToDB.Arg(netUrl, id,
                                                 DB.ColumnItem.RAWDATA));
     }
 
     private void
     cancelDownload() {
-        BGTask task = RTTask.S().getDownload(cid, id);
+        BGTask task = RTTask.S().getDownload(id);
         task.cancel(null);
     }
 
     private void
     notifyResult() {
-        Err result = RTTask.S().getDownloadErr(cid, id);
+        Err result = RTTask.S().getDownloadErr(id);
         LookAndFeel.showTextToast(ItemViewActivity.this, result.getMsgId());
-        RTTask.S().consumeDownloadResult(cid, id);
+        RTTask.S().consumeDownloadResult(id);
         setupLayout();
     }
 
@@ -124,7 +123,7 @@ public class ItemViewActivity extends Activity {
         }
         imgbtn.setAlpha(0.5f);
 
-        RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
+        RTTask.StateDownload state = RTTask.S().getDownloadState(id);
         logI("ItemViewActivity : setupLayout : state : " + state.name());
         if (RTTask.StateDownload.Idle == state) {
 
@@ -139,7 +138,7 @@ public class ItemViewActivity extends Activity {
                     }
                 });
             } else {
-                byte[] htmldata = DBPolicy.S().getItemInfoData(cid, id, DB.ColumnItem.RAWDATA);
+                byte[] htmldata = DBPolicy.S().getItemInfoData(id, DB.ColumnItem.RAWDATA);
                 if (0 == htmldata.length) {
                     imgbtn.setImageResource(R.drawable.download_anim0);
                     imgbtn.setOnClickListener(new View.OnClickListener() {
@@ -199,16 +198,15 @@ public class ItemViewActivity extends Activity {
         wv = (WebView)findViewById(R.id.webview);
         wv.setWebViewClient(new WVClient());
 
-        cid = getIntent().getLongExtra("cid", -1);
-        id = getIntent().getLongExtra("itemId", -1);
-        eAssert(cid >=0 && id >= 0);
+        id = getIntent().getLongExtra("id", -1);
+        eAssert(id >= 0);
 
-        netUrl = DBPolicy.S().getItemInfoString(cid, id, ColumnItem.LINK);
+        netUrl = DBPolicy.S().getItemInfoString(id, ColumnItem.LINK);
         // Create html file from DataBase raw data of this link page.
         String tempHtmlPath = getFilesDir() + File.separator + "___itemView_temp__.html";
         fileUrl = "file:///" + tempHtmlPath;
 
-        byte[] htmldata = DBPolicy.S().getItemInfoData(cid, id, DB.ColumnItem.RAWDATA);
+        byte[] htmldata = DBPolicy.S().getItemInfoData(id, DB.ColumnItem.RAWDATA);
         if (0 == htmldata.length)
             currUrl = netUrl;
         else {
@@ -226,9 +224,9 @@ public class ItemViewActivity extends Activity {
     onResume() {
         super.onResume();
         // Bind download task if needed
-        RTTask.StateDownload state = RTTask.S().getDownloadState(cid, id);
+        RTTask.StateDownload state = RTTask.S().getDownloadState(id);
         if (RTTask.StateDownload.Idle != state)
-            RTTask.S().bindDownload(cid, id, new DownloadToDBBGTaskOnEvent());
+            RTTask.S().bindDownload(id, new DownloadToDBBGTaskOnEvent());
 
         setupLayout();
     }

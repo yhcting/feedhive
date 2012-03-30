@@ -1,56 +1,25 @@
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.eAssert;
-import free.yhc.feeder.R;
 
+// Naming notation
+//   F[flag name][value name] : 'F' => Flag
+//   M[flag_name][value name] : 'M' => Mask
 public class Feed {
-    // This deault_date is NOT defined by spec.
-    // It's just any value enough small.
-    public static final String default_date = "THU, 1 Jan 1970 00:00:00 +0000";
-
-    // 150 x 150 is enough size for channel icon.
-    public static final int CHANNEL_IMAGE_MAX_WIDTH  = 150;
-    public static final int CHANNEL_IMAGE_MAX_HEIGHT = 150;
-
     public static class Item {
+        // bit[0] : new / opened
+        public static final long FStatNew      = 0x00;
+        public static final long FStatOpened   = 0x01;
+        public static final long MStat         = 0x01;
+
+        public static final long FStatDefault  = FStatNew;
+
         ParD   parD;
         DbD    dbD     = new DbD();
         DynD   dynD    = new DynD();
 
-        public static enum State {
-            NEW        (R.color.title_color_new,
-                        R.color.text_color_new),
-             // For 'open'  : item is read
-             // For 'dnopen': item is downloaded
-            OPENED     (R.color.title_color_opened,
-                        R.color.text_color_opened);
-
-            private int titleColor;
-            private int textColor;
-
-            State(int titleColor, int textColor) {
-                this.titleColor = titleColor;
-                this.textColor = textColor;
-            }
-
-            public int
-            getTitleColor() {
-                return titleColor;
-            }
-
-            public int
-            getTextColor() {
-                return textColor;
-            }
-
-            public static State
-            convert(String s) {
-                for (State a : State.values())
-                    if (s.equals(a.name()))
-                        return a;
-                eAssert(false);
-                return null;
-            }
+        public static final boolean
+        isStateNew(long flag) {
+            return FStatNew == (flag & MStat);
         }
 
          // Information from parsing.
@@ -72,7 +41,7 @@ public class Feed {
 
         // Dynamic data - changed in runtime dynamically (usually by user action.
         static class DynD {
-            State  state = State.NEW;
+            long   state = FStatNew;
             byte[] rawdata = new byte[0];
         }
 
@@ -96,13 +65,18 @@ public class Feed {
                 .append("enclosure-url : ").append(parD.enclosureUrl).append("\n")
                 .append("enclosure-len : ").append(parD.enclosureLength).append("\n")
                 .append("enclosure-type: ").append(parD.enclosureType).append("\n")
-                .append("state : ").append((null == dynD.state)? null: dynD.state.name()).append("\n")
+                .append("state : ").append(dynD.state).append("\n")
                 .toString();
         }
 
     }
 
     public static class Channel {
+        // 150 x 150 is enough size for channel icon.
+        public static final int ICON_MAX_WIDTH  = 150;
+        public static final int ICON_MAX_HEIGHT = 150;
+
+
         ProfD profD = new ProfD();
         DbD   dbD   = new DbD();
         DynD  dynD  = new DynD();
@@ -110,45 +84,54 @@ public class Feed {
 
         Item[] items;
 
-        public static enum Action {
-            LINK,         // open link
-            DN_ENCLOSURE; // download/open enclosure
+        // ==================
+        // Flag State
+        // ==================
+        // bit[0] : State 'used / unused'
+        //   unused : Feeder doens't care about this channel.
+        //            When user decide to delete it.
+        //   used   : This channel is cared.
+        //            When user newly inserts this.
+        //            Or, it is inserted again after removing.
+        public static final long FStatUsed    = 0x00;
+        public static final long FStatUnused  = 0x01;
+        public static final long MStat        = 0x01;
+        public static final long FStatDefault = FStatUsed;
 
-            public static Action
-            convert(String s) {
-                for (Action a : Action.values())
-                    if (s.equals(a.name()))
-                        return a;
-                return null;
-            }
-        }
 
-        public static enum UpdateType {
-            NORMAL,    // feed
-            DN_LINK; // download link
+        // ==================
+        // Flag Action
+        // ==================
+        // bit[0] : Action target is 'link / enclosure' - default : link
+        public static final long FActTgtLink      = 0x00;
+        public static final long FActTgtEnclosure = 0x01;
+        public static final long MActTgt          = 0x01;
+        public static final long FActTgtDefault   = 0x00;
 
-            public static UpdateType
-            convert(String s) {
-                for (UpdateType a : UpdateType.values())
-                    if (s.equals(a.name()))
-                        return a;
-                return null;
-            }
-        }
+        // bit[1] : Action type is 'open / download' - default - open
+        public static final long FActOpOpen       = 0x00;
+        public static final long FActOpDn         = 0x02;
+        public static final long MActOp           = 0x02;
+        public static final long FActOpDefault    = 0x00;
 
-        public static enum ItemType {
-            NORMAL, // normal feed - ex. news feed.
-            MEDIA;  // media-based feed - ex. podcast.
+        public static final long FActDefault      = FActTgtDefault | FActOpDefault;
 
-            public static ItemType
-            convert(String s) {
-                for (ItemType a : ItemType.values())
-                    if (s.equals(a.name()))
-                        return a;
-                eAssert(false);
-                return null;
-            }
-        }
+
+        // ==================
+        // Flag UpdateType
+        // ==================
+        // bit[0] : update type 'normal / download'
+        public static final long FUpdLink       = 0x00; // update only feed link
+        public static final long FUpdDn         = 0x01; // download link during update.
+        public static final long MUpd           = 0x01;
+
+        public static final long FUpdDefault    = FUpdLink;
+
+        // ==================
+        // Feed Type
+        // ==================
+        public static final long ChannTypeNormal = 0; // for news/article etc
+        public static final long ChannTypeMedia  = 1; // for link and description for media data (etc. podcast)
 
         // Profile data.
         static class ProfD {
@@ -160,7 +143,7 @@ public class Feed {
             // Type is usually determined by which namespace is used at XML.
             // For example.
             //   xmlns:itunes -> Media
-            ItemType type         = ItemType.NORMAL;
+            long     type         = ChannTypeNormal;
             String   title        = "";
             String   description  = "";
             String   imageref     = "";
@@ -175,11 +158,46 @@ public class Feed {
 
         // Dynamic data - changed in runtime dynamically (usually by user action).
         static class DynD {
-            Action      action       = Action.LINK;
-            UpdateType  updatetype   = UpdateType.NORMAL;
-            byte[]      imageblob    = null;
+            long   action       = FActDefault;
+            long   updatetype   = FUpdLink;
+            byte[] imageblob    = null;
         }
 
+        // ==================
+        // Flag Functions
+        // ==================
+        public static final boolean
+        isStatUsed(long flag) {
+            return FStatUsed == (flag & MStat);
+        }
+
+        public static final boolean
+        isActOpOpen(long flag) {
+            return FActOpOpen == (flag & MActOp);
+        }
+
+        public static final boolean
+        isActTgtLink(long flag) {
+            return FActTgtLink == (flag & MActTgt);
+        }
+
+        public static final boolean
+        isActTgtEnclosure(long flag) {
+            return FActTgtEnclosure == (flag & MActTgt);
+        }
+
+        public static final boolean
+        isUpdLink(long flag) {
+            return FUpdLink == (flag & MUpd);
+        }
+
+        public static final boolean
+        isUpdDn(long flag) {
+            return FUpdDn == (flag & MUpd);
+        }
+        // ==================
+        // Members
+        // ==================
         Channel() {
             parD  = new ParD();
             items = new Item[0];

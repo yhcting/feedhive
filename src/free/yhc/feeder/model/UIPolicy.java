@@ -16,18 +16,18 @@ public class UIPolicy {
     // So, maximum character for filename in java on extN is 127.
     private static final int    maxFileNameLength = 127;
 
-    static Feed.Channel.Action
+    static long
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
-        if (Feed.Channel.ItemType.MEDIA == cParD.type) {
+        if (Feed.Channel.ChannTypeMedia == cParD.type) {
             if (null != iParD)
                 return isValidValue(iParD.enclosureUrl)?
-                        Feed.Channel.Action.DN_ENCLOSURE:
-                        Feed.Channel.Action.LINK;
+                        Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpDn:
+                        Feed.Channel.FActTgtLink | Feed.Channel.FActOpOpen;
             else
-                return Feed.Channel.Action.DN_ENCLOSURE;
+                return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpDn;
         } else
             // default is "open link"
-            return Feed.Channel.Action.LINK;
+            return Feed.Channel.FActTgtLink | Feed.Channel.FActOpOpen;
     }
 
     // check and fix if possible.
@@ -85,8 +85,9 @@ public class UIPolicy {
     // NOTE
     //   DB for channel item is fully updated
     public static String
-    getItemFilePath(long cid, long id, String title, String url) {
+    getItemFilePath(long id, String title, String url) {
         eAssert(null != url && null != title);
+        long cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
 
         // we don't need to create valid filename with empty url value.
         if (url.isEmpty())

@@ -118,8 +118,8 @@ public class Utils {
     logI(String msg) {
         if (!DBG)
             return;
-
-        Log.i(TAG, msg);
+        if (null != msg)
+            Log.i(TAG, msg);
     }
 
     public static void
@@ -127,7 +127,8 @@ public class Utils {
         if (!DBG)
             return;
 
-        Log.w(TAG, msg);
+        if (null != msg)
+            Log.w(TAG, msg);
     }
 
     public static void
@@ -135,7 +136,8 @@ public class Utils {
         if (!DBG)
             return;
 
-        Log.e(TAG, msg);
+        if (null != msg)
+            Log.e(TAG, msg);
     }
 
     public static boolean
@@ -295,41 +297,13 @@ public class Utils {
         return decodeImageRaw(image, opt);
     }
 
-
     public static byte[]
-    getDecodedImageData(String url) throws FeederException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        Err result = new NetLoader().download(os, url, null);
-        if (Err.NoErr != result)
-            return null;
-
-        long time;
-        //
-        // [ In case of RSS. ]
-        // Lots of sites doesn't obey RSS spec. related with channel image.
-        // Spec. says max value for width = 144 / for height = 400.
-        // But, there are lots of out-of-spec-sites
-        // So, we need to consider this case (image size is out-of-spec.)
-        // Solution used below is
-        // * shrink downloaded image and save it to DB.
-        // (To save memory and increase performance.)
-        if (os.size() > 0) {
-            time = System.currentTimeMillis();
-            Bitmap bm = Utils.decodeImage(os.toByteArray(),
-                    Feed.CHANNEL_IMAGE_MAX_WIDTH,
-                    Feed.CHANNEL_IMAGE_MAX_HEIGHT);
-            logI("TIME: Decode Image : " + (System.currentTimeMillis() - time));
-            if (null == bm)
-                return null;
-
-            time = System.currentTimeMillis();
-            ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-            bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-            bm.recycle();
-            logI("TIME: Compress Image : " + (System.currentTimeMillis() - time));
-            return baos.toByteArray();
-        }
-        return null;
+    compressBitmap(Bitmap bm) {
+        long time = System.currentTimeMillis();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+        bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+        logI("TIME: Compress Image : " + (System.currentTimeMillis() - time));
+        return baos.toByteArray();
     }
 
     public static boolean

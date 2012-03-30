@@ -11,7 +11,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,12 +20,15 @@ import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import android.graphics.Bitmap;
+
 public class NetLoader {
     public static final int UPD_DEFAULT     = 0x00;
     public static final int UPD_LOAD_IMG    = 0x01;
     public static final int UPD_ACTION      = 0x02;
     public static final int UPD_INIT        = UPD_ACTION | UPD_LOAD_IMG;
 
+    private static final int NET_RETRY = 3;
 
     private DBPolicy             dbp     = DBPolicy.S();
     private volatile boolean     cancelled = false;
@@ -34,6 +36,14 @@ public class NetLoader {
 
     interface OnProgress {
         void onProgress(int progress);
+    }
+
+    private void
+    checkInterrupted() throws FeederException {
+        if (cancelled)
+            throw new FeederException(Err.UserCancelled);
+        if (Thread.currentThread().isInterrupted())
+            throw new FeederException(Err.Interrupted);
     }
 
     public NetLoader() {
@@ -45,12 +55,14 @@ public class NetLoader {
         logI("Fetching Channel [" + url + "]\n");
         RSSParser.Result res = null;
         long             time;
-        int              retry = 5;
+        int              retry = NET_RETRY;
         eAssert(null == istream);
         while (0 < retry--) {
             try {
                 time = System.currentTimeMillis();
-                istream = new URL(url).openStream();
+                URLConnection conn = new URL(url).openConnection();
+                conn.setReadTimeout(1000);
+                istream = conn.getInputStream();
                 Document dom = DocumentBuilderFactory
                                 .newInstance()
                                 .newDocumentBuilder()
@@ -89,7 +101,7 @@ public class NetLoader {
      * if (null != imageref)
      * then 'imageref' is used instead of given by RSS channel infomation.
      */
-    private Err
+    private void
     update(long cid, int flag, String imageref)
             throws FeederException {
         String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
@@ -98,13 +110,7 @@ public class NetLoader {
         logI("Loading Items: " + url);
 
         long time = System.currentTimeMillis();
-        RSSParser.Result res;
-        try {
-            res = parseFeedUrl(url);
-        } catch (FeederException e) {
-            e.printStackTrace();
-            return e.getError();
-        }
+        RSSParser.Result res = parseFeedUrl(url);
         logI("TIME: Loading + Parsing : " + (System.currentTimeMillis() - time));
 
         // set to given value forcely due to this is 'update' - Not new insertion.
@@ -124,65 +130,89 @@ public class NetLoader {
         }
 
         if (0 != (UPD_LOAD_IMG & flag)) {
-            String prefix;
             time = System.currentTimeMillis();
+            String imgurl = (null == imageref)? ch.parD.imageref: imageref;
+
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
             try {
-                if (null == imageref)
-                    ch.dynD.imageblob = Utils.getDecodedImageData(ch.parD.imageref);
-                else
-                    ch.dynD.imageblob = Utils.getDecodedImageData(imageref);
+                download(os, imgurl, null);
             } catch (FeederException e) {
-                ; // ignore image data
+                // If getting icon from network fails, just ignore it!
+                if (Err.IONet != e.getError())
+                    throw e;
             }
-            prefix = (null == ch.dynD.imageblob)? "< Fail >" : "< Ok >";
-            logI("TIME: Handle Image : " + prefix + (System.currentTimeMillis() - time));
+            checkInterrupted();
+            if (os.size() > 0) {
+                Bitmap bm = Utils.decodeImage(os.toByteArray(),
+                                              Feed.Channel.ICON_MAX_WIDTH,
+                                              Feed.Channel.ICON_MAX_HEIGHT);
+                ch.dynD.imageblob = Utils.compressBitmap(bm);
+                bm.recycle();
+                String prefix = (null == ch.dynD.imageblob)? "< Fail >" : "< Ok >";
+                logI("TIME: Handle Image : " + prefix + (System.currentTimeMillis() - time));
+                checkInterrupted();
+            }
         }
 
         time = System.currentTimeMillis();
 
         LinkedList<Feed.Item> newItems = new LinkedList<Feed.Item>();
-        dbp.getNewItems(ch.dbD.id, ch.items, newItems);
-        if (Feed.Channel.UpdateType.DN_LINK == ch.dynD.updatetype) {
-            Iterator<Feed.Item> itr = newItems.iterator();
-            while (itr.hasNext()) {
-                Feed.Item item = itr.next();
-                ByteArrayOutputStream os = new ByteArrayOutputStream();
-                Err result = download(os, item.parD.link, null);
-                if (Err.NoErr == result)
-                    item.dynD.rawdata = os.toByteArray();
-
-                if (Err.UserCancelled == result)
-                    return result;
-
-                if (Thread.currentThread().isInterrupted())
-                    return Err.Interrupted;
-
-            }
+        dbp.getNewItems(ch.items, newItems);
+        DBPolicy.ItemDataOp idop = null;
+        if (Feed.Channel.isUpdDn(ch.dynD.updatetype)) {
+            idop = new DBPolicy.ItemDataOp() {
+                @Override
+                public byte[] getData(Feed.Item item) throws FeederException {
+                    ByteArrayOutputStream os = new ByteArrayOutputStream();
+                    try {
+                        download(os, item.parD.link, null);
+                        return os.toByteArray();
+                    } catch (FeederException e) {
+                        if (Err.IONet == e.getError())
+                            return null;
+                        else
+                            throw e;
+                    }
+                }
+            };
         }
-        dbp.updateChannel(ch, newItems);
-        logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
+        checkInterrupted();
+        dbp.updateChannel(ch, newItems, idop);
 
-        return Err.NoErr;
+        logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
     }
 
-    public Err
+    public void
     updateLoad(long cid, int flag)
             throws FeederException {
-        return update(cid, flag, null);
+        update(cid, flag, null);
     }
 
-    public Err
+    public void
     updateLoad(long cid, int flag, String imageref)
             throws FeederException {
         eAssert(null != imageref);
-        return update(cid, flag, imageref);
+        update(cid, flag, imageref);
     }
 
-    public Err
-    download(OutputStream ostream, String urlStr, OnProgress progressListener) {
+    /**
+     * NOTE!
+     *   Many caller assumes that 'download' function throws only below three exceptions.
+     *   If another exception need to be thrown, all callers should be checked and verified!
+     *
+     * FeederException : Err.IONet / Err.UserCancelled / Err.Interrupted
+     *
+     * @param ostream
+     * @param urlStr
+     * @param progressListener
+     * @throws FeederException
+     */
+    public void
+    download(OutputStream ostream, String urlStr, OnProgress progressListener)
+            throws FeederException {
            URL           url = null;
            URLConnection conn = null;
-           int           retry = 5;
+           int           retry = NET_RETRY;
            while (0 < retry--) {
                try {
                    url = new URL(urlStr);
@@ -194,23 +224,23 @@ public class NetLoader {
                    // SocketTimeoutException
                    // IOException
                    if (cancelled)
-                       return Err.UserCancelled;
+                       throw new FeederException(Err.UserCancelled);
 
                    if (0 >= retry) {
                        e.printStackTrace();
                        logW(e.getMessage());
-                       return Err.IONet;
+                       throw new FeederException(Err.IONet);
                    }
                }
            }
 
            try {
                int lenghtOfFile = conn.getContentLength();
-               istream = new BufferedInputStream(url.openStream());
+               istream = new BufferedInputStream(conn.getInputStream());
 
                if (Thread.currentThread().isInterrupted()) {
                    cancel();
-                   return Err.Interrupted;
+                   throw new FeederException(Err.Interrupted);
                }
 
                byte data[] = new byte[256*1024];
@@ -236,19 +266,17 @@ public class NetLoader {
                istream.close();
                istream = null;
 
-               return Err.NoErr;
-
            } catch (IOException e) {
                // User's canceling operation close in/out stream in force.
                // And this leads to IOException here.
                // So, we should check that this Exception is caused by user's cancel or real IOException.
                if (cancelled)
-                   return Err.UserCancelled;
+                   throw new FeederException(Err.UserCancelled);
                else {
                    e.printStackTrace();
                    logW(e.getMessage());
                    cancel();
-                   return Err.IONet;
+                   throw new FeederException(Err.IONet);
                }
            }
     }

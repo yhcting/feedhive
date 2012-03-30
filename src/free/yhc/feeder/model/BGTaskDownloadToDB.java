@@ -19,13 +19,11 @@ public class BGTaskDownloadToDB extends BGTask<BGTaskDownloadToDB.Arg, Object> {
 
     public static class Arg {
         String      url  = null;
-        long        cid  = -1;
         long        id   = -1;
         DB.ColumnItem column = null;
 
-        public Arg(String url, long cid, long id, DB.ColumnItem column) {
+        public Arg(String url, long id, DB.ColumnItem column) {
             this.url = url;
-            this.cid = cid;
             this.id = id;
             this.column = column;
         }
@@ -80,20 +78,25 @@ public class BGTaskDownloadToDB extends BGTask<BGTaskDownloadToDB.Arg, Object> {
         loader = new NetLoader();
 
         ByteArrayOutputStream ostream = new ByteArrayOutputStream();
-        Err result = loader.download(ostream, arg.url,
-                new NetLoader.OnProgress() {
-            @Override
-            public void onProgress(int prog) {
-                // TODO Auto-generated method stub
-                progress = prog;
-                publishProgress(prog);
-            }
-        });
+        Err result = Err.NoErr;
+        try {
+            loader.download(ostream, arg.url,
+                    new NetLoader.OnProgress() {
+                @Override
+                public void onProgress(int prog) {
+                    // TODO Auto-generated method stub
+                    progress = prog;
+                    publishProgress(prog);
+                }
+            });
+        } catch (FeederException e) {
+            result = e.getError();
+        }
 
         if (Err.NoErr == result) {
             // only 'RAWDATA' is supported now.
             eAssert(DB.ColumnItem.RAWDATA == arg.column);
-            if (0 > DBPolicy.S().updateItem_data(arg.cid, arg.id, ostream.toByteArray()))
+            if (0 > DBPolicy.S().updateItem_data(arg.id, ostream.toByteArray()))
                 result = Err.DBUnknown;
         }
 

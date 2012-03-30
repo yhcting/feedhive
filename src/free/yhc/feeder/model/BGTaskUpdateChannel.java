@@ -68,13 +68,14 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
         try {
             loader = new NetLoader();
             if (null == arg.customIconref)
-                return loader.updateLoad(arg.cid, arg.flag);
+                loader.updateLoad(arg.cid, arg.flag);
             else
-                return loader.updateLoad(arg.cid, arg.flag, arg.customIconref);
+                loader.updateLoad(arg.cid, arg.flag, arg.customIconref);
         } catch (FeederException e) {
             logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
             return e.getError();
         }
+        return Err.NoErr;
     }
 
     @Override

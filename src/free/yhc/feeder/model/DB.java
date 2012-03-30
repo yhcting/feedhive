@@ -2,11 +2,13 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+
+import java.util.Arrays;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
@@ -75,8 +77,20 @@ public final class DB extends SQLiteOpenHelper {
         // Columns for internal use.
         IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "integer",  "not null"), // time when channel is updated, lastly
-        ACTION          ("action",          "text",     "not null"),
-        UPDATETYPE      ("updatetype",      "text",     "not null"),
+        // For fast/simple comparison, flag of 'long' type is used instead of text.
+        ACTION          ("action",          "integer",  "not null"),
+        UPDATETYPE      ("updatetype",      "integer",  "not null"),
+        // state of this channel : used / unused etc.
+        // Why this is required?
+        // When delete channel, deleting all items that are stored at DB, doesn't make sense.
+        // Deleting channel means "I don't want to get feed anymore".
+        // (This doesn't mean "I don't want to delete all items too.")
+        // In this case, items of deleted channel still has foreign key to channel id.
+        // So, deleting channel from DB leads to DB corruption - foreign key constraints is broken!
+        // To avoid this, we can mark channel as 'unused' and keep in DB.
+        // This can preserve DB constraints.
+        // When, channel is re-used, we can do it by marking it as 'used'.
+        STATE           ("state",           "integer",  "not null"),
         // time string of SECONDS OF DAY (0 - 23:59:59). ex. "3600/7200" => update 1 and 2 hour every day
         SCHEDUPDATETIME ("schedupdatetime", "text",     "not null"),
         // old last item id.
@@ -127,7 +141,7 @@ public final class DB extends SQLiteOpenHelper {
         PUBDATE         ("pubdate",         "text",     "not null"),
 
         // Columns for internal use.
-        STATE           ("state",           "text",     "not null"), // new, read etc
+        STATE           ("state",           "integer",  "not null"), // new, read etc
         RAWDATA         ("rawdata",         "blob",     "not null"),
         // time when this item is inserted.(milliseconds since 1970.1.1....)
         INSTIME         ("instime",         "integer",  "not null"),
@@ -157,11 +171,6 @@ public final class DB extends SQLiteOpenHelper {
     static long
     getDefaultCategoryId() {
         return 0;
-    }
-
-    private static String
-    getItemTableName(long channelid) {
-        return TABLE_ITEM + channelid;
     }
 
     /**************************************
@@ -212,8 +221,9 @@ public final class DB extends SQLiteOpenHelper {
     @Override
     public void
     onCreate(SQLiteDatabase db) {
-        db.execSQL(buildTableSQL(TABLE_CHANNEL,  ColumnChannel.values()));
         db.execSQL(buildTableSQL(TABLE_CATEGORY, ColumnCategory.values()));
+        db.execSQL(buildTableSQL(TABLE_CHANNEL,  ColumnChannel.values()));
+        db.execSQL(buildTableSQL(TABLE_ITEM,     ColumnItem.values()));
         // default category is empty-named-category
         db.execSQL("INSERT INTO " + TABLE_CATEGORY + " ("
                     + ColumnCategory.NAME.getName() + ", " + ColumnCategory.ID.getName() + ") "
@@ -270,28 +280,6 @@ public final class DB extends SQLiteOpenHelper {
      * RSS DB operation
      **************************************/
 
-    long
-    createItemTable(long cid) {
-        try {
-            db.execSQL(buildTableSQL(getItemTableName(cid), ColumnItem.values()));
-        } catch (SQLException e) {
-            logI(e.getMessage());
-            return -1;
-        }
-        return 0;
-    }
-
-    long
-    dropItemTable(long cid) {
-        try {
-            db.execSQL("DROP TABLE '" + getItemTableName(cid) + "';");
-        } catch (SQLException e) {
-            logI(e.getMessage());
-            return -1;
-        }
-        return 0;
-    }
-
     Cursor
     queryCategory(ColumnCategory column) {
         return queryCategory(new ColumnCategory[] { column });
@@ -339,7 +327,7 @@ public final class DB extends SQLiteOpenHelper {
     queryChannel(long cid, ColumnChannel[] columns) {
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
-                        ColumnChannel.ID.getName() + " = '" + cid + "'",
+                        ColumnChannel.ID.getName() + " = " + cid,
                         null, null, null,
                         channelQueryDefaultOrder);
     }
@@ -367,7 +355,7 @@ public final class DB extends SQLiteOpenHelper {
     queryChannel(ColumnChannel[] columns, ColumnChannel where, long value) {
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
-                        where.getName() + " = '" + value + "'",
+                        where.getName() + " = " + value,
                         null, null, null,
                         channelQueryDefaultOrder);
     }
@@ -393,33 +381,30 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     Cursor
-    queryItem(long cid, ColumnItem[] columns) {
-        return db.query(getItemTableName(cid),
+    queryItem(ColumnItem[] columns) {
+        return db.query(TABLE_ITEM,
                         getColumnNames(columns),
                         null, null, null, null,
                         itemQueryDefaultOrder);
     }
 
     Cursor
-    queryItem(long cid, ColumnItem[] columns, long limit) {
-        return db.query(getItemTableName(cid),
+    queryItem(long cid, ColumnItem[] columns) {
+        return db.query(TABLE_ITEM,
                         getColumnNames(columns),
-                        null, null, null, null,
+                        ColumnItem.CHANNELID.getName() + " = " + cid,
+                        null, null, null,
+                        itemQueryDefaultOrder);
+    }
+
+    Cursor
+    queryItem(long cid, ColumnItem[] columns, long limit) {
+        return db.query(TABLE_ITEM,
+                        getColumnNames(columns),
+                        ColumnItem.CHANNELID.getName() + " = " + cid,
+                        null, null, null,
                         itemQueryDefaultOrder,
                         "" + limit);
-    }
-
-    Cursor
-    queryItem(long cid, long id, ColumnItem column) {
-        return queryItem(cid, id, new ColumnItem[] { column });
-    }
-
-    Cursor
-    queryItem(long cid, long id, ColumnItem[] columns) {
-        return db.query(getItemTableName(cid),
-                        getColumnNames(columns),
-                        ColumnItem.ID.getName() + " = '" + id + "'",
-                        null, null, null, null);
     }
 
     Cursor
@@ -429,6 +414,16 @@ public final class DB extends SQLiteOpenHelper {
 
     Cursor
     queryItem(long cid, ColumnItem[] columns, ColumnItem[] wheres, String[] values) {
+
+        ColumnItem[] wheres2 = Arrays.copyOf(wheres, wheres.length + 1);
+        String[]     values2 = Arrays.copyOf(values, values.length + 1);
+        wheres2[wheres.length] = ColumnItem.CHANNELID;
+        values2[values.length] = "" + cid;
+        return queryItem(columns, wheres2, values2);
+    }
+
+    Cursor
+    queryItem(ColumnItem[] columns, ColumnItem[] wheres, String[] values) {
         eAssert(wheres.length == values.length);
         String whereStr = "";
         for (int i = 0; i < wheres.length;) {
@@ -438,11 +433,25 @@ public final class DB extends SQLiteOpenHelper {
         }
 
         // recently inserted item is located at top of rows.
-        return db.query(getItemTableName(cid),
+        return db.query(TABLE_ITEM,
                         getColumnNames(columns),
                         whereStr,
                         null, null, null,
                         itemQueryDefaultOrder);
+    }
+
+
+    Cursor
+    queryItem2(long id, ColumnItem column) {
+        return queryItem2(id, new ColumnItem[] { column });
+    }
+
+    Cursor
+    queryItem2(long id, ColumnItem[] columns) {
+        return db.query(TABLE_ITEM,
+                        getColumnNames(columns),
+                        ColumnItem.ID.getName() + " = " + id,
+                        null, null, null, null);
     }
 
     long
@@ -477,35 +486,16 @@ public final class DB extends SQLiteOpenHelper {
                          null);
     }
 
-    /*
-     * IMPORTANT : This is not one-transaction!!!
-     */
     long
     insertChannel(ContentValues values) {
-        long cid = db.insert(TABLE_CHANNEL, null, values);
-        if (cid >= 0) {
-            if (0 > createItemTable(cid)) {
-                deleteChannel(cid);
-                return -1;
-            }
-        } else
-            return -1; // fail to insert channel information.
-
-        return cid;
+        return db.insert(TABLE_CHANNEL, null, values);
     }
 
-    /*
-     * IMPORTANT : This is not one-transaction!!!
-     */
     long
     deleteChannel(long cid) {
-        long r = db.delete(TABLE_CHANNEL,
-                           ColumnChannel.ID.getName() + " = " + cid,
-                           null);
-        if (0 != r)
-            dropItemTable(cid);
-
-        return r;
+        return db.delete(TABLE_CHANNEL,
+                        ColumnChannel.ID.getName() + " = " + cid,
+                        null);
     }
 
     /**
@@ -546,36 +536,36 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    insertItem(long cid, ContentValues values) {
-        return db.insert(getItemTableName(cid), null, values);
+    insertItem(ContentValues values) {
+        return db.insert(TABLE_ITEM, null, values);
     }
 
     long
-    updateItem(long cid, long id, ContentValues values) {
-        return db.update(getItemTableName(cid),
+    updateItem(long id, ContentValues values) {
+        return db.update(TABLE_ITEM,
                          values,
                          ColumnItem.ID.getName() + " = " + id,
                          null);
     }
 
     long
-    updateItem(long cid, long id, ColumnItem field, String v) {
+    updateItem(long id, ColumnItem field, String v) {
         ContentValues cvs = new ContentValues();
         cvs.put(field.getName(), v);
-        return updateItem(cid, id, cvs);
+        return updateItem(id, cvs);
     }
 
     long
-    updateItem(long cid, long id, ColumnItem field, Long v) {
+    updateItem(long id, ColumnItem field, Long v) {
         ContentValues cvs = new ContentValues();
         cvs.put(field.getName(), v);
-        return updateItem(cid, id, cvs);
+        return updateItem(id, cvs);
     }
 
     long
-    updateItem(long cid, long id, ColumnItem field, byte[] v) {
+    updateItem(long id, ColumnItem field, byte[] v) {
         ContentValues cvs = new ContentValues();
         cvs.put(field.getName(), v);
-        return updateItem(cid, id, cvs);
+        return updateItem(id, cvs);
     }
 }

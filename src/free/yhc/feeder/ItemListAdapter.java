@@ -24,9 +24,8 @@ import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 
 public class ItemListAdapter extends ResourceCursorAdapter {
-    private Feed.Channel.Action act;
-    private long                cid    = -1;
-    private DBPolicy            dbp    = DBPolicy.S();
+    private long      act = Feed.Channel.FActDefault;
+    private DBPolicy  dbp = DBPolicy.S();
 
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
     // See "DownloadProgressOnEvent" for details
@@ -84,11 +83,22 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         }
     }
 
+    public static final int
+    getTitleColor(long stateFlag) {
+        return Feed.Item.isStateNew(stateFlag)?
+                R.color.title_color_new: R.color.text_color_opened;
+    }
+
+    public static final int
+    getTextColor(long stateFlag) {
+        return Feed.Item.isStateNew(stateFlag)?
+                R.color.text_color_new: R.color.text_color_opened;
+    }
+
     public ItemListAdapter(Context context, int layout, Cursor c,
-                           Feed.Channel.Action act, long cid) {
+                           long act) {
         super(context, layout, c);
         this.act = act;
-        this.cid = cid;
         dummyTextView = new TextView(context);
     }
 
@@ -102,12 +112,8 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         //   But, definitely slower than before...
         // TODO
         //   Do performance check on low-end-device.
-        String statestr;
-        statestr = dbp.getItemInfoString(
-                            cid,
-                            c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName())),
-                            DB.ColumnItem.STATE);
-        Feed.Item.State state = Feed.Item.State.convert(statestr);
+        final long state = dbp.getItemInfoLong(c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName())),
+                                               DB.ColumnItem.STATE);
 
         final TextView titlev = (TextView)view.findViewById(R.id.title);
         final TextView descv  = (TextView)view.findViewById(R.id.description);
@@ -131,14 +137,14 @@ public class ItemListAdapter extends ResourceCursorAdapter {
 
 
         boolean bDataSaved = false;
-        if (Feed.Channel.Action.LINK == act) {
+        if (Feed.Channel.isActTgtLink(act)) {
             // This is dynamic data - changed by user in runtime.
             // So, let's read from database directly.
-            byte[] htmldata = DBPolicy.S().getItemInfoData(cid, id, DB.ColumnItem.RAWDATA);
+            byte[] htmldata = DBPolicy.S().getItemInfoData(id, DB.ColumnItem.RAWDATA);
             bDataSaved = (htmldata.length > 0);
-        } else if (Feed.Channel.Action.DN_ENCLOSURE == act) {
+        } else if (Feed.Channel.isActTgtEnclosure(act)) {
             String url = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_URL.getName()));
-            bDataSaved = new File(UIPolicy.getItemFilePath(cid, id, title, url)).exists();
+            bDataSaved = new File(UIPolicy.getItemFilePath(id, title, url)).exists();
         } else
             eAssert(false);
 
@@ -157,7 +163,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         if (bDataSaved) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
-            RTTask.StateDownload dnState = RTTask.S().getDownloadState(cid, id);
+            RTTask.StateDownload dnState = RTTask.S().getDownloadState(id);
             if (RTTask.StateDownload.Idle == dnState) {
                 imgv.setImageResource(R.drawable.download_anim0);
             } else if (RTTask.StateDownload.Downloading == dnState) {
@@ -187,7 +193,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
                 progressv.switchOnEvent(onEvent);
                 RTTask.S().unbind(progressv);
-                RTTask.S().bindDownload(cid, id, progressv, onEvent);
+                RTTask.S().bindDownload(id, progressv, onEvent);
                 progressv.setVisibility(View.VISIBLE);
             } else if (RTTask.StateDownload.DownloadFailed == dnState) {
                 imgv.setImageResource(R.drawable.ic_info);
@@ -198,10 +204,10 @@ public class ItemListAdapter extends ResourceCursorAdapter {
                 eAssert(false);
         }
 
-        titlev.setTextColor(context.getResources().getColor(state.getTitleColor()));
-        descv.setTextColor(context.getResources().getColor(state.getTextColor()));
-        datev.setTextColor(context.getResources().getColor(state.getTextColor()));
-        lengthv.setTextColor(context.getResources().getColor(state.getTextColor()));
+        titlev.setTextColor(context.getResources().getColor(getTitleColor(state)));
+        descv.setTextColor(context.getResources().getColor(getTextColor(state)));
+        datev.setTextColor(context.getResources().getColor(getTextColor(state)));
+        lengthv.setTextColor(context.getResources().getColor(getTextColor(state)));
     }
 
 }
