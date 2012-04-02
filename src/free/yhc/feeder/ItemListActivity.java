@@ -519,7 +519,7 @@ public class ItemListActivity extends Activity {
         logI("Item to read : " + cid + "\n");
 
         final String title = db.getChannelInfoString(cid, DB.ColumnChannel.TITLE);
-        final long   action = db.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        action = db.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
 
         setContentView(R.layout.item_list);
         setTitle(title);

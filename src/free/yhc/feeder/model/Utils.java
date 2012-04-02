@@ -398,11 +398,10 @@ public class Utils {
     removeFileRecursive(File f) {
         if (f.isDirectory()) {
             for (File c : f.listFiles())
-                removeFileRecursive(c);
+                if (!removeFileRecursive(c))
+                    return false;
         }
-        if (!f.delete())
-            return false;
-        return true;
+        return f.delete();
     }
 
     public static String

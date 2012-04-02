@@ -33,6 +33,7 @@ import free.yhc.feeder.model.DB.ColumnItem;
 // Singleton
 public class DBPolicy {
     private static final String defaultSchedUpdateTime = "" + (3 * 3600); // 3 o'clock
+    private static final Object dummyObject = new Object(); // static dummy object;
 
     //private static Semaphore dbMutex = new Semaphore(1);
     private static DBPolicy instance = null;
@@ -109,6 +110,23 @@ public class DBPolicy {
         return values;
     }
 
+    private Object
+    getCursorValue(Cursor c, int columnIndex) {
+        switch (c.getType(columnIndex)) {
+        case Cursor.FIELD_TYPE_NULL:
+            return null;
+        case Cursor.FIELD_TYPE_FLOAT:
+            return c.getDouble(columnIndex);
+        case Cursor.FIELD_TYPE_INTEGER:
+            return c.getLong(columnIndex);
+        case Cursor.FIELD_TYPE_STRING:
+            return c.getString(columnIndex);
+        case Cursor.FIELD_TYPE_BLOB:
+        }
+        eAssert(false);
+        return null;
+    }
+
     /**
      * Find channel
      * @param state[out]
@@ -118,7 +136,10 @@ public class DBPolicy {
     private long
     findChannel(long[] state, String url) {
         long ret = -1;
-        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID, ColumnChannel.URL, ColumnChannel.STATE});
+        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
+                                                         ColumnChannel.URL,
+                                                         ColumnChannel.STATE},
+                                   null, dummyObject, null, false, 0);
         if (!c.moveToFirst()) {
             c.close();
             return -1;
@@ -211,7 +232,8 @@ public class DBPolicy {
     public Feed.Category[]
     getCategories() {
         // Column index is used below. So order is important.
-        Cursor c = db.queryCategory(new ColumnCategory[] { ColumnCategory.ID, ColumnCategory.NAME, });
+        Cursor c = db.queryCategory(new ColumnCategory[] { ColumnCategory.ID, ColumnCategory.NAME, },
+                                    null, null);
 
         int i = 0;
         Feed.Category[] cats = new Feed.Category[c.getCount()];
@@ -322,7 +344,8 @@ public class DBPolicy {
                                                        item.parD.pubDate,
                                                        item.parD.link,
                                                        //item.parD.description,
-                                                       item.parD.enclosureUrl });
+                                                       item.parD.enclosureUrl },
+                                        0);
                 if (c.getCount() > 0) {
                     c.close();
                     continue; // duplicated
@@ -455,24 +478,31 @@ public class DBPolicy {
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
         eAssert(categoryid >= 0);
-        return db.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid);
+        return db.queryChannel(columns,
+                               new ColumnChannel[] { ColumnChannel.STATE,
+                                                     ColumnChannel.CATEGORYID },
+                               new Object[] { Feed.Channel.FStatUsed,
+                                              categoryid },
+                               null, false, 0);
     }
 
     public Cursor
     queryChannel(ColumnChannel column) {
-        return db.queryChannel(column);
+        return queryChannel(new ColumnChannel[] { column });
     }
 
     public Cursor
     queryChannel(ColumnChannel[] columns) {
-        return db.queryChannel(columns);
+        return db.queryChannel(columns,
+                ColumnChannel.STATE,
+                Feed.Channel.FStatUsed,
+                null, false, 0);
     }
 
     public int
     deleteChannel(long cid) {
         // Just mark as 'unused' - for future
-        //long n = db.updateChannel(cid, ColumnChannel.STATE, Feed.Channel.FStatUnused);
-        long n = db.deleteChannel(cid);
+        long n = db.updateChannel(cid, ColumnChannel.STATE, Feed.Channel.FStatUnused);
         eAssert(0 == n || 1 == n);
         if (1 == n) {
             UIPolicy.removeChannelDir(cid);
@@ -483,10 +513,12 @@ public class DBPolicy {
 
     public long[]
     getChannelIds(long categoryid) {
-        Cursor c = db.queryChannel(ColumnChannel.ID,
-                                   ColumnChannel.CATEGORYID,
-                                   categoryid);
-
+        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
+                                   new ColumnChannel[] { ColumnChannel.STATE,
+                                                         ColumnChannel.CATEGORYID },
+                                   new Object[] { Feed.Channel.FStatUsed,
+                                                  categoryid },
+                                   null, false, 0);
         long[] cids = new long[c.getCount()];
         if (c.moveToFirst()) {
             int i = 0;
@@ -499,31 +531,41 @@ public class DBPolicy {
         return cids;
     }
 
-    public Long
-    getChannelInfoLong(long cid, ColumnChannel column) {
-        Long ret = null;
-        Cursor c = db.queryChannel(cid, column);
+    private Object
+    getChannelInfoObject(long cid, ColumnChannel column) {
+        Cursor c = db.queryChannel(new ColumnChannel[] { column },
+                                   new ColumnChannel[] { ColumnChannel.STATE,
+                                                         ColumnChannel.ID },
+                                   new Object[] { Feed.Channel.FStatUsed,
+                                                  cid },
+                                   null, false, 0);
+        Object ret = null;
         if (c.moveToFirst())
-            ret = c.getLong(0);
-
+            ret = getCursorValue(c, 0);
         c.close();
         return ret;
+    }
+
+    public Long
+    getChannelInfoLong(long cid, ColumnChannel column) {
+        eAssert(column.getType().equals("integer"));
+        return (Long)getChannelInfoObject(cid, column);
     }
 
     public String
     getChannelInfoString(long cid, ColumnChannel column) {
-        String ret = null;
-        Cursor c = db.queryChannel(cid, column);
-        if (c.moveToFirst())
-            ret = c.getString(0);
-
-        c.close();
-        return ret;
+        eAssert(column.getType().equals("text"));
+        return (String)getChannelInfoObject(cid, column);
     }
 
     public String[]
     getChannelInfoStrings(long cid, ColumnChannel[] columns) {
-        Cursor c = db.queryChannel(cid, columns);
+        Cursor c = db.queryChannel(columns,
+                                    new ColumnChannel[] { ColumnChannel.STATE,
+                                                          ColumnChannel.ID },
+                                    new Object[] { Feed.Channel.FStatUsed,
+                                                   cid },
+                                    null, false, 0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -553,7 +595,12 @@ public class DBPolicy {
 
     public Bitmap
     getChannelImage(long cid) {
-        Cursor c = db.queryChannel(cid, ColumnChannel.IMAGEBLOB);
+        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
+                                   new ColumnChannel[] { ColumnChannel.STATE,
+                                                         ColumnChannel.ID },
+                                   new Object[] { Feed.Channel.FStatUsed,
+                                                  cid },
+                                   null, false, 0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -572,7 +619,10 @@ public class DBPolicy {
 
     public long
     getItemInfoMaxId(long cid) {
-        Cursor c = db.queryItem(cid, new ColumnItem[] { ColumnItem.ID }, 1);
+        Cursor c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
+                                new ColumnItem[] { ColumnItem.CHANNELID },
+                                new Object[] { cid },
+                                1);
         if (!c.moveToFirst())
             return 0; // there is no item!
 
@@ -584,32 +634,38 @@ public class DBPolicy {
         return lastId;
     }
 
-    public long
-    getItemInfoLong(long id, ColumnItem column) {
-        long ret = -1;
-        Cursor c = db.queryItem2(id, column);
+
+    private Object
+    getItemInfoObject(long id, ColumnItem column) {
+        Cursor c = db.queryItem(new ColumnItem[] { column },
+                                new ColumnItem[] { ColumnItem.ID },
+                                new Object[] { id },
+                                0);
+        Object ret = null;
         if (c.moveToFirst())
-            ret = c.getLong(0);
-        else
-            eAssert(false);
+            ret = getCursorValue(c, 0);
         c.close();
         return ret;
+    }
+    public long
+    getItemInfoLong(long id, ColumnItem column) {
+        eAssert(column.getType().equals("integer"));
+        return (Long)getItemInfoObject(id, column);
     }
 
     public String
     getItemInfoString(long id, ColumnItem column) {
-        String ret = null;
-        Cursor c = db.queryItem2(id, column);
-        if (c.moveToFirst())
-            ret = c.getString(0);
-        c.close();
-        return ret;
+        eAssert(column.getType().equals("text"));
+        return (String)getItemInfoObject(id, column);
     }
 
     public String[]
     getItemInfoStrings(long id, ColumnItem[] columns) {
         // Default is ASC order by ID
-        Cursor c = db.queryItem2(id, columns);
+        Cursor c = db.queryItem(columns,
+                                new ColumnItem[] { ColumnItem.ID },
+                                new Object[] { id },
+                                0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -626,8 +682,11 @@ public class DBPolicy {
     public byte[]
     getItemInfoData(long id, ColumnItem column) {
         eAssert(ColumnItem.RAWDATA == column);
+        Cursor c = db.queryItem(new ColumnItem[] { column },
+                                new ColumnItem[] { ColumnItem.ID },
+                                new Object[] { id },
+                                0);
         byte[] ret = null;
-        Cursor c = db.queryItem2(id, column);
         if (c.moveToFirst())
             ret = c.getBlob(0);
         c.close();
@@ -637,7 +696,10 @@ public class DBPolicy {
 
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
-        return db.queryItem(cid, columns);
+        return db.queryItem(columns,
+                            new ColumnItem[] { ColumnItem.CHANNELID },
+                            new Object[] { cid },
+                            0);
     }
 
     public long

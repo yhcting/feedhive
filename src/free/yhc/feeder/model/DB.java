@@ -2,9 +2,6 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
-
-import java.util.Arrays;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -277,183 +274,14 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     /**************************************
-     * RSS DB operation
+     * DB operation
      **************************************/
 
-    Cursor
-    queryCategory(ColumnCategory column) {
-        return queryCategory(new ColumnCategory[] { column });
-    }
-
-    Cursor
-    queryCategory(ColumnCategory[] columns) {
-        return db.query(TABLE_CATEGORY,
-                        getColumnNames(columns),
-                        null, null, null, null, null);
-    }
-
-    Cursor
-    queryCategory(ColumnCategory column, ColumnCategory where, String value) {
-        return queryCategory(new ColumnCategory[] { column }, where, value);
-    }
-
-    Cursor
-    queryCategory(ColumnCategory[] columns, ColumnCategory where, String value) {
-        return db.query(TABLE_CATEGORY,
-                        getColumnNames(columns),
-                        where.getName() + " = " + DatabaseUtils.sqlEscapeString(value),
-                        null, null, null, null);
-    }
-
-    Cursor
-    queryChannel(ColumnChannel column) {
-        return queryChannel(new ColumnChannel[] { column });
-    }
-
-    Cursor
-    queryChannel(ColumnChannel[] columns) {
-        return db.query(TABLE_CHANNEL,
-                        getColumnNames(columns),
-                        null, null, null, null,
-                        channelQueryDefaultOrder);
-    }
-
-    Cursor
-    queryChannel(long cid, ColumnChannel column) {
-        return queryChannel(cid, new ColumnChannel[] { column });
-    }
-
-    Cursor
-    queryChannel(long cid, ColumnChannel[] columns) {
-        return db.query(TABLE_CHANNEL,
-                        getColumnNames(columns),
-                        ColumnChannel.ID.getName() + " = " + cid,
-                        null, null, null,
-                        channelQueryDefaultOrder);
-    }
-
-    Cursor
-    queryChannel(ColumnChannel column, ColumnChannel where, String value) {
-        return queryChannel(new ColumnChannel[] { column }, where, value);
-    }
-
-    Cursor
-    queryChannel(ColumnChannel[] columns, ColumnChannel where, String value) {
-        return db.query(TABLE_CHANNEL,
-                        getColumnNames(columns),
-                        where.getName() + " = " + DatabaseUtils.sqlEscapeString(value),
-                        null, null, null,
-                        channelQueryDefaultOrder);
-    }
-
-    Cursor
-    queryChannel(ColumnChannel column, ColumnChannel where, long value) {
-        return queryChannel(new ColumnChannel[] { column }, where, value);
-    }
-
-    Cursor
-    queryChannel(ColumnChannel[] columns, ColumnChannel where, long value) {
-        return db.query(TABLE_CHANNEL,
-                        getColumnNames(columns),
-                        where.getName() + " = " + value,
-                        null, null, null,
-                        channelQueryDefaultOrder);
-    }
-
-    Cursor
-    queryChannel(ColumnChannel column, ColumnChannel orderColumn, boolean bAsc, long limit) {
-        return queryChannel(new ColumnChannel[] { column }, orderColumn, bAsc, limit);
-    }
-
-    Cursor
-    queryChannel(ColumnChannel[] columns, ColumnChannel orderColumn, boolean bAsc, long limit) {
-        String order = orderColumn.getName() + (bAsc? " ASC": " DESC");
-        return db.query(TABLE_CHANNEL,
-                        getColumnNames(columns),
-                        null, null, null, null,
-                        order,
-                        "" + limit);
-    }
-
-    Cursor
-    queryChannelMax(ColumnChannel column) {
-        return db.rawQuery("SELECT MAX(" + column.getName() + ") FROM " + TABLE_CHANNEL +"", null);
-    }
-
-    Cursor
-    queryItem(ColumnItem[] columns) {
-        return db.query(TABLE_ITEM,
-                        getColumnNames(columns),
-                        null, null, null, null,
-                        itemQueryDefaultOrder);
-    }
-
-    Cursor
-    queryItem(long cid, ColumnItem[] columns) {
-        return db.query(TABLE_ITEM,
-                        getColumnNames(columns),
-                        ColumnItem.CHANNELID.getName() + " = " + cid,
-                        null, null, null,
-                        itemQueryDefaultOrder);
-    }
-
-    Cursor
-    queryItem(long cid, ColumnItem[] columns, long limit) {
-        return db.query(TABLE_ITEM,
-                        getColumnNames(columns),
-                        ColumnItem.CHANNELID.getName() + " = " + cid,
-                        null, null, null,
-                        itemQueryDefaultOrder,
-                        "" + limit);
-    }
-
-    Cursor
-    queryItem(long cid, ColumnItem[] columns, ColumnItem where, String value) {
-        return queryItem(cid, columns, new ColumnItem[] { where }, new String[] { value });
-    }
-
-    Cursor
-    queryItem(long cid, ColumnItem[] columns, ColumnItem[] wheres, String[] values) {
-
-        ColumnItem[] wheres2 = Arrays.copyOf(wheres, wheres.length + 1);
-        String[]     values2 = Arrays.copyOf(values, values.length + 1);
-        wheres2[wheres.length] = ColumnItem.CHANNELID;
-        values2[values.length] = "" + cid;
-        return queryItem(columns, wheres2, values2);
-    }
-
-    Cursor
-    queryItem(ColumnItem[] columns, ColumnItem[] wheres, String[] values) {
-        eAssert(wheres.length == values.length);
-        String whereStr = "";
-        for (int i = 0; i < wheres.length;) {
-            whereStr += wheres[i].getName() + " = " + DatabaseUtils.sqlEscapeString(values[i]);
-            if (++i < wheres.length)
-                whereStr += " AND ";
-        }
-
-        // recently inserted item is located at top of rows.
-        return db.query(TABLE_ITEM,
-                        getColumnNames(columns),
-                        whereStr,
-                        null, null, null,
-                        itemQueryDefaultOrder);
-    }
-
-
-    Cursor
-    queryItem2(long id, ColumnItem column) {
-        return queryItem2(id, new ColumnItem[] { column });
-    }
-
-    Cursor
-    queryItem2(long id, ColumnItem[] columns) {
-        return db.query(TABLE_ITEM,
-                        getColumnNames(columns),
-                        ColumnItem.ID.getName() + " = " + id,
-                        null, null, null, null);
-    }
-
+    // ====================
+    //
+    // Category
+    //
+    // ====================
     long
     insertCategory(Feed.Category category) {
         ContentValues values = new ContentValues();
@@ -486,6 +314,45 @@ public final class DB extends SQLiteOpenHelper {
                          null);
     }
 
+    /**
+     * @param column
+     * @param where
+     * @param value
+     * @return
+     */
+    Cursor
+    queryCategory(ColumnCategory column, ColumnCategory where, String value) {
+        return queryCategory(new ColumnCategory[] { column }, where, value);
+    }
+
+    /**
+     *
+     * @param columns
+     * @param where
+     *      if (null == value) than this is ignored.
+     * @param value
+     *      if (null == where) than this is ignored.
+     * @return
+     */
+    Cursor
+    queryCategory(ColumnCategory[] columns, ColumnCategory where, String value) {
+        String whereStr;
+        if (null == where || null == value)
+            whereStr = null;
+        else
+            whereStr = where.getName() + " = " + DatabaseUtils.sqlEscapeString(value);
+        return db.query(TABLE_CATEGORY,
+                        getColumnNames(columns),
+                        whereStr,
+                        null, null, null, null);
+    }
+
+    // ====================
+    //
+    // Channel
+    //
+    // ====================
+
     long
     insertChannel(ContentValues values) {
         return db.insert(TABLE_CHANNEL, null, values);
@@ -515,26 +382,91 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    updateChannel(long cid, ColumnChannel field, String v) {
+    updateChannel(long cid, ColumnChannel field, Object v) {
         ContentValues cvs = new ContentValues();
-        cvs.put(field.getName(), v);
+        if (v instanceof String)
+            cvs.put(field.getName(), (String)v);
+        else if (v instanceof Long)
+            cvs.put(field.getName(), (Long)v);
+        else if (v instanceof byte[])
+            cvs.put(field.getName(), (byte[])v);
+        else
+            eAssert(false);
         return updateChannel(cid, cvs);
     }
 
-    long
-    updateChannel(long cid, ColumnChannel field, Long v) {
-        ContentValues values = new ContentValues();
-        values.put(field.getName(), v);
-        return updateChannel(cid, values);
+    /**
+     * @param columns
+     * @param orderColumn
+     * @param where
+     * @param value
+     * @param bAsc
+     * @param limit
+     * @return
+     */
+    Cursor
+    queryChannel(ColumnChannel[] columns,
+                 ColumnChannel where, Object value,
+                 ColumnChannel orderColumn, boolean bAsc,
+                 long limit) {
+        ColumnChannel[] wheres = (null == where)? null: new ColumnChannel[] { where };
+        Object[] values = (null == value)? null: new Object[] { value };
+        return queryChannel(columns,
+                            wheres, values,
+                            orderColumn, bAsc, limit);
     }
 
-    long
-    updateChannel(long cid, ColumnChannel field, byte[] v) {
-        ContentValues values = new ContentValues();
-        values.put(field.getName(), v);
-        return updateChannel(cid, values);
+    /**
+     *
+     * @param columns
+     * @param wheres
+     *      if (null == values) than this is ignored.
+     * @param values
+     *      if (null == wheres) than this is ignored.
+     * @param orderColumn
+     * @param bAsc
+     *      if (null == orderColumn) than this is ignored.
+     * @param limit
+     *      ( <= 0) means "All"
+     * @return
+     */
+    Cursor
+    queryChannel(ColumnChannel[] columns,
+                 ColumnChannel[] wheres, Object[] values,
+                 ColumnChannel orderColumn, boolean bAsc,
+                 long limit) {
+        String order = (null == orderColumn)?
+                        channelQueryDefaultOrder:
+                        orderColumn.getName() + (bAsc? " ASC": " DESC");
+        String whereStr = null;
+        if (null != wheres && null != values) {
+            eAssert(wheres.length == values.length);
+            whereStr = "";
+            for (int i = 0; i < wheres.length;) {
+                whereStr += wheres[i].getName() + " = " + DatabaseUtils.sqlEscapeString(values[i].toString());
+                if (++i < wheres.length)
+                    whereStr += " AND ";
+            }
+        }
+        return db.query(TABLE_CHANNEL,
+                        getColumnNames(columns),
+                        whereStr,
+                        null, null, null,
+                        order,
+                        (limit > 0)? "" + limit: null);
     }
 
+    Cursor
+    queryChannelMax(ColumnChannel column) {
+        return db.rawQuery("SELECT MAX(" + column.getName() + ") FROM " + TABLE_CHANNEL +"", null);
+    }
+
+
+    // ====================
+    //
+    // Item
+    //
+    // ====================
     long
     insertItem(ContentValues values) {
         return db.insert(TABLE_ITEM, null, values);
@@ -549,23 +481,61 @@ public final class DB extends SQLiteOpenHelper {
     }
 
     long
-    updateItem(long id, ColumnItem field, String v) {
+    updateItem(long id, ColumnItem field, Object v) {
         ContentValues cvs = new ContentValues();
-        cvs.put(field.getName(), v);
+        if (v instanceof String)
+            cvs.put(field.getName(), (String)v);
+        else if (v instanceof Long)
+            cvs.put(field.getName(), (Long)v);
+        else if (v instanceof byte[])
+            cvs.put(field.getName(), (byte[])v);
+        else
+            eAssert(false);
         return updateItem(id, cvs);
     }
 
-    long
-    updateItem(long id, ColumnItem field, Long v) {
-        ContentValues cvs = new ContentValues();
-        cvs.put(field.getName(), v);
-        return updateItem(id, cvs);
+    /**
+     * @param columns
+     * @param where
+     * @param value
+     * @param limit
+     * @return
+     */
+    Cursor
+    queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit) {
+        eAssert(null != where && null != value);
+        return queryItem(columns, new ColumnItem[] { where }, new Object[] { value }, limit);
     }
 
-    long
-    updateItem(long id, ColumnItem field, byte[] v) {
-        ContentValues cvs = new ContentValues();
-        cvs.put(field.getName(), v);
-        return updateItem(id, cvs);
+    /**
+     *
+     * @param columns
+     * @param wheres
+     *      if (null == values) than this is ignored.
+     * @param values
+     *      if (null == wheres) than this is ignored.
+     * @param limit
+     *      ( <= 0) means "All"
+     * @return
+     */
+    Cursor
+    queryItem(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
+        String whereStr = null;
+        if (null != wheres && null != values) {
+            eAssert(wheres.length == values.length);
+            whereStr = "";
+            for (int i = 0; i < wheres.length;) {
+                whereStr += wheres[i].getName() + " = " + DatabaseUtils.sqlEscapeString(values[i].toString());
+                if (++i < wheres.length)
+                    whereStr += " AND ";
+            }
+        }
+        // recently inserted item is located at top of rows.
+        return db.query(TABLE_ITEM,
+                        getColumnNames(columns),
+                        whereStr,
+                        null, null, null,
+                        itemQueryDefaultOrder,
+                        (limit > 0)? "" + limit: null);
     }
 }

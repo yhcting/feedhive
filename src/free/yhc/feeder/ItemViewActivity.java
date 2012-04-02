@@ -6,14 +6,17 @@ import static free.yhc.feeder.model.Utils.logI;
 import java.io.File;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToDB;
 import free.yhc.feeder.model.DB;
@@ -29,12 +32,34 @@ public class ItemViewActivity extends Activity {
     private String  fileUrl = "";
     private String  currUrl = "";
     private WebView wv  = null;
+    private ProgressBar pb = null;
 
     private class WVClient extends WebViewClient {
         @Override
+        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+            super.onPageStarted(view, url, favicon);
+        }
+
+        @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            // Should NOT open at NEW window.
             return false;
         }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            super.onPageFinished(view, url);
+            pb.setVisibility(View.GONE);
+        }
+    }
+
+    private class WCClient extends WebChromeClient {
+        @Override
+        public void onProgressChanged(WebView view, int progress) {
+            // Activities and WebViews measure progress with different scales.
+            // The progress meter will automatically disappear when we reach 100%
+            pb.setProgress(progress);
+          }
     }
 
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
@@ -133,6 +158,8 @@ public class ItemViewActivity extends Activity {
                     @Override
                     public void onClick(View v) {
                         currUrl = netUrl;
+                        pb.setProgress(0);
+                        pb.setVisibility(View.VISIBLE);
                         wv.loadUrl(currUrl);
                         postSetupLayout();
                     }
@@ -195,8 +222,11 @@ public class ItemViewActivity extends Activity {
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.item_view);
+        pb = (ProgressBar)findViewById(R.id.progressbar);
+        pb.setMax(100); // to use percent
         wv = (WebView)findViewById(R.id.webview);
         wv.setWebViewClient(new WVClient());
+        wv.setWebChromeClient(new WCClient());
 
         id = getIntent().getLongExtra("id", -1);
         eAssert(id >= 0);
