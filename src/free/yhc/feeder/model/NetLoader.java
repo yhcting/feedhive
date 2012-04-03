@@ -294,19 +294,34 @@ public class NetLoader {
                 ch.dynD.action = UIPolicy.decideDefaultActionType(ch.parD, ch.items[0].parD);
             else
                 ch.dynD.action = UIPolicy.decideDefaultActionType(ch.parD, null);
-        }
+        } else
+            ch.dynD.action = Feed.FInvalid;
 
         if (0 != (UPD_LOAD_IMG & flag)) {
             time = System.currentTimeMillis();
-            String imgurl = (null == imageref)? ch.parD.imageref: imageref;
-
-            byte[] bmdata = downloadToRaw(imgurl, null);
+            // Kind Of Policy!!
+            // Original image reference always has priority!
+            byte[] bmdata = null;
+            try {
+                if (Utils.isValidValue(ch.parD.imageref))
+                    bmdata = downloadToRaw(ch.parD.imageref, null);
+            } catch (FeederException e) { }
             checkInterrupted();
-            Bitmap bm = Utils.decodeImage(bmdata,
-                                          Feed.Channel.ICON_MAX_WIDTH,
-                                          Feed.Channel.ICON_MAX_HEIGHT);
-            ch.dynD.imageblob = Utils.compressBitmap(bm);
-            bm.recycle();
+
+            try {
+                if (null == bmdata &&  Utils.isValidValue(imageref))
+                    bmdata = downloadToRaw(ch.parD.imageref, null);
+            } catch (FeederException e) { }
+            checkInterrupted();
+
+            if (null != bmdata) {
+                Bitmap bm = Utils.decodeImage(bmdata,
+                                              Feed.Channel.ICON_MAX_WIDTH,
+                                              Feed.Channel.ICON_MAX_HEIGHT);
+                ch.dynD.imageblob = Utils.compressBitmap(bm);
+                bm.recycle();
+            }
+
             String prefix = (null == ch.dynD.imageblob)? "< Fail >" : "< Ok >";
             logI("TIME: Handle Image : " + prefix + (System.currentTimeMillis() - time));
             checkInterrupted();

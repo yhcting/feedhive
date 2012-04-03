@@ -5,6 +5,8 @@ package free.yhc.feeder.model;
 //   F[flag name][value name] : 'F' => Flag
 //   M[flag_name][value name] : 'M' => Mask
 public class Feed {
+    public static final long FInvalid = ~0;
+
     public static class Item {
         // bit[0] : new / opened
         public static final long FStatNew      = 0x00;
@@ -72,18 +74,6 @@ public class Feed {
     }
 
     public static class Channel {
-        // 150 x 150 is enough size for channel icon.
-        public static final int ICON_MAX_WIDTH  = 150;
-        public static final int ICON_MAX_HEIGHT = 150;
-
-
-        ProfD profD = new ProfD();
-        DbD   dbD   = new DbD();
-        DynD  dynD  = new DynD();
-        ParD  parD;
-
-        Item[] items;
-
         // ==================
         // Flag State
         // ==================
@@ -133,6 +123,20 @@ public class Feed {
         public static final long ChannTypeNormal = 0; // for news/article etc
         public static final long ChannTypeMedia  = 1; // for link and description for media data (etc. podcast)
 
+        // 150 x 150 is enough size for channel icon.
+        public static final int ICON_MAX_WIDTH  = 150;
+        public static final int ICON_MAX_HEIGHT = 150;
+
+        private static final String defaultSchedUpdateTime = "" + (3 * 3600); // 3 o'clock
+
+        ProfD profD = new ProfD();
+        DbD   dbD   = new DbD();
+        DynD  dynD  = new DynD();
+        ParD  parD;
+
+        Item[] items;
+
+
         // Profile data.
         static class ProfD {
             String url          = ""; // channel url.
@@ -159,7 +163,8 @@ public class Feed {
         // Dynamic data - changed in runtime dynamically (usually by user action).
         static class DynD {
             long   action       = FActDefault;
-            long   updatetype   = FUpdLink;
+            long   updatetype   = FUpdDefault;
+            String schedupdate  = defaultSchedUpdateTime; // nrs String represents "seconds of day"
             byte[] imageblob    = null;
         }
 

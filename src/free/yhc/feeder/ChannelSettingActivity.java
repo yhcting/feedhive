@@ -19,6 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.model.Utils;
 
 public class ChannelSettingActivity extends Activity {
     private static final long hourInSecs = 60 * 60;
@@ -28,6 +29,7 @@ public class ChannelSettingActivity extends Activity {
 
     private void
     updateSetting() {
+        //........ <= update with all spinners... spinner can be more than 1!!!!
         Spinner spinner = (Spinner)findViewById(R.id.spinner);
         long oclock = Long.parseLong(spinner.getSelectedItem().toString());
         eAssert(0 <= oclock && oclock <= 23);
@@ -38,7 +40,7 @@ public class ChannelSettingActivity extends Activity {
     }
 
     private void
-    addSchedUpdateRow(final ViewGroup parent) {
+    addSchedUpdateRow(final ViewGroup parent, int hourOfDay) {
         LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         final View itemv = inflater.inflate(R.layout.channel_setting_sched, null);
         ImageView ivClose = (ImageView)itemv.findViewById(R.id.imgbtn_close);
@@ -56,6 +58,8 @@ public class ChannelSettingActivity extends Activity {
         ArrayAdapter<String> spinnerArrayAdapter
             = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, hours);
         sp.setAdapter(spinnerArrayAdapter);
+        // hourOfDay is same with position at spinner
+        sp.setSelection(hourOfDay);
         parent.addView(itemv);
     }
 
@@ -79,25 +83,16 @@ public class ChannelSettingActivity extends Activity {
         ivAddSched.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                addSchedUpdateRow(schedlo);
+                addSchedUpdateRow(schedlo, 0);
             }
         });
 
-        /*
-        Spinner spinner = (Spinner)findViewById(R.id.time_choose_spinner);
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(
-                this, R.array.time_spinner_array, R.layout.spinner_text_item);
-        adapter.setDropDownViewResource(R.layout.spinner_text_item);
-        spinner.setAdapter(adapter);
-
-        // Set as stored value.
-        long secs = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.SCHEDUPDATETIME);
-        oldSchedUpdateHour = secs / hourInSecs;
-        // In current algorithm, only hour-based-number is used.
-        eAssert(0 == (secs % hourInSecs));
-        int pos = adapter.getPosition("" + oldSchedUpdateHour);
-        spinner.setSelection(pos);
-        */
+        String schedtime = DBPolicy.S().getChannelInfoString(cid, DB.ColumnChannel.SCHEDUPDATETIME);
+        long[] secs = Utils.nStringToNrs(schedtime);
+        for (long s : secs) {
+            eAssert(0 <= s && s < 24 * 60 * 60);
+            addSchedUpdateRow(schedlo, (int)(s / 60 / 60));
+        }
     }
 
     @Override

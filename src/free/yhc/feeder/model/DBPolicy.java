@@ -32,7 +32,6 @@ import free.yhc.feeder.model.DB.ColumnItem;
 
 // Singleton
 public class DBPolicy {
-    private static final String defaultSchedUpdateTime = "" + (3 * 3600); // 3 o'clock
     private static final Object dummyObject = new Object(); // static dummy object;
 
     //private static Semaphore dbMutex = new Semaphore(1);
@@ -102,7 +101,7 @@ public class DBPolicy {
 
         // Fill reserved values as default
         // This need to match ChannelSettingActivity's setting value.
-        values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  defaultSchedUpdateTime); // default (03 o'clock)
+        values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  ch.dynD.schedupdate); // default (03 o'clock)
         values.put(ColumnChannel.OLDLAST_ITEMID.getName(),   0);
         values.put(ColumnChannel.NRITEMS_SOFTMAX.getName(),  999999);
         // add to last position in terms of UI.
@@ -383,7 +382,8 @@ public class DBPolicy {
         ContentValues channelUpdateValues = new ContentValues();
         channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.parD.title);
         channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
-        channelUpdateValues.put(ColumnChannel.ACTION.getName(),      ch.dynD.action);
+        if (Feed.FInvalid != ch.dynD.action)
+            channelUpdateValues.put(ColumnChannel.ACTION.getName(),    ch.dynD.action);
         if (null != ch.dynD.imageblob)
             channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
 
@@ -403,8 +403,12 @@ public class DBPolicy {
 
             // Now we know item id here.
             if (null != idop) {
-                item.dynD.rawdata = idop.getData(item);
-                updateItem_data(item.dbD.id, item.dynD.rawdata);
+                try {
+                    item.dynD.rawdata = idop.getData(item);
+                    updateItem_data(item.dbD.id, item.dynD.rawdata);
+                } catch (FeederException e) {
+                    ; // if feeder fails to get item data, just ignore it!
+                }
             }
 
             // lots of channel-update can be run simultaneously.
