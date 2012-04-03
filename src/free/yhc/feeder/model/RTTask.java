@@ -285,12 +285,14 @@ public class RTTask {
     }
 
     /**
-     * Is there any downloading task belongs to this channel?
-     * @cid channel id
+     * Get items that are under downloading.
+     * @param cid
+     * @return
      */
-    public boolean
-    isDownloadRunningInChannel(long cid) {
+    public long[]
+    getDownloadRunningItems(long cid) {
         String[] tids;
+        LinkedList<Long> l = new LinkedList<Long>();
         synchronized (gbtm.getSyncObj()) {
             tids = gbtm.getTaskIds();
             for (String tid : tids) {
@@ -299,11 +301,11 @@ public class RTTask {
                     long id = idFromId(tid);
                     if (null != task && task.isAlive()
                         && cid == DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID))
-                        return true;
+                        l.add(id);
                 }
             }
-            return false;
         }
+        return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
     }
 
     // result information is consumed. So, back to idle if possible.

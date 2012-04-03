@@ -2,9 +2,6 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
-
-import java.io.ByteArrayOutputStream;
-
 import android.content.Context;
 import android.os.PowerManager;
 
@@ -14,8 +11,8 @@ public class BGTaskDownloadToDB extends BGTask<BGTaskDownloadToDB.Arg, Object> {
     private Context                 context;
     private PowerManager.WakeLock   wl;
     private volatile NetLoader      loader = null;
-    private Arg                     arg      = null;
-    private volatile int            progress = 0;
+    private Arg                     arg    = null;
+    private volatile long           progress = 0;
 
     public static class Arg {
         String      url  = null;
@@ -77,13 +74,13 @@ public class BGTaskDownloadToDB extends BGTask<BGTaskDownloadToDB.Arg, Object> {
 
         loader = new NetLoader();
 
-        ByteArrayOutputStream ostream = new ByteArrayOutputStream();
+        byte[] data = null;
         Err result = Err.NoErr;
         try {
-            loader.download(ostream, arg.url,
+            data = loader.downloadToRaw(arg.url,
                     new NetLoader.OnProgress() {
                 @Override
-                public void onProgress(int prog) {
+                public void onProgress(NetLoader loader, long prog) {
                     // TODO Auto-generated method stub
                     progress = prog;
                     publishProgress(prog);
@@ -96,7 +93,7 @@ public class BGTaskDownloadToDB extends BGTask<BGTaskDownloadToDB.Arg, Object> {
         if (Err.NoErr == result) {
             // only 'RAWDATA' is supported now.
             eAssert(DB.ColumnItem.RAWDATA == arg.column);
-            if (0 > DBPolicy.S().updateItem_data(arg.id, ostream.toByteArray()))
+            if (0 > DBPolicy.S().updateItem_data(arg.id, data))
                 result = Err.DBUnknown;
         }
 

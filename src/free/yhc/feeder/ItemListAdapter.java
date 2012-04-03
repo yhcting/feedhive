@@ -77,7 +77,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         @Override
         public void onCancel(BGTask task, Object param) {}
         @Override
-        public void onProgress(BGTask task, int progress) {
+        public void onProgress(BGTask task, long progress) {
             tv.setText(progress + "%");
             tv.postInvalidate();
         }
@@ -188,7 +188,6 @@ public class ItemListAdapter extends ResourceCursorAdapter {
                     }
                 });
                 */
-
                 // bind event listener to show progress
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
                 progressv.switchOnEvent(onEvent);

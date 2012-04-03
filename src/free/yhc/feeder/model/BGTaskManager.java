@@ -88,7 +88,7 @@ class BGTaskManager {
 
     BGTask
     bind(String taskId, Object onEventKey, BGTask.OnEvent onEvent) {
-        logI("BGTM : bind :" + taskId);
+        logI("BGTM : bind : " + taskId + " : " + onEvent.toString());
         TaskMapV v = map.get(taskId);
         if (null == v)
             return null;

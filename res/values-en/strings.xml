@@ -27,6 +27,7 @@
     <string name="update_cancelled">Update is cancelled or interrupted.</string>
     <string name="update_error">Error during update! This is critical! You may be have to delete this channel!</string>
     <string name="err_interrupted">Operation is interrupted or cancelled.</string>
+    <string name="err_url">Invalid URL.</string>
     <string name="err_ionet">Fail to access resource through network.</string>
     <string name="err_iofile">Fail to operate on file.</string>
     <string name="err_media_get">Fail to get media content.</string>

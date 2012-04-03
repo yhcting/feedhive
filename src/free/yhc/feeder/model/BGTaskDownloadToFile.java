@@ -1,13 +1,7 @@
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
-import static free.yhc.feeder.model.Utils.logW;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 
 import android.content.Context;
@@ -21,7 +15,7 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     private volatile OutputStream   ostream  = null;
     private volatile NetLoader      loader = null;
     private Arg                     arg      = null;
-    private volatile int            progress = 0;
+    private volatile long           progress = 0;
 
     public static class Arg {
         String      url         = null;
@@ -37,20 +31,6 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
 
     private boolean
     cleanupStream() {
-        try {
-            if (null != ostream) {
-                ostream.close();
-                if (null != arg)
-                    if (!new File(arg.tempFile).delete()) {
-                        logI("**** Fail to delete temporal downloaded file!!! [" + arg.tempFile +"]\n");
-                        return false;
-                    }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            logW(e.getMessage());
-            return false;
-        }
         return true;
     }
 
@@ -97,18 +77,14 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
 
         loader = new NetLoader();
 
-        try {
-            ostream = new FileOutputStream(arg.tempFile);
-        } catch (FileNotFoundException e) {
-            eAssert(false);
-        }
-
         Err result = Err.NoErr;
         try {
-            loader.download(ostream, arg.url,
+            loader.downloadToFile(arg.url,
+                    arg.tempFile,
+                    arg.toFile,
                     new NetLoader.OnProgress() {
                 @Override
-                public void onProgress(int prog) {
+                public void onProgress(NetLoader loader, long prog) {
                     // TODO Auto-generated method stub
                     progress = prog;
                     publishProgress(prog);
@@ -117,10 +93,6 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
         } catch (FeederException e) {
             result = e.getError();
         }
-
-        if (Err.NoErr == result)
-            if (!new File(arg.tempFile).renameTo(new File(arg.toFile)))
-                result = Err.IOFile;
 
         return result;
     }

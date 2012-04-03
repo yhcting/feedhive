@@ -140,6 +140,14 @@ public class Utils {
             Log.e(TAG, msg);
     }
 
+    public static long[]
+    convertArrayLongTolong(Long[] L) {
+        long[] l = new long[L.length];
+        for (int i = 0; i < L.length; i++)
+            l[i] = L[i];
+        return l;
+    }
+
     public static boolean
     isValidValue(String v) {
         return !(null == v || v.isEmpty());
@@ -320,15 +328,19 @@ public class Utils {
 
     public static Err
     writeToFile(String file, byte[] data) {
-        try
-        {
-            FileOutputStream fos = new FileOutputStream(file);
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(file);
             fos.write(data);
-            fos.close();
         } catch(FileNotFoundException e) {
             return Err.IOFile;
         } catch(IOException e) {
             return Err.IOFile;
+        } finally {
+            try {
+                if (null != fos)
+                    fos.close();
+            } catch (IOException e) {}
         }
         return Err.NoErr;
     }

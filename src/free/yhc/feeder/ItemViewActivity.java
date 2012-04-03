@@ -84,7 +84,7 @@ public class ItemViewActivity extends Activity {
     BGTaskDownloadToDB.OnEvent<BGTaskDownloadToDB.Arg, Object> {
         @Override
         public void
-        onProgress(BGTask task, int progress) { }
+        onProgress(BGTask task, long progress) { }
 
         @Override
         public void

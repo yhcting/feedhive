@@ -87,7 +87,7 @@ public class ScheduledUpdater extends Service {
 
         @Override
         public void
-        onProgress(BGTask task, int progress) {
+        onProgress(BGTask task, long progress) {
         }
 
         @Override

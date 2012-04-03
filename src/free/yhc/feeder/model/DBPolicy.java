@@ -398,11 +398,14 @@ public class DBPolicy {
             Feed.Item item = iter.next();
             item.dbD.cid = ch.dbD.id;
 
-            if (null != idop)
-                item.dynD.rawdata = idop.getData(item);
-
-            if (0 > db.insertItem(itemToContentValues(item)))
+            if (0 > (item.dbD.id = db.insertItem(itemToContentValues(item))))
                 return -1;
+
+            // Now we know item id here.
+            if (null != idop) {
+                item.dynD.rawdata = idop.getData(item);
+                updateItem_data(item.dbD.id, item.dynD.rawdata);
+            }
 
             // lots of channel-update can be run simultaneously.
             // So, reduce top-usage of heap memory, de-reference memory here!

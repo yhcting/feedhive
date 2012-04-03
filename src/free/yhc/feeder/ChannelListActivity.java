@@ -213,7 +213,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         @Override
         public void
-        onProgress(BGTask task, int progress) {
+        onProgress(BGTask task, long progress) {
         }
 
         @Override
@@ -937,7 +937,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             menu.findItem(R.id.full_update).setEnabled(false);
         }
 
-        if (RTTask.S().isDownloadRunningInChannel(mInfo.id)) {
+        if (RTTask.S().getDownloadRunningItems(mInfo.id).length > 0) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }

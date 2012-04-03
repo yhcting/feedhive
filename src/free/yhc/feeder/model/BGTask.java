@@ -1,6 +1,7 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.logI;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -21,7 +22,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         void onPreRun  (BGTask<RunParam, CancelParam> task);
         void onPostRun (BGTask<RunParam, CancelParam> task, Err result);
         void onCancel  (BGTask<RunParam, CancelParam> task, CancelParam param);
-        void onProgress(BGTask<RunParam, CancelParam> task, int progress);
+        void onProgress(BGTask<RunParam, CancelParam> task, long progress);
     }
 
     public static class EventListener {
@@ -79,6 +80,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                     listener.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
+                            logI("+++ BGTask : postRun : " + onEvent.toString());
                             onEvent.onPostRun(BGTask.this, result);
                         }
                     });
@@ -184,7 +186,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     onCancel(CancelParam param) {}
 
     protected void
-    onProgress(int progress) {}
+    onProgress(long progress) {}
 
     @Override
     public final void
@@ -213,7 +215,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     }
 
     public void
-    publishProgress(final int progress) {
+    publishProgress(final long progress) {
         onProgress(progress);
         for (EventListener listener : getListeners()) {
             final OnEvent onEvent = listener.getOnEvent();

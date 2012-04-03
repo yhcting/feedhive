@@ -8,6 +8,7 @@ public enum Err {
     NoErr                       (R.string.ok),
     Interrupted                 (R.string.err_interrupted),
     UserCancelled               (R.string.err_user_cancelled),
+    InvalidURL                  (R.string.err_url),
     IONet                       (R.string.err_ionet),
     IOFile                      (R.string.err_iofile),
     MediaGet                    (R.string.err_media_get),

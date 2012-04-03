@@ -28,6 +28,7 @@
     <string name="update_cancelled">업데이트가 취소 혹은 중단 되었습니다.</string>
     <string name="update_error">업데이트 도중 심각한 문제가 발생했습니다. 채널을 지우기를 권장합니다.</string>
     <string name="err_interrupted">동작이 취소 혹은 중단 되었습니다.</string>
+    <string name="err_url">잘못된 URL입니다.</string>
     <string name="err_ionet">네트웤을 통한 접근에 실패했습니다.</string>
     <string name="err_iofile">파일 접근 혹은 처리에 실패했습니다.</string>
     <string name="err_media_get">미디어 데이터를 가져오는데 실패했습니다.</string>

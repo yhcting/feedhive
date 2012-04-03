@@ -80,7 +80,7 @@ public class ItemListActivity extends Activity {
     public class UpdateBGTaskOnEvent implements BGTask.OnEvent<Long, Object> {
         @Override
         public void
-        onProgress(BGTask task, int progress) {
+        onProgress(BGTask task, long progress) {
         }
 
         @Override
@@ -111,11 +111,11 @@ public class ItemListActivity extends Activity {
         }
     }
 
-    private class DownloadToFileBGTaskOnEvent implements
-    BGTaskDownloadToFile.OnEvent<BGTaskDownloadToFile.Arg, Object> {
+    private class DownloadDataBGTaskOnEvent implements
+    BGTask.OnEvent<Object, Object> {
         @Override
         public void
-        onProgress(BGTask task, int progress) {
+        onProgress(BGTask task, long progress) {
         }
 
         @Override
@@ -133,6 +133,7 @@ public class ItemListActivity extends Activity {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
+            logI("+++ Item Activity DownloadData PostRun");
             getListAdapter().notifyDataSetChanged();
         }
     }
@@ -151,7 +152,7 @@ public class ItemListActivity extends Activity {
         @Override
         public void
         onDownloadBGTaskRegster(long id, BGTask task) {
-            RTTask.S().bindDownload(id, new DownloadToFileBGTaskOnEvent());
+            RTTask.S().bindDownload(id, new DownloadDataBGTaskOnEvent());
         }
 
         @Override
@@ -349,7 +350,7 @@ public class ItemListActivity extends Activity {
                 BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this);
                 RTTask.S().registerDownload(id, dnTask);
                 dnTask.start(new BGTaskDownloadToFile.Arg(enclosureUrl, fpath,
-                                                          UIPolicy.getItemDownloadTempPath(cid, id)));
+                                                          UIPolicy.getItemDownloadTempPath(id)));
                 getListAdapter().notifyDataSetChanged();
             } else if (RTTask.StateDownload.Downloading == state) {
                 BGTask task = RTTask.S().getDownload(id);
@@ -579,18 +580,13 @@ public class ItemListActivity extends Activity {
             RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent());
 
         // Bind downloading tasks
-        Cursor c = db.queryItem(cid, new DB.ColumnItem[] { DB.ColumnItem.ID });
-        if (c.moveToFirst()) {
-            do {
-                long id = c.getLong(0);
-                if (RTTask.StateDownload.Idle != RTTask.S().getDownloadState(id))
-                    RTTask.S().bindDownload(cid, id, new DownloadToFileBGTaskOnEvent());
-            } while (c.moveToNext());
-        }
-        c.close();
+        long[] ids = RTTask.S().getDownloadRunningItems(cid);
+        for (long id : ids)
+            RTTask.S().bindDownload(id, new DownloadDataBGTaskOnEvent());
 
         setUpdateButton();
         getListAdapter().notifyDataSetChanged();
+
     }
 
     @Override

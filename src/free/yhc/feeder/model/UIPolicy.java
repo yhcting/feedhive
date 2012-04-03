@@ -77,7 +77,8 @@ public class UIPolicy {
     }
 
     public static String
-    getItemDownloadTempPath(long cid, long id) {
+    getItemDownloadTempPath(long id) {
+        long cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
         return appRootDir + "____temp__" + cid + "___" + id + "__";
     }
 
