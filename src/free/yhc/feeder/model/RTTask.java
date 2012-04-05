@@ -97,7 +97,6 @@ public class RTTask {
     unregister(String id) {
         synchronized (gbtm.getSyncObj()) {
             // remove from manager.
-            gbtm.clear(id);
             return gbtm.unregister(id);
         }
     }

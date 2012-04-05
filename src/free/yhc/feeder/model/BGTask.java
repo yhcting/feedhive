@@ -58,14 +58,17 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         @Override
         public void run() {
             if (BGTask.this.isAlive()) {
+                logI("BGTask : REPOST : wait for task is Done");
                 ownerHandler.post(new BGTaskPost(bCancelled));
                 return;
             }
 
+            logI("BGTask : REAL POST!!! cancelled(" + bCancelled + ") NR Listener (" + getListeners().length);
             if (bCancelled) {
                 BGTask.this.onCancel(cancelParam);
                 for (EventListener listener : getListeners()) {
                     final OnEvent onEvent = listener.getOnEvent();
+                    logI("BGTask : Post(Cancel) to onEvent : " + onEvent.toString());
                     listener.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
@@ -77,6 +80,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 BGTask.this.onPostRun(result);
                 for (EventListener listener : getListeners()) {
                     final OnEvent onEvent = listener.getOnEvent();
+                    logI("BGTask : Post(Post) to onEvent : " + onEvent.toString());
                     listener.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
@@ -132,6 +136,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     registerEventListener(Object key, OnEvent onEvent) {
         // This is atomic expression
         synchronized (listenerList) {
+            logI("BGTask : registerEventListener : key(" + key + ") onEvent(" + onEvent + ")");
             EventListener listener = new EventListener(key, new Handler(), onEvent);
             listenerList.addLast(listener);
         }
@@ -143,8 +148,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             Iterator<EventListener> iter = listenerList.iterator();
             while (iter.hasNext()) {
                 EventListener listener = iter.next();
-                if (listener.getHandler().getLooper().getThread() == owner)
+                if (listener.getHandler().getLooper().getThread() == owner) {
+                    logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
                     iter.remove();
+                }
             }
         }
     }
@@ -156,8 +163,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             while (iter.hasNext()) {
                 EventListener listener = iter.next();
                 if (listener.getHandler().getLooper().getThread() == owner
-                    && listener.getKey() == onEventKey)
+                    && listener.getKey() == onEventKey) {
+                    logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
                     iter.remove();
+                }
             }
         }
     }
@@ -165,6 +174,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     public void
     clearEventListener() {
         synchronized (listenerList) {
+            logI("BGTask : clearEventListener");
             listenerList.clear();
         }
     }
@@ -191,6 +201,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     @Override
     public final void
     run() {
+        logI("BGTask : BGJobs started");
         boolean bInterrupted = false;
         try {
             result =  doBGTask(runParam);
@@ -205,6 +216,8 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
         if (cancelled && Err.NoErr != result)
             result = Err.UserCancelled;
+
+        logI("BGTask : BGJobs done - try to post! : " + result.name() + " interrupted(" + bInterrupted + ")");
 
         if (bInterrupted
             || Err.Interrupted == result
@@ -249,6 +262,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         cancelled = true;
         result = Err.UserCancelled;
         cancelParam = param;
+        logI("BGTask : cancel()");
         interrupt();
         return true; // always success.
     }
