@@ -321,7 +321,7 @@ public final class DB extends SQLiteOpenHelper {
      * @return
      */
     Cursor
-    queryCategory(ColumnCategory column, ColumnCategory where, String value) {
+    queryCategory(ColumnCategory column, ColumnCategory where, Object value) {
         return queryCategory(new ColumnCategory[] { column }, where, value);
     }
 
@@ -335,12 +335,12 @@ public final class DB extends SQLiteOpenHelper {
      * @return
      */
     Cursor
-    queryCategory(ColumnCategory[] columns, ColumnCategory where, String value) {
+    queryCategory(ColumnCategory[] columns, ColumnCategory where, Object value) {
         String whereStr;
         if (null == where || null == value)
             whereStr = null;
         else
-            whereStr = where.getName() + " = " + DatabaseUtils.sqlEscapeString(value);
+            whereStr = where.getName() + " = " + DatabaseUtils.sqlEscapeString(value.toString());
         return db.query(TABLE_CATEGORY,
                         getColumnNames(columns),
                         whereStr,

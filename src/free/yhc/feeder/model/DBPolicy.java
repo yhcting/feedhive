@@ -197,6 +197,16 @@ public class DBPolicy {
         return DB.getDefaultCategoryId();
     }
 
+    public String
+    getCategoryName(long categoryid) {
+        String ret = null;
+        Cursor c = db.queryCategory(ColumnCategory.NAME, ColumnCategory.ID, categoryid);
+        if (c.moveToFirst())
+            ret = c.getString(0);
+        c.close();
+        return ret;
+    }
+
     // return : 0 : successfully inserted and DB is changed.
     public int
     insertCategory(Feed.Category category) {

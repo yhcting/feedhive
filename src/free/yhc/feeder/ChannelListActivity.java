@@ -460,7 +460,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private Tab
     addCategory(Feed.Category cat) {
         String text;
-        if (DBPolicy.S().isDefaultCategoryId(cat.id))
+        if (DBPolicy.S().isDefaultCategoryId(cat.id)
+           && !Utils.isValidValue(DBPolicy.S().getCategoryName(cat.id)))
             text = getResources().getText(R.string.default_category_name).toString();
         else
             text = cat.name;
