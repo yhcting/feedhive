@@ -141,7 +141,7 @@ public class Utils {
     }
 
     public static long[]
-    convertArrayLongTolong(Long[] L) {
+    arrayLongTolong(Long[] L) {
         long[] l = new long[L.length];
         for (int i = 0; i < L.length; i++)
             l[i] = L[i];
@@ -171,6 +171,9 @@ public class Utils {
 
     public static long[]
     nStringToNrs(String timeString) {
+        if (!isValidValue(timeString))
+            return new long[0];
+
         String[] timestrs = timeString.split(nStringDelimiter);
         long[] times = new long[timestrs.length];
         try {

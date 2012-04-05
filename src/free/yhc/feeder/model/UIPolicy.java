@@ -32,22 +32,22 @@ public class UIPolicy {
 
     // check and fix if possible.
     static boolean
-    verifyConstraints(Feed.Item item) {
+    verifyConstraints(Feed.Item.ParD item) {
         // 'title' is mandatory!!!
-        if (!isValidValue(item.parD.title))
+        if (!isValidValue(item.title))
             return false;
 
         // Item should have one of link or enclosure url.
-        if (!isValidValue(item.parD.link)
-             && !isValidValue(item.parD.enclosureUrl))
+        if (!isValidValue(item.link)
+             && !isValidValue(item.enclosureUrl))
             return false;
 
         return true;
     }
 
     static boolean
-    verifyConstraints(Feed.Channel ch) {
-        if (!isValidValue(ch.parD.title))
+    verifyConstraints(Feed.Channel.ParD ch) {
+        if (!isValidValue(ch.title))
             return false;
 
         return true;

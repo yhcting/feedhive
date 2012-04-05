@@ -80,8 +80,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         private class SwipeGestureDetector extends SimpleOnGestureListener {
             // For swipe animation
-            private static final int SWIPE_MIN_DISTANCE = 120;
-            private static final int SWIPE_THRESHOLD_VELOCITY = 200;
+            private static final int SWIPE_MIN_DISTANCE = 100;
+            private static final int SWIPE_THRESHOLD_VELOCITY = 150;
 
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
@@ -221,7 +221,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         onCancel(BGTask task, Object param) {
             eAssert(cid >= 0);
             // NOTE : refresh??? just 'notifying' is enough?
-            getListAdapter(getMyTab(cid)).notifyDataSetChanged();
+            // In current DB policy, sometimes DB may be updated even if updating is cancelled!
+            //getListAdapter(getMyTab(cid)).notifyDataSetChanged();
+            refreshList(getMyTab(cid));
         }
 
         @Override
@@ -1041,24 +1043,18 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // Setup for swipe.
         flipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
 
-
-
         // Setup Tabs
         ab = getActionBar();
         ab.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         ab.setDisplayShowTitleEnabled(false);
         ab.setDisplayShowHomeEnabled(false);
 
-        for (Feed.Category cat : cats) {
-            Tab tab = addCategory(cat);
-            refreshList(tab); // create cursor adapters
-        }
+        for (Feed.Category cat : cats)
+            addCategory(cat);
+
         // Select default category as current category.
         selectDefaultAsSelected();
         setupToolButtons();
-
-        // 0 doesn't have meaning.
-        setResult(0);
     }
 
     @Override
@@ -1074,6 +1070,18 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     onResume() {
         logI("==> ChannelListActivity : onResume");
         super.onStart();
+
+        // NOTE
+        // Case to think about
+        // - new update task is registered between 'registerManagerEventListener' and 'getUpdateState'
+        // - then, this task will be binded twice.
+        // => This leads to over head operation (ex. refreshing list two times continuously etc.)
+        //    But, this doesn't issue logical error. So, I can get along with this case.
+        //
+        // If 'registerManagerEventListener' is below 'getUpdateState',
+        //   we may miss binding some updating task!
+
+        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
 
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
@@ -1091,10 +1099,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // Database data may be changed.
         // So refresh all list
         for (int i = 0; i < ab.getTabCount(); i++)
+            // 'notifyDataSetChanged' doesn't lead to refreshing channel row info
+            //   in case of database is changed!
             refreshList(ab.getTabAt(i));
-        // 'notifyDataSetChanged' doesn't lead to refreshing channel row info
-        //   in case of database is changed!
-        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
     }
 
     @Override

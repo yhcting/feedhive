@@ -67,7 +67,10 @@
     <string name="select_predefined_channel">추천 채널에서 고르기</string>
     <string name="pick_icon">아이콘 선택</string>
     <string name="open_link">원문보기</string>
+    <string name="updatemode_normal">기본</string>
+    <string name="updatemode_download">다운로드</string>
     <string name="setting_scheduled_update">예약 업데이트 설정</string>
     <string name="setting_everyday">매일</string>
+    <string name="setting_updatemode">업데이트 모드</string>
     <string name="setting_nritem_softmax">아이템 최대 개수 설정</string>
 </resources>

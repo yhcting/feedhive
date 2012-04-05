@@ -31,13 +31,15 @@ import free.yhc.feeder.model.Utils;
 // But user can know whether scheduled-update successes or fails by checking age since last successful update.
 // (See channelListAdapter for 'age' time)
 public class ScheduledUpdater extends Service {
-    private static final int             ReqCUpdate = 0;
-
-    private static final long            hourInMs = 60 * 60 * 1000;
-    private static final long            dayInMs = 24 * hourInMs;
-
+    // Should match manifest's intent filter
+    private static final String schedUpdateIntentAction = "feeder.intent.action.SCHEDULED_UPDATE";
     // Wakelock
-    private static final String          WLTag = "free.yhc.feeder.ScheduledUpdater";
+    private static final String WLTag = "free.yhc.feeder.ScheduledUpdater";
+
+    private static final int    ReqCUpdate = 0;
+
+    private static final long   hourInMs = 60 * 60 * 1000;
+    private static final long   dayInMs = 24 * hourInMs;
 
     private static PowerManager.WakeLock wl = null;
     private static int                   wlcnt = 0;
@@ -46,6 +48,14 @@ public class ScheduledUpdater extends Service {
     // To stop service at right time - when all tasks started by this service is done.
     // Should be thread-safe. So, 'volatile' is used.
     private volatile int                 taskCnt = 0;
+
+    // If time is changed Feeder need to re-scheduling scheduled-update.
+    public static class DateChangedReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            scheduleNextUpdate(context, Calendar.getInstance());
+        }
+    }
 
     // Why broadcast receiver?
     // Using pendingIntent from "PendingIntent.getService()" doesn't guarantee that
@@ -196,42 +206,50 @@ public class ScheduledUpdater extends Service {
             return; // There is no channel.
         }
 
-        long nearestNext = dayInMs * 2; // large enough value.
+        final long invalidNearestNext = dayInMs * 2;
+        long nearestNext = invalidNearestNext; // large enough value.
         do {
             String sStr = c.getString(0);
-            // NOTE : IMPORTANT
-            //   Time stored at DB is HOUR_OF_DAY (0 - 23)
-            //   (See comments regarding Column at DB.)
-            //   We cannot guarantee that service is started at exact time.
-            //   So, we should compensate it (see comments at 'onStartCommand'
-            long[] secs   = Utils.nStringToNrs(sStr);
-            long[] out  = new long[2];
-            for (long s : secs) {
-                long sms = Utils.secToMs(s);
-                dayBasedDistanceMs(out, dayms, sms);
+            if (Utils.isValidValue(sStr)) {
+                // NOTE : IMPORTANT
+                //   Time stored at DB is HOUR_OF_DAY (0 - 23)
+                //   (See comments regarding Column at DB.)
+                //   We cannot guarantee that service is started at exact time.
+                //   So, we should compensate it (see comments at 'onStartCommand'
+                long[] secs   = Utils.nStringToNrs(sStr);
+                long[] out  = new long[2];
+                for (long s : secs) {
+                    long sms = Utils.secToMs(s);
+                    dayBasedDistanceMs(out, dayms, sms);
 
-                // out[0] is time to go from 'dayms' to 'hms'
-                if (out[0] < nearestNext)
-                    nearestNext = out[0];
+                    // out[0] is time to go from 'dayms' to 'hms'
+                    if (out[0] < nearestNext)
+                        nearestNext = out[0];
+                }
             }
         } while (c.moveToNext());
         c.close();
 
-        { // just for variable scope
-            long h = nearestNext / hourInMs;
-            long m = (nearestNext - h * hourInMs) / (60 * 1000);
-            logI("ScheduledUpdater : next wakeup after [ " + h + " hours, " + m + " miniutes ]");
+        if (nearestNext != invalidNearestNext) {
+            // There is valid update
+
+            { // just for variable scope
+                long h = nearestNext / hourInMs;
+                long m = (nearestNext - h * hourInMs) / (60 * 1000);
+                logI("ScheduledUpdater : next wakeup after [ " + h + " hours, " + m + " miniutes ]");
+            }
+
+            // convert into real time.
+            nearestNext += calNow.getTimeInMillis();
+            Intent intent = new Intent(context, AlarmReceiver.class);
+            intent.setAction(schedUpdateIntentAction);
+            intent.putExtra("time", nearestNext);
+            PendingIntent pIntent = PendingIntent.getBroadcast(context, ReqCUpdate, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+            // Get the AlarmManager service
+            AlarmManager am = (AlarmManager)context.getSystemService(ALARM_SERVICE);
+            am.set(AlarmManager.RTC_WAKEUP, nearestNext, pIntent);
         }
-
-        // convert into real time.
-        nearestNext += calNow.getTimeInMillis();
-        Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra("time", nearestNext);
-        PendingIntent pIntent = PendingIntent.getBroadcast(context, ReqCUpdate, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-
-        // Get the AlarmManager service
-        AlarmManager am = (AlarmManager)context.getSystemService(ALARM_SERVICE);
-        am.set(AlarmManager.RTC_WAKEUP, nearestNext, pIntent);
     }
 
     @Override

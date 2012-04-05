@@ -2,7 +2,9 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.HashSet;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -19,24 +21,62 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.Utils;
 
 public class ChannelSettingActivity extends Activity {
-    private static final long hourInSecs = 60 * 60;
-
     private long   cid = -1;
-    private long   oldSchedUpdateHour = 0;
+
+    private static final int hourInSec = 60 * 60;
+
+    // match string-array 'strarr_updatemode'
+    private static final int SPPOS_UPDATEMODE_NORMAL    = 0;
+    private static final int SPPOS_UPDATEMODE_DOWNLOAD  = 1;
+
+    private void
+    updateSchedUpdateSetting() {
+        String oldSchedUpdate = DBPolicy.S().getChannelInfoString(cid, DB.ColumnChannel.SCHEDUPDATETIME);
+
+        LinearLayout schedlo = (LinearLayout)findViewById(R.id.sched_layout);
+        // sodhs : Seconds Of Day HashSet
+        HashSet<Long> sodhs = new HashSet<Long>();
+        int i = 0;
+        while (i < schedlo.getChildCount()) {
+            View v = schedlo.getChildAt(i);
+            Spinner sp = (Spinner)v.findViewById(R.id.spinner);
+            // hod : Hour Of Day
+            long hod = Long.parseLong((String)sp.getSelectedItem());
+            sodhs.add(hod * 60 * 60);
+            i++;
+        }
+
+        long[] sods = Utils.arrayLongTolong(sodhs.toArray(new Long[0]));
+        Arrays.sort(sods);
+        if (!Utils.nrsToNString(sods).equals(oldSchedUpdate)) {
+            DBPolicy.S().updateChannel_schedUpdate(cid, sods);
+            ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
+        }
+    }
+
+    private void
+    updateUpdateModeSetting() {
+        Spinner sp = (Spinner)findViewById(R.id.sp_updatemode);
+        switch (sp.getSelectedItemPosition()) {
+        case SPPOS_UPDATEMODE_NORMAL:
+            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.UPDATEMODE, Feed.Channel.FUpdLink);
+            break;
+        case SPPOS_UPDATEMODE_DOWNLOAD:
+            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.UPDATEMODE, Feed.Channel.FUpdDn);
+            break;
+        default:
+            eAssert(false);
+        }
+    }
 
     private void
     updateSetting() {
-        //........ <= update with all spinners... spinner can be more than 1!!!!
-        Spinner spinner = (Spinner)findViewById(R.id.spinner);
-        long oclock = Long.parseLong(spinner.getSelectedItem().toString());
-        eAssert(0 <= oclock && oclock <= 23);
-        if (oldSchedUpdateHour != oclock) {
-            DBPolicy.S().updateChannel_schedUpdate(cid, oclock * hourInSecs);
-            ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
-        }
+        updateSchedUpdateSetting();
+        updateUpdateModeSetting();
     }
 
     private void
@@ -77,7 +117,7 @@ public class ChannelSettingActivity extends Activity {
 
         setContentView(R.layout.channel_setting);
 
-
+        // Setup "Scheduled Update"
         final LinearLayout schedlo = (LinearLayout)findViewById(R.id.sched_layout);
         ImageView ivAddSched = (ImageView)findViewById(R.id.add_sched);
         ivAddSched.setOnClickListener(new View.OnClickListener() {
@@ -90,9 +130,24 @@ public class ChannelSettingActivity extends Activity {
         String schedtime = DBPolicy.S().getChannelInfoString(cid, DB.ColumnChannel.SCHEDUPDATETIME);
         long[] secs = Utils.nStringToNrs(schedtime);
         for (long s : secs) {
-            eAssert(0 <= s && s < 24 * 60 * 60);
-            addSchedUpdateRow(schedlo, (int)(s / 60 / 60));
+            eAssert(0 <= s && s < 24 * hourInSec);
+            addSchedUpdateRow(schedlo, (int)(s / hourInSec));
         }
+
+        // Setup "Update Type"
+        Spinner sp = (Spinner)findViewById(R.id.sp_updatemode);
+        ArrayAdapter<CharSequence> spadapter = ArrayAdapter.createFromResource(
+                    this, R.array.strarr_updatemode, android.R.layout.simple_spinner_item);
+        spadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sp.setAdapter(spadapter);
+
+        long uptype = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
+        if (Feed.Channel.isUpdLink(uptype))
+            sp.setSelection(SPPOS_UPDATEMODE_NORMAL); // 'Normal' is position 0
+        else if (Feed.Channel.isUpdDn(uptype))
+            sp.setSelection(SPPOS_UPDATEMODE_DOWNLOAD); // 'Download' is position 1
+        else
+            eAssert(false);
     }
 
     @Override

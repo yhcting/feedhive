@@ -305,7 +305,7 @@ public class RTTask {
                 }
             }
         }
-        return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
+        return Utils.arrayLongTolong(l.toArray(new Long[0]));
     }
 
     // result information is consumed. So, back to idle if possible.

@@ -37,7 +37,15 @@
                   />
         <service android:name=".ScheduledUpdater"
 				 />
-        <receiver android:name=".ScheduledUpdater$AlarmReceiver"
-                  />
-    </application>
+        <receiver android:name=".ScheduledUpdater$AlarmReceiver">
+			<intent-filter>
+				<action android:name="feeder.intent.action.SCHEDULED_UPDATE" />
+			</intent-filter>             
+        </receiver>
+        <receiver android:name=".ScheduledUpdater$DateChangedReceiver">
+			<intent-filter>
+				<action android:name="android.intent.action.TIME_SET" />
+			</intent-filter>             
+		</receiver>
+	</application>
 </manifest>

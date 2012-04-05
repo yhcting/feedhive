@@ -67,7 +67,10 @@
     <string name="select_predefined_channel">Select predefined</string>
     <string name="pick_icon">Pick icon</string>
     <string name="open_link">Open link</string>
+    <string name="updatemode_normal">Normal</string>
+    <string name="updatemode_download">Download</string>
     <string name="setting_scheduled_update">Scheduled update setting</string>
     <string name="setting_everyday">everyday</string>
+    <string name="setting_updatemode">Update Mode</string>
     <string name="setting_nritem_softmax">Soft maximum number of item to keep</string>
 </resources>

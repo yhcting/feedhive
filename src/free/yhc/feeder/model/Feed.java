@@ -15,10 +15,6 @@ public class Feed {
 
         public static final long FStatDefault  = FStatNew;
 
-        ParD   parD;
-        DbD    dbD     = new DbD();
-        DynD   dynD    = new DynD();
-
         public static final boolean
         isStateNew(long flag) {
             return FStatNew == (flag & MStat);
@@ -40,40 +36,11 @@ public class Feed {
             long   id  = -1;
             long   cid = -1; // channel id
         }
-
-        // Dynamic data - changed in runtime dynamically (usually by user action.
-        static class DynD {
-            long   state = FStatNew;
-            byte[] rawdata = new byte[0];
-        }
-
-        Item() {
-            parD = new ParD();
-        }
-
-        Item(ParD parD) {
-            this.parD = parD;
-        }
-
-        // for debugging
-        public String
-        dump() {
-            return new StringBuilder()
-                .append("----------- Item -----------\n")
-                .append("title : ").append(parD.title).append("\n")
-                .append("link  : ").append(parD.link).append("\n")
-                .append("desc  : ").append(parD.description).append("\n")
-                .append("date  : ").append(parD.pubDate).append("\n")
-                .append("enclosure-url : ").append(parD.enclosureUrl).append("\n")
-                .append("enclosure-len : ").append(parD.enclosureLength).append("\n")
-                .append("enclosure-type: ").append(parD.enclosureType).append("\n")
-                .append("state : ").append(dynD.state).append("\n")
-                .toString();
-        }
-
     }
 
     public static class Channel {
+        public static final String defaultSchedUpdateTime = "" + (3 * 3600); // 3 o'clock
+
         // ==================
         // Flag State
         // ==================
@@ -108,7 +75,7 @@ public class Feed {
 
 
         // ==================
-        // Flag UpdateType
+        // Flag UpdateMode
         // ==================
         // bit[0] : update type 'normal / download'
         public static final long FUpdLink       = 0x00; // update only feed link
@@ -126,16 +93,6 @@ public class Feed {
         // 150 x 150 is enough size for channel icon.
         public static final int ICON_MAX_WIDTH  = 150;
         public static final int ICON_MAX_HEIGHT = 150;
-
-        private static final String defaultSchedUpdateTime = "" + (3 * 3600); // 3 o'clock
-
-        ProfD profD = new ProfD();
-        DbD   dbD   = new DbD();
-        DynD  dynD  = new DynD();
-        ParD  parD;
-
-        Item[] items;
-
 
         // Profile data.
         static class ProfD {
@@ -158,14 +115,6 @@ public class Feed {
             long   id           = -1;
             long   categoryid   = -1;
             long   lastupdate   = 0; // date when item DB is updated lastly
-        }
-
-        // Dynamic data - changed in runtime dynamically (usually by user action).
-        static class DynD {
-            long   action       = FActDefault;
-            long   updatetype   = FUpdDefault;
-            String schedupdate  = defaultSchedUpdateTime; // nrs String represents "seconds of day"
-            byte[] imageblob    = null;
         }
 
         // ==================
@@ -199,37 +148,6 @@ public class Feed {
         public static final boolean
         isUpdDn(long flag) {
             return FUpdDn == (flag & MUpd);
-        }
-        // ==================
-        // Members
-        // ==================
-        Channel() {
-            parD  = new ParD();
-            items = new Item[0];
-        }
-
-        Channel(ParD parD, Item.ParD[] itemParDs) {
-            this.parD   = parD;
-            items = new Item[itemParDs.length];
-            for (int i = 0; i < itemParDs.length; i++) {
-                items[i] = new Item();
-                items[i].parD = itemParDs[i];
-            }
-        }
-
-        // for debugging
-        public String
-        dump() {
-            StringBuilder builder =  new StringBuilder();
-            builder
-            .append("=============== Channel Dump ===============\n")
-            .append("title    : ").append(parD.title).append("\n")
-            .append("desc     : ").append(parD.description).append("\n")
-            .append("imageref : ").append(parD.imageref).append("\n");
-            for (Item item : items)
-                builder.append(item.dump());
-            builder.append("\n\n");
-            return builder.toString();
         }
     }
 

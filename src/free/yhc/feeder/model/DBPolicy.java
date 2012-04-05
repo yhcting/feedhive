@@ -40,7 +40,7 @@ public class DBPolicy {
 
 
     interface ItemDataOp {
-        byte[] getData(Feed.Item item) throws FeederException;
+        byte[] getData(Feed.Item.ParD parD, Feed.Item.DbD dbD) throws FeederException;
     }
 
     // ======================================================
@@ -58,20 +58,20 @@ public class DBPolicy {
 
     // This is used only for new 'insertion'
     private ContentValues
-    itemToContentValues(Feed.Item item) {
+    buildNewItemContentValues(Feed.Item.ParD parD, Feed.Item.DbD dbD) {
         ContentValues values = new ContentValues();
 
         // information defined by spec.
-        values.put(ColumnItem.CHANNELID.getName(),           item.dbD.cid);
-        values.put(ColumnItem.TITLE.getName(),               item.parD.title);
-        values.put(ColumnItem.LINK.getName(),                item.parD.link);
-        values.put(ColumnItem.DESCRIPTION.getName(),         item.parD.description);
-        values.put(ColumnItem.PUBDATE.getName(),             item.parD.pubDate);
-        values.put(ColumnItem.ENCLOSURE_URL.getName(),       item.parD.enclosureUrl);
-        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    item.parD.enclosureLength);
-        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      item.parD.enclosureType);
-        values.put(ColumnItem.STATE.getName(),               item.dynD.state);
-        values.put(ColumnItem.RAWDATA.getName(),             item.dynD.rawdata);
+        values.put(ColumnItem.CHANNELID.getName(),           dbD.cid);
+        values.put(ColumnItem.TITLE.getName(),               parD.title);
+        values.put(ColumnItem.LINK.getName(),                parD.link);
+        values.put(ColumnItem.DESCRIPTION.getName(),         parD.description);
+        values.put(ColumnItem.PUBDATE.getName(),             parD.pubDate);
+        values.put(ColumnItem.ENCLOSURE_URL.getName(),       parD.enclosureUrl);
+        values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    parD.enclosureLength);
+        values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      parD.enclosureType);
+        values.put(ColumnItem.STATE.getName(),               Feed.Item.FStatNew);
+        values.put(ColumnItem.RAWDATA.getName(),             new byte[0]);
 
         // This function is called for insert item.
         // So, update insert time value here.
@@ -82,26 +82,24 @@ public class DBPolicy {
 
     // This is used only for new 'insertion'
     private ContentValues
-    channelToContentValues(Feed.Channel ch) {
+    buildNewChannelContentValues(Feed.Channel.ProfD profD, Feed.Channel.ParD parD, Feed.Channel.DbD dbD) {
         ContentValues values = new ContentValues();
         // application's internal information
-        values.put(ColumnChannel.URL.getName(),              ch.profD.url);
-        values.put(ColumnChannel.ACTION.getName(),           ch.dynD.action);
-        values.put(ColumnChannel.UPDATETYPE.getName(),       ch.dynD.updatetype);
+        values.put(ColumnChannel.URL.getName(),              profD.url);
+        values.put(ColumnChannel.ACTION.getName(),           Feed.Channel.FActDefault);
+        values.put(ColumnChannel.UPDATEMODE.getName(),       Feed.Channel.FUpdDefault);
         values.put(ColumnChannel.STATE.getName(),            Feed.Channel.FStatDefault);
-        values.put(ColumnChannel.CATEGORYID.getName(),       ch.dbD.categoryid);
-        values.put(ColumnChannel.LASTUPDATE.getName(),       ch.dbD.lastupdate);
-
-        if (null != ch.dynD.imageblob)
-            values.put(ColumnChannel.IMAGEBLOB.getName(),    ch.dynD.imageblob);
+        values.put(ColumnChannel.CATEGORYID.getName(),       dbD.categoryid);
+        values.put(ColumnChannel.LASTUPDATE.getName(),       dbD.lastupdate);
 
         // information defined by spec.
-        values.put(ColumnChannel.TITLE.getName(),            ch.parD.title);
-        values.put(ColumnChannel.DESCRIPTION.getName(),      ch.parD.description);
+        values.put(ColumnChannel.TITLE.getName(),            parD.title);
+        values.put(ColumnChannel.DESCRIPTION.getName(),      parD.description);
 
+        values.put(ColumnChannel.IMAGEBLOB.getName(),        new byte[0]);
         // Fill reserved values as default
         // This need to match ChannelSettingActivity's setting value.
-        values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  ch.dynD.schedupdate); // default (03 o'clock)
+        values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  Feed.Channel.defaultSchedUpdateTime); // default (03 o'clock)
         values.put(ColumnChannel.OLDLAST_ITEMID.getName(),   0);
         values.put(ColumnChannel.NRITEMS_SOFTMAX.getName(),  999999);
         // add to last position in terms of UI.
@@ -286,11 +284,14 @@ public class DBPolicy {
         // insert and update channel id.
 
         // Create empty channel information.
-        Feed.Channel ch = new Feed.Channel();
-        ch.profD.url = url;
-        ch.dbD.categoryid = categoryid;
-        ch.dbD.lastupdate = new Date().getTime();
-        cid = db.insertChannel(channelToContentValues(ch));
+        Feed.Channel.ProfD profD = new Feed.Channel.ProfD();
+        profD.url = url;
+        Feed.Channel.DbD dbD = new Feed.Channel.DbD();
+        dbD.categoryid = categoryid;
+        dbD.lastupdate = new Date().getTime();
+        Feed.Channel.ParD parD = new Feed.Channel.ParD();
+        parD.title = profD.url;
+        cid = db.insertChannel(buildNewChannelContentValues(profD, parD, dbD));
         // check duplication...
         if (!UIPolicy.makeChannelDir(cid)) {
             db.deleteChannel(cid);
@@ -301,12 +302,12 @@ public class DBPolicy {
     }
 
     public Err
-    getNewItems(Feed.Item[] items, LinkedList<Feed.Item> newItems) {
+    getNewItems(Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
         eAssert(null != items);
         logI("UpdateChannel DB Section Start");
 
         try {
-            for (Feed.Item item : items) {
+            for (Feed.Item.ParD item : items) {
                 // ignore not-verified item
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
@@ -339,11 +340,11 @@ public class DBPolicy {
                                                            ColumnItem.LINK,
                                                            //ColumnItem.DESCRIPTION,
                                                            ColumnItem.ENCLOSURE_URL },
-                                        new String[] { item.parD.title,
-                                                       item.parD.pubDate,
-                                                       item.parD.link,
+                                        new String[] { item.title,
+                                                       item.pubDate,
+                                                       item.link,
                                                        //item.parD.description,
-                                                       item.parD.enclosureUrl },
+                                                       item.enclosureUrl },
                                         0);
                 if (c.getCount() > 0) {
                     c.close();
@@ -373,19 +374,18 @@ public class DBPolicy {
     // return: -1 (for fail to update)
     //
     public int
-    updateChannel(Feed.Channel ch, LinkedList<Feed.Item> newItems, ItemDataOp idop)
+    updateChannel(long cid, Feed.Channel.ParD ch, LinkedList<Feed.Item.ParD> newItems, ItemDataOp idop)
             throws FeederException {
-        eAssert(null != ch.items);
-        logI("UpdateChannel DB Section Start : " + ch.dbD.id);
+        logI("UpdateChannel DB Section Start : " + cid);
 
-        // update channel information
-        ContentValues channelUpdateValues = new ContentValues();
-        channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.parD.title);
-        channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.parD.description);
-        if (Feed.FInvalid != ch.dynD.action)
-            channelUpdateValues.put(ColumnChannel.ACTION.getName(),    ch.dynD.action);
-        if (null != ch.dynD.imageblob)
-            channelUpdateValues.put(ColumnChannel.IMAGEBLOB.getName(), ch.dynD.imageblob);
+        String oldTitle = getChannelInfoString(cid, ColumnChannel.TITLE);
+        if (!oldTitle.equals(ch.title)) {
+            // update channel information
+            ContentValues channelUpdateValues = new ContentValues();
+            channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.title);
+            channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.description);
+            db.updateChannel(cid, channelUpdateValues);
+        }
 
         // NOTE
         //   Since here, rollback is not implemented!
@@ -393,34 +393,28 @@ public class DBPolicy {
         //   'checkInterrupt()' is for 'fast-canceling'
         //   But, rollback itself should block 'canceling'.
         //   So, it's non-sense!
-        Iterator<Feed.Item> iter = newItems.iterator();
+        Iterator<Feed.Item.ParD> iter = newItems.iterator();
         while (iter.hasNext()) {
-            Feed.Item item = iter.next();
-            item.dbD.cid = ch.dbD.id;
+            Feed.Item.ParD itemParD = iter.next();
+            Feed.Item.DbD  itemDbD = new Feed.Item.DbD();
+            itemDbD.cid = cid;
 
-            if (0 > (item.dbD.id = db.insertItem(itemToContentValues(item))))
+            if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
                 return -1;
 
             // Now we know item id here.
             if (null != idop) {
                 try {
-                    item.dynD.rawdata = idop.getData(item);
-                    updateItem_data(item.dbD.id, item.dynD.rawdata);
+                    byte[] rawdata = idop.getData(itemParD, itemDbD);
+                    updateItem_data(itemDbD.id, rawdata);
                 } catch (FeederException e) {
                     ; // if feeder fails to get item data, just ignore it!
                 }
             }
-
-            // lots of channel-update can be run simultaneously.
-            // So, reduce top-usage of heap memory, de-reference memory here!
-            // Because, 'rawdata' information is not used anymore!
-            item.dynD.rawdata = null;
             checkInterrupted();
         }
         logI("DBPolicy : new " + newItems.size() + " items are inserted");
-        channelUpdateValues.put(ColumnChannel.LASTUPDATE.getName(), new Date().getTime());
-        db.updateChannel(ch.dbD.id, channelUpdateValues);
-
+        db.updateChannel(cid, ColumnChannel.LASTUPDATE, new Date().getTime());
         logI("UpdateChannel DB Section End");
         return 0;
     }
@@ -429,7 +423,12 @@ public class DBPolicy {
     updateChannel(long cid, ColumnChannel column, long value) {
         // Fields those are allowed to be updated.
         eAssert(ColumnChannel.CATEGORYID == column
-                || ColumnChannel.OLDLAST_ITEMID == column);
+                || ColumnChannel.OLDLAST_ITEMID == column
+                || ColumnChannel.ACTION == column
+                || ColumnChannel.UPDATEMODE == column
+                || ColumnChannel.POSITION == column
+                || ColumnChannel.STATE == column
+                || ColumnChannel.NRITEMS_SOFTMAX == column);
         return db.updateChannel(cid, column, value);
     }
 
@@ -470,11 +469,6 @@ public class DBPolicy {
         long maxId = getItemInfoMaxId(cid);
         updateChannel(cid, ColumnChannel.OLDLAST_ITEMID, maxId);
         return maxId;
-    }
-
-    public long
-    updateChannel_updateType(long cid, long utype) {
-        return db.updateChannel(cid, ColumnChannel.UPDATETYPE, utype);
     }
 
     public Cursor
@@ -614,13 +608,10 @@ public class DBPolicy {
         }
 
         Bitmap bm = null;
-        if (Cursor.FIELD_TYPE_NULL != c.getType(0)) {
-            byte[] imgRaw= c.getBlob(0);
-            bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
-        }
-
+        byte[] imgRaw= c.getBlob(0);
         c.close();
-
+        if (imgRaw.length > 0)
+            bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
         return bm;
     }
 

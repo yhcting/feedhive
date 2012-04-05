@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="strarr_updatemode">
+        <item>@string/updatemode_normal</item>
+        <item>@string/updatemode_download</item>
+    </string-array>
+</resources>

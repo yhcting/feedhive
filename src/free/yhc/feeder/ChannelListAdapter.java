@@ -50,16 +50,7 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
 
         String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
-        String desc;
-
-        // If title is empty, Just show URL of this channel.
-        // (This is to show that "this url is not normal or well-formatted.")
-        if (title.isEmpty()) {
-            title = c.getString(c.getColumnIndex(DB.ColumnChannel.URL.getName()));
-            desc = title;
-        } else {
-            desc  = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
-        }
+        String desc = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
 
         // date to readable string
         Date lastupdate = new Date(c.getLong(c.getColumnIndex(DB.ColumnChannel.LASTUPDATE.getName())));
@@ -83,10 +74,9 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         int ci; // column index;
         ci = c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName());
         Bitmap bm = null;
-        if (Cursor.FIELD_TYPE_NULL != c.getType(ci)) {
-            byte[] imgRaw = c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
+        byte[] imgRaw = c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
+        if (imgRaw.length > 0)
             bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
-        }
 
         ImageViewEx chIcon = (ImageViewEx)view.findViewById(R.id.image);
         chIcon.cid = cid;

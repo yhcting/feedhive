@@ -72,11 +72,11 @@ public final class DB extends SQLiteOpenHelper {
         DESCRIPTION     ("description",     "text",     "not null"),
 
         // Columns for internal use.
-        IMAGEBLOB       ("imageblob",       "blob",     ""), // image from channel tag.
+        IMAGEBLOB       ("imageblob",       "blob",     "not null"), // image from channel tag.
         LASTUPDATE      ("lastupdate",      "integer",  "not null"), // time when channel is updated, lastly
         // For fast/simple comparison, flag of 'long' type is used instead of text.
         ACTION          ("action",          "integer",  "not null"),
-        UPDATETYPE      ("updatetype",      "integer",  "not null"),
+        UPDATEMODE      ("updatemode",      "integer",  "not null"),
         // state of this channel : used / unused etc.
         // Why this is required?
         // When delete channel, deleting all items that are stored at DB, doesn't make sense.

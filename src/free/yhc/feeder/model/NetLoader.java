@@ -277,25 +277,24 @@ public class NetLoader {
         logI("Loading Items: " + url);
 
         long time = System.currentTimeMillis();
-        RSSParser.Result res = parseFeedUrl(url);
+        RSSParser.Result parD = parseFeedUrl(url);
         logI("TIME: Loading + Parsing : " + (System.currentTimeMillis() - time));
 
         // set to given value forcely due to this is 'update' - Not new insertion.
-        Feed.Channel ch = new Feed.Channel(res.channel, res.items);
-        ch.dbD.id = cid;
 
         // decide action type.
         // Actually deciding only once is enough.
         // But, to simplify code structure this code is here.
         // This is definitely overhead. But, it's not big overhead.
         // Instead of that, we can get simplified code.
-        if (0 != (UPD_ACTION & flag)) {
-            if (ch.items.length > 0)
-                ch.dynD.action = UIPolicy.decideDefaultActionType(ch.parD, ch.items[0].parD);
+        if (UPD_ACTION == (flag & UPD_ACTION)) {
+            long action;
+            if (parD.items.length > 0)
+                action = UIPolicy.decideDefaultActionType(parD.channel, parD.items[0]);
             else
-                ch.dynD.action = UIPolicy.decideDefaultActionType(ch.parD, null);
-        } else
-            ch.dynD.action = Feed.FInvalid;
+                action = UIPolicy.decideDefaultActionType(parD.channel, null);
+            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.ACTION, action);
+        }
 
         if (0 != (UPD_LOAD_IMG & flag)) {
             time = System.currentTimeMillis();
@@ -303,14 +302,14 @@ public class NetLoader {
             // Original image reference always has priority!
             byte[] bmdata = null;
             try {
-                if (Utils.isValidValue(ch.parD.imageref))
-                    bmdata = downloadToRaw(ch.parD.imageref, null);
+                if (Utils.isValidValue(parD.channel.imageref))
+                    bmdata = downloadToRaw(parD.channel.imageref, null);
             } catch (FeederException e) { }
             checkInterrupted();
 
             try {
                 if (null == bmdata &&  Utils.isValidValue(imageref))
-                    bmdata = downloadToRaw(ch.parD.imageref, null);
+                    bmdata = downloadToRaw(parD.channel.imageref, null);
             } catch (FeederException e) { }
             checkInterrupted();
 
@@ -318,35 +317,43 @@ public class NetLoader {
                 Bitmap bm = Utils.decodeImage(bmdata,
                                               Feed.Channel.ICON_MAX_WIDTH,
                                               Feed.Channel.ICON_MAX_HEIGHT);
-                ch.dynD.imageblob = Utils.compressBitmap(bm);
+                byte[] imageblob = Utils.compressBitmap(bm);
                 bm.recycle();
+                if (null != imageblob)
+                    DBPolicy.S().updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
             }
 
-            String prefix = (null == ch.dynD.imageblob)? "< Fail >" : "< Ok >";
-            logI("TIME: Handle Image : " + prefix + (System.currentTimeMillis() - time));
+            logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
             checkInterrupted();
         }
 
         time = System.currentTimeMillis();
 
-        LinkedList<Feed.Item> newItems = new LinkedList<Feed.Item>();
-        dbp.getNewItems(ch.items, newItems);
+        LinkedList<Feed.Item.ParD> newItems = new LinkedList<Feed.Item.ParD>();
+        dbp.getNewItems(parD.items, newItems);
         DBPolicy.ItemDataOp idop = null;
-        if (Feed.Channel.isUpdDn(ch.dynD.updatetype)) {
-            if (Feed.Channel.isActTgtLink(ch.dynD.updatetype)) {
+
+        // NOTE
+        // Information in "ch.dynD" is not available in case update.
+        // ('imageblob' and 'action' is exception case controlled with argument.)
+        // This is dynamically assigned variable.
+        long updateMode = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
+        long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        if (Feed.Channel.isUpdDn(updateMode)) {
+            if (Feed.Channel.isActTgtLink(action)) {
                 idop = new DBPolicy.ItemDataOp() {
                     @Override
-                    public byte[] getData(Feed.Item item) throws FeederException {
-                        return downloadToRaw(item.parD.link, null);
+                    public byte[] getData(Feed.Item.ParD parD, Feed.Item.DbD dbD) throws FeederException {
+                        return downloadToRaw(parD.link, null);
                     }
                 };
-            } else if (Feed.Channel.isActTgtEnclosure(ch.dynD.updatetype)) {
+            } else if (Feed.Channel.isActTgtEnclosure(action)) {
                 idop = new DBPolicy.ItemDataOp() {
                     @Override
-                    public byte[] getData(Feed.Item item) throws FeederException {
-                        downloadToFile(item.parD.enclosureUrl,
-                                       UIPolicy.getItemDownloadTempPath(item.dbD.id),
-                                       UIPolicy.getItemFilePath(item.dbD.id, item.parD.title, item.parD.enclosureUrl),
+                    public byte[] getData(Feed.Item.ParD parD, Feed.Item.DbD dbD) throws FeederException {
+                        downloadToFile(parD.enclosureUrl,
+                                       UIPolicy.getItemDownloadTempPath(dbD.id),
+                                       UIPolicy.getItemFilePath(dbD.id, parD.title, parD.enclosureUrl),
                                        null);
                         return null;
                     }
@@ -354,7 +361,7 @@ public class NetLoader {
             }
         }
         checkInterrupted();
-        dbp.updateChannel(ch, newItems, idop);
+        dbp.updateChannel(cid, parD.channel, newItems, idop);
 
         logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
     }
