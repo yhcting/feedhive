@@ -27,24 +27,48 @@ import org.xml.sax.SAXException;
 import android.graphics.Bitmap;
 
 public class NetLoader {
-    public static final int UPD_DEFAULT     = 0x00;
-    public static final int UPD_LOAD_IMG    = 0x01;
-    public static final int UPD_ACTION      = 0x02;
-    public static final int UPD_INIT        = UPD_ACTION | UPD_LOAD_IMG;
-
     private static final int NET_RETRY = 5;
 
     private DBPolicy                dbp     = DBPolicy.S();
     private volatile boolean        cancelled = false;
     private volatile InputStream    istream = null; // Multi-thread access
     private volatile OutputStream   ostream = null;
-    private volatile String         tmpFile = null;
+    private volatile File           tmpFile = null;
 
     interface OnProgress {
         // "progress < 0" means "Unknown progress"
         // In this case, negative value of bytes processed are passed as value of 'progress'
         void onProgress(NetLoader loader, long progress);
     }
+
+    private class ItemDataOp implements DBPolicy.ItemDataOpInterface {
+        private DBPolicy.ItemDataType type;
+
+        ItemDataOp(DBPolicy.ItemDataType type) {
+            this.type = type;
+        }
+
+        @Override
+        public DBPolicy.ItemDataType
+        getType() {
+            return type;
+        }
+
+        @Override
+        public byte[]
+        getRaw(String url) throws FeederException {
+            return downloadToRaw(url, null);
+        }
+
+        @Override
+        public File
+        getFile(String url) throws FeederException {
+            File f = UIPolicy.getTempFile();
+            downloadToFile(url, UIPolicy.getTempFile(), f, null);
+            return f;
+        }
+    }
+
 
     private void
     closeIstream() throws FeederException {
@@ -69,9 +93,8 @@ public class NetLoader {
     private boolean
     clearTempFile() {
         boolean ret = true;
-        if (null != tmpFile) {
-            ret = new File(tmpFile).delete();
-        }
+        if (null != tmpFile)
+            ret = tmpFile.delete();
         return ret;
     }
 
@@ -83,7 +106,7 @@ public class NetLoader {
             if (null != ostream)
                 ostream.close();
             if (null != tmpFile)
-                new File(tmpFile).delete();
+                tmpFile.delete();
             return true;
         } catch (IOException e) {
             return false;
@@ -269,7 +292,7 @@ public class NetLoader {
      * then 'imageref' is used instead of given by RSS channel infomation.
      */
     private void
-    update(long cid, int flag, String imageref)
+    update(long cid, String imageref)
             throws FeederException {
         String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
         eAssert(null != url);
@@ -287,8 +310,8 @@ public class NetLoader {
         // But, to simplify code structure this code is here.
         // This is definitely overhead. But, it's not big overhead.
         // Instead of that, we can get simplified code.
-        if (UPD_ACTION == (flag & UPD_ACTION)) {
-            long action;
+        long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        if (Feed.FInvalid == action) {
             if (parD.items.length > 0)
                 action = UIPolicy.decideDefaultActionType(parD.channel, parD.items[0]);
             else
@@ -296,7 +319,8 @@ public class NetLoader {
             DBPolicy.S().updateChannel(cid, DB.ColumnChannel.ACTION, action);
         }
 
-        if (0 != (UPD_LOAD_IMG & flag)) {
+        byte[] imageblob = DBPolicy.S().getChannelInfoImageblob(cid);
+        if (imageblob.length <= 0) {
             time = System.currentTimeMillis();
             // Kind Of Policy!!
             // Original image reference always has priority!
@@ -317,12 +341,11 @@ public class NetLoader {
                 Bitmap bm = Utils.decodeImage(bmdata,
                                               Feed.Channel.ICON_MAX_WIDTH,
                                               Feed.Channel.ICON_MAX_HEIGHT);
-                byte[] imageblob = Utils.compressBitmap(bm);
+                imageblob = Utils.compressBitmap(bm);
                 bm.recycle();
                 if (null != imageblob)
                     DBPolicy.S().updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
             }
-
             logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
             checkInterrupted();
         }
@@ -331,34 +354,19 @@ public class NetLoader {
 
         LinkedList<Feed.Item.ParD> newItems = new LinkedList<Feed.Item.ParD>();
         dbp.getNewItems(parD.items, newItems);
-        DBPolicy.ItemDataOp idop = null;
+        ItemDataOp idop = null;
 
         // NOTE
         // Information in "ch.dynD" is not available in case update.
         // ('imageblob' and 'action' is exception case controlled with argument.)
         // This is dynamically assigned variable.
         long updateMode = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
-        long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
         if (Feed.Channel.isUpdDn(updateMode)) {
-            if (Feed.Channel.isActTgtLink(action)) {
-                idop = new DBPolicy.ItemDataOp() {
-                    @Override
-                    public byte[] getData(Feed.Item.ParD parD, Feed.Item.DbD dbD) throws FeederException {
-                        return downloadToRaw(parD.link, null);
-                    }
-                };
-            } else if (Feed.Channel.isActTgtEnclosure(action)) {
-                idop = new DBPolicy.ItemDataOp() {
-                    @Override
-                    public byte[] getData(Feed.Item.ParD parD, Feed.Item.DbD dbD) throws FeederException {
-                        downloadToFile(parD.enclosureUrl,
-                                       UIPolicy.getItemDownloadTempPath(dbD.id),
-                                       UIPolicy.getItemFilePath(dbD.id, parD.title, parD.enclosureUrl),
-                                       null);
-                        return null;
-                    }
-                };
-            }
+
+            if (Feed.Channel.isActTgtLink(action))
+                idop = new ItemDataOp(DBPolicy.ItemDataType.RAW);
+            else if (Feed.Channel.isActTgtEnclosure(action))
+                idop = new ItemDataOp(DBPolicy.ItemDataType.FILE);
         }
         checkInterrupted();
         dbp.updateChannel(cid, parD.channel, newItems, idop);
@@ -367,16 +375,16 @@ public class NetLoader {
     }
 
     public void
-    updateLoad(long cid, int flag)
+    updateLoad(long cid)
             throws FeederException {
-        update(cid, flag, null);
+        update(cid, null);
     }
 
     public void
-    updateLoad(long cid, int flag, String imageref)
+    updateLoad(long cid, String imageref)
             throws FeederException {
         eAssert(null != imageref);
-        update(cid, flag, imageref);
+        update(cid, imageref);
     }
 
     public byte[]
@@ -396,14 +404,14 @@ public class NetLoader {
     }
 
     public void
-    downloadToFile(String url, String tempFile, String toFile, OnProgress progressListener)
+    downloadToFile(String url, File tempFile, File toFile, OnProgress progressListener)
         throws FeederException {
         // Set as class private for future cleanup.
         tmpFile = tempFile;
         try {
             ostream = new FileOutputStream(tmpFile);
             download(ostream, url, progressListener);
-            if (!new File(tmpFile).renameTo(new File(toFile)))
+            if (!tmpFile.renameTo(toFile))
                 throw new FeederException(Err.IOFile);
         } catch (FileNotFoundException e) {
             throw new FeederException(Err.IOFile);
@@ -412,9 +420,7 @@ public class NetLoader {
             closeOstream();
             clearTempFile(); // ignore failure
         }
-
     }
-
 
     public boolean
     cancel() {

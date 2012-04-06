@@ -271,20 +271,20 @@ public class ItemListActivity extends Activity {
     private boolean
     doesEnclosureDnFileExists(long id, int position) {
         // enclosure-url is link of downloaded file.
-        String f = UIPolicy.getItemFilePath(id,
-                                            getCursorInfoString(DB.ColumnItem.TITLE, position),
-                                            getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
-        return new File(f).exists();
+        File f = UIPolicy.getItemDataFile(id,
+                                          getCursorInfoString(DB.ColumnItem.TITLE, position),
+                                          getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
+        return f.exists();
     }
 
     private boolean
     deleteEnclosureDnFile(long id, int position) {
         // enclosure-url is link of downloaded file.
-        String f = UIPolicy.getItemFilePath(id,
-                                            getCursorInfoString(DB.ColumnItem.TITLE, position),
-                                            getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
+        File f = UIPolicy.getItemDataFile(id,
+                                          getCursorInfoString(DB.ColumnItem.TITLE, position),
+                                          getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
 
-        return new File(f).delete();
+        return f.delete();
     }
 
     private boolean
@@ -312,11 +312,10 @@ public class ItemListActivity extends Activity {
     onActionDnEnclosure(View view, long id, int position) {
         String enclosureUrl = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
-        String fpath = UIPolicy.getItemFilePath(id,
-                                                getCursorInfoString(DB.ColumnItem.TITLE, position),
-                                                enclosureUrl);
-        eAssert(null != fpath);
-        File f = new File(fpath);
+        File f = UIPolicy.getItemDataFile(id,
+                                          getCursorInfoString(DB.ColumnItem.TITLE, position),
+                                          enclosureUrl);
+        eAssert(null != f);
         if (f.exists()) {
             // "RSS described media type" vs "mime type by guessing from file extention".
             // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
@@ -349,8 +348,8 @@ public class ItemListActivity extends Activity {
             if (RTTask.StateDownload.Idle == state) {
                 BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this);
                 RTTask.S().registerDownload(id, dnTask);
-                dnTask.start(new BGTaskDownloadToFile.Arg(enclosureUrl, fpath,
-                                                          UIPolicy.getItemDownloadTempPath(id)));
+                dnTask.start(new BGTaskDownloadToFile.Arg(enclosureUrl, f,
+                                                          UIPolicy.getTempFile()));
                 getListAdapter().notifyDataSetChanged();
             } else if (RTTask.StateDownload.Downloading == state) {
                 BGTask task = RTTask.S().getDownload(id);
@@ -513,7 +512,6 @@ public class ItemListActivity extends Activity {
     public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         logI("==> ItemListActivity : onCreate");
 
         cid = getIntent().getLongExtra("cid", 0);

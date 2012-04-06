@@ -1,9 +1,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-
-import java.io.File;
-
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
@@ -144,7 +141,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
             bDataSaved = (htmldata.length > 0);
         } else if (Feed.Channel.isActTgtEnclosure(act)) {
             String url = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_URL.getName()));
-            bDataSaved = new File(UIPolicy.getItemFilePath(id, title, url)).exists();
+            bDataSaved = UIPolicy.getItemDataFile(id, title, url).exists();
         } else
             eAssert(false);
 

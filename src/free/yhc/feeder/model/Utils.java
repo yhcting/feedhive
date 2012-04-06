@@ -410,13 +410,15 @@ public class Utils {
 
     // return : false(fail to full-delete)
     public static boolean
-    removeFileRecursive(File f) {
+    removeFileRecursive(File f, boolean bDeleteMe) {
         if (f.isDirectory()) {
             for (File c : f.listFiles())
-                if (!removeFileRecursive(c))
+                if (!removeFileRecursive(c, true))
                     return false;
         }
-        return f.delete();
+        if (bDeleteMe)
+            return f.delete();
+        return true;
     }
 
     public static String

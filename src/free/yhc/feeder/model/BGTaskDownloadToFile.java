@@ -2,6 +2,7 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.logI;
 
+import java.io.File;
 import java.io.OutputStream;
 
 import android.content.Context;
@@ -18,11 +19,11 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     private volatile long           progress = 0;
 
     public static class Arg {
-        String      url         = null;
-        String      toFile      = null;
-        String      tempFile    = null;
+        String url         = null;
+        File   toFile      = null;
+        File   tempFile    = null;
 
-        public Arg(String url, String toFile, String tempFile) {
+        public Arg(String url, File toFile, File tempFile) {
             this.url = url;
             this.toFile = toFile;
             this.tempFile = tempFile;

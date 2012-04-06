@@ -4,6 +4,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.isValidValue;
 
 import java.io.File;
+import java.io.IOException;
 /*
  * Functions related with UIPolicy...
  *     - initial setting of values.
@@ -15,6 +16,8 @@ public class UIPolicy {
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
     private static final int    maxFileNameLength = 127;
+
+    private static final File   appRootDirFile = new File(appRootDir);
 
     static long
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
@@ -67,32 +70,40 @@ public class UIPolicy {
     makeChannelDir(long cid) {
         File f = new File(appRootDir + cid);
         if (f.exists())
-            Utils.removeFileRecursive(f);
+            Utils.removeFileRecursive(f, true);
         return f.mkdir();
     }
 
     public static boolean
     removeChannelDir(long cid) {
-        return Utils.removeFileRecursive(new File(appRootDir + cid));
+        return Utils.removeFileRecursive(new File(appRootDir + cid), true);
     }
 
-    public static String
-    getItemDownloadTempPath(long id) {
-        long cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
-        return appRootDir + "____temp__" + cid + "___" + id + "__";
+    public static boolean
+    cleanChannelDir(long cid) {
+        return Utils.removeFileRecursive(new File(appRootDir + cid), false);
+    }
+
+    public static File
+    getTempFile() {
+        File ret = null;
+        try {
+            ret = File.createTempFile("free.yhc.feeder", null, appRootDirFile);
+        } catch (IOException e){}
+        return ret;
     }
 
     // postfix : usually, extension;
     // NOTE
     //   DB for channel item is fully updated
-    public static String
-    getItemFilePath(long id, String title, String url) {
+    public static File
+    getItemDataFile(long id, String title, String url) {
         eAssert(null != url && null != title);
         long cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
 
         // we don't need to create valid filename with empty url value.
         if (url.isEmpty())
-            return "";
+            return null;
 
         String ext = Utils.getExtentionFromUrl(url);
 
@@ -111,6 +122,6 @@ public class UIPolicy {
         // NOTE
         //   In most UNIX file systems, only '/' and 'null' are reserved.
         //   So, we don't worry about "converting string to valid file name".
-        return appRootDir + cid + "/" + fname;
+        return new File(appRootDir + cid + "/" + fname);
     }
 }

@@ -3,6 +3,7 @@ package free.yhc.feeder.model;
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
@@ -10,8 +11,6 @@ import java.util.LinkedList;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import free.yhc.feeder.model.DB.ColumnCategory;
 import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DB.ColumnItem;
@@ -38,9 +37,15 @@ public class DBPolicy {
     private static DBPolicy instance = null;
     private DB              db       = null;
 
+    enum ItemDataType {
+        RAW,
+        FILE
+    }
 
-    interface ItemDataOp {
-        byte[] getData(Feed.Item.ParD parD, Feed.Item.DbD dbD) throws FeederException;
+    interface ItemDataOpInterface {
+        ItemDataType getType();
+        byte[] getRaw(String url) throws FeederException;
+        File   getFile(String url) throws FeederException;
     }
 
     // ======================================================
@@ -86,7 +91,7 @@ public class DBPolicy {
         ContentValues values = new ContentValues();
         // application's internal information
         values.put(ColumnChannel.URL.getName(),              profD.url);
-        values.put(ColumnChannel.ACTION.getName(),           Feed.Channel.FActDefault);
+        values.put(ColumnChannel.ACTION.getName(),           Feed.FInvalid);
         values.put(ColumnChannel.UPDATEMODE.getName(),       Feed.Channel.FUpdDefault);
         values.put(ColumnChannel.STATE.getName(),            Feed.Channel.FStatDefault);
         values.put(ColumnChannel.CATEGORYID.getName(),       dbD.categoryid);
@@ -377,14 +382,10 @@ public class DBPolicy {
         return Err.NoErr;
     }
 
-    //
-    // Progress is hard-coded...
-    // Any better way???
-    //
     // return: -1 (for fail to update)
     //
     public int
-    updateChannel(long cid, Feed.Channel.ParD ch, LinkedList<Feed.Item.ParD> newItems, ItemDataOp idop)
+    updateChannel(long cid, Feed.Channel.ParD ch, LinkedList<Feed.Item.ParD> newItems, ItemDataOpInterface idop)
             throws FeederException {
         logI("UpdateChannel DB Section Start : " + cid);
 
@@ -397,29 +398,64 @@ public class DBPolicy {
             db.updateChannel(cid, channelUpdateValues);
         }
 
-        // NOTE
-        //   Since here, rollback is not implemented!
-        //   Why?
-        //   'checkInterrupt()' is for 'fast-canceling'
-        //   But, rollback itself should block 'canceling'.
-        //   So, it's non-sense!
         Iterator<Feed.Item.ParD> iter = newItems.iterator();
         while (iter.hasNext()) {
             Feed.Item.ParD itemParD = iter.next();
             Feed.Item.DbD  itemDbD = new Feed.Item.DbD();
             itemDbD.cid = cid;
 
-            if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
-                return -1;
-
+            // NOTE
+            // Order is very important
+            // Order SHOULD be "get item data" => "insert to db"
+            // Why?
+            // If "insert to db" is done before "get item data", user can see item at UI.
+            // So, user may try to get item data by UI action.
+            // Then what happens?
+            // Two operations for getting same item data are running concurrently!
+            // This is not what I expected.
+            //
+            // Yes! I know.
+            // In case of 'file download operation', there can be race-condition even if
+            //   operation order is 'get' -> 'insert'.
+            //   (User request DB items at the moment between
+            //      "file download is done, and item is inserted" and
+            //      "renaming file to final name based on item id".)
+            // In this case, user may try to download again even if download is done, and second
+            //   downloaded file will be overwritten to previous one.
+            // This is not normal and my expectation.
+            // But it's NOT harmful and it's very RARE case!
+            // So, I don't use any synchronization to prevent this race condition.
             // Now we know item id here.
-            if (null != idop) {
-                try {
-                    byte[] rawdata = idop.getData(itemParD, itemDbD);
-                    updateItem_data(itemDbD.id, rawdata);
-                } catch (FeederException e) {
-                    ; // if feeder fails to get item data, just ignore it!
+            try {
+                if (null != idop) {
+                    if (ItemDataType.RAW == idop.getType()) {
+                        ContentValues cvs = buildNewItemContentValues(itemParD, itemDbD);
+                        byte[] rawdata = new byte[0];
+                        try {
+                            rawdata = idop.getRaw(itemParD.link);
+                        } catch (FeederException e) { }
+                        cvs.put(ColumnItem.RAWDATA.getName(), rawdata);
+                        if (0 > (itemDbD.id = db.insertItem(cvs)))
+                            throw new FeederException(Err.DBUnknown);
+                    } else if (ItemDataType.FILE == idop.getType()) {
+                        File f = idop.getFile(itemParD.enclosureUrl);
+                        if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
+                            throw new FeederException(Err.DBUnknown);
+
+                        // NOTE
+                        // At this moment, race-condition can be issued.
+                        // But, as I mentioned above, it's not harmful and very rare case.
+                        if (!f.renameTo(UIPolicy.getItemDataFile(itemDbD.id, itemParD.title, itemParD.enclosureUrl)))
+                            f.delete();
+                    }
+                } else {
+                    if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
+                        throw new FeederException(Err.DBUnknown);
                 }
+            } catch (FeederException e) {
+                if (Err.DBUnknown == e.getError())
+                    throw e;
+                ; // if feeder fails to get item data, just ignore it!
             }
             checkInterrupted();
         }
@@ -604,25 +640,19 @@ public class DBPolicy {
         return max;
     }
 
-    public Bitmap
-    getChannelImage(long cid) {
+    public byte[]
+    getChannelInfoImageblob(long cid) {
+        byte[] blob = new byte[0];
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
                                    new ColumnChannel[] { ColumnChannel.STATE,
                                                          ColumnChannel.ID },
                                    new Object[] { Feed.Channel.FStatUsed,
                                                   cid },
                                    null, false, 0);
-        if (!c.moveToFirst()) {
-            c.close();
-            return null;
-        }
-
-        Bitmap bm = null;
-        byte[] imgRaw= c.getBlob(0);
+        if (c.moveToFirst())
+            blob = c.getBlob(0);
         c.close();
-        if (imgRaw.length > 0)
-            bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
-        return bm;
+        return blob;
     }
 
     public long

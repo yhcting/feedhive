@@ -51,7 +51,6 @@ import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.NetLoader;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.Utils;
@@ -518,7 +517,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // full update for this newly inserted channel
         BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
         RTTask.S().registerUpdate(cid, task);
-        task.start(new BGTaskUpdateChannel.Arg(cid, NetLoader.UPD_INIT));
+        task.start(new BGTaskUpdateChannel.Arg(cid));
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
@@ -754,8 +753,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // delete entire channel directory and re-make it.
         // Why?
         // All and only downloaded files are located in channel directory.
-        UIPolicy.removeChannelDir(cid);
-        UIPolicy.makeChannelDir(cid);
+        UIPolicy.cleanChannelDir(cid);
     }
 
     private void
@@ -827,6 +825,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
+    /* full update is useless at this moment. Codes are left for history tracking
     private void
     onContext_fullUpdate(final long cid) {
         if (!Utils.isNetworkAvailable(this)) {
@@ -844,7 +843,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 dialog.dismiss();
                 BGTaskUpdateChannel task = new BGTaskUpdateChannel(ChannelListActivity.this);
                 RTTask.S().registerUpdate(cid, task);
-                task.start(new BGTaskUpdateChannel.Arg(cid, NetLoader.UPD_LOAD_IMG));
+                task.start(new BGTaskUpdateChannel.Arg(cid));
             }
         });
         dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
@@ -856,6 +855,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         });
         dialog.show();
     }
+    */
+
 
     private void
     onContextBtn_channelUpdate(ImageView ibtn, long cid) {
@@ -937,13 +938,20 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             || RTTask.StateUpdate.Canceling == updateState) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
+            /* full update is useless at this moment. Codes are left for history tracking
             menu.findItem(R.id.full_update).setEnabled(false);
+            */
         }
 
         if (RTTask.S().getDownloadRunningItems(mInfo.id).length > 0) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
+
+        // Downfiles can exist only if enclosure is action target.
+        long action = DBPolicy.S().getChannelInfoLong(mInfo.id, DB.ColumnChannel.ACTION);
+        if (!Feed.Channel.isActTgtEnclosure(action))
+            menu.findItem(R.id.delete_dnfile).setEnabled(false);
     }
 
     @Override
@@ -981,9 +989,11 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             onContext_pickIcon(info.id);
             return true;
 
+        /* full update is useless at this moment. Codes are left for history tracking
         case R.id.full_update:
             onContext_fullUpdate(info.id);
             return true;
+        */
         }
         return false;
     }

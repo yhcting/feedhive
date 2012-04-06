@@ -35,12 +35,11 @@ DialogInterface.OnClickListener
     }
 
     public Err
-    updateLoad(boolean updateImage, Object obj)
+    updateLoad(Object obj)
             throws FeederException {
         cid = ((Long)obj).longValue();
         try {
-            new NetLoader().updateLoad(cid,
-                    updateImage? NetLoader.UPD_LOAD_IMG: NetLoader.UPD_DEFAULT);
+            new NetLoader().updateLoad(cid);
             return Err.NoErr;
         } catch (FeederException e) {
             return e.getError();
