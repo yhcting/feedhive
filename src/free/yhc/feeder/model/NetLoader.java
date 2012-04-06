@@ -41,35 +41,6 @@ public class NetLoader {
         void onProgress(NetLoader loader, long progress);
     }
 
-    private class ItemDataOp implements DBPolicy.ItemDataOpInterface {
-        private DBPolicy.ItemDataType type;
-
-        ItemDataOp(DBPolicy.ItemDataType type) {
-            this.type = type;
-        }
-
-        @Override
-        public DBPolicy.ItemDataType
-        getType() {
-            return type;
-        }
-
-        @Override
-        public byte[]
-        getRaw(String url) throws FeederException {
-            return downloadToRaw(url, null);
-        }
-
-        @Override
-        public File
-        getFile(String url) throws FeederException {
-            File f = UIPolicy.getTempFile();
-            downloadToFile(url, UIPolicy.getTempFile(), f, null);
-            return f;
-        }
-    }
-
-
     private void
     closeIstream() throws FeederException {
         try {
@@ -354,19 +325,30 @@ public class NetLoader {
 
         LinkedList<Feed.Item.ParD> newItems = new LinkedList<Feed.Item.ParD>();
         dbp.getNewItems(parD.items, newItems);
-        ItemDataOp idop = null;
 
+        DBPolicy.ItemDataOpInterface idop = null;
         // NOTE
         // Information in "ch.dynD" is not available in case update.
         // ('imageblob' and 'action' is exception case controlled with argument.)
         // This is dynamically assigned variable.
         long updateMode = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
         if (Feed.Channel.isUpdDn(updateMode)) {
-
-            if (Feed.Channel.isActTgtLink(action))
-                idop = new ItemDataOp(DBPolicy.ItemDataType.RAW);
-            else if (Feed.Channel.isActTgtEnclosure(action))
-                idop = new ItemDataOp(DBPolicy.ItemDataType.FILE);
+            final long chact = action;
+            idop = new DBPolicy.ItemDataOpInterface() {
+                @Override
+                public File getFile(Feed.Item.ParD parD) throws FeederException {
+                    String url = null;
+                    if (Feed.Channel.isActTgtLink(chact))
+                        url = parD.link;
+                    else if (Feed.Channel.isActTgtEnclosure(chact))
+                        url = parD.enclosureUrl;
+                    else
+                        eAssert(false);
+                    File f = UIPolicy.getTempFile();
+                    downloadToFile(url, UIPolicy.getTempFile(), f, null);
+                    return f;
+                }
+            };
         }
         checkInterrupted();
         dbp.updateChannel(cid, parD.channel, newItems, idop);

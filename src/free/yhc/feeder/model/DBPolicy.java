@@ -43,9 +43,7 @@ public class DBPolicy {
     }
 
     interface ItemDataOpInterface {
-        ItemDataType getType();
-        byte[] getRaw(String url) throws FeederException;
-        File   getFile(String url) throws FeederException;
+        File   getFile(Feed.Item.ParD parD) throws FeederException;
     }
 
     // ======================================================
@@ -76,7 +74,6 @@ public class DBPolicy {
         values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    parD.enclosureLength);
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      parD.enclosureType);
         values.put(ColumnItem.STATE.getName(),               Feed.Item.FStatNew);
-        values.put(ColumnItem.RAWDATA.getName(),             new byte[0]);
 
         // This function is called for insert item.
         // So, update insert time value here.
@@ -428,26 +425,15 @@ public class DBPolicy {
             // Now we know item id here.
             try {
                 if (null != idop) {
-                    if (ItemDataType.RAW == idop.getType()) {
-                        ContentValues cvs = buildNewItemContentValues(itemParD, itemDbD);
-                        byte[] rawdata = new byte[0];
-                        try {
-                            rawdata = idop.getRaw(itemParD.link);
-                        } catch (FeederException e) { }
-                        cvs.put(ColumnItem.RAWDATA.getName(), rawdata);
-                        if (0 > (itemDbD.id = db.insertItem(cvs)))
-                            throw new FeederException(Err.DBUnknown);
-                    } else if (ItemDataType.FILE == idop.getType()) {
-                        File f = idop.getFile(itemParD.enclosureUrl);
-                        if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
-                            throw new FeederException(Err.DBUnknown);
+                    File f = idop.getFile(itemParD);
+                    if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
+                        throw new FeederException(Err.DBUnknown);
 
-                        // NOTE
-                        // At this moment, race-condition can be issued.
-                        // But, as I mentioned above, it's not harmful and very rare case.
-                        if (!f.renameTo(UIPolicy.getItemDataFile(itemDbD.id, itemParD.title, itemParD.enclosureUrl)))
-                            f.delete();
-                    }
+                    // NOTE
+                    // At this moment, race-condition can be issued.
+                    // But, as I mentioned above, it's not harmful and very rare case.
+                    if (!f.renameTo(UIPolicy.getItemDataFile(itemDbD.id)))
+                        f.delete();
                 } else {
                     if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
                         throw new FeederException(Err.DBUnknown);
@@ -717,21 +703,6 @@ public class DBPolicy {
         return v;
     }
 
-    public byte[]
-    getItemInfoData(long id, ColumnItem column) {
-        eAssert(ColumnItem.RAWDATA == column);
-        Cursor c = db.queryItem(new ColumnItem[] { column },
-                                new ColumnItem[] { ColumnItem.ID },
-                                new Object[] { id },
-                                0);
-        byte[] ret = null;
-        if (c.moveToFirst())
-            ret = c.getBlob(0);
-        c.close();
-        return ret;
-    }
-
-
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
         return db.queryItem(columns,
@@ -744,11 +715,6 @@ public class DBPolicy {
     updateItem_state(long id, long state) {
         // Update item during 'updating channel' is not expected!!
         return db.updateItem(id, ColumnItem.STATE, state);
-    }
-
-    public long
-    updateItem_data(long id, byte[] data) {
-        return db.updateItem(id, ColumnItem.RAWDATA, data);
     }
 
     // delete downloaded files etc.

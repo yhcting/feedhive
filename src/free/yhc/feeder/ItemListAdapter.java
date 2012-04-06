@@ -132,20 +132,6 @@ public class ItemListAdapter extends ResourceCursorAdapter {
 
         lengthv.setText(length);
 
-
-        boolean bDataSaved = false;
-        if (Feed.Channel.isActTgtLink(act)) {
-            // This is dynamic data - changed by user in runtime.
-            // So, let's read from database directly.
-            byte[] htmldata = DBPolicy.S().getItemInfoData(id, DB.ColumnItem.RAWDATA);
-            bDataSaved = (htmldata.length > 0);
-        } else if (Feed.Channel.isActTgtEnclosure(act)) {
-            String url = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_URL.getName()));
-            bDataSaved = UIPolicy.getItemDataFile(id, title, url).exists();
-        } else
-            eAssert(false);
-
-
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
         //   add proper icon (or representation...)
@@ -157,7 +143,7 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         imgv.setAlpha(1.0f);
         progressv.setVisibility(View.GONE);
 
-        if (bDataSaved) {
+        if (UIPolicy.getItemDataFile(id).exists()) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
             RTTask.StateDownload dnState = RTTask.S().getDownloadState(id);

@@ -18,13 +18,12 @@ import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BGTaskDownloadToDB;
+import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DB.ColumnItem;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.model.UIPolicy;
 
 public class ItemViewActivity extends Activity {
     private long    id  = -1;
@@ -73,15 +72,15 @@ public class ItemViewActivity extends Activity {
         @Override
         public void
         onDownloadBGTaskRegster(long id, BGTask task) {
-            RTTask.S().bindDownload(id, new DownloadToDBBGTaskOnEvent());
+            RTTask.S().bindDownload(id, new DownloadBGTaskOnEvent());
         }
 
         @Override
         public void onDownloadBGTaskUnegster(long id, BGTask task) { }
     }
 
-    private class DownloadToDBBGTaskOnEvent implements
-    BGTaskDownloadToDB.OnEvent<BGTaskDownloadToDB.Arg, Object> {
+    private class DownloadBGTaskOnEvent implements
+    BGTask.OnEvent<BGTaskDownloadToFile.Arg, Object> {
         @Override
         public void
         onProgress(BGTask task, long progress) { }
@@ -106,10 +105,11 @@ public class ItemViewActivity extends Activity {
 
     private void
     startDownload() {
-        BGTaskDownloadToDB dnTask = new BGTaskDownloadToDB(this);
+        BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this);
         RTTask.S().registerDownload(id, dnTask);
-        dnTask.start(new BGTaskDownloadToDB.Arg(netUrl, id,
-                                                DB.ColumnItem.RAWDATA));
+        dnTask.start(new BGTaskDownloadToFile.Arg(netUrl,
+                                                  UIPolicy.getItemDataFile(id),
+                                                  UIPolicy.getTempFile()));
     }
 
     private void
@@ -165,8 +165,9 @@ public class ItemViewActivity extends Activity {
                     }
                 });
             } else {
-                byte[] htmldata = DBPolicy.S().getItemInfoData(id, DB.ColumnItem.RAWDATA);
-                if (0 == htmldata.length) {
+                if (UIPolicy.getItemDataFile(id).exists()) {
+                    ItemViewActivity.this.findViewById(R.id.imgbtn).setVisibility(View.GONE);
+                } else {
                     imgbtn.setImageResource(R.drawable.download_anim0);
                     imgbtn.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -175,8 +176,6 @@ public class ItemViewActivity extends Activity {
                             postSetupLayout();
                         }
                     });
-                } else {
-                    ItemViewActivity.this.findViewById(R.id.imgbtn).setVisibility(View.GONE);
                 }
             }
 
@@ -231,19 +230,10 @@ public class ItemViewActivity extends Activity {
         id = getIntent().getLongExtra("id", -1);
         eAssert(id >= 0);
 
-        netUrl = DBPolicy.S().getItemInfoString(id, ColumnItem.LINK);
-        // Create html file from DataBase raw data of this link page.
-        String tempHtmlPath = getFilesDir() + File.separator + "___itemView_temp__.html";
-        fileUrl = "file:///" + tempHtmlPath;
-
-        byte[] htmldata = DBPolicy.S().getItemInfoData(id, DB.ColumnItem.RAWDATA);
-        if (0 == htmldata.length)
-            currUrl = netUrl;
-        else {
-            Utils.writeToFile(tempHtmlPath, htmldata);
-            new File(tempHtmlPath).deleteOnExit();
-            currUrl = fileUrl;
-        }
+        File f = UIPolicy.getItemDataFile(id);
+        netUrl = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.LINK);
+        fileUrl = "file:///" + f.getAbsolutePath();
+        currUrl = f.exists()? fileUrl: netUrl;
         wv.loadUrl(currUrl);
 
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
@@ -256,7 +246,7 @@ public class ItemViewActivity extends Activity {
         // Bind download task if needed
         RTTask.StateDownload state = RTTask.S().getDownloadState(id);
         if (RTTask.StateDownload.Idle != state)
-            RTTask.S().bindDownload(id, new DownloadToDBBGTaskOnEvent());
+            RTTask.S().bindDownload(id, new DownloadBGTaskOnEvent());
 
         setupLayout();
     }

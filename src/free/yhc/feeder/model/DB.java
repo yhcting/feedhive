@@ -139,7 +139,6 @@ public final class DB extends SQLiteOpenHelper {
 
         // Columns for internal use.
         STATE           ("state",           "integer",  "not null"), // new, read etc
-        RAWDATA         ("rawdata",         "blob",     "not null"),
         // time when this item is inserted.(milliseconds since 1970.1.1....)
         INSTIME         ("instime",         "integer",  "not null"),
         CHANNELID       ("channelid",       "integer",  ""),

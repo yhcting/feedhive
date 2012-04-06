@@ -1,6 +1,5 @@
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.isValidValue;
 
 import java.io.File;
@@ -93,13 +92,32 @@ public class UIPolicy {
         return ret;
     }
 
-    // postfix : usually, extension;
-    // NOTE
-    //   DB for channel item is fully updated
     public static File
-    getItemDataFile(long id, String title, String url) {
-        eAssert(null != url && null != title);
-        long cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
+    getItemDataFile(long id) {
+        return getItemDataFile(id, -1, null, null);
+    }
+
+    // NOTE
+    // Why this parameter is given even if we can get from DB?
+    // This is only for performance reason!
+    // postfix : usually, extension;
+    public static File
+    getItemDataFile(long id, long cid, String title, String url) {
+        if (cid < 0)
+            cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
+
+        if (!Utils.isValidValue(title))
+            title = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.TITLE);
+
+        if (!Utils.isValidValue(url)) {
+            long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+            if (Feed.Channel.isActTgtLink(action))
+                url = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.LINK);
+            else if (Feed.Channel.isActTgtEnclosure(action))
+                url = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.ENCLOSURE_URL);
+            else
+                url = "";
+        }
 
         // we don't need to create valid filename with empty url value.
         if (url.isEmpty())

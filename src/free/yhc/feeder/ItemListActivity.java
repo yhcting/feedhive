@@ -269,25 +269,6 @@ public class ItemListActivity extends Activity {
     }
 
     private boolean
-    doesEnclosureDnFileExists(long id, int position) {
-        // enclosure-url is link of downloaded file.
-        File f = UIPolicy.getItemDataFile(id,
-                                          getCursorInfoString(DB.ColumnItem.TITLE, position),
-                                          getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
-        return f.exists();
-    }
-
-    private boolean
-    deleteEnclosureDnFile(long id, int position) {
-        // enclosure-url is link of downloaded file.
-        File f = UIPolicy.getItemDataFile(id,
-                                          getCursorInfoString(DB.ColumnItem.TITLE, position),
-                                          getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position));
-
-        return f.delete();
-    }
-
-    private boolean
     changeItemState_opened(long id, int position) {
         // change state as 'opened' at this moment.
         long state = db.getItemInfoLong(id, DB.ColumnItem.STATE);
@@ -312,9 +293,7 @@ public class ItemListActivity extends Activity {
     onActionDnEnclosure(View view, long id, int position) {
         String enclosureUrl = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
-        File f = UIPolicy.getItemDataFile(id,
-                                          getCursorInfoString(DB.ColumnItem.TITLE, position),
-                                          enclosureUrl);
+        File f = UIPolicy.getItemDataFile(id);
         eAssert(null != f);
         if (f.exists()) {
             // "RSS described media type" vs "mime type by guessing from file extention".
@@ -441,7 +420,7 @@ public class ItemListActivity extends Activity {
             @Override
             public void
             onClick (DialogInterface dialog, int which) {
-                if (!deleteEnclosureDnFile(id, position))
+                if (!UIPolicy.getItemDataFile(id).delete())
                     LookAndFeel.showTextToast(ItemListActivity.this, Err.IOFile.getMsgId());
                 else
                     getListAdapter().notifyDataSetChanged();
@@ -477,8 +456,7 @@ public class ItemListActivity extends Activity {
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        if (Feed.Channel.isActTgtEnclosure(action)
-            && doesEnclosureDnFileExists(info.id, info.position))
+        if (UIPolicy.getItemDataFile(info.id).exists())
             menu.findItem(R.id.delete_dnfile).setVisible(true);
     }
 

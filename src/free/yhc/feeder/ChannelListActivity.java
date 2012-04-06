@@ -947,11 +947,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
-
-        // Downfiles can exist only if enclosure is action target.
-        long action = DBPolicy.S().getChannelInfoLong(mInfo.id, DB.ColumnChannel.ACTION);
-        if (!Feed.Channel.isActTgtEnclosure(action))
-            menu.findItem(R.id.delete_dnfile).setEnabled(false);
     }
 
     @Override
