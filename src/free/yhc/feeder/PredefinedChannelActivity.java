@@ -41,6 +41,7 @@ import free.yhc.feeder.model.UIPolicy;
 
 
 public class PredefinedChannelActivity extends Activity {
+    private long        categoryid = -1;
     private ListView    list;
     private HashMap<String, Boolean> chMap = new HashMap<String, Boolean>();
 
@@ -131,7 +132,7 @@ public class PredefinedChannelActivity extends Activity {
             return;
         }
 
-        long cid = DBPolicy.S().insertNewChannel(DBPolicy.S().getDefaultCategoryId(), url);
+        long cid = DBPolicy.S().insertNewChannel(categoryid, url);
         if (cid < 0) {
             LookAndFeel.showTextToast(this, R.string.warn_add_channel);
             return;
@@ -240,6 +241,10 @@ public class PredefinedChannelActivity extends Activity {
     public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        categoryid = this.getIntent().getLongExtra("category", -1);
+        eAssert(categoryid >= 0);
+
         setContentView(R.layout.predefined_channel);
         list = ((ListView) findViewById(R.id.list));
         eAssert(null != list);

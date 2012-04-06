@@ -57,8 +57,7 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements ActionBar.TabListener {
     // Request codes.
-    private static final int ReqCPredefinedChannel  = 0;
-    private static final int ReqCPickImage          = 1;
+    private static final int ReqCPickImage          = 0;
 
     private ActionBar   ab;
     private Flipper     flipper;
@@ -722,7 +721,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private void
     onOpt_selectPredefinedChannel() {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
-        startActivityForResult(intent, ReqCPredefinedChannel);
+        intent.putExtra("category", getCurrentCategoryId());
+        startActivity(intent);
     }
 
     private void

@@ -67,7 +67,30 @@
 		<url>http://imnews.imbc.com/rss/news/news_00.xml</url>
 		<icon></icon>
 	</channel>
-
+	<channel>
+		<name>CNN Top stories</name>
+		<category>언론</category>
+		<url>http://rss.cnn.com/rss/edition.rss</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>CNN Technology</name>
+		<category>언론</category>
+		<url>http://rss.cnn.com/rss/edition_technology.rss</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>CNN Asia</name>
+		<category>언론</category>
+		<url>http://rss.cnn.com/rss/edition_asia.rss</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>CNN US</name>
+		<category>언론</category>
+		<url>http://rss.cnn.com/rss/edition_us.rss</url>
+		<icon></icon>
+	</channel>
 	<!-- 대안 언론 (podcast 등)  -->
 	<channel>
 		<name>나는 꼼수다</name>
@@ -165,8 +188,299 @@
 		<url>http://www.docdocdoc.co.kr/podcast/iam_doctors.xml</url>
 		<icon></icon>
 	</channel>
-
-	<!-- 기타 개인 방송들  -->
+	<!-- MBC 표준 FM -->
+	<channel>
+		<name>건강한 아침 황선숙입니다.</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1002588100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>손석희의 시선집중</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000674100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>손에 잡히는 경제 이진우입니다.</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000671100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>여성시대 양희은, 강석우입니다.</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000630100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>성경섭이 만난 사람</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1002424100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>배한성, 배칠수의 고전열전</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1002488100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>지금은 라디오 시대</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000669100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>김창옥의 세계는 그리고 우리는</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000681100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>최양락의 재미있는 라디오</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000678100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>윤하의 별이 빛나는 밤에</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000677100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>신동의 심심타파</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000664100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>이동진의 꿈꾸는 다락방</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1002589100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>세상을 바꾸는 생각</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1002590100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>김나진의 세계도시여행</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000621100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>라디오 북클럽 김지은입니다</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000698100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>타박타박 세계사</name>
+		<category>MBC 표준 FM</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000628100000100000</url>
+		<icon></icon>
+	</channel>
+	<!-- MBC FM4U -->
+	<channel>
+		<name>세상을 여는 아침 허일후입니다</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000575100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>오늘아침 심현보입니다</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000576100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>정오의 희망곡 스윗소로우입니다</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1001919100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>두시의 데이트 주영훈입니다</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000586100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>간미연의 친한친구</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1002413100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>FM 음악도시 성시경입니다</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1002600100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>푸른밤 정엽입니다</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000578100000100000</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>이주연의 영화음악</name>
+		<category>MBC FM4U</category>
+		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000580100000100000</url>
+		<icon></icon>
+	</channel>
+	<!-- SBS 파워 FM -->
+	<channel>
+		<name>정선희의 오늘같은밤</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000349378A.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>김형준의 뮤직하이</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000328480.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>김영철의 Fun Fun today</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000351036.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>이숙영의 파워 FM</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000010343.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>아름다운 이 아침 김창완</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000010355.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>공형진의 씨네타운</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000321755.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>최화정의 파워타임</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000010346.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>두시탈출 컬투쇼</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000328482.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>김창렬의 올드스쿨</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000329545.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>박소현의 러브게임</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000336099.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>붐의 영스트리트</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000352536.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>이석훈의 텐텐클럽</name>
+		<category>SBS 파워 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000349380.xml</url>
+		<icon></icon>
+	</channel>
+	<!-- SBS 러브 FM -->
+	<channel>
+		<name>서두원의 시사초점</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000349385.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>최영아의 책하고 놀자</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000328499.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>SBS 전망대</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000337960.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>정석문의 섹션라디오</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000329544.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>정철진의 스마트경제</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000355936.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>박준형의 시사갈갈</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000356536.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>김지선,김일중의 세상을 만나자</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000337995.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>라디오오디션 국민DJ를 찾습니다</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000351237.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>이성미의 이야기쇼</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000349373.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>희망사항 변진섭입니다</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000349388.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>안선영의 라디오가 좋다</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000340869.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>여러분의 국민DJ 이예랑입니다</name>
+		<category>SBS 러브 FM</category>
+		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000362236.xml</url>
+		<icon></icon>
+	</channel>
+ 	<!-- 기타 개인 방송들  -->
 	<channel>
 		<name>망치부인 시사수다방</name>
 		<category>개인방송</category>
