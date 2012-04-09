@@ -34,6 +34,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -590,6 +591,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         final AlertDialog dialog = builder.create();
         dialog.setTitle(R.string.channel_url);
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         // Set action for dialog.
         EditText edit = (EditText) layout.findViewById(R.id.editbox);
 
@@ -603,7 +605,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
                     String url = ((EditText) v).getText().toString();
-                    if (url.isEmpty()) {
+                    if (url.isEmpty() || url.matches("http\\:\\/\\/\\s*")) {
                         dialog.dismiss();
                         return true;
                     }
@@ -631,6 +633,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         builder.setView(layout);
         final AlertDialog dialog = builder.create();
         dialog.setTitle(R.string.add_category);
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         // Set action for dialog.
         EditText edit = (EditText)layout.findViewById(R.id.editbox);
         edit.setHint(R.string.enter_name);
@@ -707,6 +710,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         builder.setView(layout);
         final AlertDialog dialog = builder.create();
         dialog.setTitle(R.string.modify_category_name);
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         // Set action for dialog.
         EditText edit = (EditText)layout.findViewById(R.id.editbox);
         edit.setHint(R.string.enter_name);
