@@ -142,21 +142,15 @@ public class ItemListActivity extends Activity {
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
         @Override
         public void
-        onUpdateBGTaskRegister(long cid, BGTask task) {
-            RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent());
+        onBGTaskRegister(long id, BGTask task, RTTask.Action act) {
+            if (RTTask.Action.Update == act)
+                RTTask.S().bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent());
+            else if (RTTask.Action.Download == act)
+                RTTask.S().bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent());
         }
 
         @Override
-        public void onUpdateBGTaskUnregister(long cid, BGTask task) { }
-
-        @Override
-        public void
-        onDownloadBGTaskRegster(long id, BGTask task) {
-            RTTask.S().bindDownload(id, new DownloadDataBGTaskOnEvent());
-        }
-
-        @Override
-        public void onDownloadBGTaskUnegster(long id, BGTask task) { }
+        public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
     }
 
     // Putting these information inside 'Feed.ActionType' directly, is not good
@@ -238,9 +232,7 @@ public class ItemListActivity extends Activity {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                BGTask task = RTTask.S().getUpdate(cid);
-                if (null != task)
-                    task.cancel(null);
+                RTTask.S().cancel(cid, RTTask.Action.Update, null);
                 requestSetUpdateButton();
             }
         });
@@ -262,7 +254,7 @@ public class ItemListActivity extends Activity {
             @Override
             public void onClick(View v) {
                 LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
-                RTTask.S().consumeUpdateResult(cid);
+                RTTask.S().consumeResult(cid, RTTask.Action.Update);
                 requestSetUpdateButton();
             }
         });
@@ -282,10 +274,10 @@ public class ItemListActivity extends Activity {
 
     private void
     updateItems() {
-        BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(this);
-        RTTask.S().registerUpdate(cid, updateTask);
-        RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent());
-        updateTask.start(new BGTaskUpdateChannel.Arg(cid));
+        BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+        RTTask.S().register(cid, RTTask.Action.Update, updateTask);
+        RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent());
+        RTTask.S().start(cid, RTTask.Action.Update);
     }
 
     // 'public' to use java reflection
@@ -323,23 +315,25 @@ public class ItemListActivity extends Activity {
             // change state as 'opened' at this moment.
             changeItemState_opened(id, position);
         } else {
-            RTTask.StateDownload state = RTTask.S().getDownloadState(id);
-            if (RTTask.StateDownload.Idle == state) {
-                BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this);
-                RTTask.S().registerDownload(id, dnTask);
-                dnTask.start(new BGTaskDownloadToFile.Arg(enclosureUrl, f,
-                                                          UIPolicy.getTempFile()));
+            RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
+            if (RTTask.TaskState.Idle == state) {
+                BGTaskDownloadToFile dnTask
+                    = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(enclosureUrl,
+                                                                                  f,
+                                                                                  UIPolicy.getTempFile()));
+                RTTask.S().register(id, RTTask.Action.Download, dnTask);
+                RTTask.S().start(id, RTTask.Action.Download);
                 getListAdapter().notifyDataSetChanged();
-            } else if (RTTask.StateDownload.Downloading == state) {
-                BGTask task = RTTask.S().getDownload(id);
-                task.cancel(null);
+            } else if (RTTask.TaskState.Running == state
+                       || RTTask.TaskState.Ready == state) {
+                RTTask.S().cancel(id, RTTask.Action.Download, null);
                 getListAdapter().notifyDataSetChanged();
-            } else if (RTTask.StateDownload.Canceling == state) {
+            } else if (RTTask.TaskState.Canceling == state) {
                 LookAndFeel.showTextToast(this, R.string.wait_cancel);
-            } else if (RTTask.StateDownload.DownloadFailed == state) {
-                Err result = RTTask.S().getDownloadErr(id);
+            } else if (RTTask.TaskState.Failed == state) {
+                Err result = RTTask.S().getErr(id, RTTask.Action.Download);
                 LookAndFeel.showTextToast(this, result.getMsgId());
-                RTTask.S().consumeDownloadResult(id);
+                RTTask.S().consumeResult(id, RTTask.Action.Download);
                 getListAdapter().notifyDataSetChanged();
             } else
                 eAssert(false);
@@ -349,10 +343,10 @@ public class ItemListActivity extends Activity {
     // 'public' to use java reflection
     public void
     onActionLink(View view, long id, final int position) {
-        RTTask.StateDownload state = RTTask.S().getDownloadState(id);
-        if (RTTask.StateDownload.DownloadFailed == state) {
-            LookAndFeel.showTextToast(this, RTTask.S().getDownloadErr(id).getMsgId());
-            RTTask.S().consumeDownloadResult(id);
+        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
+        if (RTTask.TaskState.Failed == state) {
+            LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.Download).getMsgId());
+            RTTask.S().consumeResult(id, RTTask.Action.Download);
             getListAdapter().notifyDataSetChanged();
             return;
         }
@@ -377,22 +371,23 @@ public class ItemListActivity extends Activity {
         }
         iv.setAlpha(1.0f);
         iv.setClickable(true);
-        RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
-        if (RTTask.StateUpdate.Idle == state) {
+        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+        if (RTTask.TaskState.Idle == state) {
             iv.setImageResource(R.drawable.ic_refresh);
             setOnClick_startUpdate(iv);
-        } else if (RTTask.StateUpdate.Updating == state) {
+        } else if (RTTask.TaskState.Running == state
+                   || RTTask.TaskState.Ready == state) {
             iv.setImageResource(R.drawable.download);
             ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
-        } else if (RTTask.StateUpdate.Canceling == state) {
+        } else if (RTTask.TaskState.Canceling == state) {
             iv.setImageResource(R.drawable.ic_block);
             iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
             iv.setClickable(false);
             setOnClick_notification(iv, R.string.wait_cancel);
-        } else if (RTTask.StateUpdate.UpdateFailed == state) {
+        } else if (RTTask.TaskState.Failed == state) {
             iv.setImageResource(R.drawable.ic_info);
-            Err result = RTTask.S().getUpdateErr(cid);
+            Err result = RTTask.S().getErr(cid, RTTask.Action.Update);
             setOnClick_errResult(iv, result);
         } else
             eAssert(false);
@@ -551,14 +546,14 @@ public class ItemListActivity extends Activity {
 
         // See comments in 'ChannelListActivity.onPause()'
         // Bind update task if needed
-        RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
-        if (RTTask.StateUpdate.Idle != state)
-            RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent());
+        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+        if (RTTask.TaskState.Idle != state)
+            RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent());
 
         // Bind downloading tasks
         long[] ids = RTTask.S().getDownloadRunningItems(cid);
         for (long id : ids)
-            RTTask.S().bindDownload(id, new DownloadDataBGTaskOnEvent());
+            RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent());
 
         setUpdateButton();
         getListAdapter().notifyDataSetChanged();
@@ -572,7 +567,7 @@ public class ItemListActivity extends Activity {
         super.onPause();
 
         // See comments in 'ChannelListActivity.onPause()'
-        RTTask.S().unbind();
+        RTTask.S().unbind(this);
     }
 
     @Override

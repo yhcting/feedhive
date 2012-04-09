@@ -36,8 +36,8 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     }
 
     public
-    BGTaskDownloadToFile(Context context) {
-        super();
+    BGTaskDownloadToFile(Context context, Arg arg) {
+        super(arg);
         this.context = context;
         wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
@@ -54,19 +54,28 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     @Override
     protected void
     onPreRun() {
-        wl.acquire();
+        synchronized (wl) {
+            wl.acquire();
+        }
     }
 
     @Override
     protected void
     onPostRun (Err result) {
-        wl.release();
+        synchronized (wl) {
+            wl.release();
+        }
     }
 
     @Override
     protected void
     onCancel(Object param) {
-        wl.release();
+        // If task is cancelled before started, then Wakelock under-lock runtime exception is issued!
+        // So, 'wl.isHeld()' should be checked!
+        synchronized (wl) {
+            if (wl.isHeld())
+                wl.release();
+        }
     }
 
     @Override

@@ -57,7 +57,7 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements ActionBar.TabListener {
     // Request codes.
-    private static final int ReqCPickImage          = 0;
+    private static final int ReqCPickImage = 0;
 
     private ActionBar   ab;
     private Flipper     flipper;
@@ -304,15 +304,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
         @Override
         public void
-        onUpdateBGTaskRegister(long cid, BGTask task) {
-            RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent(cid));
+        onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
+            if (RTTask.Action.Update == act)
+                RTTask.S().bind(cid, RTTask.Action.Update, ChannelListActivity.this, new UpdateBGTaskOnEvent(cid));
         }
         @Override
-        public void onUpdateBGTaskUnregister(long cid, BGTask task) { }
-        @Override
-        public void onDownloadBGTaskRegster(long id, BGTask task) { }
-        @Override
-        public void onDownloadBGTaskUnegster(long id, BGTask task) { }
+        public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
     }
 
     private class OnAdapterActionHandler implements ChannelListAdapter.OnAction {
@@ -514,9 +511,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             return;
         }
         // full update for this newly inserted channel
-        BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
-        RTTask.S().registerUpdate(cid, task);
-        task.start(new BGTaskUpdateChannel.Arg(cid));
+        BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+        RTTask.S().register(cid, RTTask.Action.Update, task);
+        RTTask.S().start(cid, RTTask.Action.Update);
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
@@ -864,24 +861,24 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         ScheduledUpdater.setNextScheduledUpdate(this, cid);
         return;
         */
-        RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
-        if (RTTask.StateUpdate.Idle == state) {
+        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+        if (RTTask.TaskState.Idle == state) {
             logI("ChannelList : update : " + cid);
-            BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
-            RTTask.S().registerUpdate(cid, task);
-            task.start(new BGTaskUpdateChannel.Arg(cid));
-        } else if (RTTask.StateUpdate.Updating == state) {
+            BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+            RTTask.S().register(cid, RTTask.Action.Update, task);
+            RTTask.S().start(cid, RTTask.Action.Update);
+        } else if (RTTask.TaskState.Running == state
+                   || RTTask.TaskState.Ready == state) {
             logI("ChannelList : cancel : " + cid);
-            BGTask task = RTTask.S().getUpdate(cid);
-            task.cancel(null);
+            RTTask.S().cancel(cid, RTTask.Action.Update, null);
             // to change icon into "canceling"
             getCurrentListAdapter().notifyDataSetChanged();
-        } else if (RTTask.StateUpdate.UpdateFailed == state) {
-            Err result = RTTask.S().getUpdateErr(cid);
+        } else if (RTTask.TaskState.Failed == state) {
+            Err result = RTTask.S().getErr(cid, RTTask.Action.Update);
             LookAndFeel.showTextToast(this, result.getMsgId());
-            RTTask.S().consumeUpdateResult(cid);
+            RTTask.S().consumeResult(cid, RTTask.Action.Update);
             getCurrentListAdapter().notifyDataSetChanged();
-        } else if (RTTask.StateUpdate.Canceling == state) {
+        } else if (RTTask.TaskState.Canceling == state) {
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
         } else
             eAssert(false);
@@ -932,10 +929,11 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
-        RTTask.StateUpdate updateState = RTTask.S().getUpdateState(mInfo.id);
+        RTTask.TaskState updateState = RTTask.S().getState(mInfo.id, RTTask.Action.Update);
 
-        if (RTTask.StateUpdate.Updating == updateState
-            || RTTask.StateUpdate.Canceling == updateState) {
+        if (RTTask.TaskState.Running == updateState
+            || RTTask.TaskState.Ready == updateState
+            || RTTask.TaskState.Canceling == updateState) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
             /* full update is useless at this moment. Codes are left for history tracking
@@ -1096,8 +1094,8 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         if (c.moveToFirst()) {
             do {
                 long cid = c.getLong(0);
-                if (RTTask.StateUpdate.Idle != RTTask.S().getUpdateState(cid))
-                    RTTask.S().bindUpdate(cid, new UpdateBGTaskOnEvent(cid));
+                if (RTTask.TaskState.Idle != RTTask.S().getState(cid, RTTask.Action.Update))
+                    RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
             } while (c.moveToNext());
         }
         c.close();
@@ -1123,7 +1121,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // (This is experimental conclusion - NOT by analyzing framework source code.)
         // I think this is Android's bug or implicit policy.
         // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
-        RTTask.S().unbind();
+        RTTask.S().unbind(this);
         RTTask.S().unregisterManagerEventListener(this);
         super.onPause();
     }

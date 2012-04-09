@@ -10,13 +10,14 @@ import java.io.IOException;
  */
 public class UIPolicy {
     private static final String appRootDir = "/sdcard/yhcFeeder/";
+    private static final String appTempDir = appRootDir + "temp/";
     private static final String predefinedChannelsFile = appRootDir + "channels.xml";
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
     private static final int    maxFileNameLength = 127;
 
-    private static final File   appRootDirFile = new File(appRootDir);
+    private static final File   appRootTempDirFile = new File(appTempDir);
 
     static long
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
@@ -56,8 +57,9 @@ public class UIPolicy {
     }
 
     public static void
-    makeAppRootDir() {
+    initialise()  {
         new File(appRootDir).mkdirs();
+        appRootTempDirFile.mkdir();
     }
 
     public static String
@@ -87,7 +89,7 @@ public class UIPolicy {
     getTempFile() {
         File ret = null;
         try {
-            ret = File.createTempFile("free.yhc.feeder", null, appRootDirFile);
+            ret = File.createTempFile("free.yhc.feeder", null, appRootTempDirFile);
         } catch (IOException e){}
         return ret;
     }
@@ -95,6 +97,11 @@ public class UIPolicy {
     public static File
     getItemDataFile(long id) {
         return getItemDataFile(id, -1, null, null);
+    }
+
+    public static void
+    cleanTempFiles() {
+        Utils.removeFileRecursive(appRootTempDirFile, false);
     }
 
     // NOTE

@@ -64,19 +64,14 @@ public class ItemViewActivity extends Activity {
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
         @Override
         public void
-        onUpdateBGTaskRegister(long cid, BGTask task) { }
+        onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
+            if (RTTask.Action.Download == act)
+            RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent());
 
-        @Override
-        public void onUpdateBGTaskUnregister(long cid, BGTask task) { }
-
-        @Override
-        public void
-        onDownloadBGTaskRegster(long id, BGTask task) {
-            RTTask.S().bindDownload(id, new DownloadBGTaskOnEvent());
         }
 
         @Override
-        public void onDownloadBGTaskUnegster(long id, BGTask task) { }
+        public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
     }
 
     private class DownloadBGTaskOnEvent implements
@@ -105,24 +100,24 @@ public class ItemViewActivity extends Activity {
 
     private void
     startDownload() {
-        BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this);
-        RTTask.S().registerDownload(id, dnTask);
-        dnTask.start(new BGTaskDownloadToFile.Arg(netUrl,
-                                                  UIPolicy.getItemDataFile(id),
-                                                  UIPolicy.getTempFile()));
+        BGTaskDownloadToFile dnTask
+            = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(netUrl,
+                                                                          UIPolicy.getItemDataFile(id),
+                                                                          UIPolicy.getTempFile()));
+        RTTask.S().register(id, RTTask.Action.Download, dnTask);
+        RTTask.S().start(id, RTTask.Action.Download);
     }
 
     private void
     cancelDownload() {
-        BGTask task = RTTask.S().getDownload(id);
-        task.cancel(null);
+        RTTask.S().cancel(id, RTTask.Action.Download, null);
     }
 
     private void
     notifyResult() {
-        Err result = RTTask.S().getDownloadErr(id);
+        Err result = RTTask.S().getErr(id, RTTask.Action.Download);
         LookAndFeel.showTextToast(ItemViewActivity.this, result.getMsgId());
-        RTTask.S().consumeDownloadResult(id);
+        RTTask.S().consumeResult(id, RTTask.Action.Download);
         setupLayout();
     }
 
@@ -148,9 +143,9 @@ public class ItemViewActivity extends Activity {
         }
         imgbtn.setAlpha(0.5f);
 
-        RTTask.StateDownload state = RTTask.S().getDownloadState(id);
+        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
         logI("ItemViewActivity : setupLayout : state : " + state.name());
-        if (RTTask.StateDownload.Idle == state) {
+        if (RTTask.TaskState.Idle == state) {
 
             if (currUrl.equals(fileUrl)) {
                 imgbtn.setImageResource(R.drawable.ic_goto);
@@ -179,7 +174,8 @@ public class ItemViewActivity extends Activity {
                 }
             }
 
-        } else if (RTTask.StateDownload.Downloading == state) {
+        } else if (RTTask.TaskState.Running == state
+                   || RTTask.TaskState.Ready == state) {
 
             imgbtn.setImageResource(R.drawable.download);
             ((AnimationDrawable)imgbtn.getDrawable()).start();
@@ -191,7 +187,7 @@ public class ItemViewActivity extends Activity {
                 }
             });
 
-        } else if (RTTask.StateDownload.Canceling == state) {
+        } else if (RTTask.TaskState.Canceling == state) {
 
             imgbtn.setImageResource(R.drawable.ic_block);
             imgbtn.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
@@ -202,7 +198,7 @@ public class ItemViewActivity extends Activity {
                 }
             });
 
-        } else if (RTTask.StateDownload.DownloadFailed == state) {
+        } else if (RTTask.TaskState.Failed == state) {
 
             imgbtn.setImageResource(R.drawable.ic_info);
             imgbtn.setOnClickListener(new View.OnClickListener() {
@@ -244,9 +240,9 @@ public class ItemViewActivity extends Activity {
     onResume() {
         super.onResume();
         // Bind download task if needed
-        RTTask.StateDownload state = RTTask.S().getDownloadState(id);
-        if (RTTask.StateDownload.Idle != state)
-            RTTask.S().bindDownload(id, new DownloadBGTaskOnEvent());
+        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
+        if (RTTask.TaskState.Idle != state)
+            RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent());
 
         setupLayout();
     }
@@ -258,7 +254,7 @@ public class ItemViewActivity extends Activity {
         super.onPause();
 
         // See comments in 'ChannelListActivity.onPause()'
-        RTTask.S().unbind();
+        RTTask.S().unbind(this);
     }
 
     @Override

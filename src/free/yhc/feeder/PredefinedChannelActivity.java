@@ -138,12 +138,13 @@ public class PredefinedChannelActivity extends Activity {
             return;
         }
         // full update for this newly inserted channel
-        BGTaskUpdateChannel task = new BGTaskUpdateChannel(this);
-        RTTask.S().registerUpdate(cid, task);
+        BGTaskUpdateChannel task;
         if (imageref.isEmpty())
-            task.start(new BGTaskUpdateChannel.Arg(cid));
+            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
         else
-            task.start(new BGTaskUpdateChannel.Arg(cid, imageref));
+            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid, imageref));
+        RTTask.S().register(cid, RTTask.Action.Update, task);
+        RTTask.S().start(cid, RTTask.Action.Update);
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
         chMap.put(url, true);
         ((ArrayAdapter)list.getAdapter()).notifyDataSetChanged();

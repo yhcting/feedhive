@@ -15,20 +15,14 @@ class BGTaskManager {
     // TaskMap Value
     private class TaskMapV {
         Thread          owner  = null;
-        String          taskId = null;
         BGTask          task   = null;
         TaskMapV(BGTask task, String taskId) {
+            task.setNick(taskId);
             this.task = task;
-            this.taskId = taskId;
         }
     }
 
     BGTaskManager() {
-    }
-
-    Object
-    getSyncObj() {
-        return map;
     }
 
     boolean
@@ -48,7 +42,7 @@ class BGTaskManager {
         TaskMapV v = map.get(taskId);
         if (null == v || v.owner != owner)
             return 0;
-        logI("BGTM : unbind :" + v.taskId);
+        logI("BGTM : unbind :" + v.task.getNick());
         v.task.unregisterEventListener(owner);
         return 1;
     }
@@ -60,7 +54,7 @@ class BGTaskManager {
         for (TaskMapV v : vs)
             if (v.owner == owner) {
                 v.task.unregisterEventListener(owner);
-                logI("BGTM : unbind (owner):" + v.taskId);
+                logI("BGTM : unbind (owner):" + v.task.getNick());
                 ret++;
             }
         return ret;
@@ -73,7 +67,7 @@ class BGTaskManager {
         for (TaskMapV v : vs)
             if (v.owner == owner) {
                 v.task.unregisterEventListener(owner, onEventKey);
-                logI("BGTM : unbind (onEventKey) :" + v.taskId);
+                logI("BGTM : unbind (onEventKey) :" + v.task.getNick());
                 ret++;
             }
         return ret;
@@ -97,12 +91,22 @@ class BGTaskManager {
         return v.task;
     }
 
+    BGTask
+    bindPrior(String taskId, Object onEventKey, BGTask.OnEvent onEvent) {
+        TaskMapV v = map.get(taskId);
+        if (null == v)
+            return null;
+        v.owner = Thread.currentThread();
+        v.task.registerPriorEventListener(onEventKey, onEvent);
+        return v.task;
+    }
+
     int
     clear(String taskId) {
         TaskMapV v = map.get(taskId);
         if (null == v)
             return 0;
-        logI("BGTM : clear :" + v.taskId);
+        logI("BGTM : clear :" + v.task.getNick());
         v.task.clearEventListener();
         return 1;
     }
@@ -114,6 +118,25 @@ class BGTaskManager {
             return false;
         map.remove(taskId);
         return true;
+    }
+
+    boolean
+    start(String taskId) {
+        TaskMapV v = map.get(taskId);
+        if (null == v)
+            return false;
+
+        v.task.start();
+        return true;
+    }
+
+    boolean
+    cancel(String taskId, Object arg) {
+        TaskMapV v = map.get(taskId);
+        if (null == v)
+            return false;
+
+        return v.task.cancel(arg);
     }
 
     String[]

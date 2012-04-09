@@ -27,8 +27,8 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     }
 
     public
-    BGTaskUpdateChannel(Context context) {
-        super();
+    BGTaskUpdateChannel(Context context, Arg arg) {
+        super(arg);
         this.context = context;
         wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
@@ -37,19 +37,27 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     @Override
     protected void
     onPreRun() {
-        wl.acquire();
+        synchronized (wl) {
+            wl.acquire();
+        }
     }
 
     @Override
     protected void
     onPostRun (Err result) {
-        wl.release();
+        synchronized (wl) {
+            wl.release();
+        }
     }
 
     @Override
     protected void
     onCancel(Object param) {
-        wl.release();
+        // If task is cancelled before started, then Wakelock under-lock exception is issued!
+        synchronized (wl) {
+            if (wl.isHeld())
+                wl.release();
+        }
     }
 
 

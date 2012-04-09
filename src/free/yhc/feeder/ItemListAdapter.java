@@ -146,10 +146,11 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         if (UIPolicy.getItemDataFile(id).exists()) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
-            RTTask.StateDownload dnState = RTTask.S().getDownloadState(id);
-            if (RTTask.StateDownload.Idle == dnState) {
+            RTTask.TaskState dnState = RTTask.S().getState(id, RTTask.Action.Download);
+            if (RTTask.TaskState.Idle == dnState) {
                 imgv.setImageResource(R.drawable.download_anim0);
-            } else if (RTTask.StateDownload.Downloading == dnState) {
+            } else if (RTTask.TaskState.Running == dnState
+                       || RTTask.TaskState.Ready == dnState) {
                 imgv.setImageResource(R.drawable.download);
                 // Why "post runnable and start animation?"
                 // In Android 4.0.3 (ICS)
@@ -175,11 +176,11 @@ public class ItemListAdapter extends ResourceCursorAdapter {
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
                 progressv.switchOnEvent(onEvent);
                 RTTask.S().unbind(progressv);
-                RTTask.S().bindDownload(id, progressv, onEvent);
+                RTTask.S().bind(id, RTTask.Action.Download, progressv, onEvent);
                 progressv.setVisibility(View.VISIBLE);
-            } else if (RTTask.StateDownload.DownloadFailed == dnState) {
+            } else if (RTTask.TaskState.Failed == dnState) {
                 imgv.setImageResource(R.drawable.ic_info);
-            } else if (RTTask.StateDownload.Canceling == dnState) {
+            } else if (RTTask.TaskState.Canceling == dnState) {
                 imgv.setImageResource(R.drawable.ic_block);
                 imgv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
             } else

@@ -132,15 +132,16 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         else
             chIcon.setImageBitmap(bm);
 
-        RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
-        if (RTTask.StateUpdate.Idle == state) {
+        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+        if (RTTask.TaskState.Idle == state) {
             ;
-        } else if (RTTask.StateUpdate.Updating == state) {
+        } else if (RTTask.TaskState.Running == state
+                   || RTTask.TaskState.Ready == state) {
             chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
-        } else if (RTTask.StateUpdate.Canceling == state) {
+        } else if (RTTask.TaskState.Canceling == state) {
             chIcon.setImageResource(R.drawable.ic_block);
             chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
-        } else if (RTTask.StateUpdate.UpdateFailed == state) {
+        } else if (RTTask.TaskState.Failed == state) {
             chIcon.setImageResource(R.drawable.ic_info);
         } else
             eAssert(false);

@@ -89,8 +89,8 @@ public class ScheduledUpdater extends Service {
         private long    cid = -1;
         private int     startId = -1;
 
-        UpdateBGTask(long cid, int startId) {
-            super(ScheduledUpdater.this);
+        UpdateBGTask(long cid, int startId, BGTaskUpdateChannel.Arg arg) {
+            super(ScheduledUpdater.this, arg);
             this.cid = cid;
             this.startId = startId;
         }
@@ -327,22 +327,23 @@ public class ScheduledUpdater extends Service {
         Iterator<Long> itr = chl.listIterator();
         while (itr.hasNext()) {
             long cid = itr.next();
-            RTTask.StateUpdate state = RTTask.S().getUpdateState(cid);
-            if (RTTask.StateUpdate.Canceling == state
-                || RTTask.StateUpdate.Updating == state) {
+            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+            if (RTTask.TaskState.Canceling == state
+                || RTTask.TaskState.Running == state
+                || RTTask.TaskState.Ready == state) {
                 logI("Channel [" + cid + "] is already under updating/canceling.\n" +
                      "So scheduled update is skipped");
             } else {
                 // unregister gracefully to start update.
                 // There is sanity check in BGTaskManager - see BGTaskManager
                 //   to know why this 'unregister' is required.
-                RTTask.S().unregisterUpdate(cid);
+                RTTask.S().unregister(cid, RTTask.Action.Update);
             }
-            UpdateBGTask task = new UpdateBGTask(cid, startId);
-            RTTask.S().registerUpdate(cid, task);
-            RTTask.S().bindUpdate(cid, task);
+            UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
+            RTTask.S().register(cid, RTTask.Action.Update, task);
+            RTTask.S().bind(cid, RTTask.Action.Update, null, task);
             logI("ScheduledUpdater : start update BGTask for [" + cid + "]");
-            task.start(new BGTaskUpdateChannel.Arg(cid));
+            RTTask.S().start(cid, RTTask.Action.Update);
         }
 
         // register next scheduled-update.

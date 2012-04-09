@@ -9,9 +9,12 @@ import java.util.LinkedList;
 import android.os.Handler;
 
 public class BGTask<RunParam, CancelParam> extends Thread {
+    private String           nick = null; // can be used several purpose.
     private Handler          ownerHandler = new Handler();
     private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
     private volatile Err     result  = Err.NoErr;
+
+    // Flags
     private volatile boolean cancelled = false;
 
     private RunParam         runParam    = null;
@@ -93,8 +96,9 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         }
     }
 
-    public BGTask() {
+    public BGTask(RunParam arg) {
         super();
+        runParam = arg;
     }
 
     public BGTask(Object onEventKey, OnEvent onEvent) {
@@ -106,7 +110,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     }
 
     // ==========================================
-    // Package Private
+    // Private
     // ==========================================
     private EventListener[]
     getListeners() {
@@ -114,6 +118,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             return listenerList.toArray(new EventListener[0]);
         }
     }
+    // ==========================================
+    // Protected
+    // ==========================================
+
     // ==========================================
     // Package Private
     // ==========================================
@@ -123,9 +131,19 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         result = Err.NoErr;
     }
 
+    void
+    setNick(String nick) {
+        this.nick = nick;
+    }
+
     // ==========================================
     // Open Interface
     // ==========================================
+    public String
+    getNick() {
+        return nick;
+    }
+
     public Err
     getResult() {
         eAssert(null != result);
@@ -139,6 +157,14 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             logI("BGTask : registerEventListener : key(" + key + ") onEvent(" + onEvent + ")");
             EventListener listener = new EventListener(key, new Handler(), onEvent);
             listenerList.addLast(listener);
+        }
+    }
+
+    public void
+    registerPriorEventListener(Object key, OnEvent onEvent) {
+        synchronized (listenerList) {
+            EventListener listener = new EventListener(key, new Handler(), onEvent);
+            listenerList.addFirst(listener);
         }
     }
 
@@ -198,9 +224,38 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     protected void
     onProgress(long progress) {}
 
+    // This SHOULD NOT BE CALLED DIRECTLY!!!
+    // 'start' SHOULD be called only at BGTaskManager
+    @Override
+    public final void
+    start() {
+        // Current algorithm for managing BGTask, doesn't allow 'null' nick.
+        // See BGTaskManager for details.
+        //
+        // Trying to running BGTask that has null nick value, means
+        //   "try to start BGTask that is not managed".
+        // And this is out of expectation.
+        eAssert(null != nick);
+        onPreRun();
+        for (EventListener listener : getListeners()) {
+            final OnEvent onEvent = listener.getOnEvent();
+            listener.getHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    onEvent.onPreRun(BGTask.this);
+                }
+            });
+        }
+        super.start();
+    }
+
     @Override
     public final void
     run() {
+        // Task may be cancelled before real-running.
+        if (cancelled)
+            return;
+
         logI("BGTask : BGJobs started");
         boolean bInterrupted = false;
         try {
@@ -227,6 +282,32 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             ownerHandler.post(new BGTaskPost(false));
     }
 
+    boolean
+    cancel(CancelParam param) {
+        if (cancelled)
+            return true; // nothing to do.
+
+        cancelled = true;
+        result = Err.UserCancelled;
+        cancelParam = param;
+        logI("BGTask : cancel()");
+
+        if (Thread.State.NEW == getState()) {
+            // Task is not even started.
+            // We can cancel it!.
+            interrupt();
+            ownerHandler.post(new BGTaskPost(true));
+        } else if (Thread.State.TERMINATED == getState())
+            // Task is already finished.
+            // So, we cannot cancel it!
+            return false;
+        else
+            // Thread is alive!
+            interrupt();
+
+        return true;
+    }
+
     public void
     publishProgress(final long progress) {
         onProgress(progress);
@@ -239,31 +320,5 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 }
             });
         }
-    }
-
-    public final void
-    start(RunParam runParam) {
-        onPreRun();
-        for (EventListener listener : getListeners()) {
-            final OnEvent onEvent = listener.getOnEvent();
-            listener.getHandler().post(new Runnable() {
-                @Override
-                public void run() {
-                    onEvent.onPreRun(BGTask.this);
-                }
-            });
-        }
-        this.runParam = runParam;
-        super.start();
-    }
-
-    public boolean
-    cancel(CancelParam param) {
-        cancelled = true;
-        result = Err.UserCancelled;
-        cancelParam = param;
-        logI("BGTask : cancel()");
-        interrupt();
-        return true; // always success.
     }
 }
