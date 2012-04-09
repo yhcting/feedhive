@@ -129,7 +129,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
         LinearLayout
         addListLayout() {
-            LinearLayout ll = LookAndFeel.inflateLayout(context, R.layout.list);
+            LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(context, R.layout.list);
             ListView list = ((ListView)ll.findViewById(R.id.list));
             eAssert(null != list);
             list.setAdapter(new ChannelListAdapter(context, R.layout.channel_row, null,
@@ -584,8 +584,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
 
         // Create "Enter Url" dialog
-        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        View layout = inflater.inflate(R.layout.oneline_editbox_dialog, (ViewGroup) findViewById(R.id.root));
+        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(layout);
 
@@ -620,16 +619,14 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private View
     createTabView(String text) {
-        LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        LinearLayout ll = (LinearLayout)inflater.inflate(R.layout.channel_list_tab, null);
+        LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(this, R.layout.channel_list_tab);
         ((TextView)ll.findViewById(R.id.text)).setText(text);
         return ll;
     }
 
     private void
     onOpt_addCategory() {
-        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        View layout = inflater.inflate(R.layout.oneline_editbox_dialog, null);
+        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(layout);
         final AlertDialog dialog = builder.create();
@@ -705,8 +702,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
 
     private void
     onOpt_modifyCategory() {
-        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-        View layout = inflater.inflate(R.layout.oneline_editbox_dialog, null);
+        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(layout);
         final AlertDialog dialog = builder.create();

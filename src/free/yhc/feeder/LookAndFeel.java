@@ -5,8 +5,8 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 public class LookAndFeel {
@@ -18,10 +18,10 @@ public class LookAndFeel {
         t.show();
     }
 
-    public static LinearLayout
+    public static View
     inflateLayout(Context context, int layout) {
         LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        return (LinearLayout)inflater.inflate(layout, null);
+        return inflater.inflate(layout, null);
     }
 
     public static void
