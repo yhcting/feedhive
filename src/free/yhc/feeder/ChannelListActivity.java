@@ -301,6 +301,32 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         }
     }
 
+    private class DeleteAllDnfilesEventHandler implements SpinAsyncTask.OnEvent {
+        @Override
+        public Err
+        onDoWork(SpinAsyncTask task, Object... objs) {
+            Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
+            if (!c.moveToFirst()) {
+                c.close();
+                return Err.NoErr;
+            }
+
+            boolean bOk = true;
+            do {
+                if (!UIPolicy.cleanChannelDir(c.getLong(0)))
+                    bOk = false;
+            } while (c.moveToNext());
+            return bOk? Err.NoErr: Err.IOFile;
+        }
+
+        @Override
+        public void
+        onPostExecute(SpinAsyncTask task, Err result) {
+            if (Err.NoErr != result)
+                LookAndFeel.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
+        }
+    }
+
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
         @Override
         public void
@@ -716,6 +742,39 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     }
 
     private void
+    onOpt_deleteAllDnfiles() {
+        AlertDialog dialog =
+                LookAndFeel.createWarningDialog(this,
+                                                R.string.delete_all_downloaded_file,
+                                                R.string.delete_all_downloaded_file_msg);
+        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                SpinAsyncTask task = new SpinAsyncTask(ChannelListActivity.this,
+                                                       new DeleteAllDnfilesEventHandler(),
+                                                       R.string.delete_all_downloaded_file);
+
+                task.execute(new Object()); // just pass dummy object;
+                dialog.dismiss();
+            }
+        });
+        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Do nothing
+                dialog.dismiss();
+            }
+        });
+        dialog.show();
+    }
+
+    private void
+    onOpt_setting() {
+        Intent intent = new Intent(this, FeederPreferenceActivity.class);
+        startActivity(intent);
+    }
+
+    private void
     onOpt_selectPredefinedChannel() {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
         intent.putExtra("category", getCurrentCategoryId());
@@ -1008,6 +1067,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             break;
         case R.id.modify_category:
             onOpt_modifyCategory();
+            break;
+        case R.id.delete_all_dnfiles:
+            onOpt_deleteAllDnfiles();
+            break;
+        case R.id.setting:
+            onOpt_setting();
             break;
         case R.id.select_predefined_channel:
             onOpt_selectPredefinedChannel();

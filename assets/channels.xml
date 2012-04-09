@@ -96,13 +96,13 @@
 		<name>나는 꼼수다</name>
 		<category>대안언론</category>
 		<url>http://old.ddanzi.com/appstream/ddradio.xml</url>
-		<icon>http://cfile24.uf.tistory.com/image/113B324D4F3A76A80BE6E1</icon>
+		<icon></icon>
 	</channel>
 	<channel>
 		<name>나는 꼽사리다</name>
 		<category>대안언론</category>
 		<url>http://old.ddanzi.com/appstream/ggobsari.xml</url>
-		<icon>http://cfile28.uf.tistory.com/image/123B324D4F3A76A809124F</icon>
+		<icon></icon>
 	</channel>
 	<channel>
 		<name>뉴스타파</name>

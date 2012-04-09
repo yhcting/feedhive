@@ -54,6 +54,9 @@ public class FeederActivity extends Activity {
                     return;
                 }
             }
+
+            UIPolicy.applyAppPreference(FeederActivity.this);
+
             Intent intent = new Intent(FeederActivity.this, ChannelListActivity.class);
             startActivity(intent);
             FeederActivity.this.finish();

@@ -33,7 +33,7 @@ public class RTTask {
     //   }
     private Object             taskQSync = new Object();
 
-    private int                max_concurrent = 3; // temporally hard coding.
+    private volatile int       max_concurrent = 3; // temporally hard coding.
 
     private LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
 
@@ -170,6 +170,14 @@ public class RTTask {
         }
         eAssert(!task.isAlive());
         return false;
+    }
+
+    // ===============================
+    // Package Private
+    // ===============================
+    void
+    setMaxConcurrent(int v) {
+        max_concurrent = v;
     }
 
     // ===============================

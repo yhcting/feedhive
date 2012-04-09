@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<PreferenceCategory android:title="@string/setting">
+		<ListPreference
+			android:title="@string/pref_maxnr_bgtask"
+			android:summary="@string/pref_maxnr_bgtask_desc"
+			android:key="maxnr_bgtask"
+			android:defaultValue="3"
+			android:entries="@array/pref_maxnr_concurrent_entry"
+			android:entryValues="@array/pref_maxnr_concurrent_value" />
+	</PreferenceCategory>
+</PreferenceScreen>

@@ -5,6 +5,7 @@
     <string name="yes">예</string>
     <string name="no">아니오</string>
     <string name="url">Url</string>
+    <string name="infinite">무제한</string>
     <string name="download">다운로드</string>
     <string name="downloading">내려받는 중</string>
     <string name="add_channel">채널추가</string>
@@ -40,6 +41,9 @@
     <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_user_cancelled">동작이 취소되었습니다.</string>
     <string name="delete_downloaded_file">내려받은 파일 삭제</string>
+    <string name="delete_all_downloaded_file">내려받은 파일 모두 삭제</string>
+    <string name="delete_all_downloaded_file_msg">내려받은 파일들을 모두 삭제합니다.</string>
+    <string name="delete_all_downloaded_file_errmsg">몇몇 파일들은 삭제하지 못했습니다..</string>
     <string name="delete_channel">채널 삭제</string>
     <string name="update_channel">채널 업데이트</string>
     <string name="mark_as_unopened">열지 않음 으로 표시</string>
@@ -73,4 +77,6 @@
     <string name="setting_everyday">매일</string>
     <string name="setting_updatemode">업데이트 모드</string>
     <string name="setting_nritem_softmax">아이템 최대 개수 설정</string>
+    <string name="pref_maxnr_bgtask">최대 백그라운드 Task개수</string>
+    <string name="pref_maxnr_bgtask_desc">최대로 동시에 수행 가능한 백그라운드 Task개수</string>
 </resources>

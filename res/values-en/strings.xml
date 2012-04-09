@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Feeder</string>
-    <string name="ok">Ok</string><string name="yes">Yes</string>
+    <string name="ok">Ok</string>
+    <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="url">Url</string>
+    <string name="infinite">infinite</string>
     <string name="download">download</string>
     <string name="downloading">Downloading</string>
     <string name="add_channel">Add channel</string>
@@ -38,7 +40,10 @@
     <string name="err_dbunknown">Unknown DB error. Something wicked issued on DB.</string>
     <string name="err_unknwon">Unknown error! Something wicked issued on application.</string>
     <string name="err_user_cancelled">Operation is cancelled by user.</string>
-    <string name="delete_downloaded_file">Delete downloaded file</string>
+    <string name="delete_downloaded_file">Delete downloaded files</string>
+    <string name="delete_all_downloaded_file">Delete all downloaded files</string>
+	<string name="delete_all_downloaded_file_msg">All downloaded files will be deleted.</string>
+    <string name="delete_all_downloaded_file_errmsg">Some files are not able to be deleted.</string>
     <string name="delete_channel">Delete channel</string>
     <string name="update_channel">Update channel</string>
     <string name="mark_as_unopened">Mark as unopened</string>
@@ -73,4 +78,6 @@
     <string name="setting_everyday">everyday</string>
     <string name="setting_updatemode">Update Mode</string>
     <string name="setting_nritem_softmax">Soft maximum number of item to keep</string>
+    <string name="pref_maxnr_bgtask">Maximum BG Tasks</string>
+    <string name="pref_maxnr_bgtask_desc">Maximum number of background tasks that can be run concurrently.</string>
 </resources>

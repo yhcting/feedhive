@@ -16,6 +16,14 @@
           android:title="@string/modify_category_name"
           android:visible="true"
           />
+    <item android:id="@+id/delete_all_dnfiles"
+          android:title="@string/delete_all_downloaded_file"
+          android:visible="true"
+          />
+    <item android:id="@+id/setting"
+          android:title="@string/setting"
+          android:visible="true"
+          />
     <item android:id="@+id/select_predefined_channel"
           android:title="@string/select_predefined_channel"
           android:visible="true"
