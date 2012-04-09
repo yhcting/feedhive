@@ -172,6 +172,33 @@ public class RTTask {
         return false;
     }
 
+    /**
+     * Get items that are under downloading.
+     *
+     * @param cid : < 0 : all items / >= 0 : items belongs channel 'cid'
+     * @return
+     */
+    private long[]
+    itemsDownloading(long cid) {
+        String[] tids;
+        LinkedList<Long> l = new LinkedList<Long>();
+        synchronized (gbtm) {
+            tids = gbtm.getTaskIds();
+            for (String tid : tids) {
+                if (Action.Download == actionFromId(tid)) {
+                    BGTask task = gbtm.peek(tid);
+                    long id = idFromId(tid);
+                    if (null != task && isTaskInAction(task)) {
+                        if (cid < 0)
+                            l.add(id);
+                        else if (cid == DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID))
+                            l.add(id);
+                    }
+                }
+            }
+        }
+        return Utils.arrayLongTolong(l.toArray(new Long[0]));
+    }
     // ===============================
     // Package Private
     // ===============================
@@ -390,28 +417,19 @@ public class RTTask {
     // Complex UI Specific Requirement.
     //===============================================
 
+    public long[]
+    getItemsDownloading() {
+        return itemsDownloading(-1);
+    }
+
     /**
      * Get items that are under downloading.
+     *
      * @param cid
      * @return
      */
     public long[]
-    getDownloadRunningItems(long cid) {
-        String[] tids;
-        LinkedList<Long> l = new LinkedList<Long>();
-        synchronized (gbtm) {
-            tids = gbtm.getTaskIds();
-            for (String tid : tids) {
-                if (Action.Download == actionFromId(tid)) {
-                    BGTask task = gbtm.peek(tid);
-                    long id = idFromId(tid);
-                    if (null != task && isTaskInAction(task)
-                        && cid == DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID))
-                        l.add(id);
-                }
-            }
-        }
-        return Utils.arrayLongTolong(l.toArray(new Long[0]));
+    getItemsDownloading(long cid) {
+        return itemsDownloading(cid);
     }
-
 }

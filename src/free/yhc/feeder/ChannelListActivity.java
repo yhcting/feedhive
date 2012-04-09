@@ -1000,7 +1000,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             */
         }
 
-        if (RTTask.S().getDownloadRunningItems(mInfo.id).length > 0) {
+        if (RTTask.S().getItemsDownloading(mInfo.id).length > 0) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
@@ -1011,6 +1011,17 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.channel_opt, menu);
+        return true;
+    }
+
+    @Override
+    public boolean
+    onPrepareOptionsMenu (Menu menu) {
+        MenuItem mItem = menu.findItem(R.id.delete_all_dnfiles);
+        if (RTTask.S().getItemsDownloading().length > 0)
+            mItem.setEnabled(false);
+        else
+            mItem.setEnabled(true);
         return true;
     }
 

@@ -551,7 +551,7 @@ public class ItemListActivity extends Activity {
             RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent());
 
         // Bind downloading tasks
-        long[] ids = RTTask.S().getDownloadRunningItems(cid);
+        long[] ids = RTTask.S().getItemsDownloading(cid);
         for (long id : ids)
             RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent());
 
