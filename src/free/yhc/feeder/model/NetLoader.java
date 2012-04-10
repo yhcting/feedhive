@@ -344,8 +344,8 @@ public class NetLoader {
                         url = parD.enclosureUrl;
                     else
                         eAssert(false);
-                    File f = UIPolicy.getTempFile();
-                    downloadToFile(url, UIPolicy.getTempFile(), f, null);
+                    File f = UIPolicy.getNewTempFile();
+                    downloadToFile(url, UIPolicy.getNewTempFile(), f, null);
                     return f;
                 }
             };

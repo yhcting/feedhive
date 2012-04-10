@@ -54,6 +54,7 @@ import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements ActionBar.TabListener {
@@ -874,7 +875,9 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
                               android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         cid_pickImage = cid;
         try {
-            startActivityForResult(i, ReqCPickImage);
+            startActivityForResult(Intent.createChooser(i,
+                                                        getResources().getText(R.string.pick_icon)),
+                                   ReqCPickImage);
         } catch (ActivityNotFoundException e) {
             LookAndFeel.showTextToast(this, R.string.warn_find_gallery_app);
             return;
@@ -1135,6 +1138,12 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // Select default category as current category.
         selectDefaultAsSelected();
         setupToolButtons();
+
+        // TODO
+        // Is this best place to put this line of code (sendReportMail())???
+        // More consideration is required.
+        // Send error report if exists.
+        UnexpectedExceptionHandler.S().sendReportMail(this);
     }
 
     @Override

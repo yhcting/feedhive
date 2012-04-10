@@ -16,13 +16,15 @@ import android.preference.PreferenceManager;
 public class UIPolicy {
     private static final String appRootDir = "/sdcard/yhcFeeder/";
     private static final String appTempDir = appRootDir + "temp/";
+    private static final String appLogDir  = appRootDir + "log/";
     private static final String predefinedChannelsFile = appRootDir + "channels.xml";
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
     private static final int    maxFileNameLength = 127;
 
-    private static final File   appRootTempDirFile = new File(appTempDir);
+    private static final File   appTempDirFile = new File(appTempDir);
+    private static final File   appLogDirFile  = new File(appLogDir);
 
     static long
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
@@ -64,7 +66,7 @@ public class UIPolicy {
     public static void
     initialise()  {
         new File(appRootDir).mkdirs();
-        appRootTempDirFile.mkdir();
+        appTempDirFile.mkdir();
     }
 
     public static String
@@ -91,12 +93,31 @@ public class UIPolicy {
     }
 
     public static File
-    getTempFile() {
+    getNewTempFile() {
         File ret = null;
         try {
-            ret = File.createTempFile("free.yhc.feeder", null, appRootTempDirFile);
+            ret = File.createTempFile("free.yhc.feeder", null, appTempDirFile);
         } catch (IOException e){}
         return ret;
+    }
+
+    public static File[]
+    getLogFiles() {
+        return appLogDirFile.listFiles();
+    }
+
+    public static File
+    getNewLogFile() {
+        File ret = null;
+        try {
+            ret = File.createTempFile("exception", null, appLogDirFile);
+        } catch (IOException e){}
+        return ret;
+    }
+
+    public static void
+    cleanLogFiles() {
+        Utils.removeFileRecursive(appLogDirFile, false);
     }
 
     public static File
@@ -106,7 +127,7 @@ public class UIPolicy {
 
     public static void
     cleanTempFiles() {
-        Utils.removeFileRecursive(appRootTempDirFile, false);
+        Utils.removeFileRecursive(appTempDirFile, false);
     }
 
     public static void

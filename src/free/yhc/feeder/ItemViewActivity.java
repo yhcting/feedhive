@@ -103,7 +103,7 @@ public class ItemViewActivity extends Activity {
         BGTaskDownloadToFile dnTask
             = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(netUrl,
                                                                           UIPolicy.getItemDataFile(id),
-                                                                          UIPolicy.getTempFile()));
+                                                                          UIPolicy.getNewTempFile()));
         RTTask.S().register(id, RTTask.Action.Download, dnTask);
         RTTask.S().start(id, RTTask.Action.Download);
     }

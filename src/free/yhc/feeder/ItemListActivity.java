@@ -320,7 +320,7 @@ public class ItemListActivity extends Activity {
                 BGTaskDownloadToFile dnTask
                     = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(enclosureUrl,
                                                                                   f,
-                                                                                  UIPolicy.getTempFile()));
+                                                                                  UIPolicy.getNewTempFile()));
                 RTTask.S().register(id, RTTask.Action.Download, dnTask);
                 RTTask.S().start(id, RTTask.Action.Download);
                 getListAdapter().notifyDataSetChanged();

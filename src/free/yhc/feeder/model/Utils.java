@@ -1,9 +1,11 @@
 package free.yhc.feeder.model;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -108,10 +110,8 @@ public class Utils {
         if (!DBG)
             return;
 
-        if (!cond) {
-            Thread.dumpStack();
+        if (!cond)
             throw new AssertionError();
-        }
     }
 
     public static void
@@ -330,7 +330,7 @@ public class Utils {
     }
 
     public static Err
-    writeToFile(String file, byte[] data) {
+    writeToFile(File file, byte[] data) {
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(file);
@@ -346,6 +346,24 @@ public class Utils {
             } catch (IOException e) {}
         }
         return Err.NoErr;
+    }
+
+    public static String
+    readTextFile(File file) {
+        try {
+            StringBuffer fileData = new StringBuffer(4096);
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            char[] buf = new char[4096];
+            int bytes;
+            while(-1 != (bytes = reader.read(buf)))
+                fileData.append(buf, 0, bytes);
+            reader.close();
+            return fileData.toString();
+        } catch (FileNotFoundException e) {
+            return null;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public static String

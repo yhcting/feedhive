@@ -5,6 +5,7 @@
     <string name="yes">예</string>
     <string name="no">아니오</string>
     <string name="url">Url</string>
+    <string name="plz_wait">잠시만 기다려 주세요</string>
     <string name="infinite">무제한</string>
     <string name="download">다운로드</string>
     <string name="downloading">내려받는 중</string>
@@ -14,6 +15,7 @@
     <string name="all">전부</string>
     <string name="update">업데이트</string>
     <string name="full_update">전체 업데이트</string>
+    <string name="send_err_report">에러 레포트 보내기</string>
     <string name="enter_url">URL 입력</string>
     <string name="enter_name">이름 입력</string>
     <string name="channel_url">채널 URL</string>

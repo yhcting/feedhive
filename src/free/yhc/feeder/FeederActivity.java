@@ -26,9 +26,9 @@ public class FeederActivity extends Activity {
     private class InitRun implements Runnable {
         @Override
         public void run() {
+            DB.newSession(getApplicationContext()).open();
             UIPolicy.initialise();
             UIPolicy.cleanTempFiles();
-            DB.newSession(getApplicationContext()).open();
             RTTask.S(); // create instance
 
             // Check predefined files
@@ -74,7 +74,7 @@ public class FeederActivity extends Activity {
     protected void
     onResume() {
         super.onResume();
-        handler.post(new InitRun());
+        handler.postDelayed(new InitRun(), 100);
     }
 
     @Override

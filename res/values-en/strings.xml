@@ -5,6 +5,7 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="url">Url</string>
+    <string name="plz_wait">Please wait a moment</string>
     <string name="infinite">infinite</string>
     <string name="download">download</string>
     <string name="downloading">Downloading</string>
@@ -14,6 +15,7 @@
     <string name="all">All</string>
     <string name="update">Update</string>
     <string name="full_update">Full update</string>
+    <string name="send_err_report">Send error report</string>
     <string name="enter_url">Enter URL</string>
     <string name="enter_name">Enter name</string>
     <string name="channel_url">Channel URL</string>

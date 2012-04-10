@@ -5,9 +5,9 @@
     android:orientation="vertical" >
     <TextView
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/load_progress"
+        android:layout_height="fill_parent"
+        android:text="@string/plz_wait"
         android:gravity="center"
-        android:textSize="50dip"
+        android:textSize="30dip"
         />        
 </LinearLayout>
