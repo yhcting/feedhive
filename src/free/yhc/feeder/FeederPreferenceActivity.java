@@ -4,10 +4,19 @@ import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.view.KeyEvent;
 import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class FeederPreferenceActivity extends PreferenceActivity {
+public class FeederPreferenceActivity extends PreferenceActivity implements
+UnexpectedExceptionHandler.TrackedModule {
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ChannelSettingActivity ]";
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preference);
     }
@@ -18,5 +27,12 @@ public class FeederPreferenceActivity extends PreferenceActivity {
             UIPolicy.applyAppPreference(this);
 
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    protected void
+    onDestroy() {
+        super.onDestroy();
+        UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 }

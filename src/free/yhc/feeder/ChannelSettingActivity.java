@@ -22,9 +22,11 @@ import android.widget.Spinner;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
-public class ChannelSettingActivity extends Activity {
+public class ChannelSettingActivity extends Activity implements
+UnexpectedExceptionHandler.TrackedModule {
     private long   cid = -1;
 
     private static final int hourInSec = 60 * 60;
@@ -104,8 +106,15 @@ public class ChannelSettingActivity extends Activity {
     }
 
     @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ChannelSettingActivity ]";
+    }
+
+    @Override
     public void
     onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
 
         cid = getIntent().getLongExtra("cid", -1);
@@ -158,7 +167,6 @@ public class ChannelSettingActivity extends Activity {
         return super.onKeyDown(keyCode, event);
     }
 
-
     @Override
     public void
     onConfigurationChanged(Configuration newConfig) {
@@ -170,5 +178,6 @@ public class ChannelSettingActivity extends Activity {
     protected void
     onDestroy() {
         super.onDestroy();
+        UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 }

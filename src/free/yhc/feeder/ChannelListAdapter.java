@@ -20,8 +20,10 @@ import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.RTTask;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class ChannelListAdapter extends ResourceCursorAdapter {
+public class ChannelListAdapter extends ResourceCursorAdapter implements
+UnexpectedExceptionHandler.TrackedModule {
     private OnAction  onAction = null;
 
     interface OnAction {
@@ -39,8 +41,15 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
         }
     }
 
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ChannelListAdapter ]";
+    }
+
     ChannelListAdapter(Context context, int layout, Cursor c, OnAction actionListener) {
         super(context, layout, c);
+        UnexpectedExceptionHandler.S().registerModule(this);
         onAction = actionListener;
     }
 
@@ -157,4 +166,9 @@ public class ChannelListAdapter extends ResourceCursorAdapter {
             msgImage.setVisibility(View.GONE);
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+        UnexpectedExceptionHandler.S().unregisterModule(this);
+        super.finalize();
+    }
 }

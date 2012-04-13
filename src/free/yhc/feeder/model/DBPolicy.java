@@ -30,7 +30,8 @@ import free.yhc.feeder.model.DB.ColumnItem;
 //
 
 // Singleton
-public class DBPolicy {
+public class DBPolicy implements
+UnexpectedExceptionHandler.TrackedModule {
     private static final Object dummyObject = new Object(); // static dummy object;
 
     //private static Semaphore dbMutex = new Semaphore(1);
@@ -75,9 +76,11 @@ public class DBPolicy {
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      parD.enclosureType);
         values.put(ColumnItem.STATE.getName(),               Feed.Item.FStatNew);
 
-        // This function is called for insert item.
-        // So, update insert time value here.
-        values.put(ColumnItem.INSTIME.getName(),             Calendar.getInstance().getTimeInMillis());
+        // If success to parse pubdate than pubdate is used, if not, current time is used.
+        long time = Utils.dateStringToTime(parD.pubDate);
+        if (time < 0)
+            time = Calendar.getInstance().getTimeInMillis();
+        values.put(ColumnItem.PUBTIME.getName(),             time);
 
         return values;
     }
@@ -159,12 +162,19 @@ public class DBPolicy {
     // ======================================================
     //
     // ======================================================
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ DBPolicy ]";
+    }
 
     // S : Singleton instance
     public static DBPolicy
     S() {
-        if (null == instance)
+        if (null == instance) {
             instance = new DBPolicy();
+            UnexpectedExceptionHandler.S().registerModule(instance);
+        }
         return instance;
     }
 

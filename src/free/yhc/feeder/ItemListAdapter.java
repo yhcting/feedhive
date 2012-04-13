@@ -19,8 +19,10 @@ import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class ItemListAdapter extends ResourceCursorAdapter {
+public class ItemListAdapter extends ResourceCursorAdapter implements
+UnexpectedExceptionHandler.TrackedModule {
     private long      act = Feed.Channel.FActDefault;
     private DBPolicy  dbp = DBPolicy.S();
 
@@ -92,9 +94,16 @@ public class ItemListAdapter extends ResourceCursorAdapter {
                 R.color.text_color_new: R.color.text_color_opened;
     }
 
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ItemListAdapter ]";
+    }
+
     public ItemListAdapter(Context context, int layout, Cursor c,
                            long act) {
         super(context, layout, c);
+        UnexpectedExceptionHandler.S().registerModule(this);
         this.act = act;
         dummyTextView = new TextView(context);
     }
@@ -193,4 +202,9 @@ public class ItemListAdapter extends ResourceCursorAdapter {
         lengthv.setTextColor(context.getResources().getColor(getTextColor(state)));
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+        UnexpectedExceptionHandler.S().unregisterModule(this);
+        super.finalize();
+    }
 }

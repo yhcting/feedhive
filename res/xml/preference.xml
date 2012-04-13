@@ -8,5 +8,12 @@
 			android:defaultValue="3"
 			android:entries="@array/pref_maxnr_concurrent_entry"
 			android:entryValues="@array/pref_maxnr_concurrent_value" />
-	</PreferenceCategory>
+		<ListPreference
+			android:title="@string/pref_send_err_report"
+			android:summary="@string/pref_send_err_report_desc"
+			android:key="err_report"
+			android:defaultValue="yes"
+			android:entries="@array/pref_send_err_report_entry"
+			android:entryValues="@array/pref_send_err_report_value" />
+			</PreferenceCategory>
 </PreferenceScreen>

@@ -57,7 +57,9 @@ import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
-public class ChannelListActivity extends Activity implements ActionBar.TabListener {
+public class ChannelListActivity extends Activity implements
+ActionBar.TabListener,
+UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int ReqCPickImage = 0;
 
@@ -929,6 +931,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
             RTTask.S().register(cid, RTTask.Action.Update, task);
             RTTask.S().start(cid, RTTask.Action.Update);
+            getCurrentListAdapter().notifyDataSetChanged();
         } else if (RTTask.TaskState.Running == state
                    || RTTask.TaskState.Ready == state) {
             logI("ChannelList : cancel : " + cid);
@@ -1109,8 +1112,15 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     }
 
     @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ChannelListActivity ]";
+    }
+
+    @Override
     public void
     onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
 
         logI("==> ChannelListActivity : onCreate");
@@ -1196,6 +1206,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
     @Override
     protected void
     onPause() {
+        UnexpectedExceptionHandler.S().unregisterModule(this);
         logI("==> ChannelListActivity : onPause");
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
@@ -1207,7 +1218,6 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         // I think this is Android's bug or implicit policy.
         // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
         RTTask.S().unbind(this);
-        RTTask.S().unregisterManagerEventListener(this);
         super.onPause();
     }
 
@@ -1225,6 +1235,7 @@ public class ChannelListActivity extends Activity implements ActionBar.TabListen
         for (int i = 0; i < ab.getTabCount(); i++)
             getListAdapter(ab.getTabAt(i)).getCursor().close();
         super.onDestroy();
+        RTTask.S().unregisterManagerEventListener(this);
     }
 
     @Override

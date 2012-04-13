@@ -7,9 +7,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
+
+import org.apache.http.impl.cookie.DateParseException;
+import org.apache.http.impl.cookie.DateUtils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -75,15 +77,19 @@ public class Utils {
             "video",
     };
 
-    private static final SimpleDateFormat dateFormats[] = new SimpleDateFormat[] {
-            new SimpleDateFormat("EEE, d MMM yy HH:mm:ss z"),
-            new SimpleDateFormat("EEE, d MMM yy HH:mm z"),
-            new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z"),
-            new SimpleDateFormat("EEE, d MMM yyyy HH:mm z"),
-            new SimpleDateFormat("d MMM yy HH:mm z"),
-            new SimpleDateFormat("d MMM yy HH:mm:ss z"),
-            new SimpleDateFormat("d MMM yyyy HH:mm z"),
-            new SimpleDateFormat("d MMM yyyy HH:mm:ss z"),
+    // NOTE
+    // Too many format may drop parsing performance very much.
+    // So, be careful!
+    private static final String[] dateFormats = new String[] {
+            DateUtils.PATTERN_RFC1036,
+            DateUtils.PATTERN_RFC1123,
+            // To support W3CDTF
+            "yyyy-MM-d'T'HH:mm:ssZ",
+            "yyyy-MM-d'T'HH:mm:ss:SSSZ",
+            // To support some non-standard formats.
+            // (I hate this! But lot's of sites don't obey standard!!)
+            "yyyy-MM-d HH:mm:ss",
+            "yyyy.MM.d HH:mm:ss",
         };
 
     // =======================
@@ -198,13 +204,32 @@ public class Utils {
         return nrstr;
     }
 
-    //
-    // Get size(width, height) of given image.
-    // @param image : 'image file path' or 'byte[]' image data
-    // @param out : out[0] : width of image / out[1] : height of image
-    // @return false if image cannot be decode. true if success
-    //
-    // out[0] : width / out[1] : height
+    /**
+     *
+     * @param dateString
+     * @return times in mills. -1 if failed to parse.
+     */
+    public static long
+    dateStringToTime(String dateString) {
+        // try to parse with http dates format
+        String date = removeLeadingTrailingWhiteSpace(dateString);
+        try {
+            return DateUtils.parseDate(date).getTime();
+        } catch (DateParseException e) { }
+        try {
+            return DateUtils.parseDate(date, dateFormats).getTime();
+        } catch (DateParseException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * Get size(width, height) of given image.
+     *
+     * @param image : 'image file path' or 'byte[]' image data
+     * @param out : out[0] : width of image / out[1] : height of image
+     * @return : false if image cannot be decode. true if success
+     */
     public static boolean
     imageSize(Object image, int[] out) {
         eAssert(null != image);

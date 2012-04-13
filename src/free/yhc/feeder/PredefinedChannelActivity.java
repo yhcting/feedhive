@@ -38,9 +38,11 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 
-public class PredefinedChannelActivity extends Activity {
+public class PredefinedChannelActivity extends Activity implements
+UnexpectedExceptionHandler.TrackedModule {
     private long        categoryid = -1;
     private ListView    list;
     private HashMap<String, Boolean> chMap = new HashMap<String, Boolean>();
@@ -239,8 +241,15 @@ public class PredefinedChannelActivity extends Activity {
     }
 
     @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ PredefinedChannelActivity ]";
+    }
+
+    @Override
     public void
     onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
 
         categoryid = this.getIntent().getLongExtra("category", -1);
@@ -321,5 +330,6 @@ public class PredefinedChannelActivity extends Activity {
     protected void
     onDestroy() {
         super.onDestroy();
+        UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 }

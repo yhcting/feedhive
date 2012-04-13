@@ -24,13 +24,15 @@ import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
 // There is no way to notify result of scheduled-update to user.
 // So, even if scheduled update may fail, there is no explicit notification.
 // But user can know whether scheduled-update successes or fails by checking age since last successful update.
 // (See channelListAdapter for 'age' time)
-public class ScheduledUpdater extends Service {
+public class ScheduledUpdater extends Service implements
+UnexpectedExceptionHandler.TrackedModule {
     // Should match manifest's intent filter
     private static final String schedUpdateIntentAction = "feeder.intent.action.SCHEDULED_UPDATE";
     // Wakelock
@@ -253,8 +255,15 @@ public class ScheduledUpdater extends Service {
     }
 
     @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ScheduledUpdater ]";
+    }
+
+    @Override
     public void onCreate() {
         super.onCreate();
+        UnexpectedExceptionHandler.S().registerModule(this);
     }
 
     // NOTE:
@@ -373,6 +382,7 @@ public class ScheduledUpdater extends Service {
     @Override
     public void
     onDestroy() {
+        UnexpectedExceptionHandler.S().unregisterModule(this);
         logI("ScheduledUpdater : onDestroy");
         super.onDestroy();
     }

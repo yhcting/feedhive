@@ -11,7 +11,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 
 // This is singleton
-public final class DB extends SQLiteOpenHelper {
+public final class DB extends SQLiteOpenHelper implements
+UnexpectedExceptionHandler.TrackedModule {
     private static DB instance = null;
 
     /**************************************
@@ -36,7 +37,7 @@ public final class DB extends SQLiteOpenHelper {
     private static final String TABLE_CHANNEL   = "channel";
     private static final String TABLE_ITEM      = "item";
 
-    private static final String itemQueryDefaultOrder = ColumnItem.ID.getName() + " DESC";
+    private static final String itemQueryDefaultOrder = ColumnItem.PUBTIME.getName() + " DESC";
     private static final String channelQueryDefaultOrder = ColumnChannel.POSITION.getName() + " ASC";
 
     public interface Column {
@@ -140,7 +141,7 @@ public final class DB extends SQLiteOpenHelper {
         // Columns for internal use.
         STATE           ("state",           "integer",  "not null"), // new, read etc
         // time when this item is inserted.(milliseconds since 1970.1.1....)
-        INSTIME         ("instime",         "integer",  "not null"),
+        PUBTIME         ("pubtime",         "integer",  "not null"),
         CHANNELID       ("channelid",       "integer",  ""),
         // add foreign key
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
@@ -167,6 +168,11 @@ public final class DB extends SQLiteOpenHelper {
     static long
     getDefaultCategoryId() {
         return 0;
+    }
+
+    static int
+    getVersion() {
+        return VERSION;
     }
 
     /**************************************
@@ -251,13 +257,14 @@ public final class DB extends SQLiteOpenHelper {
      * Operation
      **************************************/
     private DB(Context context) {
-        super(context, NAME, null, VERSION);
+        super(context, NAME, null, getVersion());
     }
 
     public static DB
     newSession(Context context) {
         eAssert(null == instance);
         instance = new DB(context);
+        UnexpectedExceptionHandler.S().registerModule(instance);
         return instance;
     }
 
@@ -270,6 +277,12 @@ public final class DB extends SQLiteOpenHelper {
     public void
     open() {
         db = getWritableDatabase();
+    }
+
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ DB ]";
     }
 
     /**************************************

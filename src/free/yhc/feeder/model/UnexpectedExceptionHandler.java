@@ -13,31 +13,85 @@ import java.util.LinkedList;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import free.yhc.feeder.R;
 
 public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
     private static final String REPORT_RCVR = "yhcting77@gmail.com";
     private static final String REPORT_SUBJECT = "Feeder Exception Report.";
 
+    private static final String UNKNOWN = "unknown";
+
     private static UnexpectedExceptionHandler instance = null;
 
     private Thread.UncaughtExceptionHandler   oldHandler;
     private LinkedList<TrackedModule>         mods = new LinkedList<TrackedModule>();
+    private boolean                           reportEnabled = true;
+
+    private PackageReport pr = new PackageReport();
+    private BuildReport   br = new BuildReport();
+
+    private class PackageReport {
+        String packageName          = UNKNOWN;
+        String versionName          = UNKNOWN;
+        String filesDir             = UNKNOWN;
+    }
+    // Useful Informations
+    private class BuildReport {
+        String androidVersion       = UNKNOWN;
+        String board                = UNKNOWN;
+        String brand                = UNKNOWN;
+        String device               = UNKNOWN;
+        String display              = UNKNOWN;
+        String fingerPrint          = UNKNOWN;
+        String host                 = UNKNOWN;
+        String id                   = UNKNOWN;
+        String manufacturer         = UNKNOWN;
+        String model                = UNKNOWN;
+        String product              = UNKNOWN;
+        String tags                 = UNKNOWN;
+        long   time                 = 0;
+        String type                 = UNKNOWN;
+        String user                 = UNKNOWN;
+    }
 
     public enum DumpLevel {
         FULL
     }
 
     public interface TrackedModule {
-        String getDump(DumpLevel lvl);
+        String dump(DumpLevel lvl);
     }
 
     // ========================
     // Privates
     // ========================
     private void
-    appendCommonInfo(StringBuilder report) {
-
+    appendCommonReport(StringBuilder report) {
+        report.append("==================== Package Information ==================\n")
+              .append("  - name        : " + pr.packageName)
+              .append("  - version     : " + pr.versionName)
+              .append("  - filesDir    : " + pr.filesDir)
+              .append("\n")
+              .append("===================== Device Information ==================\n")
+              .append("  - androidVer  : " + br.androidVersion)
+              .append("  - board       : " + br.board)
+              .append("  - brand       : " + br.brand)
+              .append("  - device      : " + br.device)
+              .append("  - display     : " + br.display)
+              .append("  - fingerprint : " + br.fingerPrint)
+              .append("  - host        : " + br.host)
+              .append("  - id          : " + br.id)
+              .append("  - manufactuere: " + br.manufacturer)
+              .append("  - model       : " + br.model)
+              .append("  - product     : " + br.product)
+              .append("  - tags        : " + br.tags)
+              .append("  - time        : " + br.time)
+              .append("  - type        : " + br.type)
+              .append("  - user        : " + br.user)
+              .append("\n\n");
     }
 
     private void
@@ -66,31 +120,67 @@ public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
     // Get singleton instance,.
     public static UnexpectedExceptionHandler
     S() {
+        if (null == instance)
+            instance = new UnexpectedExceptionHandler(Thread.getDefaultUncaughtExceptionHandler());
         return instance;
     }
 
-    public static void
-    instanciate(UncaughtExceptionHandler old) {
-        if (null == instance)
-            instance = new UnexpectedExceptionHandler(old);
+    public void
+    enableErrReport(boolean enable) {
+        this.reportEnabled = enable;
     }
 
     public boolean
     registerModule(TrackedModule m) {
-        if (mods.contains(m))
-            return false;
+        synchronized (mods) {
+            if (mods.contains(m))
+                return false;
 
-        mods.addLast(m);
-        return true;
+            mods.addLast(m);
+            return true;
+        }
     }
 
     public boolean
     unregisterModule(TrackedModule m) {
-        return mods.remove(m);
+        synchronized (mods) {
+            return mods.remove(m);
+        }
     }
 
     public void
+    setEnvironmentInfo(Context context) {
+        PackageManager pm = context.getPackageManager();
+        try {
+            PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
+            pr.versionName = pi.versionName;
+            pr.packageName = pi.packageName;
+        }catch (NameNotFoundException e) {
+            ; // ignore
+        }
+        pr.filesDir        = context.getFilesDir().getAbsolutePath();
+        br.model           = android.os.Build.MODEL;
+        br.androidVersion  = android.os.Build.VERSION.RELEASE;
+        br.board           = android.os.Build.BOARD;
+        br.brand           = android.os.Build.BRAND;
+        br.device          = android.os.Build.DEVICE;
+        br.display         = android.os.Build.DISPLAY;
+        br.fingerPrint     = android.os.Build.FINGERPRINT;
+        br.host            = android.os.Build.HOST;
+        br.id              = android.os.Build.ID;
+        br.product         = android.os.Build.PRODUCT;
+        br.tags            = android.os.Build.TAGS;
+        br.time            = android.os.Build.TIME;
+        br.type            = android.os.Build.TYPE;
+        br.user            = android.os.Build.USER;
+    }
+
+
+    public void
     sendReportMail(Context context) {
+        if (!reportEnabled)
+            return;
+
         File[] fs = UIPolicy.getLogFiles();
 
         if (fs.length <= 0)
@@ -118,14 +208,19 @@ public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
 
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
+        if (!reportEnabled) {
+            oldHandler.uncaughtException(thread, ex);
+            return;
+        }
+
         StringBuilder report = new StringBuilder();
-        appendCommonInfo(report);
+        appendCommonReport(report);
 
         // collect dump informations
         Iterator<TrackedModule> iter = mods.iterator();
         while (iter.hasNext()) {
             TrackedModule tm = iter.next();
-            report.append(tm.getDump(DumpLevel.FULL));
+            report.append(tm.dump(DumpLevel.FULL)).append("\n\n");
         }
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);

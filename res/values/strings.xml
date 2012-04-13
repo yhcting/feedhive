@@ -81,4 +81,6 @@
     <string name="setting_nritem_softmax">아이템 최대 개수 설정</string>
     <string name="pref_maxnr_bgtask">최대 백그라운드 Task개수</string>
     <string name="pref_maxnr_bgtask_desc">최대로 동시에 수행 가능한 백그라운드 Task개수</string>
+    <string name="pref_send_err_report">에러 레보트 보내기</string>
+    <string name="pref_send_err_report_desc">어플리케이션에 문제가 발생했을때, 에러 레포트를 보냅니다.</string>
 </resources>

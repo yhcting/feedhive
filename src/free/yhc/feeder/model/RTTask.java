@@ -10,7 +10,8 @@ import java.util.LinkedList;
 //   : Data that SHOULD NOT be stored at DataBase.
 //       but, need to be check in runtime.
 // Should be THREAD-SAFE
-public class RTTask {
+public class RTTask implements
+UnexpectedExceptionHandler.TrackedModule {
     private static RTTask           instance = null;
 
     private BGTaskManager           gbtm = null;
@@ -135,8 +136,10 @@ public class RTTask {
     // Get singleton instance,.
     public static RTTask
     S() {
-        if (null == instance)
+        if (null == instance) {
             instance = new RTTask();
+            UnexpectedExceptionHandler.S().registerModule(instance);
+        }
         return instance;
     }
 
@@ -210,6 +213,12 @@ public class RTTask {
     // ===============================
     // Publics
     // ===============================
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ RTTask ]";
+    }
+
     public void
     registerManagerEventListener(Object key, OnRTTaskManagerEvent listener) {
         eAssert(null != key && null != listener);

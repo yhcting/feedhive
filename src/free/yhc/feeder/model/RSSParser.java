@@ -12,11 +12,12 @@ import org.w3c.dom.Node;
 
 import android.text.Html;
 
-public class RSSParser {
-    // parsing priority of namespace supported.
+public class RSSParser implements
+UnexpectedExceptionHandler.TrackedModule {
+    // parsing priority of namespace supported (larger number has priority)
     private static final int PRI_ITUNES     = 2;
-    private static final int PRI_DC         = 1;
-    private static final int PRI_DEFAULT    = 0;
+    private static final int PRI_DEFAULT    = 1; // RSS default
+    private static final int PRI_DC         = 0;
 
     // Result data format from parse.
     class Result {
@@ -221,7 +222,6 @@ public class RSSParser {
         private NSParser(){} // block default constructor.
 
         NSParser(int priority) {
-            eAssert(priority >= PRI_DEFAULT);
             this.priority = priority;
         }
 
@@ -299,7 +299,7 @@ public class RSSParser {
     }
 
     // ========================================
-    //        To Support 'dc' Namespace
+    //        To Support 'dublincore(dc)' Namespace
     // ========================================
     private class NSDcParser extends NSParser {
         NSDcParser() {
@@ -473,46 +473,56 @@ public class RSSParser {
         return true;
     }
 
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ RSSParser ]";
+    }
+
     public Result
     parse(Document dom)
             throws FeederException {
-        Element root = dom.getDocumentElement();
-        verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
+        Result res = null;
+        UnexpectedExceptionHandler.S().registerModule(this);
+        try {
+            Element root = dom.getDocumentElement();
+            verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
 
-        RSSAttr rssAttr = nodeRssAttr(root);
-        /* Remove version check... parser can parse.. lower version too!
-        if (!rssAttr.ver.equals("2.0"))
-            throw new FeederException(Err.ParserUnsupportedVersion);
-        */
+            RSSAttr rssAttr = nodeRssAttr(root);
+            /* Remove version check... parser can parse.. lower version too!
+            if (!rssAttr.ver.equals("2.0"))
+                throw new FeederException(Err.ParserUnsupportedVersion);
+            */
 
-        Result res = new Result();
+            res = new Result();
 
-        // Set parser
-        // NOTE : Should we save name space list all...???
-        LinkedList<NSParser> pl = new LinkedList<NSParser>();
-        for (String s : rssAttr.nsl.toArray(new String[0])) {
-            NSParser p = null;
-            if (s.equals("itunes")) {
-                p = new NSItunesParser();
-                res.channel.type = Feed.Channel.ChannTypeMedia;
-            } else if (s.equals("dc"))
-                p = new NSDcParser();
-            else
-                eAssert(false); // Not-supported namespace is parsed!!
-            pl.add(p);
+            // Set parser
+            // NOTE : Should we save name space list all...???
+            LinkedList<NSParser> pl = new LinkedList<NSParser>();
+            for (String s : rssAttr.nsl.toArray(new String[0])) {
+                NSParser p = null;
+                if (s.equals("itunes")) {
+                    p = new NSItunesParser();
+                    res.channel.type = Feed.Channel.ChannTypeMedia;
+                } else if (s.equals("dc"))
+                    p = new NSDcParser();
+                else
+                    eAssert(false); // Not-supported namespace is parsed!!
+                pl.add(p);
+            }
+            pl.add(new NSDefaultParser());
+
+            // For Channel node
+            Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
+
+            nodeChannel(res, pl.toArray(new NSParser[0]), n);
+
+            if (!verifyNotNullPolicy(res))
+                throw new FeederException(Err.ParserUnsupportedFormat);
+            //logI(feed.channel.dump());
+        } finally {
+            UnexpectedExceptionHandler.S().unregisterModule(this);
         }
-        pl.add(new NSDefaultParser());
-
-
-        // For Channel node
-        Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
-
-        nodeChannel(res, pl.toArray(new NSParser[0]), n);
-
-        if (!verifyNotNullPolicy(res))
-            throw new FeederException(Err.ParserUnsupportedFormat);
-        //logI(feed.channel.dump());
-
         return res;
     }
 }

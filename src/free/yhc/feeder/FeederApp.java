@@ -16,7 +16,7 @@ public class FeederApp extends Application {
     onCreate() {
         super.onCreate();
         // register default customized uncaughted exception handler for error collecting.
-        UnexpectedExceptionHandler.instanciate(Thread.getDefaultUncaughtExceptionHandler());
+        UnexpectedExceptionHandler.S();
         Thread.setDefaultUncaughtExceptionHandler(UnexpectedExceptionHandler.S());
     }
 

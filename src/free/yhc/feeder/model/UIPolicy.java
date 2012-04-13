@@ -67,6 +67,7 @@ public class UIPolicy {
     initialise()  {
         new File(appRootDir).mkdirs();
         appTempDirFile.mkdir();
+        appLogDirFile.mkdir();
     }
 
     public static String
@@ -134,6 +135,7 @@ public class UIPolicy {
     applyAppPreference(Context context) {
         // Applying application preference
         SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
+
         String v = sharedPrefs.getString("maxnr_bgtask", "1");
         int value = 1;
         try {
@@ -142,6 +144,11 @@ public class UIPolicy {
             eAssert(false);
         }
         RTTask.S().setMaxConcurrent(value);
+
+        boolean byes;
+        v = sharedPrefs.getString("err_report", "yes");
+        byes = v.equals("yes")? true: false;
+        UnexpectedExceptionHandler.S().enableErrReport(byes);
     }
 
     // NOTE

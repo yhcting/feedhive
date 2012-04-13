@@ -9,7 +9,8 @@ import java.util.HashMap;
 
 // Used only at 'RTData'
 // This should be THREAD-SAFE
-class BGTaskManager {
+class BGTaskManager implements
+UnexpectedExceptionHandler.TrackedModule {
     private HashMap<String, TaskMapV> map = new HashMap<String, TaskMapV>();
 
     // TaskMap Value
@@ -23,6 +24,13 @@ class BGTaskManager {
     }
 
     BGTaskManager() {
+        UnexpectedExceptionHandler.S().registerModule(this);
+    }
+
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ BGTaskManager ]";
     }
 
     boolean

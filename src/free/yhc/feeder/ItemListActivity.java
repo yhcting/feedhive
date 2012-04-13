@@ -42,8 +42,10 @@ import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
-public class ItemListActivity extends Activity {
+public class ItemListActivity extends Activity implements
+UnexpectedExceptionHandler.TrackedModule {
     private long                cid     = -1; // channel id
     private Handler             handler = new Handler();
     private long                action  = Feed.Channel.FActDefault; // action type of this channel
@@ -482,8 +484,15 @@ public class ItemListActivity extends Activity {
     }
 
     @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ItemListActivity ]";
+    }
+
+    @Override
     public void
     onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
         logI("==> ItemListActivity : onCreate");
 
@@ -557,7 +566,6 @@ public class ItemListActivity extends Activity {
 
         setUpdateButton();
         getListAdapter().notifyDataSetChanged();
-
     }
 
     @Override
@@ -583,6 +591,7 @@ public class ItemListActivity extends Activity {
         logI("==> ItemListActivity : onDestroy");
         getListAdapter().getCursor().close();
         super.onDestroy();
+        UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 
     @Override

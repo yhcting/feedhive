@@ -24,8 +24,10 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class ItemViewActivity extends Activity {
+public class ItemViewActivity extends Activity implements
+UnexpectedExceptionHandler.TrackedModule {
     private long    id  = -1;
     private String  netUrl = "";
     private String  fileUrl = "";
@@ -213,8 +215,15 @@ public class ItemViewActivity extends Activity {
     }
 
     @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ItemViewActivity ]";
+    }
+
+    @Override
     public void
     onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.item_view);
         pb = (ProgressBar)findViewById(R.id.progressbar);
@@ -270,5 +279,6 @@ public class ItemViewActivity extends Activity {
         if (null != wv)
             wv.destroy();
         super.onDestroy();
+        UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 }
