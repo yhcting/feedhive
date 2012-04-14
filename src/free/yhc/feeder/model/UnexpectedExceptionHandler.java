@@ -71,26 +71,26 @@ public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
     private void
     appendCommonReport(StringBuilder report) {
         report.append("==================== Package Information ==================\n")
-              .append("  - name        : " + pr.packageName)
-              .append("  - version     : " + pr.versionName)
-              .append("  - filesDir    : " + pr.filesDir)
+              .append("  - name        : " + pr.packageName + "\n")
+              .append("  - version     : " + pr.versionName + "\n")
+              .append("  - filesDir    : " + pr.filesDir + "\n")
               .append("\n")
               .append("===================== Device Information ==================\n")
-              .append("  - androidVer  : " + br.androidVersion)
-              .append("  - board       : " + br.board)
-              .append("  - brand       : " + br.brand)
-              .append("  - device      : " + br.device)
-              .append("  - display     : " + br.display)
-              .append("  - fingerprint : " + br.fingerPrint)
-              .append("  - host        : " + br.host)
-              .append("  - id          : " + br.id)
-              .append("  - manufactuere: " + br.manufacturer)
-              .append("  - model       : " + br.model)
-              .append("  - product     : " + br.product)
-              .append("  - tags        : " + br.tags)
-              .append("  - time        : " + br.time)
-              .append("  - type        : " + br.type)
-              .append("  - user        : " + br.user)
+              .append("  - androidVer  : " + br.androidVersion + "\n")
+              .append("  - board       : " + br.board + "\n")
+              .append("  - brand       : " + br.brand + "\n")
+              .append("  - device      : " + br.device + "\n")
+              .append("  - display     : " + br.display + "\n")
+              .append("  - fingerprint : " + br.fingerPrint + "\n")
+              .append("  - host        : " + br.host + "\n")
+              .append("  - id          : " + br.id + "\n")
+              .append("  - manufactuere: " + br.manufacturer + "\n")
+              .append("  - model       : " + br.model + "\n")
+              .append("  - product     : " + br.product + "\n")
+              .append("  - tags        : " + br.tags + "\n")
+              .append("  - time        : " + br.time + "\n")
+              .append("  - type        : " + br.type + "\n")
+              .append("  - user        : " + br.user + "\n")
               .append("\n\n");
     }
 
@@ -178,7 +178,7 @@ public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
 
     public void
     sendReportMail(Context context) {
-        if (!reportEnabled)
+        if (!reportEnabled || !Utils.isNetworkAvailable(context))
             return;
 
         File[] fs = UIPolicy.getLogFiles();

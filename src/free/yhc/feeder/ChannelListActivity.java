@@ -15,6 +15,9 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -28,7 +31,6 @@ import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -707,12 +709,12 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_modifyCategory() {
+    onOpt_renameCategory() {
         View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(layout);
         final AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.modify_category_name);
+        dialog.setTitle(R.string.rename_category);
         dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         // Set action for dialog.
         EditText edit = (EditText)layout.findViewById(R.id.editbox);
@@ -746,6 +748,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_deleteAllDnfiles() {
+        // check constraints
+        if (RTTask.S().getItemsDownloading().length > 0) {
+            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
+            return;
+        }
+
         AlertDialog dialog =
                 LookAndFeel.createWarningDialog(this,
                                                 R.string.delete_all_downloaded_file,
@@ -782,6 +790,23 @@ UnexpectedExceptionHandler.TrackedModule {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
         intent.putExtra("category", getCurrentCategoryId());
         startActivity(intent);
+    }
+
+    private void
+    onOpt_information() {
+        PackageManager pm = getPackageManager();
+        PackageInfo pi = null;
+        try {
+            pi = pm.getPackageInfo(getPackageName(), 0);
+        }catch (NameNotFoundException e) { ; }
+
+        if (null == pi)
+            return; // never happen
+
+        CharSequence title = getResources().getText(R.string.about_app);
+        CharSequence msg = getResources().getText(R.string.version) + " : " + pi.versionName;
+        AlertDialog diag = LookAndFeel.createAlertDialog(this, 0, title, msg);
+        diag.show();
     }
 
     private void
@@ -886,39 +911,6 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    /* full update is useless at this moment. Codes are left for history tracking
-    private void
-    onContext_fullUpdate(final long cid) {
-        if (!Utils.isNetworkAvailable(this)) {
-            LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
-            return;
-        }
-
-        AlertDialog dialog =
-                LookAndFeel.createWarningDialog(this,
-                                                R.string.update_channel,
-                                                R.string.update_channel_msg);
-        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-                BGTaskUpdateChannel task = new BGTaskUpdateChannel(ChannelListActivity.this);
-                RTTask.S().registerUpdate(cid, task);
-                task.start(new BGTaskUpdateChannel.Arg(cid));
-            }
-        });
-        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                // Do nothing
-                dialog.dismiss();
-            }
-        });
-        dialog.show();
-    }
-    */
-
-
     private void
     onContextBtn_channelUpdate(ImageView ibtn, long cid) {
         /* code for test...
@@ -960,7 +952,61 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     setupToolButtons() {
-        // this is for future use.
+        findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_addChannel();
+            }
+        });
+
+        findViewById(R.id.btn_add_category).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_addCategory();
+            }
+        });
+
+        findViewById(R.id.btn_del_category).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_deleteCategory();
+            }
+        });
+
+        findViewById(R.id.btn_rename_category).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_renameCategory();
+            }
+        });
+
+        findViewById(R.id.btn_del_dnfiles).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_deleteAllDnfiles();
+            }
+        });
+
+        findViewById(R.id.btn_setting).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_setting();
+            }
+        });
+
+        findViewById(R.id.btn_predefined).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_selectPredefinedChannel();
+            }
+        });
+
+        findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_information();
+            }
+        });
     }
 
     @Override
@@ -1014,25 +1060,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public boolean
-    onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.channel_opt, menu);
-        return true;
-    }
-
-    @Override
-    public boolean
-    onPrepareOptionsMenu (Menu menu) {
-        MenuItem mItem = menu.findItem(R.id.delete_all_dnfiles);
-        if (RTTask.S().getItemsDownloading().length > 0)
-            mItem.setEnabled(false);
-        else
-            mItem.setEnabled(true);
-        return true;
-    }
-
-    @Override
-    public boolean
     onContextItemSelected(MenuItem mItem) {
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
 
@@ -1057,46 +1084,8 @@ UnexpectedExceptionHandler.TrackedModule {
         case R.id.pick_icon:
             onContext_pickIcon(info.id);
             return true;
-
-        /* full update is useless at this moment. Codes are left for history tracking
-        case R.id.full_update:
-            onContext_fullUpdate(info.id);
-            return true;
-        */
         }
         return false;
-    }
-
-    @Override
-    public boolean
-    onOptionsItemSelected(MenuItem item) {
-        super.onOptionsItemSelected(item);
-
-        switch (item.getItemId()) {
-        case R.id.add_channel:
-            onOpt_addChannel();
-            break;
-        case R.id.add_category:
-            onOpt_addCategory();
-            break;
-        case R.id.delete_category:
-            onOpt_deleteCategory();
-            break;
-        case R.id.modify_category:
-            onOpt_modifyCategory();
-            break;
-        case R.id.delete_all_dnfiles:
-            onOpt_deleteAllDnfiles();
-            break;
-        case R.id.setting:
-            onOpt_setting();
-            break;
-        case R.id.select_predefined_channel:
-            onOpt_selectPredefinedChannel();
-            break;
-
-        }
-        return true;
     }
 
     @Override

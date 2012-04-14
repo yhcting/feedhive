@@ -5,6 +5,8 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="url">Url</string>
+    <string name="about_app">About</string>
+    <string name="version">Version</string>
     <string name="plz_wait">Please wait a moment</string>
     <string name="infinite">infinite</string>
     <string name="download">download</string>
@@ -42,6 +44,7 @@
     <string name="err_dbunknown">Unknown DB error. Something wicked issued on DB.</string>
     <string name="err_unknwon">Unknown error! Something wicked issued on application.</string>
     <string name="err_user_cancelled">Operation is cancelled by user.</string>
+    <string name="del_dnfiles_not_allowed_msg">Deleting files is not allowed. There may be files under downloading.</string>
     <string name="delete_downloaded_file">Delete downloaded files</string>
     <string name="delete_all_downloaded_file">Delete all downloaded files</string>
 	<string name="delete_all_downloaded_file_msg">All downloaded files will be deleted.</string>
@@ -49,7 +52,7 @@
     <string name="delete_channel">Delete channel</string>
     <string name="update_channel">Update channel</string>
     <string name="mark_as_unopened">Mark as unopened</string>
-    <string name="modify_category_name">Modify category name</string>
+    <string name="rename_category">Rename category</string>
     <string name="delete_channel_msg">Are you sure to delete this channel?</string>
     <string name="delete_category_msg">Are you sure to delete this category? All channels in this category are move to default category.</string>
     <string name="delete_downloaded_file_msg">Are you sure to delete download file of this item?</string>

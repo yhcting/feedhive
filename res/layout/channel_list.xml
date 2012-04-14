@@ -7,65 +7,97 @@
 	<!-- below HorizontalScrollView for bottom button is for debugging and future use. -->
 	<HorizontalScrollView
         android:id="@+id/toolbutton"
-  		android:layout_width="fill_parent"
-  		android:layout_height="wrap_content"
+		android:layout_width="match_parent"
+		android:layout_height="@dimen/chlist_bottom_btn_height"
   		android:layout_alignParentBottom="true"
-		android:visibility="gone"
+		android:fillViewport="true"
 		>
 	    <LinearLayout
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
+	        android:layout_width="match_parent"
+	        android:layout_height="match_parent"
 	        android:orientation="horizontal"
 	        >
-			<Button
-				android:id="@+id/dbg0"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg0"		    
+			<ImageView
+				android:id="@+id/btn_add_channel"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/add_channel"
+		        android:clickable="true"
 			    />
-			<Button
-				android:id="@+id/dbg1"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg1"		    
+			<ImageView
+				android:id="@+id/btn_add_category"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/add_category"
+		        android:clickable="true"
 			    />        
-			<Button
-				android:id="@+id/dbg2"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg2"		    
+			<ImageView
+				android:id="@+id/btn_del_category"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/del_category"
+		        android:clickable="true"
 			    />        
-			<Button
-				android:id="@+id/dbg3"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg3"		    
+			<ImageView
+				android:id="@+id/btn_rename_category"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/rename_category"
+		        android:clickable="true"
 			    />        
-			<Button
-				android:id="@+id/dbg4"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg4"		    
+			<ImageView
+				android:id="@+id/btn_del_dnfiles"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/del_dnfiles"
+		        android:clickable="true"
 			    />        
-			<Button
-				android:id="@+id/dbg5"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg5"		    
+			<ImageView
+				android:id="@+id/btn_setting"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/setting"
+		        android:clickable="true"
 			    />        
-			<Button
-				android:id="@+id/dbg6"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg6"		    
+			<ImageView
+				android:id="@+id/btn_predefined"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/predefined"
+		        android:clickable="true"
 			    />        
-			<Button
-				android:id="@+id/dbg7"
-				android:layout_width="80dip"
-				android:layout_height="wrap_content"
-				android:text="dbg7"		    
+			<ImageView
+				android:id="@+id/btn_information"
+				android:layout_width="@dimen/chlist_bottom_btn_width"
+				android:layout_height="match_parent"
+				android:layout_weight="1.0"
+		        android:gravity="center"
+		        android:scaleType="fitCenter"
+		        android:src="@drawable/information"
+		        android:clickable="true"
 			    />        
-	    </LinearLayout>
+		</LinearLayout>
 	</HorizontalScrollView>
 	<ViewFlipper
 		android:id="@+id/flipper"

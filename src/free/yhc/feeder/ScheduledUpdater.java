@@ -43,6 +43,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final long   hourInMs = 60 * 60 * 1000;
     private static final long   dayInMs = 24 * hourInMs;
 
+    private static final String CMD_ALARM   = "alarm";
+    private static final String CMD_RESCHED = "resched";
+
     private static PowerManager.WakeLock wl = null;
     private static int                   wlcnt = 0;
 
@@ -55,7 +58,13 @@ UnexpectedExceptionHandler.TrackedModule {
     public static class DateChangedReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Intent svc = new Intent(context, ScheduledUpdater.class);
+            svc.putExtra("cmd", CMD_RESCHED);
             scheduleNextUpdate(context, Calendar.getInstance());
+            // onStartCommand will be sent!
+            context.startService(svc);
+            // Update should be started before falling into sleep.
+            getWakeLock(context);
         }
     }
 
@@ -73,11 +82,12 @@ UnexpectedExceptionHandler.TrackedModule {
             logI("AlarmReceiver : onReceive");
 
             long time = intent.getLongExtra("time", -1);
-            Intent svc = new Intent(context, ScheduledUpdater.class);
             if (time < 0) {
                 eAssert(false);
                 return;
             }
+            Intent svc = new Intent(context, ScheduledUpdater.class);
+            svc.putExtra("cmd", CMD_ALARM);
             svc.putExtra("time", time);
             // onStartCommand will be sent!
             context.startService(svc);
@@ -263,6 +273,9 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void onCreate() {
         super.onCreate();
+        // NOTE
+        // This is another path that feeder app is started
+        FeederApp.initialize(this);
         UnexpectedExceptionHandler.S().registerModule(this);
     }
 
@@ -272,11 +285,20 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     onStartCommand(Intent intent, int flags, int startId) {
+        String cmd = intent.getStringExtra("cmd");
+        if (null == cmd) {
+            eAssert(false);
+            return START_NOT_STICKY; // unknown command
+        }
+
+        if (cmd.equals(CMD_RESCHED)) {
+            // Just reschedule and return.
+            scheduleNextUpdate(this, Calendar.getInstance());
+            return START_NOT_STICKY;
+        }
+        eAssert(cmd.equals(CMD_ALARM));
+
         long schedTime = intent.getLongExtra("time", -1);
-        logI("ScheduledUpdater : onStartCommand :" +
-             "    - startId : " + startId +
-             "    - flags   : " + flags +
-             "    - time(ms): " + schedTime);
 
         Calendar calNow = Calendar.getInstance();
         long daybase = Utils.dayBaseMs(calNow);

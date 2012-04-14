@@ -5,6 +5,8 @@
     <string name="yes">예</string>
     <string name="no">아니오</string>
     <string name="url">Url</string>
+    <string name="about_app">어플 정보</string>
+    <string name="version">버젼</string>
     <string name="plz_wait">잠시만 기다려 주세요</string>
     <string name="infinite">무제한</string>
     <string name="download">다운로드</string>
@@ -42,6 +44,7 @@
     <string name="err_dbunknown">데이터베이스에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_user_cancelled">동작이 취소되었습니다.</string>
+	<string name="del_dnfiles_not_allowed_msg">다운로드 파일을 삭제할 수 없습니다. 현재 다운로드 중인 파일이 있습니다.</string>
     <string name="delete_downloaded_file">내려받은 파일 삭제</string>
     <string name="delete_all_downloaded_file">내려받은 파일 모두 삭제</string>
     <string name="delete_all_downloaded_file_msg">내려받은 파일들을 모두 삭제합니다.</string>
@@ -49,7 +52,7 @@
     <string name="delete_channel">채널 삭제</string>
     <string name="update_channel">채널 업데이트</string>
     <string name="mark_as_unopened">열지 않음 으로 표시</string>
-    <string name="modify_category_name">카테고리 이름 수정</string>
+    <string name="rename_category">카테고리 이름 수정</string>
     <string name="delete_channel_msg">이 채널을 삭제하시겠습니까?</string>
     <string name="delete_category_msg">이 카테고리를 삭제하시겠습니까? 이 카테고리의 모든 채널들은 기본 카테고리로 이동됩니다.</string>
     <string name="delete_downloaded_file_msg">내려 받은 파일을 삭제하시겠습니까?</string>

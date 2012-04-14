@@ -6,6 +6,7 @@
     <color name="title_color_new">#eedd82</color>
     <color name="dnprogress_text_color">#a0a01f</color>
     <color name="bg_color_toast">#000000</color>
+
     <dimen name="list_item_left_padding">3dip</dimen>
     <dimen name="divider_horizonal_margin">10dip</dimen>
     <dimen name="menu_row_vertical_padding">10dip</dimen>
@@ -16,4 +17,6 @@
     <dimen name="small_text_size">9dip</dimen>
     <dimen name="spinner_text_size">20dip</dimen>
     <dimen name="dnprogress_text_size">14dip</dimen>
+    <dimen name="chlist_bottom_btn_width">40dip</dimen>
+    <dimen name="chlist_bottom_btn_height">30dip</dimen>
 </resources>
