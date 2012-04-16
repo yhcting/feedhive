@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
@@ -214,6 +215,13 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(false);
     }
 
+    private void
+    setWebSettings(WebView wv) {
+        WebSettings ws = wv.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setSavePassword(true);
+    }
+
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
@@ -231,6 +239,7 @@ UnexpectedExceptionHandler.TrackedModule {
         wv = (WebView)findViewById(R.id.webview);
         wv.setWebViewClient(new WVClient());
         wv.setWebChromeClient(new WCClient());
+        setWebSettings(wv);
 
         id = getIntent().getLongExtra("id", -1);
         eAssert(id >= 0);

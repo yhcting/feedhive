@@ -5,7 +5,7 @@
 			android:title="@string/pref_maxnr_bgtask"
 			android:summary="@string/pref_maxnr_bgtask_desc"
 			android:key="maxnr_bgtask"
-			android:defaultValue="3"
+			android:defaultValue="2"
 			android:entries="@array/pref_maxnr_concurrent_entry"
 			android:entryValues="@array/pref_maxnr_concurrent_value" />
 		<ListPreference
