@@ -10,6 +10,7 @@ import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.FragmentTransaction;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -36,7 +37,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -72,6 +72,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // Saved cid for Async execution.
     private long      cid_pickImage = -1;
+
+    private interface ActionDialogEditbox {
+        void onOk(Dialog dialog, EditText edit);
+        void onCancel(Dialog dialog);
+    }
 
     private class Flipper {
         private Context     context;
@@ -572,6 +577,22 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    setDialogEditTextAction(final AlertDialog dialog, final EditText edit, final ActionDialogEditbox act) {
+        dialog.setButton(getResources().getText(R.string.ok), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dia, int which) {
+                act.onOk(dialog, edit);
+            }
+        });
+        dialog.setButton2(getResources().getText(R.string.cancel), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+    }
+
+    private void
     onOpt_addChannel() {
         if (0 == ab.getNavigationItemCount()) {
             eAssert(false);
@@ -591,14 +612,25 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Create "Enter Url" dialog
         View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(layout);
-
-        final AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.channel_url);
-        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
+                                                                    layout,
+                                                                    R.string.channel_url);
         // Set action for dialog.
-        EditText edit = (EditText) layout.findViewById(R.id.editbox);
+        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        final ActionDialogEditbox editAction = new ActionDialogEditbox() {
+            @Override
+            public void onOk(Dialog dialog, EditText edit) {
+                String url = edit.getText().toString();
+                dialog.dismiss();
+                if (!url.isEmpty() && !url.matches("http\\:\\/\\/\\s*"))
+                    addChannel(url);
+            }
+            @Override
+            public void onCancel(Dialog dialog) {
+                dialog.dismiss();
+            }
+        };
+        setDialogEditTextAction(dialog, edit, editAction);
 
         // start edit box with 'http://'
         final String prefix = "http://";
@@ -609,13 +641,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    String url = ((EditText) v).getText().toString();
-                    if (url.isEmpty() || url.matches("http\\:\\/\\/\\s*")) {
-                        dialog.dismiss();
-                        return true;
-                    }
-                    dialog.dismiss();
-                    addChannel(url);
+                    editAction.onOk(dialog, ((EditText) v));
                     return true;
                 }
                 return false;
@@ -634,13 +660,40 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_addCategory() {
         View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(layout);
-        final AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.add_category);
-        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
+                                                                    layout,
+                                                                    R.string.add_category);
         // Set action for dialog.
-        EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        final ActionDialogEditbox editAction = new ActionDialogEditbox() {
+            @Override
+            public void onOk(Dialog dialog, EditText edit) {
+                String name = edit.getText().toString();
+                if (name.isEmpty()) {
+                    dialog.dismiss();
+                    return;
+                }
+
+                if (DBPolicy.S().isDuplicatedCategoryName(name)) {
+                    LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                } else {
+                    Feed.Category cat = new Feed.Category(name);
+                    if (0 > DBPolicy.S().insertCategory(cat))
+                        LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
+                    else {
+                        eAssert(cat.id >= 0);
+                        refreshList(addCategory(cat));
+                    }
+                }
+                dialog.dismiss();
+            }
+            @Override
+            public void onCancel(Dialog dialog) {
+                dialog.dismiss();
+            }
+        };
+        setDialogEditTextAction(dialog, edit, editAction);
+
         edit.setHint(R.string.enter_name);
         edit.setOnKeyListener(new View.OnKeyListener() {
             @Override
@@ -648,24 +701,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    String name = ((EditText) v).getText().toString();
-                    if (name.isEmpty()) {
-                        dialog.dismiss();
-                        return true;
-                    }
-
-                    if (DBPolicy.S().isDuplicatedCategoryName(name)) {
-                        LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
-                    } else {
-                        Feed.Category cat = new Feed.Category(name);
-                        if (0 > DBPolicy.S().insertCategory(cat))
-                            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
-                        else {
-                            eAssert(cat.id >= 0);
-                            refreshList(addCategory(cat));
-                        }
-                    }
-                    dialog.dismiss();
+                    editAction.onOk(dialog, (EditText)v);
                     return true;
                 }
                 return false;
@@ -711,13 +747,35 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_renameCategory() {
         View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(layout);
-        final AlertDialog dialog = builder.create();
-        dialog.setTitle(R.string.rename_category);
-        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
+                                                                    layout,
+                                                                    R.string.rename_category);
         // Set action for dialog.
-        EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        final ActionDialogEditbox editAction = new ActionDialogEditbox() {
+            @Override
+            public void onOk(Dialog dialog, EditText edit) {
+                String name = edit.getText().toString();
+                if (name.isEmpty()) {
+                    dialog.dismiss();
+                    return;
+                }
+
+                if (DBPolicy.S().isDuplicatedCategoryName(name)) {
+                    LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                } else {
+                    ((TextView)ab.getSelectedTab().getCustomView().findViewById(R.id.text)).setText(name);
+                    DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
+                }
+                dialog.dismiss();
+            }
+            @Override
+            public void onCancel(Dialog dialog) {
+                dialog.dismiss();
+            }
+        };
+        setDialogEditTextAction(dialog, edit, editAction);
+
         edit.setHint(R.string.enter_name);
         edit.setOnKeyListener(new View.OnKeyListener() {
             @Override
@@ -725,19 +783,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    String name = ((EditText) v).getText().toString();
-                    if (name.isEmpty()) {
-                        dialog.dismiss();
-                        return true;
-                    }
-
-                    if (DBPolicy.S().isDuplicatedCategoryName(name)) {
-                        LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
-                    } else {
-                        ((TextView)ab.getSelectedTab().getCustomView().findViewById(R.id.text)).setText(name);
-                        DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
-                    }
-                    dialog.dismiss();
+                    editAction.onOk(dialog, (EditText)v);
                     return true;
                 }
                 return false;

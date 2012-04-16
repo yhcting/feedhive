@@ -7,6 +7,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 public class LookAndFeel {
@@ -78,5 +79,17 @@ public class LookAndFeel {
     public static AlertDialog
     createWarningDialog(Context context, int title, int message) {
         return createAlertDialog(context, R.drawable.ic_alert, title, message);
+    }
+
+    public static AlertDialog
+    createEditTextDialog(Context context, View layout, int title) {
+        // Create "Enter Url" dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setView(layout);
+
+        final AlertDialog dialog = builder.create();
+        dialog.setTitle(title);
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+        return dialog;
     }
 }

@@ -77,7 +77,10 @@ UnexpectedExceptionHandler.TrackedModule {
         public void onCancel(BGTask task, Object param) {}
         @Override
         public void onProgress(BGTask task, long progress) {
-            tv.setText(progress + "%");
+            if (0 > progress) // Fail to get progress.
+                tv.setText("??%");
+            else
+                tv.setText(progress + "%");
             tv.postInvalidate();
         }
     }
