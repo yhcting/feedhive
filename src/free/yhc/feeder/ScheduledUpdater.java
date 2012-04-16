@@ -60,7 +60,6 @@ UnexpectedExceptionHandler.TrackedModule {
         public void onReceive(Context context, Intent intent) {
             Intent svc = new Intent(context, ScheduledUpdater.class);
             svc.putExtra("cmd", CMD_RESCHED);
-            scheduleNextUpdate(context, Calendar.getInstance());
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
@@ -264,42 +263,14 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    @Override
-    public String
-    dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ ScheduledUpdater ]";
+    private void
+    doCmdResched(int startId) {
+        // Just reschedule and return.
+        scheduleNextUpdate(this, Calendar.getInstance());
     }
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        // NOTE
-        // This is another path that feeder app is started
-        FeederApp.initialize(this);
-        UnexpectedExceptionHandler.S().registerModule(this);
-    }
-
-    // NOTE:
-    //   onStartCommand is run on main ui thread (same as onReceive).
-    //   So, we don't need to concern about race-condition between these two.
-    @Override
-    public int
-    onStartCommand(Intent intent, int flags, int startId) {
-        String cmd = intent.getStringExtra("cmd");
-        if (null == cmd) {
-            eAssert(false);
-            return START_NOT_STICKY; // unknown command
-        }
-
-        if (cmd.equals(CMD_RESCHED)) {
-            // Just reschedule and return.
-            scheduleNextUpdate(this, Calendar.getInstance());
-            return START_NOT_STICKY;
-        }
-        eAssert(cmd.equals(CMD_ALARM));
-
-        long schedTime = intent.getLongExtra("time", -1);
-
+    private void
+    doCmdAlarm(int startId, long schedTime) {
         Calendar calNow = Calendar.getInstance();
         long daybase = Utils.dayBaseMs(calNow);
         long dayms = calNow.getTimeInMillis() - daybase;
@@ -311,10 +282,8 @@ UnexpectedExceptionHandler.TrackedModule {
                  "    scheduled time(ms) : " + schedTime + "\n" +
                  "    current time(ms)   : " + calNow.getTimeInMillis());
             scheduleNextUpdate(this, calNow);
-            putWakeLock();
-            return START_NOT_STICKY;
+            return;
         }
-
 
         // If we get killed, after returning from here, restart
         Cursor c = DBPolicy.S().queryChannel(new DB.ColumnChannel[] {
@@ -326,8 +295,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         if (!c.moveToFirst()) {
             c.close();
-            putWakeLock();
-            return START_NOT_STICKY; // There is no channel.
+            return; // There is no channel.
         }
 
         // NOTE : IMPORTANT
@@ -386,11 +354,47 @@ UnexpectedExceptionHandler.TrackedModule {
         //   If Real-Now is chosen as current calendar, tasks mentioned at above line, is missed from scheduled-update!
         //   So, 'calNow' should be used as current calendar!
         scheduleNextUpdate(this, calNow);
+    }
 
-        // update task has it's own wakelock.
-        // We don't need to worry about update jobs.
-        // Just release wakelock for this command.
-        putWakeLock();
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ScheduledUpdater ]";
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        // NOTE
+        // This is another path that feeder app is started
+        FeederApp.initialize(this);
+        UnexpectedExceptionHandler.S().registerModule(this);
+    }
+
+    // NOTE:
+    //   onStartCommand is run on main ui thread (same as onReceive).
+    //   So, we don't need to concern about race-condition between these two.
+    @Override
+    public int
+    onStartCommand(Intent intent, int flags, int startId) {
+        String cmd = intent.getStringExtra("cmd");
+        try {
+            // 'cmd' can be null.
+            // So, DO NOT use "cmd.equals()"...
+            if (CMD_RESCHED.equals(cmd))
+                doCmdResched(startId);
+            else if (CMD_ALARM.equals(cmd)) {
+                long schedTime = intent.getLongExtra("time", -1);
+                doCmdAlarm(startId, schedTime);
+            } else
+                eAssert(false);
+        } finally {
+            // At any case wakelock should be released.
+            // update task has it's own wakelock.
+            // We don't need to worry about update jobs.
+            // Just release wakelock for this command.
+            putWakeLock();
+        }
         return START_NOT_STICKY;
     }
 
