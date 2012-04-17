@@ -20,7 +20,7 @@ import free.yhc.feeder.R;
 
 public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
     private static final String REPORT_RCVR = "yhcting77@gmail.com";
-    private static final String REPORT_SUBJECT = "Feeder Exception Report.";
+    private static final String REPORT_SUBJECT = "[Feeder] Exception Report.";
 
     private static final String UNKNOWN = "unknown";
 

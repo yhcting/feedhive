@@ -850,8 +850,12 @@ UnexpectedExceptionHandler.TrackedModule {
             return; // never happen
 
         CharSequence title = getResources().getText(R.string.about_app);
-        CharSequence msg = getResources().getText(R.string.version) + " : " + pi.versionName;
-        AlertDialog diag = LookAndFeel.createAlertDialog(this, 0, title, msg);
+        StringBuilder strbldr = new StringBuilder();
+        strbldr.append(getResources().getText(R.string.version)).append(" : ").append(pi.versionName).append("\n")
+               .append(getResources().getText(R.string.about_app_email)).append("\n")
+               .append(getResources().getText(R.string.about_app_blog)).append("\n")
+               .append(getResources().getText(R.string.about_app_page)).append("\n");
+        AlertDialog diag = LookAndFeel.createAlertDialog(this, 0, title, strbldr.toString());
         diag.show();
     }
 

@@ -6,6 +6,9 @@
     <string name="no">No</string>
     <string name="url">Url</string>
     <string name="about_app">About</string>
+    <string name="about_app_email">Email : yhcting77@gmail.com</string>
+    <string name="about_app_blog">Blog : http://yhcting.tistory.com</string>
+    <string name="about_app_page">User manual : http://yhcting.tistory.com/287</string>
     <string name="version">Version</string>
     <string name="plz_wait">Please wait a moment</string>
     <string name="infinite">infinite</string>

@@ -6,6 +6,9 @@
     <string name="no">아니오</string>
     <string name="url">Url</string>
     <string name="about_app">어플 정보</string>
+    <string name="about_app_email">이메일 : yhcting77@gmail.com</string>
+    <string name="about_app_blog">블로그 : http://yhcting.tistory.com</string>
+    <string name="about_app_page">유저매뉴얼 : http://yhcting.tistory.com/287</string>
     <string name="version">버젼</string>
     <string name="plz_wait">잠시만 기다려 주세요</string>
     <string name="infinite">무제한</string>
