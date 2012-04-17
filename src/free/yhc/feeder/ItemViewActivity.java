@@ -14,6 +14,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
@@ -61,7 +62,14 @@ UnexpectedExceptionHandler.TrackedModule {
             // Activities and WebViews measure progress with different scales.
             // The progress meter will automatically disappear when we reach 100%
             pb.setProgress(progress);
-          }
+        }
+
+        @Override
+        public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
+                                             WebStorage.QuotaUpdater quotaUpdater) {
+            logI("ItemViewActivity : WebView : ReachedMaxAppCacheSize : " + spaceNeeded);
+            quotaUpdater.updateQuota(spaceNeeded * 2);
+        }
     }
 
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
@@ -70,7 +78,6 @@ UnexpectedExceptionHandler.TrackedModule {
         onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
             if (RTTask.Action.Download == act)
             RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent());
-
         }
 
         @Override
@@ -220,6 +227,15 @@ UnexpectedExceptionHandler.TrackedModule {
         WebSettings ws = wv.getSettings();
         ws.setJavaScriptEnabled(true);
         ws.setSavePassword(true);
+
+        // Enabling cache.
+        ws.setDomStorageEnabled(true);
+        // Set cache size to 8 mb by default. should be more than enough
+        ws.setAppCacheMaxSize(1024*1024*8);
+        ws.setAppCachePath(getCacheDir().getAbsolutePath());
+        ws.setAllowFileAccess(true);
+        ws.setAppCacheEnabled(true);
+        ws.setCacheMode(WebSettings.LOAD_DEFAULT);
     }
 
     @Override
