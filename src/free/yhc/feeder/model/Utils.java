@@ -33,7 +33,7 @@ public class Utils {
     private static final long   dayInMs = 24 * 60 * 60 * 1000;
     // Characters that is not allowed as filename in Android.
     private static final char[] noFileNameChars = new char[] {
-        '/', '?', '"', '*', '|', '\\', '<', '>'
+        '/', '?', '"', '\'', '`', ':', ';', '*', '|', '\\', '<', '>'
     };
 
     // Belows are not used.
