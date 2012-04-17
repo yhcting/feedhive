@@ -50,6 +50,12 @@
 		<icon></icon>
 	</channel>
 	<channel>
+		<name>민중의소리</name>
+		<category>언론</category>
+		<url>http://mediablog.vop.co.kr/rss</url>
+		<icon></icon>
+	</channel>
+	<channel>
 		<name>매일경제</name>
 		<category>언론</category>
 		<url>http://file.mk.co.kr/news/rss/rss_30000001.xml</url>
@@ -89,6 +95,37 @@
 		<name>CNN US</name>
 		<category>언론</category>
 		<url>http://rss.cnn.com/rss/edition_us.rss</url>
+		<icon></icon>
+	</channel>
+	<!-- 인터넷 언론  -->
+	<channel>
+		<name>다음</name>
+		<category>인터넷 언론</category>
+		<url>http://www.daum.net/rss.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>네이버 - IT/과학</name>
+		<category>인터넷 언론</category>
+		<url>http://feeds.feedburner.com/NaverNewsGameESports?format=xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>네이버 - 경제</name>
+		<category>인터넷 언론</category>
+		<url>http://feeds.feedburner.com/NaverNewsGlobalBusinessNews?format=xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>네이버 - 많이 본 뉴스</name>
+		<category>인터넷 언론</category>
+		<url>http://feeds.feedburner.com/naver_news_popular</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>블로터</name>
+		<category>인터넷 언론</category>
+		<url>http://feeds.feedburner.com/Bloter?format=xml</url>
 		<icon></icon>
 	</channel>
 	<!-- 대안 언론 (podcast 등)  -->
@@ -132,6 +169,12 @@
 		<name>희소식(이정희)</name>
 		<category>대안언론</category>
 		<url>http://cast.vop.co.kr/heenews.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>허재현의 현장일기</name>
+		<category>대안언론</category>
+		<url>http://feeds.feedburner.com/iblug/OCnu?format=xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
