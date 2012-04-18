@@ -1,3 +1,23 @@
+/*****************************************************************************
+ *    Copyright (C) 2012 Younghyung Cho. <yhcting77@gmail.com>
+ *
+ *    This file is part of Feeder.
+ *
+ *    This program is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU Lesser General Public License as
+ *    published by the Free Software Foundation either version 3 of the
+ *    License, or (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU Lesser General Public License
+ *    (<http://www.gnu.org/licenses/lgpl.html>) for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *****************************************************************************/
+
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
@@ -19,9 +39,6 @@ import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 public class FeederApp extends Application {
-    private static volatile boolean bInitialized = false;
-    private static Object           initLock = new Object();
-
     // NOTE 1
     // This should be called only once!!!
     //
@@ -35,12 +52,6 @@ public class FeederApp extends Application {
     //   this function should be called with 'Activity' context.
     public static void
     initialize(Context context) {
-        synchronized (initLock) {
-            if (bInitialized)
-                return;
-            bInitialized = true;
-        }
-
         DB.newSession(context).open();
         UIPolicy.initialise();
         UIPolicy.cleanTempFiles();
@@ -86,6 +97,8 @@ public class FeederApp extends Application {
         // register default customized uncaughted exception handler for error collecting.
         UnexpectedExceptionHandler.S();
         Thread.setDefaultUncaughtExceptionHandler(UnexpectedExceptionHandler.S());
+
+        initialize(getApplicationContext());
     }
 
     @Override
