@@ -385,9 +385,6 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void onCreate() {
         super.onCreate();
-        // NOTE
-        // This is another path that feeder app is started
-        FeederApp.initialize(this);
         UnexpectedExceptionHandler.S().registerModule(this);
     }
 

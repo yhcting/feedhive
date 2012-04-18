@@ -50,7 +50,7 @@ public class FeederApp extends Application {
     // Interesting point is, context from 'Activity' instance doens't have above issue.
     // So, even if this 'initialize' function is member of FeederApp,
     //   this function should be called with 'Activity' context.
-    public static void
+    private void
     initialize(Context context) {
         DB.newSession(context).open();
         UIPolicy.initialise();
