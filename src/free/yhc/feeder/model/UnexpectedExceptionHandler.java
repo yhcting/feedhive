@@ -33,12 +33,17 @@ import java.util.LinkedList;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.preference.PreferenceManager;
 import free.yhc.feeder.R;
 
-public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
+public class UnexpectedExceptionHandler implements
+UncaughtExceptionHandler,
+OnSharedPreferenceChangeListener {
     private static final String REPORT_RCVR = "yhcting77@gmail.com";
     private static final String REPORT_SUBJECT = "[Feeder] Exception Report.";
 
@@ -88,6 +93,34 @@ public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
     // ========================
     // Privates
     // ========================
+    private void
+    setEnvironmentInfo(Context context) {
+        PackageManager pm = context.getPackageManager();
+        try {
+            PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
+            pr.versionName = pi.versionName;
+            pr.packageName = pi.packageName;
+        }catch (NameNotFoundException e) {
+            ; // ignore
+        }
+        pr.filesDir        = context.getFilesDir().getAbsolutePath();
+        br.model           = android.os.Build.MODEL;
+        br.androidVersion  = android.os.Build.VERSION.RELEASE;
+        br.board           = android.os.Build.BOARD;
+        br.brand           = android.os.Build.BRAND;
+        br.device          = android.os.Build.DEVICE;
+        br.display         = android.os.Build.DISPLAY;
+        br.fingerPrint     = android.os.Build.FINGERPRINT;
+        br.host            = android.os.Build.HOST;
+        br.id              = android.os.Build.ID;
+        br.product         = android.os.Build.PRODUCT;
+        br.tags            = android.os.Build.TAGS;
+        br.time            = android.os.Build.TIME;
+        br.type            = android.os.Build.TYPE;
+        br.user            = android.os.Build.USER;
+    }
+
+
     private void
     appendCommonReport(StringBuilder report) {
         report.append("==================== Package Information ==================\n")
@@ -146,8 +179,21 @@ public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
     }
 
     public void
-    enableErrReport(boolean enable) {
-        this.reportEnabled = enable;
+    init(Context context) {
+        setEnvironmentInfo(context);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        prefs.registerOnSharedPreferenceChangeListener(this);
+        onSharedPreferenceChanged(prefs, "err_report");
+    }
+
+    @Override
+    public void
+    onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        if ("err_report".equals(key)) {
+            String v = prefs.getString("err_report", "yes");
+            reportEnabled = v.equals("yes")? true: false;
+        }
     }
 
     public boolean
@@ -166,33 +212,6 @@ public class UnexpectedExceptionHandler implements UncaughtExceptionHandler {
         synchronized (mods) {
             return mods.remove(m);
         }
-    }
-
-    public void
-    setEnvironmentInfo(Context context) {
-        PackageManager pm = context.getPackageManager();
-        try {
-            PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
-            pr.versionName = pi.versionName;
-            pr.packageName = pi.packageName;
-        }catch (NameNotFoundException e) {
-            ; // ignore
-        }
-        pr.filesDir        = context.getFilesDir().getAbsolutePath();
-        br.model           = android.os.Build.MODEL;
-        br.androidVersion  = android.os.Build.VERSION.RELEASE;
-        br.board           = android.os.Build.BOARD;
-        br.brand           = android.os.Build.BRAND;
-        br.device          = android.os.Build.DEVICE;
-        br.display         = android.os.Build.DISPLAY;
-        br.fingerPrint     = android.os.Build.FINGERPRINT;
-        br.host            = android.os.Build.HOST;
-        br.id              = android.os.Build.ID;
-        br.product         = android.os.Build.PRODUCT;
-        br.tags            = android.os.Build.TAGS;
-        br.time            = android.os.Build.TIME;
-        br.type            = android.os.Build.TYPE;
-        br.user            = android.os.Build.USER;
     }
 
 

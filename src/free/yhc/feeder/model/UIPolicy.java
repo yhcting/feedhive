@@ -20,15 +20,12 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.isValidValue;
 
 import java.io.File;
 import java.io.IOException;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 /*
  * Functions related with UIPolicy...
  *     - initial setting of values.
@@ -84,10 +81,11 @@ public class UIPolicy {
     }
 
     public static void
-    initialise()  {
+    init(Context context)  {
         new File(appRootDir).mkdirs();
         appTempDirFile.mkdir();
         appLogDirFile.mkdir();
+        cleanTempFiles();
     }
 
     public static String
@@ -149,26 +147,6 @@ public class UIPolicy {
     public static void
     cleanTempFiles() {
         Utils.removeFileRecursive(appTempDirFile, false);
-    }
-
-    public static void
-    applyAppPreference(Context context) {
-        // Applying application preference
-        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-
-        String v = sharedPrefs.getString("maxnr_bgtask", "1");
-        int value = 1;
-        try {
-            value = Integer.parseInt(v);
-        } catch (NumberFormatException e) {
-            eAssert(false);
-        }
-        RTTask.S().setMaxConcurrent(value);
-
-        boolean byes;
-        v = sharedPrefs.getString("err_report", "yes");
-        byes = v.equals("yes")? true: false;
-        UnexpectedExceptionHandler.S().enableErrReport(byes);
     }
 
     // NOTE

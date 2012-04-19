@@ -13,7 +13,7 @@
 			android:summary="@string/pref_send_err_report_desc"
 			android:key="err_report"
 			android:defaultValue="yes"
-			android:entries="@array/pref_send_err_report_entry"
-			android:entryValues="@array/pref_send_err_report_value" />
-			</PreferenceCategory>
+			android:entries="@array/pref_yes_no_entry"
+			android:entryValues="@array/pref_yes_no_value" />
+	</PreferenceCategory>
 </PreferenceScreen>

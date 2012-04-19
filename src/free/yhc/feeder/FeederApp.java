@@ -52,10 +52,14 @@ public class FeederApp extends Application {
     //   this function should be called with 'Activity' context.
     private void
     initialize(Context context) {
+        // Create singleton instances
         DB.newSession(context).open();
-        UIPolicy.initialise();
-        UIPolicy.cleanTempFiles();
-        RTTask.S(); // create instance
+        RTTask.S();
+
+        UnexpectedExceptionHandler.S().init(context);
+        // Initialise modules
+        UIPolicy.init(context);
+        RTTask.S().init(context);
 
         // Check predefined files
         File f = new File(UIPolicy.getPredefinedChannelsFilePath());
@@ -79,9 +83,6 @@ public class FeederApp extends Application {
                 return;
             }
         }
-
-        UIPolicy.applyAppPreference(context);
-        UnexpectedExceptionHandler.S().setEnvironmentInfo(context);
     }
 
     @Override

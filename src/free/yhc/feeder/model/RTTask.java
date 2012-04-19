@@ -25,13 +25,19 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.preference.PreferenceManager;
+
 // Singleton
 // Runtime Data
 //   : Data that SHOULD NOT be stored at DataBase.
 //       but, need to be check in runtime.
 // Should be THREAD-SAFE
 public class RTTask implements
-UnexpectedExceptionHandler.TrackedModule {
+UnexpectedExceptionHandler.TrackedModule,
+OnSharedPreferenceChangeListener {
     private static RTTask           instance = null;
 
     private BGTaskManager           gbtm = null;
@@ -163,10 +169,20 @@ UnexpectedExceptionHandler.TrackedModule {
         return instance;
     }
 
+    public void
+    init(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        prefs.registerOnSharedPreferenceChangeListener(this);
+        onSharedPreferenceChanged(prefs, "maxnr_bgtask");
+    }
 
     // ===============================
     // Privates
     // ===============================
+    private void
+    setMaxConcurrent(int v) {
+        max_concurrent = v;
+    }
 
     private String
     Id(Action act, long id) {
@@ -225,10 +241,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // ===============================
     // Package Private
     // ===============================
-    void
-    setMaxConcurrent(int v) {
-        max_concurrent = v;
-    }
 
     // ===============================
     // Publics
@@ -239,6 +251,20 @@ UnexpectedExceptionHandler.TrackedModule {
         return "[ RTTask ]";
     }
 
+    @Override
+    public void
+    onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        if ("maxnr_bgtask".equals(key)) {
+            String v = prefs.getString("maxnr_bgtask", "1");
+            int value = 1;
+            try {
+                value = Integer.parseInt(v);
+            } catch (NumberFormatException e) {
+                eAssert(false);
+            }
+            setMaxConcurrent(value);
+        }
+    }
     public void
     registerManagerEventListener(Object key, OnRTTaskManagerEvent listener) {
         eAssert(null != key && null != listener);

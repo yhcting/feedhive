@@ -28,11 +28,11 @@
         <item>"8"</item>
         <item>"9"</item>
     </string-array>
-    <string-array name="pref_send_err_report_entry">
+    <string-array name="pref_yes_no_entry">
         <item>@string/yes</item>
         <item>@string/no</item>
     </string-array>
-    <string-array name="pref_send_err_report_value">
+    <string-array name="pref_yes_no_value">
         <item>"yes"</item>
         <item>"no"</item>
     </string-array>
