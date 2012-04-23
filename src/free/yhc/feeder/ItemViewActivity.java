@@ -97,7 +97,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
             if (RTTask.Action.Download == act)
-            RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent());
+                RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent());
         }
 
         @Override
@@ -118,7 +118,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onPreRun(BGTask task) { }
+        onPreRun(BGTask task) {
+            postSetupLayout();
+        }
 
         @Override
         public void
@@ -285,14 +287,15 @@ UnexpectedExceptionHandler.TrackedModule {
         fileUrl = "file:///" + f.getAbsolutePath();
         currUrl = f.exists()? fileUrl: netUrl;
         wv.loadUrl(currUrl);
-
-        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
     }
 
     @Override
     protected void
     onResume() {
         super.onResume();
+        // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
+        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
+
         // Bind download task if needed
         RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
         if (RTTask.TaskState.Idle != state)
@@ -305,10 +308,11 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPause() {
         logI("==> ItemListActivity : onPause");
-        super.onPause();
-
+        // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
+        RTTask.S().unregisterManagerEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
         RTTask.S().unbind(this);
+        super.onPause();
     }
 
     @Override

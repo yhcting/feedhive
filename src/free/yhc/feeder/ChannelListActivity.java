@@ -1227,7 +1227,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onResume() {
         logI("==> ChannelListActivity : onResume");
-        super.onStart();
+        super.onResume();
 
         // NOTE
         // Case to think about
@@ -1265,8 +1265,8 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onPause() {
-        UnexpectedExceptionHandler.S().unregisterModule(this);
         logI("==> ChannelListActivity : onPause");
+        RTTask.S().unregisterManagerEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
         // And when exiting from 'ItemListActivity' by back-key event, 'onStart' is called.
@@ -1294,7 +1294,7 @@ UnexpectedExceptionHandler.TrackedModule {
         for (int i = 0; i < ab.getTabCount(); i++)
             getListAdapter(ab.getTabAt(i)).getCursor().close();
         super.onDestroy();
-        RTTask.S().unregisterManagerEventListener(this);
+        UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 
     @Override

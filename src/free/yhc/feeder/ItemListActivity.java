@@ -555,9 +555,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Update "OLDLAST_ITEMID" when user opens item views.
         DBPolicy.S().updateChannel_lastItemId(cid);
-
-        // Register to get notification regarding RTTask.
-        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
     }
 
     @Override
@@ -572,6 +569,10 @@ UnexpectedExceptionHandler.TrackedModule {
     onResume() {
         logI("==> ItemListActivity : onResume");
         super.onResume();
+
+        // Register to get notification regarding RTTask.
+        // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
+        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
 
         // See comments in 'ChannelListActivity.onPause()'
         // Bind update task if needed
@@ -592,10 +593,11 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPause() {
         logI("==> ItemListActivity : onPause");
-        super.onPause();
-
+        // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
+        RTTask.S().unregisterManagerEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
         RTTask.S().unbind(this);
+        super.onPause();
     }
 
     @Override
