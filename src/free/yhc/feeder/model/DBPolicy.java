@@ -58,6 +58,10 @@ UnexpectedExceptionHandler.TrackedModule {
     private static DBPolicy instance = null;
     private DB              db       = null;
 
+    // I'm not sure the reason. But getting max id of item takes much longer time than expected.
+    // So, cache is used for it!
+    private MCache<Long>    cacheItemMaxId = new MCache<Long>("ItemMaxId");
+
     enum ItemDataType {
         RAW,
         FILE
@@ -426,10 +430,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         Iterator<Feed.Item.ParD> iter = newItems.iterator();
+
         while (iter.hasNext()) {
             Feed.Item.ParD itemParD = iter.next();
             Feed.Item.DbD  itemDbD = new Feed.Item.DbD();
             itemDbD.cid = cid;
+
 
             // NOTE
             // Order is very important
@@ -454,19 +460,28 @@ UnexpectedExceptionHandler.TrackedModule {
             // So, I don't use any synchronization to prevent this race condition.
             // Now we know item id here.
             try {
-                if (null != idop) {
-                    File f = idop.getFile(itemParD);
-                    if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
-                        throw new FeederException(Err.DBUnknown);
+                File f = null;
+                if (null != idop)
+                    f = idop.getFile(itemParD);
 
+                // FIXME
+                // NOTE
+                // There is possible race-condition between below three lines of code.
+                // (between "if(.....)" and "cachedItem...")
+                // But it's just one-item difference.
+                // So, user may think like "During handling user-request, DB may updated."
+                // At this moment, let's ignore this race-condition.
+                // If issued case is found, let's consider it at the moment.
+                if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
+                    throw new FeederException(Err.DBUnknown);
+                cacheItemMaxId.invalidate("" + cid);
+
+                if (null != idop && null != f) {
                     // NOTE
                     // At this moment, race-condition can be issued.
                     // But, as I mentioned above, it's not harmful and very rare case.
                     if (!f.renameTo(UIPolicy.getItemDataFile(itemDbD.id)))
                         f.delete();
-                } else {
-                    if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
-                        throw new FeederException(Err.DBUnknown);
                 }
             } catch (FeederException e) {
                 if (Err.DBUnknown == e.getError())
@@ -671,8 +686,15 @@ UnexpectedExceptionHandler.TrackedModule {
         return blob;
     }
 
+    // NOTE
+    // This function takes much longer time than expected.
+    // So, cache should be used to improve it!
     public long
     getItemInfoMaxId(long cid) {
+        Long v = cacheItemMaxId.get("" + cid);
+        if (null != v)
+            return v;
+
         Cursor c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
                                 new ColumnItem[] { ColumnItem.CHANNELID },
                                 new Object[] { cid },
@@ -685,6 +707,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, this one is last item id.
         long lastId = c.getLong(0);
         c.close();
+        cacheItemMaxId.put("" + cid, lastId);
         return lastId;
     }
 
