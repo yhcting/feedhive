@@ -399,7 +399,7 @@ UnexpectedExceptionHandler.TrackedModule {
             setOnClick_startUpdate(iv);
         } else if (RTTask.TaskState.Running == state
                    || RTTask.TaskState.Ready == state) {
-            iv.setImageResource(R.drawable.download);
+            iv.setImageResource(R.anim.download);
             ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
         } else if (RTTask.TaskState.Canceling == state) {

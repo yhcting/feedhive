@@ -5,6 +5,9 @@
     <string name="yes">예</string>
     <string name="no">아니오</string>
     <string name="url">Url</string>
+    <string name="high">높음</string>
+    <string name="medium">중간</string>
+    <string name="low">낮음</string>
     <string name="about_app">어플 정보</string>
     <string name="about_app_email">이메일 : yhcting77@gmail.com</string>
     <string name="about_app_blog">블로그 : http://yhcting.tistory.com</string>
@@ -86,7 +89,9 @@
     <string name="setting_updatemode">업데이트 모드</string>
     <string name="setting_nritem_softmax">아이템 최대 개수 설정</string>
     <string name="pref_maxnr_bgtask">최대 백그라운드 Task개수</string>
-    <string name="pref_maxnr_bgtask_desc">최대로 동시에 수행 가능한 백그라운드 Task개수</string>
+    <string name="pref_maxnr_bgtask_desc">동시에 수행하는 업데이트, 다운로드 등의 백그라운드 Task개수. 값이 높으면 여러 작업을 동시에 수행하나 반응속도가 떨어질 수 있습니다.</string>
+    <string name="pref_bgtask_prio">백그라운드 Task 우선순위</string>
+    <string name="pref_bgtask_prio_desc">값이 높으면 업데이트나 다운로드의 시간은 빨라질 수 있으나 반응속도가 떨어지고, 낮으면 그 반대가 됩니다.</string>
     <string name="pref_send_err_report">에러 레보트 보내기</string>
     <string name="pref_send_err_report_desc">어플리케이션에 문제가 발생했을때, 에러 레포트를 보냅니다.</string>
 </resources>

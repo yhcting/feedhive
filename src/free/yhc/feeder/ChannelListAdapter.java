@@ -24,6 +24,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.HashMap;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -45,6 +46,10 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 public class ChannelListAdapter extends ResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
     private OnAction  onAction = null;
+    // To speed up refreshing list and dataSetChanged in case of only few-list-item are changed.
+    // (usually, only one item is changed.)
+    // This SHOULD NOT used when number of list item or order of list item are changed.
+    private HashMap<Long, Object> unchangedMap = new HashMap<Long, Object>();
 
     interface OnAction {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -59,6 +64,16 @@ UnexpectedExceptionHandler.TrackedModule {
         ImageViewEx(Context context, AttributeSet attrs) {
             super(context, attrs);
         }
+    }
+
+    public void
+    addUnchanged(long cid) {
+        unchangedMap.put(cid, new Object());
+    }
+
+    public void
+    clearUnchanged() {
+        unchangedMap.clear();
     }
 
     @Override
@@ -77,6 +92,11 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     bindView(View view, final Context context, final Cursor c) {
         long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
+
+        if (null != unchangedMap.get(cid)) {
+            unchangedMap.remove(cid);
+            return;
+        }
 
         String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
         String desc = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
@@ -100,8 +120,6 @@ UnexpectedExceptionHandler.TrackedModule {
         long nrNew = DBPolicy.S().getItemInfoMaxId(cid)
                         - DBPolicy.S().getChannelInfoLong(cid, ColumnChannel.OLDLAST_ITEMID);
 
-        int ci; // column index;
-        ci = c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName());
         Bitmap bm = null;
         byte[] imgRaw = c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
         if (imgRaw.length > 0)

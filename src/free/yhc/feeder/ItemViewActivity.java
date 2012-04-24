@@ -209,7 +209,7 @@ UnexpectedExceptionHandler.TrackedModule {
         } else if (RTTask.TaskState.Running == state
                    || RTTask.TaskState.Ready == state) {
 
-            imgbtn.setImageResource(R.drawable.download);
+            imgbtn.setImageResource(R.anim.download);
             ((AnimationDrawable)imgbtn.getDrawable()).start();
             imgbtn.setOnClickListener(new View.OnClickListener() {
                 @Override

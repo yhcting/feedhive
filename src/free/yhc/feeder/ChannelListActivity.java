@@ -251,15 +251,14 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(cid >= 0);
             // NOTE : refresh??? just 'notifying' is enough?
             // In current DB policy, sometimes DB may be updated even if updating is cancelled!
-            //getListAdapter(getMyTab(cid)).notifyDataSetChanged();
-            refreshList(getMyTab(cid));
+            refreshList(getMyTab(cid), cid);
         }
 
         @Override
         public void
         onPreRun(BGTask task) {
             // NOTE : refresh??? just 'notifying' is enough?
-            getListAdapter(getMyTab(cid)).notifyDataSetChanged();
+            dataSetChanged(getListView(getMyTab(cid)), cid);
         }
 
         @Override
@@ -274,18 +273,21 @@ UnexpectedExceptionHandler.TrackedModule {
             // NOTE : refresh??? just 'notifying' is enough?
             // It should be 'refresh' due to after successful update,
             //   some channel information in DB may be changed.
-            refreshList(getMyTab(cid));
+            refreshList(getMyTab(cid), cid);
         }
     }
 
 
     private class PickIconEventHandler implements SpinAsyncTask.OnEvent {
+        private long cid = -1;
         @Override
         public Err
         onDoWork(SpinAsyncTask task, Object... objs) {
             Intent data = (Intent)objs[0];
             Uri selectedImage = data.getData();
             String[] filePathColumn = {MediaColumns.DATA};
+
+            cid = cid_pickImage;
 
             Cursor c = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
             if (!c.moveToFirst()) {
@@ -326,7 +328,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 //  DB data may be changed! So, we need to re-create cursor again.
                 //  'notifyDataSetChanged' is just for recreating list item view.
                 //  (DB item doens't reloaded!)
-                refreshList(ab.getSelectedTab());
+                refreshList(ab.getSelectedTab(), cid);
             else
                 LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
@@ -427,6 +429,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return (TabTag)tab.getTag();
     }
 
+    private ListView
+    getListView(Tab tab) {
+        return getTag(tab).listView;
+    }
+
     private void
     selectDefaultAsSelected() {
         // 0 is index of default tab
@@ -436,6 +443,11 @@ UnexpectedExceptionHandler.TrackedModule {
     private Tab
     getDefaultTab() {
         return ab.getTabAt(0);
+    }
+
+    private ListView
+    getCurrentListView() {
+        return getListView(ab.getSelectedTab());
     }
 
     private ChannelListAdapter
@@ -500,13 +512,49 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    refreshList(Tab tab) {
+    dataSetChanged(ListView lv) {
+        ((ChannelListAdapter)lv.getAdapter()).clearUnchanged();
+        ((ChannelListAdapter)lv.getAdapter()).notifyDataSetChanged();
+    }
+
+    private void
+    dataSetChanged(ListView lv, long cid) {
+        ((ChannelListAdapter)lv.getAdapter()).clearUnchanged();
+        ChannelListAdapter cla = (ChannelListAdapter)lv.getAdapter();
+        for (int i = lv.getFirstVisiblePosition();
+             i <= lv.getLastVisiblePosition();
+             i++) {
+            long itemId = cla.getItemId(i);
+            if (itemId != cid)
+                cla.addUnchanged(itemId);
+        }
+        ((ChannelListAdapter)lv.getAdapter()).notifyDataSetChanged();
+    }
+
+    /**
+     * Cursor is changed and rebind view whose id is 'cid'
+     * @param tab
+     * @param cid
+     */
+    private void
+    refreshList(Tab tab, long cid) {
         // NOTE
         // Usually, number of channels are not big.
         // So, we don't need to think about async. loading.
         Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
         getListAdapter(tab).changeCursor(newCursor);
-        getListAdapter(tab).notifyDataSetChanged();
+        dataSetChanged(getTag(tab).listView, cid);
+    }
+
+    /**
+     * Cursor is changed and all view should be rebinded.
+     * @param tab
+     */
+    private void
+    refreshList(Tab tab) {
+        Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
+        getListAdapter(tab).changeCursor(newCursor);
+        dataSetChanged(getTag(tab).listView);
     }
 
     private Tab
@@ -574,7 +622,7 @@ UnexpectedExceptionHandler.TrackedModule {
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
-        refreshList(ab.getSelectedTab());
+        refreshList(ab.getSelectedTab(), cid);
 
         // Move to bottom of the list where newly inserted channel is located on.
         // (This is for feedback to user saying "new channel is now adding").
@@ -993,18 +1041,18 @@ UnexpectedExceptionHandler.TrackedModule {
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
             RTTask.S().register(cid, RTTask.Action.Update, task);
             RTTask.S().start(cid, RTTask.Action.Update);
-            getCurrentListAdapter().notifyDataSetChanged();
+            dataSetChanged(getCurrentListView(), cid);
         } else if (RTTask.TaskState.Running == state
                    || RTTask.TaskState.Ready == state) {
             logI("ChannelList : cancel : " + cid);
             RTTask.S().cancel(cid, RTTask.Action.Update, null);
             // to change icon into "canceling"
-            getCurrentListAdapter().notifyDataSetChanged();
+            dataSetChanged(getCurrentListView(), cid);
         } else if (RTTask.TaskState.Failed == state) {
             Err result = RTTask.S().getErr(cid, RTTask.Action.Update);
             LookAndFeel.showTextToast(this, result.getMsgId());
             RTTask.S().consumeResult(cid, RTTask.Action.Update);
-            getCurrentListAdapter().notifyDataSetChanged();
+            dataSetChanged(getCurrentListView(), cid);
         } else if (RTTask.TaskState.Canceling == state) {
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
         } else

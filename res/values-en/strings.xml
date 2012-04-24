@@ -5,6 +5,9 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="url">Url</string>
+    <string name="high">High</string>
+    <string name="medium">Medium</string>
+    <string name="low">Low</string>
     <string name="about_app">About</string>
     <string name="about_app_email">Email : yhcting77@gmail.com</string>
     <string name="about_app_blog">Blog : http://yhcting.tistory.com</string>
@@ -88,6 +91,8 @@
     <string name="setting_nritem_softmax">Soft maximum number of item to keep</string>
     <string name="pref_maxnr_bgtask">Maximum BG Tasks</string>
     <string name="pref_maxnr_bgtask_desc">Maximum number of background tasks that can be run concurrently.</string>
+    <string name="pref_bgtask_prio">Priority of background task</string>
+    <string name="pref_bgtask_prio_desc">Update or download performance will be increased with higher value, but responsibility will be worse.</string>
     <string name="pref_send_err_report">Sending error report</string>
     <string name="pref_send_err_report_desc">Error report is sent when application is crashed.</string>
 </resources>

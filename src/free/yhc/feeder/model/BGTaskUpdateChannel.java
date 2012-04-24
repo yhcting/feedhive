@@ -52,6 +52,7 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
         this.context = context;
         wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
+        setPriority(UIPolicy.getPrefBGTaskPriority(context));
     }
 
     @Override

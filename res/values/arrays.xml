@@ -36,4 +36,14 @@
         <item>"yes"</item>
         <item>"no"</item>
     </string-array>
+    <string-array name="pref_bgtask_prio_entry">
+        <item>@string/high</item>
+        <item>@string/medium</item>
+        <item>@string/low</item>
+    </string-array>
+    <string-array name="pref_bgtask_prio_value">
+        <item>"high"</item>
+        <item>"medium"</item>
+        <item>"low"</item>
+    </string-array>
 </resources>

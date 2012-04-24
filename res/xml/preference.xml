@@ -9,6 +9,13 @@
 			android:entries="@array/pref_maxnr_concurrent_entry"
 			android:entryValues="@array/pref_maxnr_concurrent_value" />
 		<ListPreference
+			android:title="@string/pref_bgtask_prio"
+			android:summary="@string/pref_bgtask_prio_desc"
+			android:key="bgtask_prio"
+			android:defaultValue="low"
+			android:entries="@array/pref_bgtask_prio_entry"
+			android:entryValues="@array/pref_bgtask_prio_value" />
+		<ListPreference
 			android:title="@string/pref_send_err_report"
 			android:summary="@string/pref_send_err_report_desc"
 			android:key="err_report"

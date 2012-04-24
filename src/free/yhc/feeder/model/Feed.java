@@ -111,8 +111,8 @@ public class Feed {
         public static final long ChannTypeMedia  = 1; // for link and description for media data (etc. podcast)
 
         // 150 x 150 is enough size for channel icon.
-        public static final int ICON_MAX_WIDTH  = 150;
-        public static final int ICON_MAX_HEIGHT = 150;
+        public static final int ICON_MAX_WIDTH  = 100;
+        public static final int ICON_MAX_HEIGHT = 100;
 
         // Profile data.
         static class ProfD {

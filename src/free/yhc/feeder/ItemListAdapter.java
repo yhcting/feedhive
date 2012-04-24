@@ -183,7 +183,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 imgv.setImageResource(R.drawable.download_anim0);
             } else if (RTTask.TaskState.Running == dnState
                        || RTTask.TaskState.Ready == dnState) {
-                imgv.setImageResource(R.drawable.download);
+                imgv.setImageResource(R.anim.download);
                 // Why "post runnable and start animation?"
                 // In Android 4.0.3 (ICS)
                 //   putting "((AnimationDrawable)img.getDrawable()).start();" is enough.

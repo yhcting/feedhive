@@ -20,12 +20,15 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.isValidValue;
 
 import java.io.File;
 import java.io.IOException;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 /*
  * Functions related with UIPolicy...
  *     - initial setting of values.
@@ -193,5 +196,21 @@ public class UIPolicy {
         //   In most UNIX file systems, only '/' and 'null' are reserved.
         //   So, we don't worry about "converting string to valid file name".
         return new File(appRootDir + cid + "/" + fname);
+    }
+
+    public static int
+    getPrefBGTaskPriority(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String prio = prefs.getString("bgtask_prio", "low");
+        if ("low".equals(prio))
+            return Thread.MIN_PRIORITY;
+        else if ("medium".equals(prio))
+            return (Thread.NORM_PRIORITY + Thread.MIN_PRIORITY) / 2;
+        else if ("high".equals(prio))
+            return Thread.NORM_PRIORITY;
+        else {
+            eAssert(false);
+            return Thread.MIN_PRIORITY;
+        }
     }
 }
