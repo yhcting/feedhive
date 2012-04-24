@@ -51,9 +51,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static final int hourInSec = 60 * 60;
 
-    // match string-array 'strarr_updatemode'
+    // match string-array 'strarr_updatemode_setting'
     private static final int SPPOS_UPDATEMODE_NORMAL    = 0;
     private static final int SPPOS_UPDATEMODE_DOWNLOAD  = 1;
+
+    // match string-array 'strarr_browser_setting'
+    private static final int SPPOS_BROWSER_IN           = 0;
+    private static final int SPPOS_BROWSER_EX           = 1;
 
     private void
     updateSchedUpdateSetting() {
@@ -83,22 +87,53 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     updateUpdateModeSetting() {
         Spinner sp = (Spinner)findViewById(R.id.sp_updatemode);
+        long old_updmode = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
+        long updmode = old_updmode;
         switch (sp.getSelectedItemPosition()) {
         case SPPOS_UPDATEMODE_NORMAL:
-            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.UPDATEMODE, Feed.Channel.FUpdLink);
+            updmode = Utils.bitSet(updmode, Feed.Channel.FUpdLink, Feed.Channel.MUpd);
             break;
         case SPPOS_UPDATEMODE_DOWNLOAD:
-            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.UPDATEMODE, Feed.Channel.FUpdDn);
+            updmode = Utils.bitSet(updmode, Feed.Channel.FUpdDn, Feed.Channel.MUpd);
             break;
         default:
             eAssert(false);
         }
+
+        if (old_updmode != updmode)
+            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.UPDATEMODE, updmode);
+    }
+
+    private void
+    updateBrowserSetting() {
+        long old_action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        long action = old_action;
+
+        if (!Feed.Channel.isActTgtLink(action))
+            return; // nothing to do.
+
+        Spinner sp = (Spinner)findViewById(R.id.sp_browser);
+        // clear bit for action program.
+        switch (sp.getSelectedItemPosition()) {
+        case SPPOS_BROWSER_IN:
+            action = Utils.bitSet(action, Feed.Channel.FActProgIn, Feed.Channel.MActProg);
+            break;
+        case SPPOS_BROWSER_EX:
+            action = Utils.bitSet(action, Feed.Channel.FActProgEx, Feed.Channel.MActProg);
+            break;
+        default:
+            eAssert(false);
+        }
+
+        if (old_action != action)
+            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.ACTION, action);
     }
 
     private void
     updateSetting() {
         updateSchedUpdateSetting();
         updateUpdateModeSetting();
+        updateBrowserSetting();
     }
 
     private void
@@ -166,7 +201,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Setup "Update Type"
         Spinner sp = (Spinner)findViewById(R.id.sp_updatemode);
         ArrayAdapter<CharSequence> spadapter = ArrayAdapter.createFromResource(
-                    this, R.array.strarr_updatemode, android.R.layout.simple_spinner_item);
+                    this, R.array.strarr_updatemode_setting, android.R.layout.simple_spinner_item);
         spadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(spadapter);
 
@@ -177,6 +212,24 @@ UnexpectedExceptionHandler.TrackedModule {
             sp.setSelection(SPPOS_UPDATEMODE_DOWNLOAD); // 'Download' is position 1
         else
             eAssert(false);
+
+        // Setup Browser
+        long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        if (Feed.Channel.isActTgtLink(action)) {
+            sp = (Spinner)findViewById(R.id.sp_browser);
+            spadapter = ArrayAdapter.createFromResource(
+                        this, R.array.strarr_browser_setting, android.R.layout.simple_spinner_item);
+            spadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            sp.setAdapter(spadapter);
+
+            if (Feed.Channel.isActProgIn(action))
+                sp.setSelection(SPPOS_BROWSER_IN); // 'internal browser' is position 0
+            else if (Feed.Channel.isActProgEx(action))
+                sp.setSelection(SPPOS_BROWSER_EX); // 'external browser' is position 1
+            else
+                eAssert(false);
+        } else
+            findViewById(R.id.browser_layout).setVisibility(View.GONE);
     }
 
     @Override

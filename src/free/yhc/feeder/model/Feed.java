@@ -91,8 +91,17 @@ public class Feed {
         public static final long MActOp           = 0x02;
         public static final long FActOpDefault    = 0x00;
 
-        public static final long FActDefault      = FActTgtDefault | FActOpDefault;
+        // bit[2] : Action program is 'internal program / external - default - internal
+        // Ex. in case of view web link, internal program means 'ItemViewActivity' and
+        //   external program means 'other browsers'.
+        // Internal program is very simple version so, it's fast.
+        // External program is usually very powerful.
+        public static final long FActProgIn       = 0x00;
+        public static final long FActProgEx       = 0x04;
+        public static final long MActProg         = 0x04;
+        public static final long FActProgDefault  = 0x00;
 
+        public static final long FActDefault      = FActTgtDefault | FActOpDefault | FActProgDefault;
 
         // ==================
         // Flag UpdateMode
@@ -110,7 +119,7 @@ public class Feed {
         public static final long ChannTypeNormal = 0; // for news/article etc
         public static final long ChannTypeMedia  = 1; // for link and description for media data (etc. podcast)
 
-        // 150 x 150 is enough size for channel icon.
+        // 100 x 100 is enough size for channel icon.
         public static final int ICON_MAX_WIDTH  = 100;
         public static final int ICON_MAX_HEIGHT = 100;
 
@@ -158,6 +167,16 @@ public class Feed {
         public static final boolean
         isActTgtEnclosure(long flag) {
             return FActTgtEnclosure == (flag & MActTgt);
+        }
+
+        public static final boolean
+        isActProgIn(long flag) {
+            return FActProgIn == (flag & MActProg);
+        }
+
+        public static final boolean
+        isActProgEx(long flag) {
+            return FActProgEx == (flag & MActProg);
         }
 
         public static final boolean

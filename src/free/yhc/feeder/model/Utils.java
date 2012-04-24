@@ -166,6 +166,18 @@ public class Utils {
             Log.e(TAG, msg);
     }
 
+    // Bit mask handling
+    public static long
+    bitClear(long flag, long mask) {
+        return flag & ~mask;
+    }
+
+    public static long
+    bitSet(long flag, long value, long mask) {
+        flag = bitClear(flag, mask);
+        return flag | (value & mask);
+    }
+
     public static long[]
     arrayLongTolong(Long[] L) {
         long[] l = new long[L.length];

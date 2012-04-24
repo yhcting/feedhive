@@ -89,6 +89,9 @@
     <string name="setting_everyday">everyday</string>
     <string name="setting_updatemode">Update Mode</string>
     <string name="setting_nritem_softmax">Soft maximum number of item to keep</string>
+    <string name="setting_browser">Browser setting</string>
+    <string name="setting_browser_in">Internal browser</string>
+    <string name="setting_browser_ex">External browser</string>
     <string name="pref_maxnr_bgtask">Maximum BG Tasks</string>
     <string name="pref_maxnr_bgtask_desc">Maximum number of background tasks that can be run concurrently.</string>
     <string name="pref_bgtask_prio">Priority of background task</string>

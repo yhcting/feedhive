@@ -88,6 +88,9 @@
     <string name="setting_everyday">매일</string>
     <string name="setting_updatemode">업데이트 모드</string>
     <string name="setting_nritem_softmax">아이템 최대 개수 설정</string>
+    <string name="setting_browser">브라우져 설정</string>
+    <string name="setting_browser_in">내부 브라우져</string>
+    <string name="setting_browser_ex">외부 브라우져</string>
     <string name="pref_maxnr_bgtask">최대 백그라운드 Task개수</string>
     <string name="pref_maxnr_bgtask_desc">동시에 수행하는 업데이트, 다운로드 등의 백그라운드 Task개수. 값이 높으면 여러 작업을 동시에 수행하나 반응속도가 떨어질 수 있습니다.</string>
     <string name="pref_bgtask_prio">백그라운드 Task 우선순위</string>

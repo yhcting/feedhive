@@ -373,10 +373,22 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        // 'link' is used.
-        Intent intent = new Intent(this, ItemViewActivity.class);
-        intent.putExtra("id", id);
-        startActivity(intent);
+        if (Feed.Channel.isActProgIn(action)) {
+            Intent intent = new Intent(this, ItemViewActivity.class);
+            intent.putExtra("id", id);
+            startActivity(intent);
+        } else if (Feed.Channel.isActProgEx(action)) {
+            Intent intent = new Intent(Intent.ACTION_VIEW,
+                                       Uri.parse(DBPolicy.S().getItemInfoString(id, DB.ColumnItem.LINK)));
+            try {
+                startActivity(intent);
+            } catch (ActivityNotFoundException e) {
+                LookAndFeel.showTextToast(this,
+                        getResources().getText(R.string.warn_find_app_to_open).toString() + " [text/html]");
+                return;
+            }
+        } else
+            eAssert(false);
 
         changeItemState_opened(id, position);
     }

@@ -40,6 +40,7 @@
 	    >
 	</LinearLayout>
 	<LinearLayout
+	    android:id="@+id/updatemode_layout"
 	    android:layout_width="match_parent"
 	    android:layout_height="wrap_content"
 		android:layout_marginLeft="5dip"
@@ -60,4 +61,26 @@
 	        android:layout_marginLeft="5dip"
 		    />
 	</LinearLayout>		
+	<LinearLayout
+	    android:id="@+id/browser_layout"
+	    android:layout_width="match_parent"
+	    android:layout_height="wrap_content"
+		android:layout_marginLeft="5dip"
+		android:layout_marginTop="10dip"
+		android:layout_gravity="center_vertical"
+		android:orientation="horizontal"
+		>
+		<TextView
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:textAppearance="?android:attr/textAppearanceLarge"
+			android:text="@string/setting_browser"
+			/>
+		<Spinner
+			android:id="@+id/sp_browser"
+			android:layout_width="fill_parent"
+			android:layout_height="40dip"
+			android:layout_marginLeft="5dip"
+			/>
+	</LinearLayout>
 </LinearLayout>
