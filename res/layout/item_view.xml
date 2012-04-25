@@ -6,27 +6,27 @@
     >
     <WebView
         android:id="@+id/webview"
-	    android:layout_width="match_parent"
-	    android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         />
- 	<ProgressBar
- 	    android:id="@+id/progressbar"
- 	    android:layout_width="fill_parent"
- 	    android:layout_height="wrap_content"
- 	    android:alpha="0.5"
- 	    style="@android:style/Widget.ProgressBar.Horizontal"
- 	    />       
+    <ProgressBar
+        android:id="@+id/progressbar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.5"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        />
     <ImageView
-		android:id="@+id/imgbtn"
-		android:layout_width="30dip"
-		android:layout_height="30dip"
-		android:layout_marginLeft="5dip"
-		android:layout_marginBottom="5dip"
-		android:layout_alignParentBottom="true"
-		android:layout_alignParentLeft="true"
-		android:clickable="true"
-		android:gravity="center"
-		android:scaleType="fitCenter"
-		android:background="#000000"
+        android:id="@+id/imgbtn"
+        android:layout_width="30dip"
+        android:layout_height="30dip"
+        android:layout_marginLeft="5dip"
+        android:layout_marginBottom="5dip"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:clickable="true"
+        android:gravity="center"
+        android:scaleType="fitCenter"
+        android:background="#000000"
         />
 </RelativeLayout>

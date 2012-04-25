@@ -53,7 +53,7 @@
     <string name="del_dnfiles_not_allowed_msg">Deleting files is not allowed. There may be files under downloading.</string>
     <string name="delete_downloaded_file">Delete downloaded files</string>
     <string name="delete_all_downloaded_file">Delete all downloaded files</string>
-	<string name="delete_all_downloaded_file_msg">All downloaded files will be deleted.</string>
+    <string name="delete_all_downloaded_file_msg">All downloaded files will be deleted.</string>
     <string name="delete_all_downloaded_file_errmsg">Some files are not able to be deleted.</string>
     <string name="delete_channel">Delete channel</string>
     <string name="update_channel">Update channel</string>

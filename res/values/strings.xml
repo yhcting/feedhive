@@ -50,7 +50,7 @@
     <string name="err_dbunknown">데이터베이스에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_user_cancelled">동작이 취소되었습니다.</string>
-	<string name="del_dnfiles_not_allowed_msg">다운로드 파일을 삭제할 수 없습니다. 현재 다운로드 중인 파일이 있습니다.</string>
+    <string name="del_dnfiles_not_allowed_msg">다운로드 파일을 삭제할 수 없습니다. 현재 다운로드 중인 파일이 있습니다.</string>
     <string name="delete_downloaded_file">내려받은 파일 삭제</string>
     <string name="delete_all_downloaded_file">내려받은 파일 모두 삭제</string>
     <string name="delete_all_downloaded_file_msg">내려받은 파일들을 모두 삭제합니다.</string>

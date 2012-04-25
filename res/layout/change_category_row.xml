@@ -10,6 +10,6 @@
         android:paddingLeft="@dimen/list_item_left_padding"
         android:paddingTop="@dimen/menu_row_vertical_padding"
         android:paddingBottom="@dimen/menu_row_vertical_padding"
-        android:textSize="@dimen/menu_text_size"        
+        android:textSize="@dimen/menu_text_size"
         />
 </LinearLayout>
