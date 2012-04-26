@@ -316,10 +316,14 @@ UnexpectedExceptionHandler.TrackedModule {
             }
             // There is unused existing channel.
             // Let's reuse it.
+            // Initialize some channel informations
             ContentValues cvs = new ContentValues();
             cvs.put(ColumnChannel.STATE.getName(),      Feed.Channel.FStatUsed);
             // We didn't verify 'categoryid' here.
             cvs.put(ColumnChannel.CATEGORYID.getName(), categoryid);
+            cvs.put(ColumnChannel.ACTION.getName(),     Feed.FInvalid);
+            cvs.put(ColumnChannel.POSITION.getName(),   getChannelInfoMaxLong(ColumnChannel.POSITION) + 1);
+            cvs.put(ColumnChannel.IMAGEBLOB.getName(),  new byte[0]);
             db.updateChannel(cid, cvs);
             return cid;
         }
