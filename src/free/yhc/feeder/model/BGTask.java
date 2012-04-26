@@ -330,7 +330,12 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
     public void
     publishProgress(final long progress) {
-        onProgress(progress);
+        ownerHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                onProgress(progress);
+            }
+        });
         for (EventListener listener : getListeners()) {
             final OnEvent onEvent = listener.getOnEvent();
             listener.getHandler().post(new Runnable() {
