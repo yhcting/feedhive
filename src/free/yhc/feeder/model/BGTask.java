@@ -256,17 +256,22 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         //   "try to start BGTask that is not managed".
         // And this is out of expectation.
         eAssert(null != nick);
-        onPreRun();
-        for (EventListener listener : getListeners()) {
-            final OnEvent onEvent = listener.getOnEvent();
-            listener.getHandler().post(new Runnable() {
-                @Override
-                public void run() {
-                    onEvent.onPreRun(BGTask.this);
+        ownerHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                onPreRun();
+                for (EventListener listener : getListeners()) {
+                    final OnEvent onEvent = listener.getOnEvent();
+                    listener.getHandler().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            onEvent.onPreRun(BGTask.this);
+                        }
+                    });
                 }
-            });
-        }
-        super.start();
+                BGTask.super.start();
+            }
+        });
     }
 
     @Override
