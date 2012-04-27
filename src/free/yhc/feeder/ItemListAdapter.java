@@ -21,6 +21,9 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.util.HashMap;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
@@ -45,6 +48,10 @@ public class ItemListAdapter extends ResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
     private long      act = Feed.Channel.FActDefault;
     private DBPolicy  dbp = DBPolicy.S();
+    // To speed up refreshing list and dataSetChanged in case of only few-list-item are changed.
+    // (usually, only one item is changed.)
+    // This SHOULD NOT used when number of list item or order of list item are changed.
+    private HashMap<Long, Object> unchangedMap = new HashMap<Long, Object>();
 
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
     // See "DownloadProgressOnEvent" for details
@@ -117,6 +124,16 @@ UnexpectedExceptionHandler.TrackedModule {
                 R.color.text_color_new: R.color.text_color_opened;
     }
 
+    public void
+    addUnchanged(long id) {
+        unchangedMap.put(id, new Object());
+    }
+
+    public void
+    clearUnchanged() {
+        unchangedMap.clear();
+    }
+
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
@@ -134,6 +151,13 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     bindView(View view, Context context, Cursor c) {
+        final long id = c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName()));
+
+        if (null != unchangedMap.get(id)) {
+            unchangedMap.remove(id);
+            return;
+        }
+
         // NOTE
         //   Check performance drop for this DB access...
         //   If this is critical, we need to find other solution for updating state.
@@ -141,8 +165,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //   But, definitely slower than before...
         // TODO
         //   Do performance check on low-end-device.
-        final long state = dbp.getItemInfoLong(c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName())),
-                                               DB.ColumnItem.STATE);
+        final long state = dbp.getItemInfoLong(id, DB.ColumnItem.STATE);
 
         final TextView titlev = (TextView)view.findViewById(R.id.title);
         final TextView descv  = (TextView)view.findViewById(R.id.description);
@@ -151,7 +174,6 @@ UnexpectedExceptionHandler.TrackedModule {
         final TextView lengthv = (TextView)view.findViewById(R.id.length);
         final ImageView imgv   = (ImageView)view.findViewById(R.id.image);
 
-        long id = c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName()));
         String title = c.getString(c.getColumnIndex(DB.ColumnItem.TITLE.getName()));
 
         titlev.setText(title);

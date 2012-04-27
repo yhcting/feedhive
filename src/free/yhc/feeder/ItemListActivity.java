@@ -135,6 +135,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class DownloadDataBGTaskOnEvent implements
     BGTask.OnEvent<Object, Object> {
+        private long id = -1;
+        DownloadDataBGTaskOnEvent(long id) {
+            this.id = id;
+        }
+
         @Override
         public void
         onProgress(BGTask task, long progress) {
@@ -143,7 +148,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
-            getListAdapter().notifyDataSetChanged();
+            dataSetChanged(id);
         }
 
         @Override
@@ -156,7 +161,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             logI("+++ Item Activity DownloadData PostRun");
-            getListAdapter().notifyDataSetChanged();
+            dataSetChanged(id);
         }
     }
 
@@ -168,7 +173,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (RTTask.Action.Update == act)
                 RTTask.S().bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent());
             else if (RTTask.Action.Download == act)
-                RTTask.S().bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent());
+                RTTask.S().bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent(id));
         }
 
         @Override
@@ -229,13 +234,40 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    dataSetChanged() {
+        getListAdapter().clearUnchanged();
+        getListAdapter().notifyDataSetChanged();
+    }
+
+    private void
+    dataSetChanged(long id) {
+        ItemListAdapter la = getListAdapter();
+        la.clearUnchanged();
+        for (int i = list.getFirstVisiblePosition();
+             i <= list.getLastVisiblePosition();
+             i++) {
+            long itemId = la.getItemId(i);
+            if (itemId != id)
+                la.addUnchanged(itemId);
+        }
+        la.notifyDataSetChanged();
+    }
+
+    private void
+    refreshList(long id) {
+        Cursor newCursor = adapterCursorQuery(cid);
+        getListAdapter().changeCursor(newCursor);
+        dataSetChanged(id);
+    }
+
+    private void
     refreshList() {
         // [ NOTE ]
         // Usually, number of channels are not big.
         // So, we don't need to think about async. loading.
         Cursor newCursor = adapterCursorQuery(cid);
-        getListAdapter().swapCursor(newCursor).close();
-        getListAdapter().notifyDataSetChanged();
+        getListAdapter().changeCursor(newCursor);
+        dataSetChanged();
     }
 
     private void
@@ -288,7 +320,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long state = db.getItemInfoLong(id, DB.ColumnItem.STATE);
         if (Feed.Item.isStateNew(state)) {
             db.updateItem_state(id, Feed.Item.FStatOpened);
-            getListAdapter().notifyDataSetChanged();
+            dataSetChanged(id);
             return true;
         }
         return false;
@@ -345,18 +377,18 @@ UnexpectedExceptionHandler.TrackedModule {
                                                                                   UIPolicy.getNewTempFile()));
                 RTTask.S().register(id, RTTask.Action.Download, dnTask);
                 RTTask.S().start(id, RTTask.Action.Download);
-                getListAdapter().notifyDataSetChanged();
+                dataSetChanged(id);
             } else if (RTTask.TaskState.Running == state
                        || RTTask.TaskState.Ready == state) {
                 RTTask.S().cancel(id, RTTask.Action.Download, null);
-                getListAdapter().notifyDataSetChanged();
+                dataSetChanged(id);
             } else if (RTTask.TaskState.Canceling == state) {
                 LookAndFeel.showTextToast(this, R.string.wait_cancel);
             } else if (RTTask.TaskState.Failed == state) {
                 Err result = RTTask.S().getErr(id, RTTask.Action.Download);
                 LookAndFeel.showTextToast(this, result.getMsgId());
                 RTTask.S().consumeResult(id, RTTask.Action.Download);
-                getListAdapter().notifyDataSetChanged();
+                dataSetChanged(id);
             } else
                 eAssert(false);
         }
@@ -369,7 +401,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (RTTask.TaskState.Failed == state) {
             LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.Download).getMsgId());
             RTTask.S().consumeResult(id, RTTask.Action.Download);
-            getListAdapter().notifyDataSetChanged();
+            dataSetChanged(id);
             return;
         }
 
@@ -452,7 +484,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (!UIPolicy.getItemDataFile(id).delete())
                     LookAndFeel.showTextToast(ItemListActivity.this, Err.IOFile.getMsgId());
                 else
-                    getListAdapter().notifyDataSetChanged();
+                    dataSetChanged(id);
 
                 dialog.dismiss();
             }
@@ -595,10 +627,10 @@ UnexpectedExceptionHandler.TrackedModule {
         // Bind downloading tasks
         long[] ids = RTTask.S().getItemsDownloading(cid);
         for (long id : ids)
-            RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent());
+            RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
 
         setUpdateButton();
-        getListAdapter().notifyDataSetChanged();
+        dataSetChanged();
     }
 
     @Override
