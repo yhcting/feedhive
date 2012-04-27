@@ -164,6 +164,21 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         return nick;
     }
 
+    /**
+     * Originally, isInterupted() is used.
+     * But, based on my test experience, isInterrupted seems to reflect only BG Thread state
+     *   (Not Thread object's state).
+     * So, with some sensitive timing condition, calling Thread.isInterrupted() returns false,
+     *   if it is called right after Thread.interrupt() is called.
+     * (I didn't test and verify it strictly yet.)
+     * To avoid this, isCancelled() is newly introduced and used.
+     * @return
+     */
+    public boolean
+    isCancelled() {
+        return cancelled;
+    }
+
     public Err
     getResult() {
         eAssert(null != result);

@@ -368,7 +368,7 @@ OnSharedPreferenceChangeListener {
 
         synchronized (taskQSync) {
             if (runQ.contains(task))
-                return task.isInterrupted()? TaskState.Canceling: TaskState.Running;
+                return task.isCancelled()? TaskState.Canceling: TaskState.Running;
 
             if (readyQ.contains(task))
                 return TaskState.Ready;
