@@ -68,7 +68,7 @@ public class FeederApp extends Application {
             AssetManager am = context.getAssets();
             InputStream is = null;
             try {
-                is = am.open("channels.xml");
+                is = am.open(UIPolicy.getPredefinedChannelsAssetFilePath());
                 OutputStream out = new FileOutputStream(f);
                 byte buf[]=new byte[1024 * 16];
                 int len;

@@ -563,8 +563,8 @@ public class Utils {
      * @param bDeleteMe
      *   'true' means delete given directory itself too.
      * @return
+     *   false:  fail to full-delete
      */
-    // return : false(fail to full-delete)
     public static boolean
     removeFileRecursive(File f, boolean bDeleteMe) {
         boolean ret = true;

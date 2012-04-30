@@ -25,6 +25,7 @@ import static free.yhc.feeder.model.Utils.isValidValue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -37,7 +38,6 @@ public class UIPolicy {
     private static final String appRootDir = "/sdcard/yhcFeeder/";
     private static final String appTempDir = appRootDir + "temp/";
     private static final String appLogDir  = appRootDir + "log/";
-    private static final String predefinedChannelsFile = appRootDir + "channels.xml";
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
@@ -115,7 +115,18 @@ public class UIPolicy {
 
     public static String
     getPredefinedChannelsFilePath() {
-        return predefinedChannelsFile;
+        return appRootDir + "channels.xml";
+    }
+
+    public static String
+    getPredefinedChannelsAssetFilePath() {
+        Locale lc = java.util.Locale.getDefault();
+        String file;
+        if (Locale.KOREA.equals(lc) || Locale.KOREAN.equals(lc))
+            file = "channels_kr.xml";
+        else
+            file = "channels_en.xml";
+        return file;
     }
 
     public static boolean
