@@ -20,6 +20,7 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.bitIsSet;
 
 // Naming notation
 //   F[flag name][value name] : 'F' => Flag
@@ -37,7 +38,7 @@ public class Feed {
 
         public static final boolean
         isStateNew(long flag) {
-            return FStatNew == (flag & MStat);
+            return bitIsSet(flag, FStatNew, MStat);
         }
 
          // Information from parsing.
@@ -151,42 +152,42 @@ public class Feed {
         // ==================
         public static final boolean
         isStatUsed(long flag) {
-            return FStatUsed == (flag & MStat);
+            return bitIsSet(flag, FStatUsed, MStat);
         }
 
         public static final boolean
         isActOpOpen(long flag) {
-            return FActOpOpen == (flag & MActOp);
+            return bitIsSet(flag, FActOpOpen, MActOp);
         }
 
         public static final boolean
         isActTgtLink(long flag) {
-            return FActTgtLink == (flag & MActTgt);
+            return bitIsSet(flag, FActTgtLink, MActTgt);
         }
 
         public static final boolean
         isActTgtEnclosure(long flag) {
-            return FActTgtEnclosure == (flag & MActTgt);
+            return bitIsSet(flag, FActTgtEnclosure, MActTgt);
         }
 
         public static final boolean
         isActProgIn(long flag) {
-            return FActProgIn == (flag & MActProg);
+            return bitIsSet(flag, FActProgIn, MActProg);
         }
 
         public static final boolean
         isActProgEx(long flag) {
-            return FActProgEx == (flag & MActProg);
+            return bitIsSet(flag, FActProgEx, MActProg);
         }
 
         public static final boolean
         isUpdLink(long flag) {
-            return FUpdLink == (flag & MUpd);
+            return bitIsSet(flag, FUpdLink, MUpd);
         }
 
         public static final boolean
         isUpdDn(long flag) {
-            return FUpdDn == (flag & MUpd);
+            return bitIsSet(flag, FUpdDn, MUpd);
         }
     }
 

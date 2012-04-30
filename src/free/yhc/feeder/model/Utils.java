@@ -189,6 +189,11 @@ public class Utils {
         return flag | (value & mask);
     }
 
+    public static boolean
+    bitIsSet(long flag, long value, long mask) {
+        return value == (flag & mask);
+    }
+
     public static long[]
     arrayLongTolong(Long[] L) {
         long[] l = new long[L.length];
