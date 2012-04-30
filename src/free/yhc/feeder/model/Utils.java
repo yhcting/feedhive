@@ -97,9 +97,12 @@ public class Utils {
             "video",
     };
 
-    // NOTE
-    // Too many format may drop parsing performance very much.
-    // So, be careful!
+    /**
+     * NOTE
+     *  Too many format may drop parsing performance very much.
+     *  So, we need to tune this array.
+     *  (How many format will be supported?)
+     */
     private static final String[] dateFormats = new String[] {
             DateUtils.PATTERN_RFC1036,
             DateUtils.PATTERN_RFC1123,
@@ -115,6 +118,14 @@ public class Utils {
     // =======================
     // Private
     // =======================
+    /**
+     * Decode image from file path(String) or raw data (byte[]).
+     * @param image
+     *   Two types are supported.
+     *   String for file path / byte[] for raw image data.
+     * @param opt
+     * @return
+     */
     private static Bitmap
     decodeImageRaw(Object image, BitmapFactory.Options opt) {
         if (image instanceof String) {
@@ -186,6 +197,12 @@ public class Utils {
         return l;
     }
 
+    /**
+     * Is is valid string?
+     * Valid means "Not NULL and Not empty".
+     * @param v
+     * @return
+     */
     public static boolean
     isValidValue(String v) {
         return !(null == v || v.isEmpty());
@@ -195,7 +212,6 @@ public class Utils {
     dpToPx(Context context, int dp) {
         return (int) (dp * context.getResources().getDisplayMetrics().density);
     }
-
 
     public static long
     hourToMs(long hour) {
@@ -207,6 +223,12 @@ public class Utils {
         return sec * 1000;
     }
 
+    /**
+     * Convert number string to number array.
+     * This function is pair with 'nrsToNString'.
+     * @param timeString
+     * @return
+     */
     public static long[]
     nStringToNrs(String timeString) {
         if (!isValidValue(timeString))
@@ -224,6 +246,13 @@ public class Utils {
         return times;
     }
 
+    /**
+     * Convert number array to single number string.
+     * This is good way to store number array as single string.
+     * This function is pair with 'nStringToNrs'.
+     * @param nrs
+     * @return
+     */
     public static String
     nrsToNString(long[] nrs) {
         String nrstr = "";
@@ -237,9 +266,10 @@ public class Utils {
     }
 
     /**
-     *
+     * Convert data string to times in milliseconds since 1970 xxx.
      * @param dateString
-     * @return times in mills. -1 if failed to parse.
+     * @return
+     *   times in milliseconds. -1 if failed to parse.
      */
     public static long
     dateStringToTime(String dateString) {
@@ -257,10 +287,12 @@ public class Utils {
 
     /**
      * Get size(width, height) of given image.
-     *
-     * @param image : 'image file path' or 'byte[]' image data
-     * @param out : out[0] : width of image / out[1] : height of image
-     * @return : false if image cannot be decode. true if success
+     * @param image
+     *   'image file path' or 'byte[]' image data
+     * @param out
+     *   out[0] : width of image / out[1] : height of image
+     * @return
+     *   false if image cannot be decode. true if success
      */
     public static boolean
     imageSize(Object image, int[] out) {
@@ -276,19 +308,24 @@ public class Utils {
         return true;
     }
 
-    //
-    // Calculate rectangle(out[]). This is got by shrinking
-    // rectangle(width,height) to bound rectangle(boundW, boundH) with fixed
-    // ratio. If input rectangle is included in bound, then input rectangle
-    // itself will be returned.(we don't need to adjust)
-    //
-    // @param boundW : width of bound rect
-    // @param boundH : height of bound rect
-    // @param width : width of rect to be shrunk
-    // @param height : height of rect to be shrunk
-    // @param out : calculated value [ out[0](width) out[1](height) ]
-    // @return : false(not shrunk) / true(shrunk)
-    //
+    /**
+     * Calculate rectangle(out[]). This is got by shrinking rectangle(width,height) to
+     *   bound rectangle(boundW, boundH) with fixed ratio.
+     * If input rectangle is included in bound, then input rectangle itself will be
+     *   returned. (we don't need to adjust)
+     * @param boundW
+     *   width of bound rect
+     * @param boundH
+     *   height of bound rect
+     * @param width
+     *   width of rect to be shrunk
+     * @param height
+     *   height of rect to be shrunk
+     * @param out
+     *   calculated value [ out[0](width) out[1](height) ]
+     * @return
+     *   false(not shrunk) / true(shrunk)
+     */
     public static boolean
     shrinkFixedRatio(int boundW, int boundH, int width, int height, int[] out) {
         boolean ret;
@@ -314,15 +351,18 @@ public class Utils {
         return ret;
     }
 
-    //
-    // Make fixed-ration-bounded-bitmap with file. if (0 >= boundW || 0 >=
-    // boundH), original-size-bitmap is trying to be created.
-    //
-    // @param fpath : image file path (absolute path)
-    // @param boundW : bound width
-    // @param boundH : bound height
-    // @return : null (fail)
-    //
+    /**
+     * Make fixed-ration-bounded-bitmap with file.
+     * If (0 >= boundW || 0 >= boundH), original-size-bitmap is trying to be created.
+     * @param fpath
+     *   image file path (absolute path)
+     * @param boundW
+     *   bound width
+     * @param boundH
+     *   bound height
+     * @return
+     *   null if fails
+     */
     public static Bitmap
     decodeImage(Object image, int boundW, int boundH) {
         eAssert(null != image);
@@ -365,6 +405,11 @@ public class Utils {
         return decodeImageRaw(image, opt);
     }
 
+    /**
+     * Compress give bitmap to JPEG formatted image data.
+     * @param bm
+     * @return
+     */
     public static byte[]
     compressBitmap(Bitmap bm) {
         long time = System.currentTimeMillis();
@@ -374,6 +419,11 @@ public class Utils {
         return baos.toByteArray();
     }
 
+    /**
+     * Text in given TextView is ellipsed?
+     * @param tv
+     * @return
+     */
     public static boolean
     isEllipsed(TextView tv) {
         Layout l = tv.getLayout();
@@ -386,6 +436,11 @@ public class Utils {
         return false;
     }
 
+    /**
+     * @param file
+     * @param data
+     * @return
+     */
     public static Err
     writeToFile(File file, byte[] data) {
         FileOutputStream fos = null;
@@ -405,6 +460,13 @@ public class Utils {
         return Err.NoErr;
     }
 
+    /**
+     *
+     * @param file
+     *   Text file.
+     * @return
+     *   value when reading non-text files, is not defined.
+     */
     public static String
     readTextFile(File file) {
         try {
@@ -451,6 +513,11 @@ public class Utils {
         */
     }
 
+    /**
+     * Does given string represents Mime Type?
+     * @param str
+     * @return
+     */
     public static boolean
     isMimeType(String str) {
         // Let's reuse Android class
@@ -471,7 +538,13 @@ public class Utils {
     }
 
 
-    // convert give string to filename-form
+    /**
+     * Convert given string to valid (OS supported) file name.
+     * To do this, some characters that are not allowed as file name, are replaced with
+     *   other characters.
+     * @param str
+     * @return
+     */
     public static String
     convertToFilename(String str) {
         // Most Unix (including Linux) allows all 8bit-character as file name
@@ -483,6 +556,14 @@ public class Utils {
         return str;
     }
 
+    /**
+     * Remove file and directory recursively
+     * @param f
+     *   file or directory.
+     * @param bDeleteMe
+     *   'true' means delete given directory itself too.
+     * @return
+     */
     // return : false(fail to full-delete)
     public static boolean
     removeFileRecursive(File f, boolean bDeleteMe) {
@@ -503,6 +584,11 @@ public class Utils {
         return s.replaceFirst("\\s+$", "");
     }
 
+    /**
+     * Is any available active network at this device?
+     * @param context
+     * @return
+     */
     public static boolean
     isNetworkAvailable(Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -513,7 +599,13 @@ public class Utils {
             return false;
     }
 
-
+    /**
+     * Get time milliseconds at 00:00:00(hh:mm:ss) of given day.
+     * For example, calling function with argument "2012-12-25, 13:46:57" calendar value,
+     *   gives time milliseconds of "2012-12-25, 00:00:00".
+     * @param cal
+     * @return
+     */
     public static long
     dayBaseMs(Calendar cal) {
         Calendar temp = Calendar.getInstance();
@@ -535,6 +627,19 @@ public class Utils {
     //      (negative value is NOT ALLOWED)
     //      Order may be changed (sorted) to ascending order.
     // @return : time to next nearest time (ms based on 1970....)
+    /**
+     * NOTE
+     * 'secs' array is [in/out] argument.
+     * @param calNow
+     * @param secs
+     *   [in/out] After return, array is sorted by ascending numerical order.
+     *   00:00:00 based value.
+     *   seconds since 00:00:00 (12:00 AM)
+     *   (negative value is NOT ALLOWED)
+     *   Order may be changed (sorted) to ascending order.
+     * @return
+     *   time(ms based on 1970) to next nearest time of given second-of-day array.
+     */
     public static long
     nextNearestTime(Calendar calNow, long[] secs) {
         eAssert(secs.length > 0);

@@ -45,6 +45,11 @@ public enum Err {
         this.msgId = msgId;
     }
 
+    /**
+     * Get string resource id.
+     * This string has message to notify err to user.
+     * @return
+     */
     public int getMsgId() {
         return msgId;
     }

@@ -145,6 +145,9 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     // ==========================================
     // Package Private
     // ==========================================
+    /**
+     * Set result of this BGTask to 'Err.NoErr'.
+     */
     void
     resetResult() {
         eAssert(!isAlive());
@@ -185,6 +188,18 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         return result;
     }
 
+    /**
+     * Register event listener with it's key value.
+     * Newly added event listener will be added to the last of listener list.
+     * (event listener will be notified in order of listener list.)
+     *
+     * Owner of given listener will be set into current Thread automatically.
+     *
+     * Key value is used to find event listener (onEvent).
+     * Several event listener may share one key value.
+     * @param key
+     * @param onEvent
+     */
     public void
     registerEventListener(Object key, OnEvent onEvent) {
         // This is atomic expression
@@ -195,6 +210,12 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         }
     }
 
+    /**
+     * Same with 'registerEventListener' except for that newly added listener
+     *   will be added to the first of listener list.
+     * @param key
+     * @param onEvent
+     */
     public void
     registerPriorEventListener(Object key, OnEvent onEvent) {
         synchronized (listenerList) {
@@ -203,6 +224,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         }
     }
 
+    /**
+     * Unregister all event listeners whose owner is given thread.
+     * @param owner
+     */
     public void
     unregisterEventListener(Thread owner) {
         synchronized (listenerList) {
@@ -217,6 +242,11 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         }
     }
 
+    /**
+     * Unregister event listener whose owner and object match.
+     * @param owner
+     * @param onEventKey
+     */
     public void
     unregisterEventListener(Thread owner, Object onEventKey) {
         synchronized (listenerList) {
@@ -232,6 +262,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         }
     }
 
+    /**
+     * Make event listener list empty.
+     * (Same as unregistering all listeners.)
+     */
     public void
     clearEventListener() {
         synchronized (listenerList) {
@@ -247,20 +281,52 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         return Err.NoErr;
     }
 
+    /**
+     * This will be called prior to all other registered listeners whose owner thread
+     *   is same with this Thread's owner (thread context in which this Thread object
+     *   is created (owner thread)).
+     * If other listener's owner thread is different with the owner of this Thread object,
+     *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
+     */
     protected void
     onPreRun() {}
 
+    /**
+     * This will be called prior to all other registered listeners whose owner thread
+     *   is same with this Thread's owner (thread context in which this Thread object
+     *   is created (owner thread)).
+     * If other listener's owner thread is different with the owner of this Thread object,
+     *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
+     */
     protected void
     onPostRun (Err result) {}
 
+    /**
+     * This will be called prior to all other registered listeners whose owner thread
+     *   is same with this Thread's owner (thread context in which this Thread object
+     *   is created (owner thread)).
+     * If other listener's owner thread is different with the owner of this Thread object,
+     *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
+     */
     protected void
     onCancel(CancelParam param) {}
 
+    /**
+     * This will be called prior to all other registered listeners whose owner thread
+     *   is same with this Thread's owner (thread context in which this Thread object
+     *   is created (owner thread)).
+     * If other listener's owner thread is different with the owner of this Thread object,
+     *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
+     */
     protected void
     onProgress(long progress) {}
 
     // This SHOULD NOT BE CALLED DIRECTLY!!!
     // 'start' SHOULD be called only at BGTaskManager
+    /**
+     * THIS SHOULD BE CALLED ONLY BY 'BGTaskManager'.
+     * Start background task
+     */
     @Override
     public final void
     start() {
@@ -289,6 +355,11 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         });
     }
 
+    /**
+     * DO NOT USE CALL THIS FUNCTION OUTSIDE
+     *   even if it's visibility is 'public'
+     * (visibility is 'public' only because this is overridden.)
+     */
     @Override
     public final void
     run() {
@@ -322,6 +393,13 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             ownerHandler.post(new BGTaskPost(false));
     }
 
+    /**
+     * THIS SHOULD BE CALLED ONLY BY 'BGTaskManager'.
+     * Cancel background task.
+     * This will interrupt background task.
+     * @param param
+     * @return
+     */
     boolean
     cancel(CancelParam param) {
         if (cancelled)
@@ -348,6 +426,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         return true;
     }
 
+    /**
+     * This will trigger onProgress listener.
+     * onProgress listener will be called in their owner's thread context.
+     */
     public void
     publishProgress(final long progress) {
         ownerHandler.post(new Runnable() {

@@ -220,8 +220,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    // NOTE!
-    //   Next Scheduled updates which are at least 1-min after, will be scheduled.
+    /**
+     * NOTE
+     * Next updates which are at least 1-min after, will be scheduled.
+     * @param context
+     * @param calNow
+     */
     static void
     scheduleNextUpdate(Context context, Calendar calNow) {
         long daybase = Utils.dayBaseMs(calNow);

@@ -27,10 +27,19 @@ class MCache <T> {
     private String                  name = ""; // usually for debugging.
     private HashMap<String, T>      m = new HashMap<String, T>();
 
+    /**
+     *
+     * @param name: name of this cache
+     */
     MCache(String name) {
         this.name = name;
     }
 
+    /**
+     *
+     * @param key
+     * @param value
+     */
     void put(String key, T value) {
         synchronized (m) {
             m.put(key, value);
@@ -40,7 +49,8 @@ class MCache <T> {
     /**
      *
      * @param key
-     * @return null if there is no cached value.
+     * @return
+     *   null if there is no cached value.
      */
     T get(String key) {
         synchronized (m) {

@@ -78,6 +78,11 @@ UnexpectedExceptionHandler.TrackedModule {
         db = DB.db();
     }
 
+    /**
+     * check that current Thread is interrupted.
+     * If it is interrupted, FeederException is thrown.
+     * @throws FeederException
+     */
     private void
     checkInterrupted() throws FeederException {
         if (Thread.currentThread().isInterrupted())
@@ -85,6 +90,12 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     // This is used only for new 'insertion'
+    /**
+     * Build ContentValues for DB insertion with some default values.
+     * @param parD
+     * @param dbD
+     * @return
+     */
     private ContentValues
     buildNewItemContentValues(Feed.Item.ParD parD, Feed.Item.DbD dbD) {
         ContentValues values = new ContentValues();
@@ -110,6 +121,13 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     // This is used only for new 'insertion'
+    /**
+     * Build ContentValues for DB insertion with some default values.
+     * @param profD
+     * @param parD
+     * @param dbD
+     * @return
+     */
     private ContentValues
     buildNewChannelContentValues(Feed.Channel.ProfD profD, Feed.Channel.ParD parD, Feed.Channel.DbD dbD) {
         ContentValues values = new ContentValues();
@@ -136,6 +154,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return values;
     }
 
+    /**
+     * FIELD_TYPE BLOB is not supported.
+     * @param c
+     * @param columnIndex
+     *   column index of given cursor.
+     * @return
+     */
     private Object
     getCursorValue(Cursor c, int columnIndex) {
         switch (c.getType(columnIndex)) {
@@ -155,9 +180,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Find channel
-     * @param state[out]
+     * @param state
+     *   [out] result read from DB is stored here.
      * @param url
-     * @return -1 (fail to find) / channel id (success)
+     * @return
+     *   -1 (fail to find) / channel id (success)
      */
     private long
     findChannel(long[] state, String url) {
@@ -219,6 +246,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return ret;
     }
 
+    /**
+     * check channel url which is in use by 'USED' channel.
+     * ('USED' channel means "channel whose state is 'used'".)
+     * @param url
+     * @return
+     */
     public boolean
     isChannelUrlUsed(String url) {
         long[] state = new long[1];
@@ -243,7 +276,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return ret;
     }
 
-    // return : 0 : successfully inserted and DB is changed.
+    /**
+     * Duplicated category name is also allowed.
+     * (This function doens't check duplication.)
+     * @param category
+     * @return
+     *   0 (success)
+     */
     public int
     insertCategory(Feed.Category category) {
         eAssert(null != category.name);
@@ -256,6 +295,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    /**
+     * Delete category.
+     * category id field of channels which have this category id as their field value,
+     *   is changed to default category id.
+     * @param id
+     * @return
+     */
     public int
     deleteCategory(long id) {
         // change category of each channel to default firstly.
@@ -267,11 +313,21 @@ UnexpectedExceptionHandler.TrackedModule {
         return (1 == db.deleteCategory(id))? 0: -1;
     }
 
+    /**
+     * Update category name.
+     * @param id
+     * @param name
+     * @return
+     */
     public long
     updateCategory(long id, String name) {
         return db.updateCategory(id, name);
     }
 
+    /**
+     * Get all categories from DB.
+     * @return
+     */
     public Feed.Category[]
     getCategories() {
         // Column index is used below. So order is important.
@@ -294,13 +350,14 @@ UnexpectedExceptionHandler.TrackedModule {
         return cats;
     }
 
-    // Insert new channel - url.
-    // This is to insert channel url and holding place for this new channel at DB.
-    //
-    // @url    : url of new channel
-    // @return : success : cid
-    //           failed  : -1 (including duplicated channel)
-    //
+    /**
+     * Insert new channel - url.
+     * This is to insert channel url and holding place for this new channel at DB.
+     * @param categoryid
+     * @param url
+     * @return
+     *   cid (success) / -1 (fails - ex. duplicated-named-channel)
+     */
     public long
     insertNewChannel(long categoryid, String url) {
 
@@ -351,6 +408,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return cid;
     }
 
+    /**
+     * Filtering items that are not in DB from given item array.
+     * @param items
+     * @param newItems
+     *   new item's are added to the last of this linked list.
+     * @return
+     */
     public Err
     getNewItems(Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
         eAssert(null != items);
@@ -417,8 +481,18 @@ UnexpectedExceptionHandler.TrackedModule {
         return Err.NoErr;
     }
 
-    // return: -1 (for fail to update)
-    //
+    /**
+     * Update channel.
+     * ColumnChannel.LASTUPDATE value is set only at this function.
+     * @param cid
+     * @param ch
+     * @param newItems
+     *   new items to be added to this channel.
+     * @param idop
+     *   interface to get item-data-file.
+     * @return
+     * @throws FeederException
+     */
     public int
     updateChannel(long cid, Feed.Channel.ParD ch, LinkedList<Feed.Item.ParD> newItems, ItemDataOpInterface idop)
             throws FeederException {
@@ -500,6 +574,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return 0;
     }
 
+    /**
+     * update given channel value.
+     * @param cid
+     * @param column
+     * @param value
+     * @return
+     */
     public long
     updateChannel(long cid, ColumnChannel column, long value) {
         // Fields those are allowed to be updated.
@@ -520,6 +601,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
     }
 
+    /**
+     * switch ColumnChannel.POSITION values.
+     * @param cid0
+     * @param cid1
+     * @return
+     */
     public long
     updatechannel_switchPosition(long cid0, long cid1) {
         Long pos0 = getChannelInfoLong(cid0, ColumnChannel.POSITION);
@@ -531,11 +618,25 @@ UnexpectedExceptionHandler.TrackedModule {
         return 2;
     }
 
+    /**
+     *
+     * @param cid
+     * @param sec
+     *   day of second.
+     * @return
+     */
     public long
     updateChannel_schedUpdate(long cid, long sec) {
         return updateChannel_schedUpdate(cid, new long[] { sec });
     }
 
+    /**
+     *
+     * @param cid
+     * @param secs
+     *   array of day of second.
+     * @return
+     */
     public long
     updateChannel_schedUpdate(long cid, long[] secs) {
         // verify values SECONDS_OF_DAY
@@ -544,7 +645,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.updateChannel(cid, ColumnChannel.SCHEDUPDATETIME, Utils.nrsToNString(secs));
     }
 
-    // "update OLDLAST_ITEMID to up-to-date"
+    /**
+     * Update OLDLAST_ITEMID field to up-to-date.
+     * (update to current largest item ID)
+     * @param cid
+     * @return
+     */
     public long
     updateChannel_lastItemId(long cid) {
         long maxId = getItemInfoMaxId(cid);
@@ -552,11 +658,25 @@ UnexpectedExceptionHandler.TrackedModule {
         return maxId;
     }
 
+    /**
+     * Query USED channel column those are belonging to given category.
+     * (unused channels are not selected.)
+     * @param categoryid
+     * @param column
+     * @return
+     */
     public Cursor
     queryChannel(long categoryid, ColumnChannel column) {
         return queryChannel(categoryid, new ColumnChannel[] { column });
     }
 
+    /**
+     * Query USED channel columns those are belonging to given category.
+     * (unused channels are not selected.)
+     * @param categoryid
+     * @param column
+     * @return
+     */
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
         eAssert(categoryid >= 0);
@@ -568,11 +688,21 @@ UnexpectedExceptionHandler.TrackedModule {
                                null, false, 0);
     }
 
+    /**
+     * Query all USED channel column
+     * @param column
+     * @return
+     */
     public Cursor
     queryChannel(ColumnChannel column) {
         return queryChannel(new ColumnChannel[] { column });
     }
 
+    /**
+     * Query all USED channel columns
+     * @param column
+     * @return
+     */
     public Cursor
     queryChannel(ColumnChannel[] columns) {
         return db.queryChannel(columns,
@@ -581,6 +711,18 @@ UnexpectedExceptionHandler.TrackedModule {
                 null, false, 0);
     }
 
+    /**
+     * This function mark given channel's state as 'UNUSED'
+     * This function doesn't really delete channel row from DB.
+     * If channel is deleted from DB than all items that is belonging to given channel
+     *   should be deleted too.
+     * Why? Deleting channel only breaks DB's constraints because channel id field of item is foreign key.
+     * But, deleting all items from DB takes quite long time and I'm not sure this is really what user want.
+     * So, just mark it.
+     * TODO : is it suitable for normal use case?
+     * @param cid
+     * @return
+     */
     public int
     deleteChannel(long cid) {
         // Just mark as 'unused' - for future
@@ -593,6 +735,11 @@ UnexpectedExceptionHandler.TrackedModule {
             return -1;
     }
 
+    /**
+     * Get all channel ids belonging to given category.
+     * @param categoryid
+     * @return
+     */
     public long[]
     getChannelIds(long categoryid) {
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
@@ -613,6 +760,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return cids;
     }
 
+    /**
+     * Get field value of given 'USED' channel.
+     * @param cid
+     * @param column
+     * @return
+     */
     private Object
     getChannelInfoObject(long cid, ColumnChannel column) {
         Cursor c = db.queryChannel(new ColumnChannel[] { column },
@@ -640,6 +793,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return (String)getChannelInfoObject(cid, column);
     }
 
+    /**
+     *
+     * @param cid
+     * @param columns
+     * @return
+     *   each string values of given column.
+     */
     public String[]
     getChannelInfoStrings(long cid, ColumnChannel[] columns) {
         Cursor c = db.queryChannel(columns,
@@ -661,6 +821,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return v;
     }
 
+    /**
+     * Get maximum value of given column.
+     * Field type of give column should be 'integer'.
+     * @param column
+     * @return
+     */
     public long
     getChannelInfoMaxLong(ColumnChannel column) {
         eAssert(column.getType().equals("integer"));
@@ -675,6 +841,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return max;
     }
 
+    /**
+     * channel should be USED one.
+     * @param cid
+     * @return
+     */
     public byte[]
     getChannelInfoImageblob(long cid) {
         byte[] blob = new byte[0];
@@ -693,6 +864,11 @@ UnexpectedExceptionHandler.TrackedModule {
     // NOTE
     // This function takes much longer time than expected.
     // So, cache should be used to improve it!
+    /**
+     * Get maximum value of item id of given channel.
+     * @param cid
+     * @return
+     */
     public long
     getItemInfoMaxId(long cid) {
         Long v = cacheItemMaxId.get("" + cid);
@@ -728,6 +904,7 @@ UnexpectedExceptionHandler.TrackedModule {
         c.close();
         return ret;
     }
+
     public long
     getItemInfoLong(long id, ColumnItem column) {
         eAssert(column.getType().equals("integer"));
@@ -740,9 +917,14 @@ UnexpectedExceptionHandler.TrackedModule {
         return (String)getItemInfoObject(id, column);
     }
 
+    /**
+     *
+     * @param id
+     * @param columns
+     * @return
+     */
     public String[]
     getItemInfoStrings(long id, ColumnItem[] columns) {
-        // Default is ASC order by ID
         Cursor c = db.queryItem(columns,
                                 new ColumnItem[] { ColumnItem.ID },
                                 new Object[] { id },
@@ -760,6 +942,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return v;
     }
 
+    /**
+     * Query item information belonging to given channel.
+     * @param cid
+     * @param columns
+     * @return
+     */
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
         return db.queryItem(columns,
@@ -768,6 +956,16 @@ UnexpectedExceptionHandler.TrackedModule {
                             0);
     }
 
+    /**
+     * Update state value of item.
+     *
+     * @param id
+     * @param state
+     *   can be one of below
+     *     Feed.Channel.FStatUsed
+     *     Feed.Channel.FStatUnused
+     * @return
+     */
     public long
     updateItem_state(long id, long state) {
         // Update item during 'updating channel' is not expected!!

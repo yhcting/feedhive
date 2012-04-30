@@ -53,6 +53,14 @@ UnexpectedExceptionHandler.TrackedModule {
         return "[ BGTaskManager ]";
     }
 
+    /**
+     * Register task with given taskId.
+     * Registering task whose Id is already used, is NOT ALLOWED (assert will be issued.)
+     * @param taskId
+     * @param task
+     * @return
+     *   false if there is already same-id-task (this SHOULD NOT happen).
+     */
     boolean
     register(String taskId, BGTask task) {
         logI("BGTM : register :" + taskId);
@@ -64,6 +72,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return true;
     }
 
+    /**
+     * Unbind task that id and owner match.
+     * @param owner
+     * @param taskId
+     * @return
+     *   number of tasks unbinded (0 or 1)
+     */
     int
     unbind(Thread owner, String taskId) {
         logI("BGTM : unbind :" + taskId);
@@ -75,6 +90,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return 1;
     }
 
+    /**
+     * Unbind tasks whose owner matches.
+     * @param owner
+     * @return
+     *   number of tasks unbinded.
+     */
     int
     unbind(Thread owner) {
         int        ret = 0;
@@ -88,6 +109,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return ret;
     }
 
+    /**
+     * Unbind tasks that owner and onEventKey match.
+     * @param owner
+     * @param onEventKey
+     * @return
+     *   number of tasks unbinded.
+     */
     int
     unbind(Thread owner, Object onEventKey) {
         int        ret = 0;
@@ -101,6 +129,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return ret;
     }
 
+    /**
+     * Getting BGTask.
+     * This doesn't change any state.
+     * @param taskId
+     * @return
+     */
     BGTask
     peek(String taskId) {
         //logI("BGTM : peek [" + taskId);
@@ -108,6 +142,14 @@ UnexpectedExceptionHandler.TrackedModule {
         return (null == v)? null: v.task;
     }
 
+    /**
+     * Newly bound event will be registered to the last of listener list.
+     * @param taskId
+     * @param onEventKey
+     *   this can be associated with several onEvent.
+     * @param onEvent
+     * @return
+     */
     BGTask
     bind(String taskId, Object onEventKey, BGTask.OnEvent onEvent) {
         logI("BGTM : bind : " + taskId + " : " + onEvent.toString());
@@ -119,6 +161,15 @@ UnexpectedExceptionHandler.TrackedModule {
         return v.task;
     }
 
+    /**
+     * This is same with 'bind' except for that newly bound event will be
+     *   registered to the first of listener list.
+     * This SHOULD be used CAREFULLY.
+     * @param taskId
+     * @param onEventKey
+     * @param onEvent
+     * @return
+     */
     BGTask
     bindPrior(String taskId, Object onEventKey, BGTask.OnEvent onEvent) {
         TaskMapV v = map.get(taskId);
@@ -129,6 +180,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return v.task;
     }
 
+    /**
+     * Clear event listener of given BGTask.
+     * @param taskId
+     * @return
+     */
     int
     clear(String taskId) {
         TaskMapV v = map.get(taskId);
@@ -139,6 +195,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return 1;
     }
 
+    /**
+     * Unregister task.
+     * This doens't interrupt(or cancel) running background task.
+     * @param taskId
+     * @return
+     */
     boolean
     unregister(String taskId) {
         logI("BGTM : unregister :" + taskId);
@@ -148,6 +210,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return true;
     }
 
+    /**
+     * THIS SHOULD BE CALLED ONLY BY 'RTTask'
+     * Start task
+     * @param taskId
+     * @return
+     *   true (success) / false (fail to find task)
+     */
     boolean
     start(String taskId) {
         TaskMapV v = map.get(taskId);
@@ -158,6 +227,14 @@ UnexpectedExceptionHandler.TrackedModule {
         return true;
     }
 
+    /**
+     * THIS SHOULD BE CALLED ONLY BY 'RTTask'
+     * Cancel background task.
+     * given 'arg' is passed to onCancel() of each listener.
+     * @param taskId
+     * @param arg
+     * @return
+     */
     boolean
     cancel(String taskId, Object arg) {
         TaskMapV v = map.get(taskId);
@@ -167,11 +244,19 @@ UnexpectedExceptionHandler.TrackedModule {
         return v.task.cancel(arg);
     }
 
+    /**
+     * Get all task Ids registered.
+     * @return
+     */
     String[]
     getTaskIds() {
         return map.keySet().toArray(new String[0]);
     }
 
+    /**
+     * Get all BGTasks registered.
+     * @return
+     */
     BGTask[]
     getTasks() {
         TaskMapV[] mv = map.values().toArray(new TaskMapV[0]);
@@ -181,6 +266,9 @@ UnexpectedExceptionHandler.TrackedModule {
         return ts;
     }
 
+    /**
+     * Cancel all registred tasks.
+     */
     void
     cancelAll() {
         TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);

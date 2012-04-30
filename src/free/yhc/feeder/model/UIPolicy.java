@@ -46,6 +46,13 @@ public class UIPolicy {
     private static final File   appTempDirFile = new File(appTempDir);
     private static final File   appLogDirFile  = new File(appLogDir);
 
+    /**
+     * Guessing default action type from Feed data.
+     * @param cParD
+     * @param iParD
+     * @return
+     *   Feed.Channel.FActxxxx
+     */
     static long
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
         if (Feed.Channel.ChannTypeMedia == cParD.type) {
@@ -60,7 +67,12 @@ public class UIPolicy {
             return Feed.Channel.FActTgtLink | Feed.Channel.FActOpOpen;
     }
 
-    // check and fix if possible.
+    /**
+     * Check that is this valid item?
+     * (Result of parsing has enough information required by this application?)
+     * @param item
+     * @return
+     */
     static boolean
     verifyConstraints(Feed.Item.ParD item) {
         // 'title' is mandatory!!!
@@ -75,6 +87,12 @@ public class UIPolicy {
         return true;
     }
 
+    /**
+     * Check that is this valid channel?
+     * (Result of parsing has enough information required by this application?)
+     * @param ch
+     * @return
+     */
     static boolean
     verifyConstraints(Feed.Channel.ParD ch) {
         if (!isValidValue(ch.title))
@@ -83,6 +101,10 @@ public class UIPolicy {
         return true;
     }
 
+    /**
+     * Initialize
+     * @param context
+     */
     public static void
     init(Context context)  {
         new File(appRootDir).mkdirs();
@@ -104,6 +126,11 @@ public class UIPolicy {
         return f.mkdir();
     }
 
+    /**
+     * This deletes channel directory itself.
+     * @param cid
+     * @return
+     */
     public static boolean
     removeChannelDir(long cid) {
         return Utils.removeFileRecursive(new File(appRootDir + cid), true);
@@ -123,6 +150,11 @@ public class UIPolicy {
         return ret;
     }
 
+    public static void
+    cleanTempFiles() {
+        Utils.removeFileRecursive(appTempDirFile, false);
+    }
+
     public static File[]
     getLogFiles() {
         return appLogDirFile.listFiles();
@@ -137,25 +169,45 @@ public class UIPolicy {
         return ret;
     }
 
+    /**
+     * Remove all log files.
+     */
     public static void
     cleanLogFiles() {
         Utils.removeFileRecursive(appLogDirFile, false);
     }
 
+    /**
+     * Get file which contains data for given feed item.
+     * Usually, this file is downloaded from internet.
+     * (Ex. downloaded web page / downloaded mp3 etc)
+     * @param id
+     * @return
+     */
     public static File
     getItemDataFile(long id) {
         return getItemDataFile(id, -1, null, null);
-    }
-
-    public static void
-    cleanTempFiles() {
-        Utils.removeFileRecursive(appTempDirFile, false);
     }
 
     // NOTE
     // Why this parameter is given even if we can get from DB?
     // This is only for performance reason!
     // postfix : usually, extension;
+    /**
+     * NOTE
+     * Why these parameters - title, url - are given even if we can get from DB?
+     * This is only for performance reason!
+     * @param id
+     *   item id
+     * @param cid
+     *   channel id of this item. if '< 0', than value read from DB is used.
+     * @param title
+     *   title of this item. if '== null' or 'isEmpty()', than value read from DB is used.
+     * @param url
+     *   target url of this item. link or enclosure is possible.
+     *   if '== null' or is 'isEmpty()', then value read from DB is used.
+     * @return
+     */
     public static File
     getItemDataFile(long id, long cid, String title, String url) {
         if (cid < 0)
@@ -198,6 +250,12 @@ public class UIPolicy {
         return new File(appRootDir + cid + "/" + fname);
     }
 
+    /**
+     * Get BG task thread priority from shared preference.
+     * @param context
+     * @return
+     *   Value of Java Thread priority (between Thread.MIN_PRIORITY and Thread.MAX_PRIORITY)
+     */
     public static int
     getPrefBGTaskPriority(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);

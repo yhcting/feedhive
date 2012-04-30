@@ -147,6 +147,10 @@ OnSharedPreferenceChangeListener {
               .append("\n\n");
     }
 
+    /**
+     * Store report as log file.
+     * @param report
+     */
     private void
     storeReport(String report) {
         FileOutputStream fo;
@@ -196,6 +200,11 @@ OnSharedPreferenceChangeListener {
         }
     }
 
+    /**
+     * register module that will be dumped when unexpected exception is issued.
+     * @param m
+     * @return
+     */
     public boolean
     registerModule(TrackedModule m) {
         synchronized (mods) {
@@ -214,7 +223,10 @@ OnSharedPreferenceChangeListener {
         }
     }
 
-
+    /**
+     * Send stored report - crash, improvement etc - to developer as E-mail.
+     * @param context
+     */
     public void
     sendReportMail(Context context) {
         if (!reportEnabled || !Utils.isNetworkAvailable(context))

@@ -127,18 +127,32 @@ class HtmlParser {
         tagPattern = Pattern.compile(sbuilder.toString(), Pattern.CASE_INSENSITIVE);
     }
 
+    /**
+     * Guess that give text is html string or not.
+     * @param text
+     * @return
+     */
     static boolean
     guessIsHttpText(String text) {
         // And '&nbsp;' is most popular used in text
         return tagPattern.matcher(text).find() || text.contains("&nbsp;");
     }
 
-    // Remove all TAG-LIKE text.
+    /**
+     * Removes TAG-LIKE text from string.
+     * @param text
+     * @return
+     */
     static String
     removeTags(String text) {
         return tagPattern.matcher(text).replaceAll("");
     }
 
+    /**
+     * Convert html string to normal text string.
+     * @param source
+     * @return
+     */
     static String
     fromHtml(String source) {
         return Html.fromHtml(source).toString();

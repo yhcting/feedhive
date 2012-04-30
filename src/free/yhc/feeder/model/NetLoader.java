@@ -61,6 +61,10 @@ public class NetLoader {
         void onProgress(NetLoader loader, long progress);
     }
 
+    /**
+     * Close network input stream of this loader - istream.
+     * @throws FeederException
+     */
     private void
     closeIstream() throws FeederException {
         try {
@@ -71,6 +75,11 @@ public class NetLoader {
         }
     }
 
+    /**
+     * Close output stream - ostream.
+     * (Usually, output stream is file stream)
+     * @throws FeederException
+     */
     private void
     closeOstream() throws FeederException {
         try {
@@ -81,6 +90,10 @@ public class NetLoader {
         }
     }
 
+    /**
+     * Delete temp file - tmpFile - used.
+     * @return
+     */
     private boolean
     clearTempFile() {
         boolean ret = true;
@@ -89,6 +102,11 @@ public class NetLoader {
         return ret;
     }
 
+    /**
+     * Close input/output stream (istream, ostream) and
+     *   delete temp file (tmpFile)
+     * @return
+     */
     private boolean
     cleanup() {
         try {
@@ -118,7 +136,6 @@ public class NetLoader {
      *   If another exception need to be thrown, all callers should be checked and verified!
      *
      * FeederException : Err.IONet / Err.UserCancelled / Err.Interrupted
-     *
      * @param ostream
      * @param urlStr
      * @param progressListener
@@ -277,10 +294,13 @@ public class NetLoader {
         return res;
     }
 
-    /*
+    /**
      * Update feed information.
-     * if (null != imageref)
-     * then 'imageref' is used instead of given by RSS channel infomation.
+     * @param cid
+     * @param imageref
+     *   if (null != imageref)
+     *   then 'imageref' is used instead of given by RSS channel infomation.
+     * @throws FeederException
      */
     private void
     update(long cid, String imageref)
@@ -376,12 +396,24 @@ public class NetLoader {
         logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
     }
 
+    /**
+     * Update given channel
+     * @param cid
+     * @throws FeederException
+     */
     public void
     updateLoad(long cid)
             throws FeederException {
         update(cid, null);
     }
 
+    /**
+     * Update given channel.
+     * @param cid
+     * @param imageref
+     *   URL of channel icon.
+     * @throws FeederException
+     */
     public void
     updateLoad(long cid, String imageref)
             throws FeederException {
@@ -389,6 +421,13 @@ public class NetLoader {
         update(cid, imageref);
     }
 
+    /**
+     * Download to memory(byte[]).
+     * @param url
+     * @param progressListener
+     * @return
+     * @throws FeederException
+     */
     public byte[]
     downloadToRaw(String url, OnProgress progressListener)
             throws FeederException {
@@ -405,6 +444,17 @@ public class NetLoader {
         return ret;
     }
 
+    /**
+     * Download data and make it as file.
+     * @param url
+     * @param tempFile
+     *   Where downloaded data is written during download is in progress.
+     *   This file is renamed to final target file when download is complete.
+     * @param toFile
+     *   Final target file path where downloaded data is stored at.
+     * @param progressListener
+     * @throws FeederException
+     */
     public void
     downloadToFile(String url, File tempFile, File toFile, OnProgress progressListener)
         throws FeederException {
@@ -424,6 +474,10 @@ public class NetLoader {
         }
     }
 
+    /**
+     * Cancel network loading (usually downloading.)
+     * @return
+     */
     public boolean
     cancel() {
         cancelled = true;

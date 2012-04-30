@@ -179,6 +179,13 @@ OnSharedPreferenceChangeListener {
     // ===============================
     // Privates
     // ===============================
+    /**
+     * Set number BG task that can be run concurrently.
+     * If number of BG task is larger than this value, than
+     *   only this number of tasks runs simultaneously and others are waiting.
+     * After one of running task is finished, next waiting BG task start to run.
+     * @param v
+     */
     private void
     setMaxConcurrent(int v) {
         max_concurrent = v;
@@ -201,6 +208,11 @@ OnSharedPreferenceChangeListener {
         return Long.parseLong(id.substring(i + 1));
     }
 
+    /**
+     * Check that task is running or waiting to be run.
+     * @param task
+     * @return
+     */
     private boolean
     isTaskInAction(BGTask task) {
         synchronized (taskQSync) {
@@ -265,6 +277,12 @@ OnSharedPreferenceChangeListener {
             setMaxConcurrent(value);
         }
     }
+
+    /**
+     * Listener is notified whenever a task is registered or unregistered.
+     * @param key
+     * @param listener
+     */
     public void
     registerManagerEventListener(Object key, OnRTTaskManagerEvent listener) {
         eAssert(null != key && null != listener);
@@ -285,6 +303,18 @@ OnSharedPreferenceChangeListener {
         return ret;
     }
 
+    /**
+     * Register task.
+     * All BG task used SHOULD BE registered at RTTask.
+     * If not, task cannot be handled anymore.
+     * @param id
+     *   ID of task
+     * @param act
+     *   Action type of task.
+     * @param task
+     *   task to register
+     * @return
+     */
     public boolean
     register(long id, Action act, BGTask task) {
         synchronized (gbtm) {
@@ -298,7 +328,15 @@ OnSharedPreferenceChangeListener {
     }
 
 
-    // @return : true(success), false(fail)
+    /**
+     *
+     * @param
+     *   id ID of task
+     * @param act
+     *   Action type of task.
+     * @return
+     *   true(success), false(fail)
+     */
     public boolean
     unregister(long id, Action act) {
         String taskId = Id(act, id);
@@ -325,7 +363,13 @@ OnSharedPreferenceChangeListener {
         return true;
     }
 
-
+    /**
+     * Unbind given task.
+     * @param id
+     * @param act
+     * @return
+     *   number of tasks unbinded (0 or 1)
+     */
     public int
     unbind(long id, Action act) {
         synchronized (gbtm) {
@@ -333,6 +377,12 @@ OnSharedPreferenceChangeListener {
         }
     }
 
+    /**
+     * Unbind all event listener of BGTask, whose event key matches given one.
+     * @param onEventKey
+     * @return
+     *   number of tasks unbinded.
+     */
     public int
     unbind(Object onEventKey) {
         synchronized (gbtm) {
@@ -340,6 +390,14 @@ OnSharedPreferenceChangeListener {
         }
     }
 
+    /**
+     * Bind event listener of BGTask with key value.
+     * @param id
+     * @param act
+     * @param onEventKey
+     * @param onEvent
+     * @return
+     */
     public BGTask
     bind(long id, Action act, Object onEventKey, BGTask.OnEvent onEvent) {
         synchronized (gbtm) {
@@ -347,6 +405,14 @@ OnSharedPreferenceChangeListener {
         }
     }
 
+    /**
+     *
+     * @param id
+     *   ID of task
+     * @param act
+     *   Action type of task
+     * @return
+     */
     public BGTask
     getTask(long id, Action act) {
         synchronized (gbtm) {
@@ -354,7 +420,12 @@ OnSharedPreferenceChangeListener {
         }
     }
 
-    // channel is updating???
+    /**
+     *
+     * @param id
+     * @param act
+     * @return
+     */
     public TaskState
     getState(long id, Action act) {
         // channel is updating???
@@ -383,7 +454,12 @@ OnSharedPreferenceChangeListener {
         return TaskState.Failed;
     }
 
-    // result information is consumed. So, back to idle if possible.
+    /**
+     * Result of BG task is stored internally to refer later after BG task is terminated.
+     * This function reset stored result value manually.
+     * @param id
+     * @param act
+     */
     public void
     consumeResult(long id, Action act) {
         BGTask task;
@@ -397,6 +473,12 @@ OnSharedPreferenceChangeListener {
         task.resetResult();
     }
 
+    /**
+     * Start task.
+     * @param id
+     * @param act
+     * @return
+     */
     public boolean
     start(long id, Action act) {
         String taskId = Id(act, id);
@@ -436,6 +518,14 @@ OnSharedPreferenceChangeListener {
         return true;
     }
 
+    /**
+     *
+     * @param id
+     * @param act
+     * @param arg
+     *   This value is passed onCancel() as argument.
+     * @return
+     */
     public boolean
     cancel(long id, Action act, Object arg) {
         BGTask t = null;
@@ -454,6 +544,12 @@ OnSharedPreferenceChangeListener {
         }
     }
 
+    /**
+     * Get result of BG task.
+     * @param id
+     * @param act
+     * @return
+     */
     public Err
     getErr(long id, Action act) {
         synchronized (gbtm) {
@@ -471,15 +567,20 @@ OnSharedPreferenceChangeListener {
     //===============================================
     // Complex UI Specific Requirement.
     //===============================================
-
+    /**
+     * Get item ids that are under downloading.
+     * In other words, item ids that are bindded to BGTask whose action type is 'Download'
+     * @return
+     */
     public long[]
     getItemsDownloading() {
         return itemsDownloading(-1);
     }
 
     /**
-     * Get items that are under downloading.
-     *
+     * Get items that are under downloading and belonging to given channel.
+     * In other words, item ids that are bindded to BGTask whose action type is 'Download'
+     *   and item's channel id is same with given cid.
      * @param cid
      * @return
      */

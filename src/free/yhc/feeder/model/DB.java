@@ -203,6 +203,14 @@ UnexpectedExceptionHandler.TrackedModule {
     /**************************************
      * DB operation
      **************************************/
+    /**
+     * Get SQL statement for creating table
+     * @param table
+     *   name of table
+     * @param cols
+     *   columns of table.
+     * @return
+     */
     private static String
     buildTableSQL(String table, Column[] cols) {
         String sql = "CREATE TABLE " + table + " (";
@@ -217,6 +225,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return sql;
     }
 
+    /**
+     * Convert column[] to string[] of column's name
+     * @param cols
+     * @return
+     */
     private static String[]
     getColumnNames(Column[] cols) {
         String[] strs = new String[cols.length];
@@ -335,6 +348,12 @@ UnexpectedExceptionHandler.TrackedModule {
                          null);
     }
 
+    /**
+     * Update category name
+     * @param id
+     * @param name
+     * @return
+     */
     long
     updateCategory(long id, String name) {
         eAssert(Utils.isValidValue(name));
@@ -347,6 +366,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
+     *
      * @param column
      * @param where
      * @param value
@@ -361,9 +381,9 @@ UnexpectedExceptionHandler.TrackedModule {
      *
      * @param columns
      * @param where
-     *      if (null == value) than this is ignored.
+     *   if (null == value) than this is ignored.
      * @param value
-     *      if (null == where) than this is ignored.
+     *   if (null == where) than this is ignored.
      * @return
      */
     Cursor
@@ -384,7 +404,13 @@ UnexpectedExceptionHandler.TrackedModule {
     // Channel
     //
     // ====================
-
+    /**
+     * BE CAREFUL FOR USING THIS.
+     * This will insert values without any sanity checking.
+     * This function is visible to outside only for PERFORMANCE.
+     * @param values
+     * @return
+     */
     long
     insertChannel(ContentValues values) {
         return db.insert(TABLE_CHANNEL, null, values);
@@ -413,6 +439,14 @@ UnexpectedExceptionHandler.TrackedModule {
                 null);
     }
 
+    /**
+     *
+     * @param cid
+     * @param field
+     * @param v
+     *   only String, Long and byte[] are supported.
+     * @return
+     */
     long
     updateChannel(long cid, ColumnChannel field, Object v) {
         ContentValues cvs = new ContentValues();
@@ -452,14 +486,14 @@ UnexpectedExceptionHandler.TrackedModule {
      *
      * @param columns
      * @param wheres
-     *      if (null == values) than this is ignored.
+     *   if (null == values) than this is ignored.
      * @param values
-     *      if (null == wheres) than this is ignored.
+     *   if (null == wheres) than this is ignored.
      * @param orderColumn
      * @param bAsc
-     *      if (null == orderColumn) than this is ignored.
+     *   if (null == orderColumn) than this is ignored.
      * @param limit
-     *      ( <= 0) means "All"
+     *   ( <= 0) means "All"
      * @return
      */
     Cursor
@@ -488,22 +522,40 @@ UnexpectedExceptionHandler.TrackedModule {
                         (limit > 0)? "" + limit: null);
     }
 
+    /**
+     * Select channel that has max 'column' value.
+     * @param column
+     * @return
+     */
     Cursor
     queryChannelMax(ColumnChannel column) {
         return db.rawQuery("SELECT MAX(" + column.getName() + ") FROM " + TABLE_CHANNEL +"", null);
     }
-
 
     // ====================
     //
     // Item
     //
     // ====================
+    /**
+     * BE CAREFUL FOR USING THIS.
+     * This will insert values without any sanity checking.
+     * This function is visible to outside only for PERFORMANCE.
+     * @param values
+     * @return
+     */
     long
     insertItem(ContentValues values) {
         return db.insert(TABLE_ITEM, null, values);
     }
 
+    /**
+     * BE CAREFUL FOR USING THIS.
+     * This will insert values without any sanity checking.
+     * This function is visible to outside only for PERFORMANCE.
+     * @param values
+     * @return
+     */
     long
     updateItem(long id, ContentValues values) {
         return db.update(TABLE_ITEM,
@@ -512,6 +564,14 @@ UnexpectedExceptionHandler.TrackedModule {
                          null);
     }
 
+    /**
+     *
+     * @param id
+     * @param field
+     * @param v
+     *   only String, Long and byte[] type are allowed
+     * @return
+     */
     long
     updateItem(long id, ColumnItem field, Object v) {
         ContentValues cvs = new ContentValues();
@@ -543,11 +603,11 @@ UnexpectedExceptionHandler.TrackedModule {
      *
      * @param columns
      * @param wheres
-     *      if (null == values) than this is ignored.
+     *   if (null == values) than this is ignored.
      * @param values
-     *      if (null == wheres) than this is ignored.
+     *   if (null == wheres) than this is ignored.
      * @param limit
-     *      ( <= 0) means "All"
+     *   ( <= 0) means "All"
      * @return
      */
     Cursor

@@ -121,6 +121,10 @@ UnexpectedExceptionHandler.TrackedModule {
         LinkedList<String>  nsl = new LinkedList<String>(); // name space list.
     }
 
+    /**
+     * Print(logI) next node name.
+     * @param n
+     */
     private void
     printNexts(Node n) {
         String msg = "";
@@ -245,8 +249,12 @@ UnexpectedExceptionHandler.TrackedModule {
             this.priority = priority;
         }
 
-        /*
-         * return: true(value is set) false(value is not set)
+        /**
+         * Set value of this node if priority is higher than node value.
+         * @param nv
+         * @param value
+         * @return
+         *   true(value is set) false(value is not set)
          */
         protected boolean
         setValue(NodeValue nv, String value) {
@@ -257,8 +265,13 @@ UnexpectedExceptionHandler.TrackedModule {
             return false;
         }
 
-        /*
-         * return: true(handled) false(passed)
+        /**
+         *
+         * @param cv
+         * @param n
+         * @return
+         *   true(handled) false(passed)
+         * @throws FeederException
          */
         boolean
         parseChannel(ChannelValues cv, Node n)

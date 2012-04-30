@@ -158,6 +158,10 @@ UnexpectedExceptionHandler.TrackedModule {
             gestureDetector = new GestureDetector(new SwipeGestureDetector());
         }
 
+        /**
+         * Add List layout R.layout.list to flipper.
+         * @return newly added LinearyLayout inflated with R.layout.list
+         */
         LinearLayout
         addListLayout() {
             LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(context, R.layout.list);
@@ -479,6 +483,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return getCategoryId(ab.getSelectedTab());
     }
 
+    /**
+     * get Tab that has give cid.
+     * @param cid
+     * @return Tab
+     */
     private Tab
     getMyTab(long cid) {
         long catid = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
@@ -511,12 +520,23 @@ UnexpectedExceptionHandler.TrackedModule {
         return true;
     }
 
+    /**
+     * Notify that dataset for adapter is changed.
+     * All list item will try to rebind their own view.
+     * @param lv
+     */
     private void
     dataSetChanged(ListView lv) {
         ((ChannelListAdapter)lv.getAdapter()).clearUnchanged();
         ((ChannelListAdapter)lv.getAdapter()).notifyDataSetChanged();
     }
 
+    /**
+     * Notify that dataset of given 'cid' in adapter is changed.
+     * List item of only given 'cid' - one list item - will try to rebind it's view.
+     * @param lv ListView
+     * @param cid
+     */
     private void
     dataSetChanged(ListView lv, long cid) {
         ((ChannelListAdapter)lv.getAdapter()).clearUnchanged();
@@ -585,6 +605,10 @@ UnexpectedExceptionHandler.TrackedModule {
         return tab;
     }
 
+    /**
+     * All channels belonging to this category will be moved to default category.
+     * @param categoryid
+     */
     private void
     deleteCategory(long categoryid) {
         DBPolicy.S().deleteCategory(categoryid);
@@ -607,6 +631,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return getTabTextView(tab).getText().toString();
     }
 
+    /**
+     * Add channel to current selected category.
+     * List will be scrolled to newly added channel.
+     * @param url
+     */
     private void
     addChannel(String url) {
         eAssert(url != null);
@@ -636,6 +665,12 @@ UnexpectedExceptionHandler.TrackedModule {
         });
     }
 
+    /**
+     * Set channel's state to 'unused'.
+     * This doesn't delete items belonging to this channel.
+     * @param tab
+     * @param cid
+     */
     private void
     deleteChannel(Tab tab, long cid) {
         eAssert(null != tab);
