@@ -174,6 +174,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 public void
                 onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+                    intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeChannel);
+                    intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
                     intent.putExtra("cid", id);
                     startActivity(intent);
                 }
@@ -753,6 +755,15 @@ UnexpectedExceptionHandler.TrackedModule {
         dialog.show();
     }
 
+    private void
+    onOpt_itemsCategory() {
+        Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeCategory);
+        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+        intent.putExtra("categoryid", getCurrentCategoryId());
+        startActivity(intent);
+    }
+
     private View
     createTabView(String text) {
         LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(this, R.layout.channel_list_tab);
@@ -1109,6 +1120,13 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onClick(View v) {
                 onOpt_addChannel();
+            }
+        });
+
+        findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_itemsCategory();
             }
         });
 

@@ -195,11 +195,19 @@ public class Utils {
     }
 
     public static long[]
-    arrayLongTolong(Long[] L) {
+    convertArrayLongTolong(Long[] L) {
         long[] l = new long[L.length];
         for (int i = 0; i < L.length; i++)
             l[i] = L[i];
         return l;
+    }
+
+    public static Long[]
+    convertArraylongToLong(long[] l) {
+        Long[] L = new Long[l.length];
+        for (int i = 0; i < l.length; i++)
+            L[i] = l[i];
+        return L;
     }
 
     /**

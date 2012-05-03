@@ -24,7 +24,6 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
-import java.lang.reflect.Method;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -66,40 +65,193 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    private long                cid     = -1; // channel id
+    // Keys for extra value of intent : IKey (Intent Key)
+    public static final String IKeyMode    = "mode";  // mode
+    public static final String IKeyFilter  = "filter";// filter
+
+    // Option flags
+
+    // bit[0:2] mode : scope of items to list
+    // others are reserved (ex. ALL or ALL_LINK or ALL_ENCLOSURE)
+    // Base query outline to create cursor, depends on this Mode value.
+    public static final int ModeChannel       = 0; // items of channel
+    public static final int ModeCategory      = 1; // items of category
+
+    // bit[3:7] filter : select items
+    // others are reserved (ex. filtering items with time (specific period of time) etc)
+    // Filtering from cursor depends on this value.
+    public static final int FilterNone        = 0; // no filter
+    public static final int FilterNew         = 1; // new items of each channel.
+
+    private OpMode              opMode  = null;
     private Handler             handler = new Handler();
-    private long                action  = Feed.Channel.FActDefault; // action type of this channel
     private final DBPolicy      db      = DBPolicy.S();
-    private ListView            list;
+    private ListView            list    = null;
 
-    private class ActionInfo {
-        private long    act;
-        private Method  method;
+    private interface OpMode {
+        void    onCreate();
+        /**
+         * Mode specific onCreate.
+         */
+        void    onResume();
+        Cursor  query();
+    }
 
-        ActionInfo(long act, String methodName) {
-            this.act = act;
-            try {
-                method = ItemListActivity.this.getClass()
-                            .getMethod(methodName, android.view.View.class, long.class, int.class);
-            } catch (Exception e) {
-                eAssert(false);
-            }
+    private class OpModeChannel implements OpMode {
+        private long cid; // channel id
+
+        OpModeChannel(Intent i) {
+            cid = i.getLongExtra("cid", -1);
+            eAssert(-1 != cid);
+            // Update "OLDLAST_ITEMID" when user opens item views.
+            DBPolicy.S().updateChannel_lastItemId(cid);
         }
 
-        long getAction() {
-            return act;
+        long getChannelId() {
+            return cid;
         }
 
-        void invokeAction(View view, long id, int position) {
-            try {
-                method.invoke(ItemListActivity.this, view, id, position);
-            } catch (Exception e) {
-                eAssert(false);
-            }
+        @Override
+        public void onCreate() {
+            setTitle(db.getChannelInfoString(cid, DB.ColumnChannel.TITLE));
+
+            // TODO
+            //   How to use custom view + default option menu ???
+            //
+            // Set custom action bar
+            ActionBar bar = getActionBar();
+            LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
+            bar.setCustomView(abView, new ActionBar.LayoutParams(
+                    LayoutParams.WRAP_CONTENT,
+                    LayoutParams.WRAP_CONTENT,
+                    Gravity.RIGHT));
+
+            int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
+            bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
+            bar.setDisplayShowHomeEnabled(false);
+        }
+
+        @Override
+        public void onResume() {
+            // See comments in 'ChannelListActivity.onPause()'
+            // Bind update task if needed
+            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+            if (RTTask.TaskState.Idle != state)
+                RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
+
+            // Bind downloading tasks
+            long[] ids = RTTask.S().getItemsDownloading(cid);
+            for (long id : ids)
+                RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+
+            setUpdateButton();
+        }
+
+        @Override
+        public Cursor query() {
+            // 'State' of item may be changed often dynamically (ex. when open item)
+            // So, to synchronized cursor information with item state, we need to refresh cursor
+            //   whenever item state is changed.
+            // But it's big overhead.
+            // So, in case STATE, it didn't included in list cursor, but read from DB if needed.
+            DB.ColumnItem[] columns = new DB.ColumnItem[] {
+                        DB.ColumnItem.ID, // Mandatory.
+                        DB.ColumnItem.TITLE,
+                        DB.ColumnItem.DESCRIPTION,
+                        DB.ColumnItem.ENCLOSURE_LENGTH,
+                        DB.ColumnItem.ENCLOSURE_URL,
+                        DB.ColumnItem.ENCLOSURE_TYPE,
+                        DB.ColumnItem.PUBDATE,
+                        DB.ColumnItem.LINK};
+            return db.queryItem(cid, columns);
         }
     }
 
+    private class OpModeCategory implements OpMode {
+        private long categoryid; // category id
+
+        OpModeCategory(Intent intent) {
+            categoryid = intent.getLongExtra("categoryid", -1);
+            eAssert(-1 != categoryid);
+            long[] cids = DBPolicy.S().getChannelIds(categoryid);
+            Long[] whereValues = Utils.convertArraylongToLong(cids);
+            Long[] targetValues = new Long[whereValues.length];
+            for (int i = 0; i < whereValues.length; i++)
+                targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
+            DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
+                                          DB.ColumnChannel.ID, whereValues);
+        }
+
+        long getCategoryId() {
+            return categoryid;
+        }
+
+        @Override
+        public void onCreate() {
+            setTitle(getResources().getString(R.string.category) + ":" + db.getCategoryName(categoryid));
+            getActionBar().setDisplayShowHomeEnabled(false);
+        }
+
+        @Override
+        public void onResume() {
+            long[] cids = DBPolicy.S().getChannelIds(categoryid);
+
+            // Bind update task if needed
+            for (long cid : cids) {
+                RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+                if (RTTask.TaskState.Idle != state)
+                    RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
+            }
+
+            long[] ids = RTTask.S().getItemsDownloading(cids);
+            for (long id : ids)
+                RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+        }
+
+        @Override
+        public Cursor query() {
+            DB.ColumnItem[] columns = new DB.ColumnItem[] {
+                    DB.ColumnItem.ID, // Mandatory.
+                    DB.ColumnItem.CHANNELID,
+                    DB.ColumnItem.TITLE,
+                    DB.ColumnItem.DESCRIPTION,
+                    DB.ColumnItem.ENCLOSURE_LENGTH,
+                    DB.ColumnItem.ENCLOSURE_URL,
+                    DB.ColumnItem.ENCLOSURE_TYPE,
+                    DB.ColumnItem.PUBDATE,
+                    DB.ColumnItem.LINK};
+            long[] cids = DBPolicy.S().getChannelIds(categoryid);
+            return db.queryItem(cids, columns);
+        }
+
+    }
+
+    /*
+    private class PopulateListAsyncTask extends AsyncTask<Void, Void, Err> {
+        @Override
+        protected void onPreExecute() {
+            setProgressBarIndeterminateVisibility(true);
+        }
+
+        @Override
+        protected Err
+        doInBackground(Void... arg) {
+            return Err.NoErr;
+        }
+
+        @Override
+        protected void onPostExecute(Err result) {
+            setProgressBarIndeterminateVisibility(false);
+        }
+    }
+     */
+
     public class UpdateBGTaskOnEvent implements BGTask.OnEvent<Long, Object> {
+        private long chid = -1;
+        UpdateBGTaskOnEvent(long chid) {
+            this.chid = chid;
+        }
+
         @Override
         public void
         onProgress(BGTask task, long progress) {
@@ -127,7 +279,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // User already know that there is new feed because
                 //   user starts to update in feed screen!.
                 // So, we can assume that user knows latest updates here.
-                DBPolicy.S().updateChannel_lastItemId(cid);
+                DBPolicy.S().updateChannel_lastItemId(chid);
                 refreshList();
             }
         }
@@ -171,60 +323,24 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onBGTaskRegister(long id, BGTask task, RTTask.Action act) {
             if (RTTask.Action.Update == act)
-                RTTask.S().bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent());
+                RTTask.S().bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent(id));
             else if (RTTask.Action.Download == act)
                 RTTask.S().bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent(id));
         }
 
         @Override
-        public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
-    }
-
-    // Putting these information inside 'Feed.ActionType' directly, is not good
-    // idea in terms of code structure.
-    // We would better to decouple 'Model' from 'View/Control' as much as
-    // possible.
-    // But, putting icon id to 'Feed.ItemState' makes another dependency between
-    // View/Control/Model.
-    // So, instead of putting this data to 'Feed.ActionType', below function is
-    // used.
-    private ActionInfo
-    getActionInfo(long action) {
-        if (Feed.Channel.isActTgtLink(action))
-            return new ActionInfo(action, "onActionLink");
-        else if (Feed.Channel.isActTgtEnclosure(action))
-            return new ActionInfo(action, "onActionDnEnclosure");
-        else
-            eAssert(false);
-        return null;
+        public void onBGTaskUnregister(long id, BGTask task, RTTask.Action act) { }
     }
 
     private ItemListAdapter
     getListAdapter() {
+        eAssert(null != list);
         return (ItemListAdapter)list.getAdapter();
-    }
-
-    private Cursor
-    adapterCursorQuery(long cid) {
-        // 'State' of item may be changed often dynamically (ex. when open item)
-        // So, to synchronized cursor information with item state, we need to refresh cursor
-        //   whenever item state is changed.
-        // But it's big overhead.
-        // So, in case STATE, it didn't included in list cursor, but read from DB if needed.
-        DB.ColumnItem[] columns = new DB.ColumnItem[] {
-                    DB.ColumnItem.ID, // Mandatory.
-                    DB.ColumnItem.TITLE,
-                    DB.ColumnItem.DESCRIPTION,
-                    DB.ColumnItem.ENCLOSURE_LENGTH,
-                    DB.ColumnItem.ENCLOSURE_URL,
-                    DB.ColumnItem.ENCLOSURE_TYPE,
-                    DB.ColumnItem.PUBDATE,
-                    DB.ColumnItem.LINK};
-        return db.queryItem(cid, columns);
     }
 
     private String
     getCursorInfoString(DB.ColumnItem column, int position) {
+        eAssert(null != list);
         Cursor c = getListAdapter().getCursor();
         if (!c.moveToPosition(position)) {
             eAssert(false);
@@ -235,12 +351,18 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     dataSetChanged() {
+        if (null == list)
+            return;
+
         getListAdapter().clearUnchanged();
         getListAdapter().notifyDataSetChanged();
     }
 
     private void
     dataSetChanged(long id) {
+        if (null == list)
+            return;
+
         ItemListAdapter la = getListAdapter();
         la.clearUnchanged();
         for (int i = list.getFirstVisiblePosition();
@@ -255,17 +377,23 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     refreshList(long id) {
-        Cursor newCursor = adapterCursorQuery(cid);
+        if (null == list)
+            return;
+
+        Cursor newCursor = opMode.query();
         getListAdapter().changeCursor(newCursor);
         dataSetChanged(id);
     }
 
     private void
     refreshList() {
+        if (null == list)
+            return;
+
         // [ NOTE ]
         // Usually, number of channels are not big.
         // So, we don't need to think about async. loading.
-        Cursor newCursor = adapterCursorQuery(cid);
+        Cursor newCursor = opMode.query();
         getListAdapter().changeCursor(newCursor);
         dataSetChanged();
     }
@@ -286,7 +414,9 @@ UnexpectedExceptionHandler.TrackedModule {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                RTTask.S().cancel(cid, RTTask.Action.Update, null);
+                // Update is supported only at channel item list.
+                eAssert(opMode instanceof OpModeChannel);
+                RTTask.S().cancel(((OpModeChannel)opMode).getChannelId(), RTTask.Action.Update, null);
                 requestSetUpdateButton();
             }
         });
@@ -307,8 +437,10 @@ UnexpectedExceptionHandler.TrackedModule {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Update is supported only at channel item list.
+                eAssert(opMode instanceof OpModeChannel);
                 LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
-                RTTask.S().consumeResult(cid, RTTask.Action.Update);
+                RTTask.S().consumeResult(((OpModeChannel)opMode).getChannelId(), RTTask.Action.Update);
                 requestSetUpdateButton();
             }
         });
@@ -328,15 +460,18 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     updateItems() {
+        // Update is supported only at channel item list.
+        eAssert(opMode instanceof OpModeChannel);
+        long cid = ((OpModeChannel)opMode).getChannelId();
         BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
         RTTask.S().register(cid, RTTask.Action.Update, updateTask);
-        RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent());
+        RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
         RTTask.S().start(cid, RTTask.Action.Update);
     }
 
     // 'public' to use java reflection
     public void
-    onActionDnEnclosure(View view, long id, int position) {
+    onActionDnEnclosure(long action, View view, long id, int position) {
         String enclosureUrl = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
         // 'enclosure' is used.
         File f = UIPolicy.getItemDataFile(id);
@@ -396,7 +531,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // 'public' to use java reflection
     public void
-    onActionLink(View view, long id, final int position) {
+    onActionLink(long action, View view, long id, final int position) {
         RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
         if (RTTask.TaskState.Failed == state) {
             LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.Download).getMsgId());
@@ -426,7 +561,22 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    onAction(long action, View view, long id, final int position) {
+        // NOTE
+        // This is very simple policy!
+        if (Feed.Channel.isActTgtLink(action))
+            onActionLink(action, view, id, position);
+        else if (Feed.Channel.isActTgtEnclosure(action))
+            onActionDnEnclosure(action, view, id, position);
+    }
+
+    private void
     setUpdateButton() {
+        // Update is supported only at channel item list.
+        if (opMode instanceof OpModeCategory)
+            return;
+
+        long cid = ((OpModeChannel)opMode).getChannelId();
         ActionBar bar = getActionBar();
         ImageView iv = (ImageView)bar.getCustomView().findViewById(R.id.update_button);
         Animation anim = iv.getAnimation();
@@ -560,45 +710,37 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         logI("==> ItemListActivity : onCreate");
 
-        cid = getIntent().getLongExtra("cid", 0);
-        logI("Item to read : " + cid + "\n");
-
-        final String title = db.getChannelInfoString(cid, DB.ColumnChannel.TITLE);
-        action = db.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-
+        int mode = getIntent().getIntExtra(IKeyMode, -1);
+        eAssert(-1 != mode);
+        switch (mode) {
+        case ModeChannel:
+            opMode = new OpModeChannel(getIntent());
+            break;
+        case ModeCategory:
+            opMode = new OpModeCategory(getIntent());
+            break;
+        default:
+            eAssert(false);
+        }
         setContentView(R.layout.item_list);
-        setTitle(title);
-
-        // TODO
-        //   How to use custom view + default option menu ???
-        //
-        // Set custom action bar
-        ActionBar bar = getActionBar();
-        LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
-        bar.setCustomView(abView, new ActionBar.LayoutParams(
-                LayoutParams.WRAP_CONTENT,
-                LayoutParams.WRAP_CONTENT,
-                Gravity.RIGHT));
-
-        int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
-        bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
-        bar.setDisplayShowHomeEnabled(false);
-
+        opMode.onCreate();
         list = ((ListView)findViewById(R.id.list));
         eAssert(null != list);
-        list.setAdapter(new ItemListAdapter(this, R.layout.item_row, adapterCursorQuery(cid),
-                                            getActionInfo(action).getAction()));
+        list.setAdapter(new ItemListAdapter(ItemListActivity.this, R.layout.item_row, opMode.query()));
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void
             onItemClick (AdapterView<?> parent, View view, int position, long id) {
-                getActionInfo(action).invokeAction(view, id, position);
+                long cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
+                long act = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+                onAction(act, view, id, position);
             }
         });
         registerForContextMenu(list);
-
-        // Update "OLDLAST_ITEMID" when user opens item views.
-        DBPolicy.S().updateChannel_lastItemId(cid);
+        /*
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+        new PopulateListAsyncTask().execute();
+        */
     }
 
     @Override
@@ -613,24 +755,12 @@ UnexpectedExceptionHandler.TrackedModule {
     onResume() {
         logI("==> ItemListActivity : onResume");
         super.onResume();
-
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
-
-        // See comments in 'ChannelListActivity.onPause()'
-        // Bind update task if needed
-        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
-        if (RTTask.TaskState.Idle != state)
-            RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent());
-
-        // Bind downloading tasks
-        long[] ids = RTTask.S().getItemsDownloading(cid);
-        for (long id : ids)
-            RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
-
-        setUpdateButton();
-        dataSetChanged();
+        opMode.onResume();
+        if (null != list)
+            dataSetChanged();
     }
 
     @Override
@@ -655,7 +785,8 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onDestroy() {
         logI("==> ItemListActivity : onDestroy");
-        getListAdapter().getCursor().close();
+        if (null != list)
+            getListAdapter().getCursor().close();
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }

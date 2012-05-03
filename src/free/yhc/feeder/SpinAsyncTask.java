@@ -41,6 +41,7 @@ DialogInterface.OnClickListener
     private int            msgid        = -1;
     private OnEvent        onEvent      = null;
     private boolean        userCancelled= false;
+    private boolean        cancelable   = true;
 
     interface OnEvent {
         Err  onDoWork(SpinAsyncTask task, Object... objs);
@@ -52,6 +53,14 @@ DialogInterface.OnClickListener
         this.context = context;
         this.onEvent = onEvent;
         this.msgid   = msgid;
+    }
+
+    SpinAsyncTask(Context context, OnEvent onEvent, int msgid, boolean cancelable) {
+        super();
+        this.context = context;
+        this.onEvent = onEvent;
+        this.msgid   = msgid;
+        this.cancelable = cancelable;
     }
 
     public Err
@@ -79,6 +88,8 @@ DialogInterface.OnClickListener
 
     private boolean
     cancelWork() {
+        if (!cancelable)
+            return false;
         // See comments in BGTaskUpdateChannel.cancel()
         userCancelled = true;
         cancel(true);
@@ -88,12 +99,16 @@ DialogInterface.OnClickListener
     @Override
     public void
     onCancel(DialogInterface dialogI) {
+        if (!cancelable)
+            return;
         cancelWork();
     }
 
     @Override
     public void
     onClick(DialogInterface dialogI, int which) {
+        if (!cancelable)
+            return;
         dialog.setMessage(context.getResources().getText(R.string.wait_cancel));
         dialog.cancel();
     }
@@ -124,9 +139,13 @@ DialogInterface.OnClickListener
         dialog.setMessage(context.getResources().getText(msgid));
         dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         dialog.setCanceledOnTouchOutside(false);
-        //dialog.setCancelable(false);
-        dialog.setButton(context.getResources().getText(R.string.cancel), this);
-        dialog.setOnCancelListener(this);
+
+        if (cancelable) {
+            dialog.setButton(context.getResources().getText(R.string.cancel), this);
+            dialog.setOnCancelListener(this);
+        } else
+            dialog.setCancelable(false);
+
         dialog.setOnDismissListener(this);
         dialog.show();
     }

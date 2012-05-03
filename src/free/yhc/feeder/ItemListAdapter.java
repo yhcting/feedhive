@@ -46,7 +46,6 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 public class ItemListAdapter extends ResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
-    private long      act = Feed.Channel.FActDefault;
     private DBPolicy  dbp = DBPolicy.S();
     // To speed up refreshing list and dataSetChanged in case of only few-list-item are changed.
     // (usually, only one item is changed.)
@@ -140,11 +139,9 @@ UnexpectedExceptionHandler.TrackedModule {
         return "[ ItemListAdapter ]";
     }
 
-    public ItemListAdapter(Context context, int layout, Cursor c,
-                           long act) {
+    public ItemListAdapter(Context context, int layout, Cursor c) {
         super(context, layout, c);
         UnexpectedExceptionHandler.S().registerModule(this);
-        this.act = act;
         dummyTextView = new TextView(context);
     }
 
@@ -167,12 +164,19 @@ UnexpectedExceptionHandler.TrackedModule {
         //   Do performance check on low-end-device.
         final long state = dbp.getItemInfoLong(id, DB.ColumnItem.STATE);
 
+        final TextView channelv = (TextView)view.findViewById(R.id.channel);
         final TextView titlev = (TextView)view.findViewById(R.id.title);
         final TextView descv  = (TextView)view.findViewById(R.id.description);
         final ProgressTextView progressv = (ProgressTextView)view.findViewById(R.id.progress);
         final TextView datev   = (TextView)view.findViewById(R.id.date);
         final TextView lengthv = (TextView)view.findViewById(R.id.length);
         final ImageView imgv   = (ImageView)view.findViewById(R.id.image);
+
+        int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
+        if (cidx < 0)
+            channelv.setVisibility(View.GONE);
+        else
+            channelv.setText(DBPolicy.S().getChannelInfoString(c.getLong(cidx), DB.ColumnChannel.TITLE));
 
         String title = c.getString(c.getColumnIndex(DB.ColumnItem.TITLE.getName()));
 

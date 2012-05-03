@@ -76,7 +76,7 @@ UnexpectedExceptionHandler.TrackedModule {
             i++;
         }
 
-        long[] sods = Utils.arrayLongTolong(sodhs.toArray(new Long[0]));
+        long[] sods = Utils.convertArrayLongTolong(sodhs.toArray(new Long[0]));
         Arrays.sort(sods);
         if (!Utils.nrsToNString(sods).equals(oldSchedUpdate)) {
             DBPolicy.S().updateChannel_schedUpdate(cid, sods);

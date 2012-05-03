@@ -321,6 +321,25 @@ UnexpectedExceptionHandler.TrackedModule {
     /**************************************
      * DB operation
      **************************************/
+    // ====================
+    //
+    // Common
+    //
+    // ====================
+    void
+    beginTransaction() {
+        db.beginTransaction();
+    }
+
+    void
+    setTransactionSuccessful() {
+        db.setTransactionSuccessful();
+    }
+
+    void
+    endTransaction() {
+        db.endTransaction();
+    }
 
     // ====================
     //
@@ -462,6 +481,52 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
+     * Update set of channel rows.
+     * SQL statement will be created like below
+     * [ SQL ]
+     * UPDATE TABLE_CHANNEL
+     *   SET 'target' = CASE 'where'
+     *     WHEN 'whereValues[0]' THEN 'targetValues[0]'
+     *     WHEN 'whereValues[1]' THEN 'targetValues[1]'
+     *     ...
+     *   END
+     * WHERE id IN (whereValues[0], whereValues[1], ...)
+     * @param target
+     *   Column to be changed.
+     * @param targetValues
+     *   Target value array
+     * @param where
+     *   Column to compare
+     * @param whereValues
+     *   Values to compare with value of 'where' field.
+     */
+    void
+    updateChannelSet(ColumnChannel target, Object[] targetValues,
+                     ColumnChannel where,  Object[] whereValues) {
+        eAssert(targetValues.length == whereValues.length);
+        if (targetValues.length <= 0)
+            return;
+
+        StringBuilder sbldr = new StringBuilder();
+        sbldr.append("UPDATE " + TABLE_CHANNEL + " ")
+             .append(" SET " + target.getName() + " = CASE " + where.getName());
+        for (int i = 0; i < targetValues.length; i++) {
+            sbldr.append(" WHEN " + DatabaseUtils.sqlEscapeString(whereValues[i].toString()))
+                 .append(" THEN " + DatabaseUtils.sqlEscapeString(targetValues[i].toString()));
+        }
+        sbldr.append(" END WHERE " + where.getName() + " IN (");
+        for (int i = 0; i < whereValues.length;) {
+            sbldr.append(DatabaseUtils.sqlEscapeString(whereValues[i].toString()));
+            if (++i < whereValues.length)
+                sbldr.append(", ");
+        }
+        sbldr.append(");");
+        db.execSQL(sbldr.toString());
+    }
+
+
+
+    /**
      * @param columns
      * @param orderColumn
      * @param where
@@ -600,7 +665,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     *
+     * wheres and values are joined with "AND".
+     * That is, wheres[0] == values[0] AND wheres[1] == values[1] ...
      * @param columns
      * @param wheres
      *   if (null == values) than this is ignored.
@@ -630,4 +696,69 @@ UnexpectedExceptionHandler.TrackedModule {
                         itemQueryDefaultOrder,
                         (limit > 0)? "" + limit: null);
     }
+
+    /**
+     * wheres and values are joined with "OR".
+     * That is, wheres[0] == values[0] OR wheres[1] == values[1] ...
+     *
+     *
+     * @param columns
+     * @param wheres
+     *   if (null == values) than this is ignored.
+     * @param values
+     *   if (null == wheres) than this is ignored.
+     * @param limit
+     *   ( <= 0) means "All"
+     * @return
+     */
+   Cursor
+   queryItemOR(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
+       String whereStr = null;
+       if (null != wheres && null != values) {
+           eAssert(wheres.length == values.length);
+           whereStr = "";
+           for (int i = 0; i < wheres.length;) {
+               whereStr += wheres[i].getName() + " = " + DatabaseUtils.sqlEscapeString(values[i].toString());
+               if (++i < wheres.length)
+                   whereStr += " OR ";
+           }
+       }
+       // recently inserted item is located at top of rows.
+       return db.query(TABLE_ITEM,
+                       getColumnNames(columns),
+                       whereStr,
+                       null, null, null,
+                       itemQueryDefaultOrder,
+                       (limit > 0)? "" + limit: null);
+   }
+
+   // ========================================================================
+   //
+   // NOT GENERAL functions.
+   // (Used only for special reasons - usually due to performance reason)
+   //
+   // ========================================================================
+   /**
+    * Get ids of items belongs to given channel by descending order.
+    * (That is, latest inserted one on first).
+    * Why? Due to performance reason.
+    * Default order of result by quering items to DB, is descending order by id.
+    *
+    * Take your attention that this is NOT default order of item query
+    * (default order is descending order of publish time.)
+    *
+    * NOTE
+    * Why this function is NOT general form?
+    * That is only for performance (Nothing else!).
+    * @param cid
+    * @param limit
+    * @return
+    */
+   Cursor
+   queryItemIds(long cid, long limit) {
+       return db.query(TABLE_ITEM, new String[] {ColumnItem.ID.getName()},
+                       ColumnItem.CHANNELID.getName() + " = " + cid,
+                       null, null, null, null,
+                       (limit > 0)? "" + limit: null);
+   }
 }

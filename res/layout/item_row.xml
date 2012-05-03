@@ -14,6 +14,15 @@
         android:orientation="vertical"
         >
         <TextView
+            android:id="@+id/channel"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dip"
+            android:textSize="@dimen/misc_text_size"
+            android:singleLine="true"
+            android:ellipsize="end"
+            />
+        <TextView
             android:id="@+id/title"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
