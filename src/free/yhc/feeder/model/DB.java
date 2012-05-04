@@ -50,6 +50,11 @@ UnexpectedExceptionHandler.TrackedModule {
      *      <prefix string> + channel-id
      *
      **************************************/
+    // NOTE
+    // Oops... mistake on spelling - 'feeder.db' is right.
+    // But, software is already released and this is not big problem...
+    // So, let's ignore it until real DB structure is needed to be changed.
+    // => this can be resolved by 'DB Upgrade operation'.
     private static final String NAME    = "feader.db";
     private static final int    VERSION = 1;
 
@@ -742,10 +747,12 @@ UnexpectedExceptionHandler.TrackedModule {
     * Get ids of items belongs to given channel by descending order.
     * (That is, latest inserted one on first).
     * Why? Due to performance reason.
-    * Default order of result by quering items to DB, is descending order by id.
+    * Getting descending-ordered-id by quering items to DB, is quite fast.
+    * (Because id is auto-incrementing primary key.)
     *
-    * Take your attention that this is NOT default order of item query
-    * (default order is descending order of publish time.)
+    * Take your attention that this is NOT usual default order of item query at this application.
+    * (default order is descending order of publish time.
+    *  Without any description, 'descending order of publish time' is default for all other DB query functions.)
     *
     * NOTE
     * Why this function is NOT general form?
@@ -758,7 +765,8 @@ UnexpectedExceptionHandler.TrackedModule {
    queryItemIds(long cid, long limit) {
        return db.query(TABLE_ITEM, new String[] {ColumnItem.ID.getName()},
                        ColumnItem.CHANNELID.getName() + " = " + cid,
-                       null, null, null, null,
+                       null, null, null,
+                       ColumnItem.ID.getName() + " DESC",
                        (limit > 0)? "" + limit: null);
    }
 }

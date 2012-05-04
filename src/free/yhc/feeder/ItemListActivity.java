@@ -35,6 +35,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.ContextMenu;
@@ -45,6 +46,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
+import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -87,9 +89,17 @@ UnexpectedExceptionHandler.TrackedModule {
     private Handler             handler = new Handler();
     private final DBPolicy      db      = DBPolicy.S();
     private ListView            list    = null;
+    // Current running asyncTask
+    // Usually, this is used to cancel running task.
+    // This is directly controlled by this activity.
+    // And there is one-to-one mapping between activity and this asyncTask
+    // That's the difference from BGTask managed by BGTaskManager and RTTask.
+    private AsyncTask           runningAsyncTask = null;
 
     private interface OpMode {
-        void    onCreate();
+        void    onCreateUIPreBG(); // onCreate run in Main UI context.
+        void    onCreateBG(); // onCreate run in background.
+        void    onCreateUIPostBG();
         /**
          * Mode specific onCreate.
          */
@@ -103,8 +113,6 @@ UnexpectedExceptionHandler.TrackedModule {
         OpModeChannel(Intent i) {
             cid = i.getLongExtra("cid", -1);
             eAssert(-1 != cid);
-            // Update "OLDLAST_ITEMID" when user opens item views.
-            DBPolicy.S().updateChannel_lastItemId(cid);
         }
 
         long getChannelId() {
@@ -112,13 +120,18 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreate() {
+        public void onCreateUIPreBG() {
             setTitle(db.getChannelInfoString(cid, DB.ColumnChannel.TITLE));
-
             // TODO
             //   How to use custom view + default option menu ???
             //
             // Set custom action bar
+            ActionBar bar = getActionBar();
+            bar.setDisplayShowHomeEnabled(false);
+        }
+
+        @Override
+        public void onCreateUIPostBG() {
             ActionBar bar = getActionBar();
             LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
             bar.setCustomView(abView, new ActionBar.LayoutParams(
@@ -128,7 +141,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
             int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
             bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
-            bar.setDisplayShowHomeEnabled(false);
+        }
+
+        @Override
+        public void onCreateBG() {
+            // Update "OLDLAST_ITEMID" when user opens item views.
+            DBPolicy.S().updateChannel_lastItemId(cid);
         }
 
         @Override
@@ -173,13 +191,6 @@ UnexpectedExceptionHandler.TrackedModule {
         OpModeCategory(Intent intent) {
             categoryid = intent.getLongExtra("categoryid", -1);
             eAssert(-1 != categoryid);
-            long[] cids = DBPolicy.S().getChannelIds(categoryid);
-            Long[] whereValues = Utils.convertArraylongToLong(cids);
-            Long[] targetValues = new Long[whereValues.length];
-            for (int i = 0; i < whereValues.length; i++)
-                targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
-            DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
-                                          DB.ColumnChannel.ID, whereValues);
         }
 
         long getCategoryId() {
@@ -187,9 +198,24 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreate() {
+        public void onCreateUIPreBG() {
             setTitle(getResources().getString(R.string.category) + ":" + db.getCategoryName(categoryid));
             getActionBar().setDisplayShowHomeEnabled(false);
+        }
+
+        @Override
+        public void onCreateUIPostBG() {
+        }
+
+        @Override
+        public void onCreateBG() {
+            long[] cids = DBPolicy.S().getChannelIds(categoryid);
+            Long[] whereValues = Utils.convertArraylongToLong(cids);
+            Long[] targetValues = new Long[whereValues.length];
+            for (int i = 0; i < whereValues.length; i++)
+                targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
+            DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
+                                          DB.ColumnChannel.ID, whereValues);
         }
 
         @Override
@@ -226,25 +252,29 @@ UnexpectedExceptionHandler.TrackedModule {
 
     }
 
-    /*
-    private class PopulateListAsyncTask extends AsyncTask<Void, Void, Err> {
+    private class OnCreateAsyncTask extends AsyncTask<Void, Void, Err> {
         @Override
         protected void onPreExecute() {
+            runningAsyncTask = this;
             setProgressBarIndeterminateVisibility(true);
+            opMode.onCreateUIPreBG();
         }
 
         @Override
         protected Err
         doInBackground(Void... arg) {
+            opMode.onCreateBG();
             return Err.NoErr;
         }
 
         @Override
         protected void onPostExecute(Err result) {
+            runningAsyncTask = null;
+            list.setAdapter(new ItemListAdapter(ItemListActivity.this, R.layout.item_row, opMode.query()));
             setProgressBarIndeterminateVisibility(false);
+            opMode.onCreateUIPostBG();
         }
     }
-     */
 
     public class UpdateBGTaskOnEvent implements BGTask.OnEvent<Long, Object> {
         private long chid = -1;
@@ -351,7 +381,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     dataSetChanged() {
-        if (null == list)
+        if (null == list || null == getListAdapter())
             return;
 
         getListAdapter().clearUnchanged();
@@ -360,7 +390,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     dataSetChanged(long id) {
-        if (null == list)
+        if (null == list || null == getListAdapter())
             return;
 
         ItemListAdapter la = getListAdapter();
@@ -377,7 +407,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     refreshList(long id) {
-        if (null == list)
+        if (null == list || null == getListAdapter())
             return;
 
         Cursor newCursor = opMode.query();
@@ -387,7 +417,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     refreshList() {
-        if (null == list)
+        if (null == list || null == getListAdapter())
             return;
 
         // [ NOTE ]
@@ -576,8 +606,11 @@ UnexpectedExceptionHandler.TrackedModule {
         if (opMode instanceof OpModeCategory)
             return;
 
-        long cid = ((OpModeChannel)opMode).getChannelId();
         ActionBar bar = getActionBar();
+        if (null == bar.getCustomView())
+            return; // action bar is not initialized yet.
+
+        long cid = ((OpModeChannel)opMode).getChannelId();
         ImageView iv = (ImageView)bar.getCustomView().findViewById(R.id.update_button);
         Animation anim = iv.getAnimation();
 
@@ -722,11 +755,11 @@ UnexpectedExceptionHandler.TrackedModule {
         default:
             eAssert(false);
         }
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+
         setContentView(R.layout.item_list);
-        opMode.onCreate();
         list = ((ListView)findViewById(R.id.list));
         eAssert(null != list);
-        list.setAdapter(new ItemListAdapter(ItemListActivity.this, R.layout.item_row, opMode.query()));
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void
@@ -737,10 +770,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
         registerForContextMenu(list);
-        /*
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-        new PopulateListAsyncTask().execute();
-        */
+        new OnCreateAsyncTask().execute();
     }
 
     @Override
@@ -759,8 +789,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
         opMode.onResume();
-        if (null != list)
-            dataSetChanged();
+        dataSetChanged();
     }
 
     @Override
@@ -785,7 +814,10 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onDestroy() {
         logI("==> ItemListActivity : onDestroy");
-        if (null != list)
+        if (null != runningAsyncTask)
+            runningAsyncTask.cancel(true);
+        runningAsyncTask = null;
+        if (null != list && null != getListAdapter() && null != getListAdapter().getCursor())
             getListAdapter().getCursor().close();
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
