@@ -32,6 +32,9 @@
     <string name="setting">Setting</string>
     <string name="oclock">o\'clock</string>
     <string name="time_spinner_prompt">Choose time(hour)</string>
+    <string name="empty_list_help">Adding my first channel.</string>
+    <string name="empty_list_add_channel_desc">Enter channel URL directly by touching this icon.</string>
+    <string name="empty_list_predefined_desc">Select channel from recommended predefined channel list by touching this icon.</string>
     <string name="wait_cancel">Please wait for canceling</string>
     <string name="load_progress">Loading in progress. It may takes long time (up to several minutes?) based on size of feeds of given site.</string>
     <string name="pick_icon_progress">Loading image in progress. It may takes long time based on size of selected image.</string>

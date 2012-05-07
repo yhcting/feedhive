@@ -32,6 +32,9 @@
     <string name="setting">설정</string>
     <string name="oclock">시</string>
     <string name="time_spinner_prompt">시간 선택(시)</string>
+    <string name="empty_list_help">채널 추가 시작하기.</string>
+    <string name="empty_list_add_channel_desc">를 터치해서 원하는 채널의 URL을 직접 입력할 수 있습니다..</string>
+    <string name="empty_list_predefined_desc">를 터치해서 추천 채널 리스트에서 원하는 채널을 고를 수 있습니다.</string>
     <string name="wait_cancel">취소가 완료되길 기다리고 있습니다.</string>
     <string name="load_progress">로드 중입니다. 데이터의 크기와 네트웤 사정에 따라 최대 수 분정도 소요될 수도 있습니다.</string>
     <string name="pick_icon_progress">그림을 로드 중입니다.  이미지 크기와 네트웤 사정에 따라 최대 수 분 정도 소요될 수도 있습니다.</string>

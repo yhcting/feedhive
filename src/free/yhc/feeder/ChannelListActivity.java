@@ -198,6 +198,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     return false;
                 }
             });
+            list.setEmptyView(findViewById(R.id.empty_list));
             flipper.addView(ll);
             return ll;
         }
