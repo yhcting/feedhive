@@ -21,9 +21,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-
-import java.util.HashMap;
-
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
@@ -32,7 +29,6 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
-import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
@@ -44,14 +40,9 @@ import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class ItemListAdapter extends ResourceCursorAdapter implements
+public class ItemListAdapter extends CustomResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
     private DBPolicy  dbp = DBPolicy.S();
-    // To speed up refreshing list and dataSetChanged in case of only few-list-item are changed.
-    // (usually, only one item is changed.)
-    // This SHOULD NOT used when number of list item or order of list item are changed.
-    private HashMap<Long, Object> unchangedMap = new HashMap<Long, Object>();
-
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
     // See "DownloadProgressOnEvent" for details
     private TextView  dummyTextView;
@@ -123,16 +114,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 R.color.text_color_new: R.color.text_color_opened;
     }
 
-    public void
-    addUnchanged(long id) {
-        unchangedMap.put(id, new Object());
-    }
-
-    public void
-    clearUnchanged() {
-        unchangedMap.clear();
-    }
-
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
@@ -150,9 +131,11 @@ UnexpectedExceptionHandler.TrackedModule {
     bindView(View view, Context context, Cursor c) {
         final long id = c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName()));
 
-        if (null != unchangedMap.get(id)) {
-            unchangedMap.remove(id);
-            return;
+        try {
+            if (!isChanged(id))
+                return;
+        } finally {
+            clearChangeState(id);
         }
 
         // NOTE

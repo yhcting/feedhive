@@ -384,7 +384,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == list || null == getListAdapter())
             return;
 
-        getListAdapter().clearUnchanged();
+        getListAdapter().clearChangeState();
         getListAdapter().notifyDataSetChanged();
     }
 
@@ -394,12 +394,14 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
 
         ItemListAdapter la = getListAdapter();
-        la.clearUnchanged();
+        la.clearChangeState();
         for (int i = list.getFirstVisiblePosition();
              i <= list.getLastVisiblePosition();
              i++) {
             long itemId = la.getItemId(i);
-            if (itemId != id)
+            if (itemId == id)
+                la.addChanged(itemId);
+            else
                 la.addUnchanged(itemId);
         }
         la.notifyDataSetChanged();

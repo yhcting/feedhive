@@ -529,7 +529,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     dataSetChanged(ListView lv) {
-        ((ChannelListAdapter)lv.getAdapter()).clearUnchanged();
+        ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
         ((ChannelListAdapter)lv.getAdapter()).notifyDataSetChanged();
     }
 
@@ -541,13 +541,15 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     dataSetChanged(ListView lv, long cid) {
-        ((ChannelListAdapter)lv.getAdapter()).clearUnchanged();
         ChannelListAdapter cla = (ChannelListAdapter)lv.getAdapter();
+        ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
         for (int i = lv.getFirstVisiblePosition();
              i <= lv.getLastVisiblePosition();
              i++) {
             long itemId = cla.getItemId(i);
-            if (itemId != cid)
+            if (itemId == cid)
+                cla.addChanged(itemId);
+            else
                 cla.addUnchanged(itemId);
         }
         ((ChannelListAdapter)lv.getAdapter()).notifyDataSetChanged();

@@ -24,7 +24,6 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.text.DateFormat;
 import java.util.Date;
-import java.util.HashMap;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -35,7 +34,6 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
-import android.widget.ResourceCursorAdapter;
 import android.widget.TextView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DB.ColumnChannel;
@@ -43,13 +41,9 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class ChannelListAdapter extends ResourceCursorAdapter implements
+public class ChannelListAdapter extends CustomResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
     private OnAction  onAction = null;
-    // To speed up refreshing list and dataSetChanged in case of only few-list-item are changed.
-    // (usually, only one item is changed.)
-    // This SHOULD NOT used when number of list item or order of list item are changed.
-    private HashMap<Long, Object> unchangedMap = new HashMap<Long, Object>();
 
     interface OnAction {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -64,16 +58,6 @@ UnexpectedExceptionHandler.TrackedModule {
         ImageViewEx(Context context, AttributeSet attrs) {
             super(context, attrs);
         }
-    }
-
-    public void
-    addUnchanged(long cid) {
-        unchangedMap.put(cid, new Object());
-    }
-
-    public void
-    clearUnchanged() {
-        unchangedMap.clear();
     }
 
     @Override
@@ -93,10 +77,14 @@ UnexpectedExceptionHandler.TrackedModule {
     bindView(View view, final Context context, final Cursor c) {
         long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
 
-        if (null != unchangedMap.get(cid)) {
-            unchangedMap.remove(cid);
-            return;
+        try {
+            if (!isChanged(cid))
+                return;
+        } finally {
+            clearChangeState(cid);
         }
+
+        //logI(">>> [DO] BindView cid : " + cid);
 
         String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
         String desc = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
