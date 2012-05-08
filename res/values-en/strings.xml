@@ -35,6 +35,14 @@
     <string name="empty_list_help">Adding my first channel.</string>
     <string name="empty_list_add_channel_desc">Enter channel URL directly by touching this icon.</string>
     <string name="empty_list_predefined_desc">Select channel from recommended predefined channel list by touching this icon.</string>
+    <string name="empty_list_btn_desc">About other buttons</string>
+    <string name="empty_list_items_category">List all feed items of current category.</string>
+    <string name="empty_list_add_category">Add new category.</string>
+    <string name="empty_list_del_category">Delete current category.</string>
+    <string name="empty_list_rename_category">Rename current category.</string>
+    <string name="empty_list_del_dnfiles">Delete all downloaded files.</string>
+    <string name="empty_list_setting">Adjust application setting.</string>
+    <string name="empty_list_information">Show misc information about this application.</string>
     <string name="wait_cancel">Please wait for canceling</string>
     <string name="load_progress">Loading in progress. It may takes long time (up to several minutes?) based on size of feeds of given site.</string>
     <string name="pick_icon_progress">Loading image in progress. It may takes long time based on size of selected image.</string>
