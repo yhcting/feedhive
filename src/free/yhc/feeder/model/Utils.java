@@ -144,9 +144,6 @@ public class Utils {
     // =======================
     public static void
     eAssert(boolean cond) {
-        if (!DBG)
-            return;
-
         if (!cond)
             throw new AssertionError();
     }
