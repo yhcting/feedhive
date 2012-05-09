@@ -128,11 +128,6 @@ UnexpectedExceptionHandler.TrackedModule {
             // Set custom action bar
             ActionBar bar = getActionBar();
             bar.setDisplayShowHomeEnabled(false);
-        }
-
-        @Override
-        public void onCreateUIPostBG() {
-            ActionBar bar = getActionBar();
             LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
             bar.setCustomView(abView, new ActionBar.LayoutParams(
                     LayoutParams.WRAP_CONTENT,
@@ -141,12 +136,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
             int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
             bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
+            // Update "OLDLAST_ITEMID" when user opens item views.
+            DBPolicy.S().updateChannel_lastItemId(cid);
+        }
+
+        @Override
+        public void onCreateUIPostBG() {
         }
 
         @Override
         public void onCreateBG() {
-            // Update "OLDLAST_ITEMID" when user opens item views.
-            DBPolicy.S().updateChannel_lastItemId(cid);
         }
 
         @Override
