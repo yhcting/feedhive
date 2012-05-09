@@ -740,7 +740,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @return
      */
     public int
-    deleteChannel(long cid) {
+    unlistChannel(long cid) {
         // Just mark as 'unused' - for future
         long n = db.updateChannel(cid, ColumnChannel.STATE, Feed.Channel.FStatUnused);
         eAssert(0 == n || 1 == n);
@@ -749,6 +749,19 @@ UnexpectedExceptionHandler.TrackedModule {
             return 0;
         } else
             return -1;
+    }
+
+    public long
+    deleteChannel(long cid) {
+        return deleteChannel(new long[] { cid });
+    }
+
+    public long
+    deleteChannel(long[] cids) {
+        ColumnChannel[] cols = new ColumnChannel[cids.length];
+        for (int i = 0; i < cols.length; i++)
+            cols[i] = ColumnChannel.ID;
+        return db.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
     }
 
     /**
@@ -979,7 +992,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Update state value of item.
-     *
      * @param id
      * @param state
      *   can be one of below
@@ -993,12 +1005,21 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.updateItem(id, ColumnItem.STATE, state);
     }
 
-    // delete downloaded files etc.
-    /*
-    public int
-    cleanItemContents(long cid, long id) {
-        eAssert(false); // Not implemented yet!
-        return -1;
+    /**
+     * delete items.
+     * @param where
+     * @param value
+     * @return
+     *   number of deleted items.
+     */
+    public long
+    deleteItem(ColumnItem where, Object value) {
+        return db.deleteItem(where, value);
     }
-    */
+
+    public long
+    deleteItemOR(ColumnItem[] wheres, Object[] values) {
+        return db.deleteItemOR(wheres, values);
+    }
+
 }

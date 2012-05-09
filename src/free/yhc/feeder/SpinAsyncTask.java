@@ -46,6 +46,7 @@ DialogInterface.OnClickListener
     interface OnEvent {
         Err  onDoWork(SpinAsyncTask task, Object... objs);
         void onPostExecute(SpinAsyncTask task, Err result);
+        void onCancel(SpinAsyncTask task);
     }
 
     SpinAsyncTask(Context context, OnEvent onEvent, int msgid) {
@@ -102,6 +103,7 @@ DialogInterface.OnClickListener
         if (!cancelable)
             return;
         cancelWork();
+        onEvent.onCancel(this);
     }
 
     @Override

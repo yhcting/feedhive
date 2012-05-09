@@ -339,6 +339,10 @@ UnexpectedExceptionHandler.TrackedModule {
             else
                 LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
+
+        @Override
+        public void
+        onCancel(SpinAsyncTask task) {}
     }
 
     private class DeleteAllDnfilesEventHandler implements SpinAsyncTask.OnEvent {
@@ -364,6 +368,38 @@ UnexpectedExceptionHandler.TrackedModule {
         onPostExecute(SpinAsyncTask task, Err result) {
             if (Err.NoErr != result)
                 LookAndFeel.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
+        }
+
+        @Override
+        public void
+        onCancel(SpinAsyncTask task) {}
+    }
+
+    private class DeleteChannelEventHandler implements SpinAsyncTask.OnEvent {
+        private long nrDelItems    = -1;
+        @Override
+        public Err
+        onDoWork(SpinAsyncTask task, Object... objs) {
+            long[] cids = new long[objs.length];
+            for (int i = 0; i < objs.length; i++)
+                cids[i] = (Long)objs[i];
+
+            nrDelItems = DBPolicy.S().deleteChannel(cids);
+            return Err.NoErr;
+        }
+
+        @Override
+        public void
+        onCancel(SpinAsyncTask task) {
+        }
+
+        @Override
+        public void
+        onPostExecute(SpinAsyncTask task, Err result) {
+            LookAndFeel.showTextToast(ChannelListActivity.this,
+                                      nrDelItems + getResources().getString(R.string.channel_deleted_msg));
+            refreshList(ab.getSelectedTab());
+            ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
         }
     }
 
@@ -677,11 +713,26 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param cid
      */
     private void
-    deleteChannel(Tab tab, long cid) {
+    unlistChannel(Tab tab, long cid) {
         eAssert(null != tab);
-        DBPolicy.S().deleteChannel(cid);
+        DBPolicy.S().unlistChannel(cid);
         refreshList(tab);
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
+    }
+
+    /**
+     * Delete channel and it's items from DB.
+     * This completely deletes all channel and items.
+     * @param tab
+     * @param cid
+     */
+    private void
+    deleteChannel(Tab tab, long cid) {
+        eAssert(null != tab);
+        SpinAsyncTask task = new SpinAsyncTask(this,
+                                               new DeleteChannelEventHandler(),
+                                               R.string.deleting_channel_msg);
+        task.execute(new Long(cid));
     }
 
     private void
@@ -977,6 +1028,29 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    onContext_unlistChannel(final long cid) {
+        AlertDialog dialog =
+                LookAndFeel.createWarningDialog(this,
+                                                R.string.unlist_channel,
+                                                R.string.unlist_channel_msg);
+        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                unlistChannel(ab.getSelectedTab(), cid);
+                dialog.dismiss();
+            }
+        });
+        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // Do nothing
+                dialog.dismiss();
+            }
+        });
+        dialog.show();
+    }
+
+    private void
     onContext_deleteChannel(final long cid) {
         AlertDialog dialog =
                 LookAndFeel.createWarningDialog(this,
@@ -1219,6 +1293,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (RTTask.TaskState.Running == updateState
             || RTTask.TaskState.Ready == updateState
             || RTTask.TaskState.Canceling == updateState) {
+            menu.findItem(R.id.unlist).setEnabled(false);
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
             /* full update is useless at this moment. Codes are left for history tracking
@@ -1227,6 +1302,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (RTTask.S().getItemsDownloading(mInfo.id).length > 0) {
+            menu.findItem(R.id.unlist).setEnabled(false);
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
@@ -1238,8 +1314,11 @@ UnexpectedExceptionHandler.TrackedModule {
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
 
         switch (mItem.getItemId()) {
+        case R.id.unlist:
+            onContext_unlistChannel(info.id);
+            return true;
+
         case R.id.delete:
-            logI(" ID : " + info.id + " / " + info.position);
             onContext_deleteChannel(info.id);
             return true;
 
