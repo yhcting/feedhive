@@ -143,113 +143,177 @@
 		<url>http://feeds.feedburner.com/naver_news_popular</url>
 		<icon></icon>
 	</channel>
-	<channel>
-		<name>블로터</name>
-		<category>인터넷 언론</category>
-		<url>http://feeds.feedburner.com/Bloter?format=xml</url>
-		<icon></icon>
-	</channel>
-	<!-- 대안 언론 (podcast 등)  -->
+	<!-- 시사방송  -->
 	<channel>
 		<name>나는 꼼수다</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://old.ddanzi.com/appstream/ddradio.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>나는 꼽사리다</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://old.ddanzi.com/appstream/ggobsari.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>뉴스타파</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://newstapa.com/rss</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>애국전선</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://cast.vop.co.kr/kfline.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>저공비행 (노회찬, 유시민)</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://test.handypia.org/radio/jugong.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>이슈 털어주는 남자 (김종배)</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://rss.ohmynews.com/RSS/podcast_etul_main.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>희소식(이정희)</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://cast.vop.co.kr/heenews.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>허재현의 현장일기</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://feeds.feedburner.com/iblug/OCnu?format=xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>시사자키 정관용입니다</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://cbspodcast.com/podcast/sisa/sisa.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>변상욱의 기자수첩</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://cbspodcast.com/podcast/newsshow_journal/newsshow_journal.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>낭만자객</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://cast.vop.co.kr/nang.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>이해찬의 정석정치</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://rss.ohmynews.com/rss/podcast_bbong_main.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>김미화의 여러분</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://cbspodcast.com/podcast/k_everyone/k_everyone.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>라디오 반민특위</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://www.615tv.net/podcastbanmin/jkbsbanmin.xml</url>
 		<icon></icon>
 	</channel>
 	<channel>
 		<name>정혜림의 도도한 뒷담화</name>
-		<category>대안언론</category>
+		<category>시사방송</category>
 		<url>http://nemo.podics.com/131613387490</url>
 		<icon></icon>
 	</channel>
 	<channel>
-		<name>김현정의 뉴스쇼</name>
-		<category>대안언론</category>
-		<url>http://cbspodcast.com/podcast/newshow/newshow.xml</url>
+		<name>망치부인 시사수다방</name>
+		<category>시사방송</category>
+		<url>http://nemo.podics.com/131192848437</url>
 		<icon></icon>
 	</channel>
 	<channel>
+		<name>김현정의 뉴스쇼</name>
+		<category>시사방송</category>
+		<url>http://cbspodcast.com/podcast/newshow/newshow.xml</url>
+		<icon></icon>
+	</channel>
+	<!-- 외국어 -->
+	<channel>
+		<name>English as a Second Language Podcast</name>
+		<category>외국어</category>
+		<url>http://feeds.feedburner.com/EnglishAsASecondLanguagePodcast?format=xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>BBC 6 Minute English</name>
+		<category>외국어</category>
+		<url>http://downloads.bbc.co.uk/podcasts/worldservice/how2/rss.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>BBC World Service : 60 Seconds Idea to Improve the World</name>
+		<category>외국어</category>
+		<url>http://downloads.bbc.co.uk/podcasts/worldservice/forum60sec/rss.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>BBC A History of the World in 100 Objects</name>
+		<category>외국어</category>
+		<url>http://downloads.bbc.co.uk/podcasts/radio4/ahow/rss.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>ABC AM</name>
+		<category>외국어</category>
+		<url>http://abc.net.au/am/rss/amrss.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>ABC PM</name>
+		<category>외국어</category>
+		<url>http://abc.net.au/pm/rss/pmrss.xml</url>
+		<icon></icon>
+	</channel>
+	<!-- 교양 -->
+	<channel>
+		<name>김영하의 책 읽는 시간</name>
+		<category>교양</category>
+		<url>http://feeds.feedburner.com/KIMYoungha?format=xml</url>
+		<icon></icon>
+	</channel>
+	<!-- 경제 -->
+	<channel>
+		<name>읽어주는 한국경제</name>
+		<category>경제</category>
+		<url>http://feeds.feedburner.com/hankyung_radio?format=xml</url>
+		<icon></icon>
+	</channel>
+	<!-- 기술/과학 -->
+	<channel>
 		<name>나는 의사다</name>
-		<category>대안언론</category>
+		<category>기술/과학</category>
 		<url>http://www.docdocdoc.co.kr/podcast/iam_doctors.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>블로터</name>
+		<category>기술/과학</category>
+		<url>http://feeds.feedburner.com/Bloter?format=xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>CNET</name>
+		<category>기술/과학</category>
+		<url>http://feeds.feedburner.com/cnet/NnTv?format=xml</url>
 		<icon></icon>
 	</channel>
 	<!-- MBC 표준 FM -->
@@ -542,13 +606,6 @@
 		<name>여러분의 국민DJ 이예랑입니다</name>
 		<category>SBS 러브 FM</category>
 		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000362236.xml</url>
-		<icon></icon>
-	</channel>
- 	<!-- 기타 개인 방송들  -->
-	<channel>
-		<name>망치부인 시사수다방</name>
-		<category>개인방송</category>
-		<url>http://nemo.podics.com/131192848437</url>
 		<icon></icon>
 	</channel>
 </channels>
