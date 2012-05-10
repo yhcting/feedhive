@@ -751,17 +751,32 @@ UnexpectedExceptionHandler.TrackedModule {
             return -1;
     }
 
+    /**
+     *
+     * @param cid
+     * @return
+     *   number of items deleted
+     */
     public long
     deleteChannel(long cid) {
         return deleteChannel(new long[] { cid });
     }
 
+    /**
+     *
+     * @param cids
+     * @return
+     *   number of items deleted
+     */
     public long
     deleteChannel(long[] cids) {
         ColumnChannel[] cols = new ColumnChannel[cids.length];
         for (int i = 0; i < cols.length; i++)
             cols[i] = ColumnChannel.ID;
-        return db.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
+        long nr = db.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
+        for (long cid : cids)
+            UIPolicy.removeChannelDir(cid);
+        return nr;
     }
 
     /**
