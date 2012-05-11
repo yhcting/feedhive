@@ -46,6 +46,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore.MediaColumns;
 import android.text.TextUtils;
+import android.util.AttributeSet;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector;
@@ -96,6 +97,34 @@ UnexpectedExceptionHandler.TrackedModule {
     private interface ActionDialogEditbox {
         void onOk(Dialog dialog, EditText edit);
         void onCancel(Dialog dialog);
+    }
+
+    private static class FlipperLinearLayout extends LinearLayout {
+        private View.OnTouchListener touchInterceptor = null;
+
+        public
+        FlipperLinearLayout(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        void
+        setTouchInterceptor(View.OnTouchListener interceptor) {
+            touchInterceptor = interceptor;
+        }
+
+        @Override
+        public boolean
+        onTouchEvent(MotionEvent ev) {
+            if (null != touchInterceptor)
+                touchInterceptor.onTouch(this, ev);
+            return true;
+        }
+
+        @Override
+        public boolean
+        onInterceptTouchEvent(MotionEvent ev) {
+            return true;
+        }
     }
 
     private class Flipper {
@@ -188,18 +217,21 @@ UnexpectedExceptionHandler.TrackedModule {
             //   events are dedicated to list view - intercept doesn't work expectedly
             //   (not verified, but experimentally looks like it).
             // So, motion should be handled at list view.
-            list.setOnTouchListener(new View.OnTouchListener() {
+            View.OnTouchListener swipeListener = new View.OnTouchListener() {
                 @Override
                 public boolean
                 onTouch(View v, MotionEvent event) {
-                    if (flipper.onTouch(event))
+                    if (Flipper.this.onTouch(event))
                         // To avoid 'onclick' is executed even if 'gesture' is triggered.
                         event.setAction(MotionEvent.ACTION_CANCEL);
                     return false;
                 }
-            });
-            list.setEmptyView(findViewById(R.id.empty_list));
-            flipper.addView(ll);
+            };
+            list.setOnTouchListener(swipeListener);
+            FlipperLinearLayout fll = (FlipperLinearLayout)ll.findViewById(R.id.empty_list);
+            fll.setTouchInterceptor(swipeListener);
+            list.setEmptyView(fll);
+            addView(ll);
             return ll;
         }
 
