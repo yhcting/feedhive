@@ -124,6 +124,12 @@ public class UIPolicy {
         return file;
     }
 
+    /**
+     * Create clean channel dir.
+     * If directory already exists, all files in it are deleted.
+     * @param cid
+     * @return
+     */
     public static boolean
     makeChannelDir(long cid) {
         File f = new File(appRootDir + cid);

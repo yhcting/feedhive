@@ -458,6 +458,12 @@ public class NetLoader {
     public void
     downloadToFile(String url, File tempFile, File toFile, OnProgress progressListener)
         throws FeederException {
+        // secure directory in which tempFile and toFile are located in.
+        String parent = tempFile.getParent();
+        new File(parent).mkdirs();
+        parent = toFile.getParent();
+        new File(parent).mkdirs();
+
         // Set as class private for future cleanup.
         tmpFile = tempFile;
         try {
