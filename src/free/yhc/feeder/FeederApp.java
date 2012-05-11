@@ -37,6 +37,7 @@ import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class FeederApp extends Application {
     // NOTE 1
@@ -66,18 +67,15 @@ public class FeederApp extends Application {
         if (!f.exists()) {
             // Copy default predefined channels file from Assert!
             AssetManager am = context.getAssets();
+
             InputStream is = null;
             try {
                 is = am.open(UIPolicy.getPredefinedChannelsAssetFilePath());
-                OutputStream out = new FileOutputStream(f);
-                byte buf[]=new byte[1024 * 16];
-                int len;
-                while((len = is.read(buf)) > 0)
-                    out.write(buf, 0, len);
-                out.close();
+                OutputStream os = new FileOutputStream(f);
+                Utils.copy(os, is);
+                os.close();
                 is.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 logW("FeederApp Critical Error!");
                 eAssert(false);
                 return;

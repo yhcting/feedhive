@@ -27,6 +27,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 
@@ -493,6 +495,19 @@ public class Utils {
         } catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * Copy from input stream to output stream.
+     * @param os
+     * @param is
+     */
+    public static void
+    copy(OutputStream os, InputStream is) throws IOException {
+        byte buf[]=new byte[1024 * 16];
+        int len;
+        while((len = is.read(buf)) > 0)
+            os.write(buf, 0, len);
     }
 
     public static String
