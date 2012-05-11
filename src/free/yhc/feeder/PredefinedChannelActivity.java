@@ -23,8 +23,8 @@ package free.yhc.feeder;
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Comparator;
@@ -42,6 +42,7 @@ import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -192,17 +193,13 @@ UnexpectedExceptionHandler.TrackedModule {
     private Err
     parsePredefinedChannelFile(LinkedList<PDChannel> chl,
                                int[] nrCat, // [out] number of categories
-                               String channelFile) {
-        File f = new File(channelFile);
-        if (!f.exists())
-            return Err.IOFile;
-
+                               InputStream is) {
         Document dom = null;
         try {
             dom = DocumentBuilderFactory
                     .newInstance()
                     .newDocumentBuilder()
-                    .parse(f);
+                    .parse(is);
         } catch (IOException e) {
             return Err.IOFile;
         } catch (DOMException e) {
@@ -288,9 +285,14 @@ UnexpectedExceptionHandler.TrackedModule {
             } while (c.moveToNext());
         }
 
+        AssetManager am = getAssets();
         LinkedList<PDChannel> chl = new LinkedList<PDChannel>();
         int[] nrCat = new int[1];
-        Err result = parsePredefinedChannelFile(chl, nrCat, UIPolicy.getPredefinedChannelsFilePath());
+        Err result = Err.IOFile;
+        try {
+            result = parsePredefinedChannelFile(chl, nrCat,
+                                                am.open(UIPolicy.getPredefinedChannelsAssetPath()));
+        } catch (IOException e) {}
 
         if (Err.NoErr != result) {
             LookAndFeel.showTextToast(this, result.getMsgId());

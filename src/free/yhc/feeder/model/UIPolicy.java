@@ -114,12 +114,7 @@ public class UIPolicy {
     }
 
     public static String
-    getPredefinedChannelsFilePath() {
-        return appRootDir + "channels.xml";
-    }
-
-    public static String
-    getPredefinedChannelsAssetFilePath() {
+    getPredefinedChannelsAssetPath() {
         Locale lc = java.util.Locale.getDefault();
         String file;
         if (Locale.KOREA.equals(lc) || Locale.KOREAN.equals(lc))
