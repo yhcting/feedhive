@@ -76,7 +76,7 @@
                 android:ellipsize="end"
                 />
             <TextView
-                android:id="@+id/length"
+                android:id="@+id/info"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/date"

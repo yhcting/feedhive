@@ -39,6 +39,7 @@ import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class ItemListAdapter extends CustomResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
@@ -152,7 +153,7 @@ UnexpectedExceptionHandler.TrackedModule {
         final TextView descv  = (TextView)view.findViewById(R.id.description);
         final ProgressTextView progressv = (ProgressTextView)view.findViewById(R.id.progress);
         final TextView datev   = (TextView)view.findViewById(R.id.date);
-        final TextView lengthv = (TextView)view.findViewById(R.id.length);
+        final TextView infov = (TextView)view.findViewById(R.id.info);
         final ImageView imgv   = (ImageView)view.findViewById(R.id.image);
 
         int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
@@ -168,10 +169,11 @@ UnexpectedExceptionHandler.TrackedModule {
         datev.setText(c.getString(c.getColumnIndex(DB.ColumnItem.PUBDATE.getName())));
 
         String length = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_LENGTH.getName()));
-        if (length.isEmpty())
-            length = " ";
-
-        lengthv.setText(length);
+        String url = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_URL.getName()));
+        if (url.isEmpty())
+            infov.setText("html");
+        else
+            infov.setText(Utils.getExtentionFromUrl(url) + " : " + length);
 
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
@@ -231,7 +233,7 @@ UnexpectedExceptionHandler.TrackedModule {
         titlev.setTextColor(context.getResources().getColor(getTitleColor(state)));
         descv.setTextColor(context.getResources().getColor(getTextColor(state)));
         datev.setTextColor(context.getResources().getColor(getTextColor(state)));
-        lengthv.setTextColor(context.getResources().getColor(getTextColor(state)));
+        infov.setTextColor(context.getResources().getColor(getTextColor(state)));
     }
 
     @Override
