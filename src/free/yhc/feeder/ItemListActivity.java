@@ -78,6 +78,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // Base query outline to create cursor, depends on this Mode value.
     public static final int ModeChannel       = 0; // items of channel
     public static final int ModeCategory      = 1; // items of category
+    public static final int ModeFavorite      = 2; // favorite items
 
     // bit[3:7] filter : select items
     // others are reserved (ex. filtering items with time (specific period of time) etc)
@@ -96,18 +97,27 @@ UnexpectedExceptionHandler.TrackedModule {
     // That's the difference from BGTask managed by BGTaskManager and RTTask.
     private AsyncTask           runningAsyncTask = null;
 
-    private interface OpMode {
-        void    onCreateUIPreBG(); // onCreate run in Main UI context.
-        void    onCreateBG(); // onCreate run in background.
-        void    onCreateUIPostBG();
-        /**
-         * Mode specific onCreate.
-         */
-        void    onResume();
-        Cursor  query();
+    private class OpMode {
+        void    onCreateUIPreBG() {} // onCreate run in Main UI context.
+        void    onCreateBG() {} // onCreate run in background.
+        void    onCreateUIPostBG() {}
+
+        ItemListAdapter.OnAction
+        getAdapterActionHandler() {
+            return new ItemListAdapter.OnAction() {
+                @Override
+                public void onFavoriteClick(ImageView ibtn, long id, boolean favorite) {
+                    DBPolicy.S().updateItem_favorite(id, !favorite);
+                    dataSetChanged(id);
+                }
+            };
+        }
+
+        void    onResume() { }
+        Cursor  query() { return null; }
     }
 
-    private class OpModeChannel implements OpMode {
+    private class OpModeChannel extends OpMode {
         private long cid; // channel id
 
         OpModeChannel(Intent i) {
@@ -141,11 +151,15 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreateUIPostBG() {
-        }
-
-        @Override
-        public void onCreateBG() {
+        public ItemListAdapter.OnAction
+        getAdapterActionHandler() {
+            return new ItemListAdapter.OnAction() {
+                @Override
+                public void onFavoriteClick(ImageView ibtn, long id, boolean favorite) {
+                    DBPolicy.S().updateItem_favorite(id, !favorite);
+                    dataSetChanged(id);
+                }
+            };
         }
 
         @Override
@@ -179,12 +193,12 @@ UnexpectedExceptionHandler.TrackedModule {
                         DB.ColumnItem.ENCLOSURE_URL,
                         DB.ColumnItem.ENCLOSURE_TYPE,
                         DB.ColumnItem.PUBDATE,
-                        DB.ColumnItem.LINK};
+                        DB.ColumnItem.LINK };
             return db.queryItem(cid, columns);
         }
     }
 
-    private class OpModeCategory implements OpMode {
+    private class OpModeCategory extends OpMode {
         private long categoryid; // category id
 
         OpModeCategory(Intent intent) {
@@ -203,10 +217,6 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreateUIPostBG() {
-        }
-
-        @Override
         public void onCreateBG() {
             long[] cids = DBPolicy.S().getChannelIds(categoryid);
             Long[] whereValues = Utils.convertArraylongToLong(cids);
@@ -216,6 +226,7 @@ UnexpectedExceptionHandler.TrackedModule {
             DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
                                           DB.ColumnChannel.ID, whereValues);
         }
+
 
         @Override
         public void onResume() {
@@ -244,11 +255,56 @@ UnexpectedExceptionHandler.TrackedModule {
                     DB.ColumnItem.ENCLOSURE_URL,
                     DB.ColumnItem.ENCLOSURE_TYPE,
                     DB.ColumnItem.PUBDATE,
-                    DB.ColumnItem.LINK};
+                    DB.ColumnItem.LINK };
             long[] cids = DBPolicy.S().getChannelIds(categoryid);
             return db.queryItem(cids, columns);
         }
+    }
 
+    private class OpModeFavorite extends OpMode {
+        OpModeFavorite(Intent intent) {
+        }
+
+        @Override
+        public void onCreateUIPreBG() {
+            setTitle(getResources().getString(R.string.favorite_item));
+            getActionBar().setDisplayShowHomeEnabled(false);
+        }
+
+        @Override
+        public void onResume() {
+            long[] ids = RTTask.S().getItemsDownloading();
+            for (long id : ids)
+                if (Feed.Item.isFavorite(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.FAVORITE)))
+                    RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+        }
+
+        @Override
+        public ItemListAdapter.OnAction
+        getAdapterActionHandler() {
+            return new ItemListAdapter.OnAction() {
+                @Override
+                public void onFavoriteClick(ImageView ibtn, long id, boolean favorite) {
+                    DBPolicy.S().updateItem_favorite(id, !favorite);
+                    refreshList();
+                }
+            };
+        }
+
+        @Override
+        public Cursor query() {
+            DB.ColumnItem[] columns = new DB.ColumnItem[] {
+                    DB.ColumnItem.ID, // Mandatory.
+                    DB.ColumnItem.CHANNELID,
+                    DB.ColumnItem.TITLE,
+                    DB.ColumnItem.DESCRIPTION,
+                    DB.ColumnItem.ENCLOSURE_LENGTH,
+                    DB.ColumnItem.ENCLOSURE_URL,
+                    DB.ColumnItem.ENCLOSURE_TYPE,
+                    DB.ColumnItem.PUBDATE,
+                    DB.ColumnItem.LINK };
+            return db.queryFavoriteItem(columns);
+        }
     }
 
     private class OnCreateAsyncTask extends AsyncTask<Void, Void, Err> {
@@ -269,7 +325,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         protected void onPostExecute(Err result) {
             runningAsyncTask = null;
-            list.setAdapter(new ItemListAdapter(ItemListActivity.this, R.layout.item_row, opMode.query()));
+            list.setAdapter(new ItemListAdapter(ItemListActivity.this,
+                                                R.layout.item_row,
+                                                opMode.query(),
+                                                opMode.getAdapterActionHandler()));
             setProgressBarIndeterminateVisibility(false);
             opMode.onCreateUIPostBG();
         }
@@ -752,6 +811,9 @@ UnexpectedExceptionHandler.TrackedModule {
             break;
         case ModeCategory:
             opMode = new OpModeCategory(getIntent());
+            break;
+        case ModeFavorite:
+            opMode = new OpModeFavorite(getIntent());
             break;
         default:
             eAssert(false);

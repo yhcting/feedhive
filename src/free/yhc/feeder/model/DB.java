@@ -22,11 +22,13 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+import static free.yhc.feeder.model.Utils.logW;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 
@@ -56,7 +58,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // So, let's ignore it until real DB structure is needed to be changed.
     // => this can be resolved by 'DB Upgrade operation'.
     private static final String NAME    = "feader.db";
-    private static final int    VERSION = 1;
+    private static final int    VERSION = 2;
 
     private static final String TABLE_CATEGORY  = "category";
     private static final String TABLE_CHANNEL   = "channel";
@@ -165,12 +167,20 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Columns for internal use.
         STATE           ("state",           "integer",  "not null"), // new, read etc
+        // Is this favorite item or not?
+        // NOTE
+        // Why this has separated column even if this can be represented as single bit of 'STATE' value?.
+        // Because, one of usecase for favorite is "showing favorite items" from item table.
+        // If this is represented as a single bit of 'STATE' column,
+        //   bit mask + comparision operation is required to filtering "favorite items."
+        // The problem is, there is no SQL function to do this in query.
+        // So, to increase performance, create new column to present "favorite" attribute of item.
+        FAVORITE        ("favorite",        "integer",  "not null"),
         // time when this item is inserted.(milliseconds since 1970.1.1....)
         PUBTIME         ("pubtime",         "integer",  "not null"),
         CHANNELID       ("channelid",       "integer",  ""),
-        // add foreign key
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
-                // Add additional
+                // Add additional : foreign key
                 + "FOREIGN KEY(channelid) REFERENCES " + TABLE_CHANNEL + "(" + ColumnChannel.ID.getName() + ")");
 
         private String name;
@@ -282,6 +292,20 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**************************************
+     *
+     * DB UPGRADE
+     *
+     **************************************/
+    private void
+    upgradeToV02(SQLiteDatabase db) {
+        // Add FAVORITE column.
+        db.execSQL("ALTER TABLE " + TABLE_ITEM
+                    + " ADD " + ColumnItem.FAVORITE.getName() + " " + ColumnItem.FAVORITE.getType() + " "
+                    + ColumnItem.FAVORITE.getConstraint()
+                    + " DEFAULT 0;");
+    }
+
+    /**************************************
      * Overriding.
      **************************************/
 
@@ -300,8 +324,14 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // TODO Auto-generated method stub
-
+        try {
+            if (oldVersion < 2) {
+                upgradeToV02(db);
+            }
+        } catch (SQLiteException e) {
+            logW("Fail to update from " + oldVersion + " to " + newVersion);
+        }
+        // version 1 -> version 2 : add column item.
     }
 
     @Override

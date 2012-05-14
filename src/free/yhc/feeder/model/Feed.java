@@ -29,16 +29,24 @@ public class Feed {
     public static final long FInvalid = ~0;
 
     public static class Item {
+        // Favorite column value
+        public static final long FavoriteOff   = 0x00;
+        public static final long FavoriteOn    = 0x01;
+
         // bit[0] : new / opened
         public static final long FStatNew      = 0x00;
         public static final long FStatOpened   = 0x01;
         public static final long MStat         = 0x01;
-
         public static final long FStatDefault  = FStatNew;
 
         public static final boolean
         isStateNew(long flag) {
             return bitIsSet(flag, FStatNew, MStat);
+        }
+
+        public static final boolean
+        isFavorite(long flag) {
+            return flag == FavoriteOn;
         }
 
          // Information from parsing.

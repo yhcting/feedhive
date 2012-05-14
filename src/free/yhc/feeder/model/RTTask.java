@@ -226,22 +226,11 @@ OnSharedPreferenceChangeListener {
 
     /**
      * Get items that are under downloading.
-     * @param cids
-     *   null : all downloading items
-     *   otherwise : downloading items belonging to given channels.
      * @return
      */
     private long[]
-    itemsDownloading(long[] cids) {
+    itemsDownloading() {
         String[] tids;
-        // Create cids map for fast searching.
-        HashMap<Long, Object> m = null;
-        if (null != cids) {
-            m = new HashMap<Long, Object>();
-            for (long cid : cids)
-                m.put(cid, new Object());
-        }
-
         LinkedList<Long> l = new LinkedList<Long>();
         synchronized (gbtm) {
             tids = gbtm.getTaskIds();
@@ -250,10 +239,7 @@ OnSharedPreferenceChangeListener {
                     BGTask task = gbtm.peek(tid);
                     long id = idFromId(tid);
                     if (null != task && isTaskInAction(task)) {
-                        if (null == m)
-                            l.add(id); // all items
-                        else if (null != m.get(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID)))
-                            l.add(id);
+                        l.add(id); // all items
                     }
                 }
             }
@@ -584,7 +570,7 @@ OnSharedPreferenceChangeListener {
      */
     public long[]
     getItemsDownloading() {
-        return itemsDownloading(null);
+        return itemsDownloading();
     }
 
     /**
@@ -596,7 +582,7 @@ OnSharedPreferenceChangeListener {
      */
     public long[]
     getItemsDownloading(long cid) {
-        return itemsDownloading(new long[] { cid });
+        return getItemsDownloading(new long[] { cid });
     }
 
     /**
@@ -608,6 +594,16 @@ OnSharedPreferenceChangeListener {
      */
     public long[]
     getItemsDownloading(long[] cids) {
-        return itemsDownloading(cids);
+        long[] dnids = getItemsDownloading();
+        HashMap<Long, Object> m = new HashMap<Long, Object>(); // cid hash map for fast lookup.
+        for (long cid : cids)
+            m.put(cid, new Object());
+
+        LinkedList<Long> l = new LinkedList<Long>();
+        for (long dnid : dnids)
+            if (null != m.get(DBPolicy.S().getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
+                l.add(dnid);
+
+        return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
     }
 }

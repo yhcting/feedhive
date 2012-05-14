@@ -25,6 +25,7 @@
     <string name="refresh">새로고침</string>
     <string name="all">전부</string>
     <string name="update">업데이트</string>
+    <string name="favorite_item">관심 아이템</string>
     <string name="full_update">전체 업데이트</string>
     <string name="send_err_report">에러 레포트 보내기</string>
     <string name="enter_url">URL 입력</string>
@@ -37,6 +38,7 @@
     <string name="empty_list_add_channel_desc">를 터치해서 원하는 채널의 URL을 직접 입력할 수 있습니다..</string>
     <string name="empty_list_predefined_desc">를 터치해서 추천 채널 리스트에서 원하는 채널을 고를 수 있습니다.</string>
     <string name="empty_list_btn_desc">기타 버튼 설명</string>
+    <string name="empty_list_items_favorite">관심 피드로 설정한 피드 아이템들을 보여줍니다.</string>
     <string name="empty_list_items_category">현재 카테고리에 등록된 채널에 속한 모든 피드 아이템을 보여줍니다.</string>
     <string name="empty_list_add_category">새로운 카테고리를 추가합니다.</string>
     <string name="empty_list_del_category">현재 카테고리를 삭제합니다.</string>

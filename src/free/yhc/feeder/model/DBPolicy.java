@@ -105,6 +105,7 @@ UnexpectedExceptionHandler.TrackedModule {
         values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    parD.enclosureLength);
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      parD.enclosureType);
         values.put(ColumnItem.STATE.getName(),               Feed.Item.FStatNew);
+        values.put(ColumnItem.FAVORITE.getName(),            Feed.Item.FavoriteOff);
 
         // If success to parse pubdate than pubdate is used, if not, current time is used.
         long time = Utils.dateStringToTime(parD.pubDate);
@@ -1006,6 +1007,16 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
+     * Query favorite items
+     * @param columns
+     * @return
+     */
+    public Cursor
+    queryFavoriteItem(ColumnItem[] columns) {
+        return db.queryItem(columns, ColumnItem.FAVORITE, Feed.Item.FavoriteOn, -1);
+    }
+
+    /**
      * Update state value of item.
      * @param id
      * @param state
@@ -1018,6 +1029,19 @@ UnexpectedExceptionHandler.TrackedModule {
     updateItem_state(long id, long state) {
         // Update item during 'updating channel' is not expected!!
         return db.updateItem(id, ColumnItem.STATE, state);
+    }
+
+    /**
+     * Update boolean value of FAVORITE field.
+     * @param id
+     * @param favorite
+     *   is favorite?
+     * @return
+     */
+    public long
+    updateItem_favorite(long id, boolean favorite) {
+        Long v = favorite? 1L: 0L;
+        return db.updateItem(id, ColumnItem.FAVORITE, v);
     }
 
     /**

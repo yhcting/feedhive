@@ -67,6 +67,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 import free.yhc.feeder.model.BGTask;
@@ -99,11 +100,11 @@ UnexpectedExceptionHandler.TrackedModule {
         void onCancel(Dialog dialog);
     }
 
-    private static class FlipperLinearLayout extends LinearLayout {
+    private static class FlipperScrollView extends ScrollView {
         private View.OnTouchListener touchInterceptor = null;
 
         public
-        FlipperLinearLayout(Context context, AttributeSet attrs) {
+        FlipperScrollView(Context context, AttributeSet attrs) {
             super(context, attrs);
         }
 
@@ -115,9 +116,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public boolean
         onTouchEvent(MotionEvent ev) {
+            boolean ret = super.onTouchEvent(ev);
             if (null != touchInterceptor)
                 touchInterceptor.onTouch(this, ev);
-            return true;
+            return ret;
         }
 
         @Override
@@ -228,7 +230,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             };
             list.setOnTouchListener(swipeListener);
-            FlipperLinearLayout fll = (FlipperLinearLayout)ll.findViewById(R.id.empty_list);
+            FlipperScrollView fll = (FlipperScrollView)ll.findViewById(R.id.empty_list);
             fll.setTouchInterceptor(swipeListener);
             list.setEmptyView(fll);
             addView(ll);
@@ -850,6 +852,14 @@ UnexpectedExceptionHandler.TrackedModule {
         startActivity(intent);
     }
 
+    private void
+    onOpt_itemsFavorite() {
+        Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeFavorite);
+        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+        startActivity(intent);
+    }
+
     private View
     createTabView(String text) {
         LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(this, R.layout.channel_list_tab);
@@ -1236,6 +1246,13 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onClick(View v) {
                 onOpt_itemsCategory();
+            }
+        });
+
+        findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_itemsFavorite();
             }
         });
 

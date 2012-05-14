@@ -15,77 +15,100 @@
         >
         <TextView
             android:id="@+id/channel"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dip"
             android:textSize="@dimen/misc_text_size"
             android:singleLine="true"
             android:ellipsize="end"
             />
-        <TextView
-            android:id="@+id/title"
-            android:layout_width="fill_parent"
+        <RelativeLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dip"
-            android:textSize="@dimen/title_text_size"
-            android:singleLine="true"
-            android:ellipsize="end"
-            />
-        <RelativeLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             >
-            <ImageView
-                android:id="@+id/image"
-                android:layout_width="30dip"
-                android:layout_height="30dip"
-                android:layout_marginRight="2dip"
-                android:layout_alignParentLeft="true"
+            <view
+                class="free.yhc.feeder.ItemListAdapter$ImageViewFavorite"
+                android:id="@+id/favorite"
+                android:layout_width="45dip"
+                android:layout_height="45dip"
+                android:layout_alignParentRight="true"
                 android:layout_alignParentTop="true"
                 android:gravity="center"
                 android:scaleType="fitCenter"
-                android:src="@drawable/icon"
+                android:src="@drawable/favorite_off"
+                android:clickable="true"
                 />
-            <view
-                class="free.yhc.feeder.ItemListAdapter$ProgressTextView"
-                android:id="@+id/progress"
-                android:layout_width="30dip"
-                android:layout_height="30dip"
-                android:layout_marginRight="2dip"
-                android:layout_alignParentLeft="true"
-                android:layout_alignParentTop="true"
-                android:layout_alignBottom="@id/image"
-                android:layout_alignRight="@id/image"
-                android:gravity="center"
-                android:textSize="@dimen/dnprogress_text_size"
-                android:textColor="@color/dnprogress_text_color"
-                android:textStyle="bold"
-                android:singleLine="true"
-                android:ellipsize="end"
-                android:visibility="gone"
-                />
-            <TextView
-                android:id="@+id/date"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_alignParentTop="true"
-                android:layout_toRightOf="@id/image"
-                android:textSize="@dimen/misc_text_size"
-                android:singleLine="true"
-                android:ellipsize="end"
-                />
-            <TextView
-                android:id="@+id/info"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/date"
-                android:layout_toRightOf="@id/image"
-                android:textSize="@dimen/misc_text_size"
-                android:singleLine="true"
-                android:ellipsize="end"
-                />
-        </RelativeLayout>
+	        <TextView
+	            android:id="@+id/title"
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content"
+	            android:layout_alignParentTop="true"
+	            android:layout_alignParentLeft="true"
+	            android:layout_toLeftOf="@id/favorite"
+	            android:textSize="@dimen/title_text_size"
+	            android:singleLine="true"
+	            android:ellipsize="end"
+	            />
+	        <RelativeLayout
+	            android:layout_width="fill_parent"
+	            android:layout_height="wrap_content"
+	            android:layout_toLeftOf="@id/favorite"
+	            android:layout_below="@id/title"
+	            android:layout_gravity="center_vertical"
+	            >
+	            <ImageView
+	                android:id="@+id/image"
+	                android:layout_width="30dip"
+	                android:layout_height="30dip"
+	                android:layout_marginRight="2dip"
+	                android:layout_alignParentLeft="true"
+	                android:layout_alignParentTop="true"
+	                android:gravity="center"
+	                android:scaleType="fitCenter"
+	                android:src="@drawable/icon"
+	                />
+	            <view
+	                class="free.yhc.feeder.ItemListAdapter$ProgressTextView"
+	                android:id="@+id/progress"
+	                android:layout_width="30dip"
+	                android:layout_height="30dip"
+	                android:layout_marginRight="2dip"
+	                android:layout_alignParentLeft="true"
+	                android:layout_alignParentTop="true"
+	                android:layout_alignBottom="@id/image"
+	                android:layout_alignRight="@id/image"
+	                android:gravity="center"
+	                android:textSize="@dimen/dnprogress_text_size"
+	                android:textColor="@color/dnprogress_text_color"
+	                android:textStyle="bold"
+	                android:singleLine="true"
+	                android:ellipsize="end"
+	                android:visibility="gone"
+	                />
+	            <TextView
+	                android:id="@+id/date"
+	                android:layout_width="fill_parent"
+	                android:layout_height="wrap_content"
+	                android:layout_alignParentTop="true"
+	                android:layout_toRightOf="@id/image"
+	                android:textSize="@dimen/misc_text_size"
+	                android:singleLine="true"
+	                android:ellipsize="end"
+	                />
+	            <TextView
+	                android:id="@+id/info"
+	                android:layout_width="fill_parent"
+	                android:layout_height="wrap_content"
+	                android:layout_below="@id/date"
+	                android:layout_toRightOf="@id/image"
+	                android:textSize="@dimen/misc_text_size"
+	                android:singleLine="true"
+	                android:ellipsize="end"
+	                />
+	        </RelativeLayout>
+	    </RelativeLayout>
         <TextView
             android:id="@+id/description"
             android:layout_width="fill_parent"
@@ -94,7 +117,7 @@
             android:maxLines="3"
             android:ellipsize="end"
             />
-    </LinearLayout>
+        </LinearLayout>
     <ImageView
         android:layout_width="fill_parent"
         android:layout_height="2dip"

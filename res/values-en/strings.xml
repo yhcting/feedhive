@@ -25,6 +25,7 @@
     <string name="refresh">refresh</string>
     <string name="all">All</string>
     <string name="update">Update</string>
+    <string name="favorite_item">Favorite Items</string>
     <string name="full_update">Full update</string>
     <string name="send_err_report">Send error report</string>
     <string name="enter_url">Enter URL</string>
@@ -37,6 +38,7 @@
     <string name="empty_list_add_channel_desc">Enter channel URL directly by touching this icon.</string>
     <string name="empty_list_predefined_desc">Select channel from recommended predefined channel list by touching this icon.</string>
     <string name="empty_list_btn_desc">About other buttons</string>
+    <string name="empty_list_items_favorite">List favorite items.</string>
     <string name="empty_list_items_category">List all feed items of current category.</string>
     <string name="empty_list_add_category">Add new category.</string>
     <string name="empty_list_del_category">Delete current category.</string>

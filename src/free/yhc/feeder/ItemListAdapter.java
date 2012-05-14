@@ -44,6 +44,7 @@ import free.yhc.feeder.model.Utils;
 public class ItemListAdapter extends CustomResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
     private DBPolicy  dbp = DBPolicy.S();
+    private OnAction  onAction = null;
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
     // See "DownloadProgressOnEvent" for details
     private TextView  dummyTextView;
@@ -103,6 +104,20 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    interface OnAction {
+        void onFavoriteClick(ImageView ibtn, long id, boolean favorite);
+    }
+
+    public static class ImageViewFavorite extends ImageView {
+        long    id = -1;
+        boolean fav = false;
+
+        public
+        ImageViewFavorite(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
+    }
+
     private final int
     getTitleColor(long stateFlag) {
         return Feed.Item.isStateNew(stateFlag)?
@@ -121,10 +136,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return "[ ItemListAdapter ]";
     }
 
-    public ItemListAdapter(Context context, int layout, Cursor c) {
+    public ItemListAdapter(Context context, int layout, Cursor c, OnAction actionListener) {
         super(context, layout, c);
         UnexpectedExceptionHandler.S().registerModule(this);
         dummyTextView = new TextView(context);
+        onAction = actionListener;
     }
 
     @Override
@@ -147,20 +163,40 @@ UnexpectedExceptionHandler.TrackedModule {
         // TODO
         //   Do performance check on low-end-device.
         final long state = dbp.getItemInfoLong(id, DB.ColumnItem.STATE);
+        final boolean favorite = Feed.Item.isFavorite(dbp.getItemInfoLong(id, DB.ColumnItem.FAVORITE));
 
-        final TextView channelv = (TextView)view.findViewById(R.id.channel);
-        final TextView titlev = (TextView)view.findViewById(R.id.title);
-        final TextView descv  = (TextView)view.findViewById(R.id.description);
+        final TextView channelv     = (TextView)view.findViewById(R.id.channel);
+        final TextView titlev       = (TextView)view.findViewById(R.id.title);
+        final TextView descv        = (TextView)view.findViewById(R.id.description);
         final ProgressTextView progressv = (ProgressTextView)view.findViewById(R.id.progress);
-        final TextView datev   = (TextView)view.findViewById(R.id.date);
-        final TextView infov = (TextView)view.findViewById(R.id.info);
-        final ImageView imgv   = (ImageView)view.findViewById(R.id.image);
+        final TextView datev        = (TextView)view.findViewById(R.id.date);
+        final TextView infov        = (TextView)view.findViewById(R.id.info);
+        final ImageView imgv        = (ImageView)view.findViewById(R.id.image);
+        final ImageViewFavorite favImgv   = (ImageViewFavorite)view.findViewById(R.id.favorite);
 
         int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
         if (cidx < 0)
             channelv.setVisibility(View.GONE);
         else
             channelv.setText(DBPolicy.S().getChannelInfoString(c.getLong(cidx), DB.ColumnChannel.TITLE));
+
+        // Set favorite button.
+        favImgv.id = id;
+        favImgv.fav = favorite;
+        favImgv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null == onAction)
+                    return;
+                ImageViewFavorite iv = (ImageViewFavorite)v;
+                onAction.onFavoriteClick(iv, iv.id, iv.fav);
+            }
+        });
+
+        if (favorite)
+            favImgv.setImageResource(R.drawable.favorite_on);
+        else
+            favImgv.setImageResource(R.drawable.favorite_off);
 
         String title = getCursorString(c, DB.ColumnItem.TITLE);
 
