@@ -103,13 +103,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    public static final int
+    private final int
     getTitleColor(long stateFlag) {
         return Feed.Item.isStateNew(stateFlag)?
                 R.color.title_color_new: R.color.text_color_opened;
     }
 
-    public static final int
+    private final int
     getTextColor(long stateFlag) {
         return Feed.Item.isStateNew(stateFlag)?
                 R.color.text_color_new: R.color.text_color_opened;
@@ -130,7 +130,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     bindView(View view, Context context, Cursor c) {
-        final long id = c.getLong(c.getColumnIndex(DB.ColumnItem.ID.getName()));
+        final long id = getCursorLong(c, DB.ColumnItem.ID);
 
         try {
             if (!isChanged(id))
@@ -162,14 +162,14 @@ UnexpectedExceptionHandler.TrackedModule {
         else
             channelv.setText(DBPolicy.S().getChannelInfoString(c.getLong(cidx), DB.ColumnChannel.TITLE));
 
-        String title = c.getString(c.getColumnIndex(DB.ColumnItem.TITLE.getName()));
+        String title = getCursorString(c, DB.ColumnItem.TITLE);
 
         titlev.setText(title);
-        descv.setText(c.getString(c.getColumnIndex(DB.ColumnItem.DESCRIPTION.getName())));
-        datev.setText(c.getString(c.getColumnIndex(DB.ColumnItem.PUBDATE.getName())));
+        descv.setText(getCursorString(c, DB.ColumnItem.DESCRIPTION));
+        datev.setText(getCursorString(c, DB.ColumnItem.PUBDATE));
 
-        String length = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_LENGTH.getName()));
-        String url = c.getString(c.getColumnIndex(DB.ColumnItem.ENCLOSURE_URL.getName()));
+        String length = getCursorString(c, DB.ColumnItem.ENCLOSURE_LENGTH);
+        String url = getCursorString(c, DB.ColumnItem.ENCLOSURE_URL);
         if (url.isEmpty())
             infov.setText("html");
         else

@@ -28,6 +28,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.view.View;
 import android.widget.ResourceCursorAdapter;
+import free.yhc.feeder.model.DB;
 
 public class CustomResourceCursorAdapter extends ResourceCursorAdapter {
     // To speed up refreshing list and dataSetChanged in case of only few-list-item are changed.
@@ -100,6 +101,22 @@ public class CustomResourceCursorAdapter extends ResourceCursorAdapter {
         if (null != unchangedMap.get(id) && null == changedMap.get(id))
             return false;
         return true;
+    }
+
+
+    protected String
+    getCursorString(Cursor c, DB.Column col) {
+        return c.getString(c.getColumnIndex(col.getName()));
+    }
+
+    protected Long
+    getCursorLong(Cursor c, DB.Column col) {
+        return c.getLong(c.getColumnIndex(col.getName()));
+    }
+
+    protected byte[]
+    getCursorBlob(Cursor c, DB.Column col) {
+        return c.getBlob(c.getColumnIndex(col.getName()));
     }
 
     @Override

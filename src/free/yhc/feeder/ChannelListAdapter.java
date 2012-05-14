@@ -75,7 +75,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     bindView(View view, final Context context, final Cursor c) {
-        long cid = c.getLong(c.getColumnIndex(DB.ColumnChannel.ID.getName()));
+        long cid = getCursorLong(c, DB.ColumnChannel.ID);
 
         try {
             if (!isChanged(cid))
@@ -86,11 +86,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
         //logI(">>> [DO] BindView cid : " + cid);
 
-        String title = c.getString(c.getColumnIndex(DB.ColumnChannel.TITLE.getName()));
-        String desc = c.getString(c.getColumnIndex(DB.ColumnChannel.DESCRIPTION.getName()));
+        String title = getCursorString(c, DB.ColumnChannel.TITLE);
+        String desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
 
         // date to readable string
-        Date lastupdate = new Date(c.getLong(c.getColumnIndex(DB.ColumnChannel.LASTUPDATE.getName())));
+        Date lastupdate = new Date(getCursorLong(c, DB.ColumnChannel.LASTUPDATE));
         String date = DateFormat.getInstance().format(lastupdate);
 
         // === Set 'age' ===
@@ -109,7 +109,7 @@ UnexpectedExceptionHandler.TrackedModule {
                         - DBPolicy.S().getChannelInfoLong(cid, ColumnChannel.OLDLAST_ITEMID);
 
         Bitmap bm = null;
-        byte[] imgRaw = c.getBlob(c.getColumnIndex(DB.ColumnChannel.IMAGEBLOB.getName()));
+        byte[] imgRaw = getCursorBlob(c, DB.ColumnChannel.IMAGEBLOB);
         if (imgRaw.length > 0)
             bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
 
