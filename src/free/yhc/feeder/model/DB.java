@@ -56,7 +56,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // So, let's ignore it until real DB structure is needed to be changed.
     // => this can be resolved by 'DB Upgrade operation'.
     private static final String NAME    = "feader.db";
-    private static final int    VERSION = 2;
+    private static final int    VERSION = 1;
 
     private static final String TABLE_CATEGORY  = "category";
     private static final String TABLE_CHANNEL   = "channel";
