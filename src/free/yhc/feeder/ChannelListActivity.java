@@ -499,6 +499,7 @@ UnexpectedExceptionHandler.TrackedModule {
         boolean      fromGesture = false;
         ListView     listView;
         LinearLayout layout;
+        String       tabText;
     }
 
     private TabTag
@@ -673,6 +674,7 @@ UnexpectedExceptionHandler.TrackedModule {
         tag.categoryid = cat.id;
         tag.layout = layout;
         tag.listView = (ListView)layout.findViewById(R.id.list);
+        tag.tabText = text;
 
         tab.setTag(tag);
         ab.addTab(tab, false);
@@ -1485,6 +1487,11 @@ UnexpectedExceptionHandler.TrackedModule {
             } while (c.moveToNext());
         }
         c.close();
+
+        //String tabText = getTag(ab.getSelectedTab()).tabText;
+        View cv = ab.getSelectedTab().getCustomView();
+        if (null == cv)
+            ab.getSelectedTab().setCustomView(cv);
 
         // Database data may be changed.
         // So refresh all list
