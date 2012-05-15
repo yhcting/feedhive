@@ -189,10 +189,6 @@ UnexpectedExceptionHandler.TrackedModule {
         public String getConstraint() { return constraint; }
     }
 
-    class QueryArg {
-
-    }
-
     static long
     getDefaultCategoryId() {
         return 0;
