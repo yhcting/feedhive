@@ -1488,7 +1488,11 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         c.close();
 
-        //String tabText = getTag(ab.getSelectedTab()).tabText;
+        // NOTE
+        // I think this is workaround of ICS bug.
+        // When orientation is changed, customeView of current selected tab is gone.
+        // That is, 'cv' value becomes null.
+        // So, below lines of code is to workaround this issue.
         View cv = ab.getSelectedTab().getCustomView();
         if (null == cv)
             ab.getSelectedTab().setCustomView(cv);
