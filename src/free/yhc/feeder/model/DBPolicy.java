@@ -104,8 +104,7 @@ UnexpectedExceptionHandler.TrackedModule {
         values.put(ColumnItem.ENCLOSURE_URL.getName(),       parD.enclosureUrl);
         values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    parD.enclosureLength);
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      parD.enclosureType);
-        values.put(ColumnItem.STATE.getName(),               Feed.Item.FStatNew);
-        values.put(ColumnItem.FAVORITE.getName(),            Feed.Item.FavoriteOff);
+        values.put(ColumnItem.STATE.getName(),               Feed.Item.FStatDefault);
 
         // If success to parse pubdate than pubdate is used, if not, current time is used.
         long time = Utils.dateStringToTime(parD.pubDate);
@@ -1007,13 +1006,16 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * Query favorite items
+     * Query items with masking value.
+     * Usually used to select items with flag value.
      * @param columns
+     * @param mask
+     * @param value
      * @return
      */
     public Cursor
-    queryFavoriteItem(ColumnItem[] columns) {
-        return db.queryItem(columns, ColumnItem.FAVORITE, Feed.Item.FavoriteOn, -1);
+    queryItemMask(ColumnItem[] columns, ColumnItem where, long mask, long value) {
+        return db.queryItemMask(columns, where, mask, value);
     }
 
     /**
@@ -1031,18 +1033,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.updateItem(id, ColumnItem.STATE, state);
     }
 
-    /**
-     * Update boolean value of FAVORITE field.
-     * @param id
-     * @param favorite
-     *   is favorite?
-     * @return
-     */
-    public long
-    updateItem_favorite(long id, boolean favorite) {
-        Long v = favorite? 1L: 0L;
-        return db.updateItem(id, ColumnItem.FAVORITE, v);
-    }
 
     /**
      * delete items.

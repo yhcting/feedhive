@@ -106,8 +106,10 @@ UnexpectedExceptionHandler.TrackedModule {
         getAdapterActionHandler() {
             return new ItemListAdapter.OnAction() {
                 @Override
-                public void onFavoriteClick(ImageView ibtn, long id, boolean favorite) {
-                    DBPolicy.S().updateItem_favorite(id, !favorite);
+                public void onFavoriteClick(ImageView ibtn, long id, long state) {
+                    // Toggle Favorite bit.
+                    state = state ^ Feed.Item.MStatFav;
+                    DBPolicy.S().updateItem_state(id, state);
                     dataSetChanged(id);
                 }
             };
@@ -148,18 +150,6 @@ UnexpectedExceptionHandler.TrackedModule {
             bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
             // Update "OLDLAST_ITEMID" when user opens item views.
             DBPolicy.S().updateChannel_lastItemId(cid);
-        }
-
-        @Override
-        public ItemListAdapter.OnAction
-        getAdapterActionHandler() {
-            return new ItemListAdapter.OnAction() {
-                @Override
-                public void onFavoriteClick(ImageView ibtn, long id, boolean favorite) {
-                    DBPolicy.S().updateItem_favorite(id, !favorite);
-                    dataSetChanged(id);
-                }
-            };
         }
 
         @Override
@@ -275,7 +265,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void onResume() {
             long[] ids = RTTask.S().getItemsDownloading();
             for (long id : ids)
-                if (Feed.Item.isFavorite(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.FAVORITE)))
+                if (Feed.Item.isStatFavOn(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.STATE)))
                     RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
         }
 
@@ -284,8 +274,10 @@ UnexpectedExceptionHandler.TrackedModule {
         getAdapterActionHandler() {
             return new ItemListAdapter.OnAction() {
                 @Override
-                public void onFavoriteClick(ImageView ibtn, long id, boolean favorite) {
-                    DBPolicy.S().updateItem_favorite(id, !favorite);
+                public void onFavoriteClick(ImageView ibtn, long id, long state) {
+                    // Toggle Favorite bit.
+                    state = state ^ Feed.Item.MStatFav;
+                    DBPolicy.S().updateItem_state(id, state);
                     refreshList();
                 }
             };
@@ -303,7 +295,8 @@ UnexpectedExceptionHandler.TrackedModule {
                     DB.ColumnItem.ENCLOSURE_TYPE,
                     DB.ColumnItem.PUBDATE,
                     DB.ColumnItem.LINK };
-            return db.queryFavoriteItem(columns);
+            return db.queryItemMask(columns, DB.ColumnItem.STATE,
+                                    Feed.Item.MStatFav, Feed.Item.FStatFavOn);
         }
     }
 
@@ -540,8 +533,9 @@ UnexpectedExceptionHandler.TrackedModule {
     changeItemState_opened(long id, int position) {
         // change state as 'opened' at this moment.
         long state = db.getItemInfoLong(id, DB.ColumnItem.STATE);
-        if (Feed.Item.isStateNew(state)) {
-            db.updateItem_state(id, Feed.Item.FStatOpened);
+        if (Feed.Item.isStateOpenNew(state)) {
+            state = Utils.bitSet(state, Feed.Item.FStatOpenOpened, Feed.Item.MStatOpen);
+            db.updateItem_state(id, state);
             dataSetChanged(id);
             return true;
         }

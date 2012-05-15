@@ -105,12 +105,12 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     interface OnAction {
-        void onFavoriteClick(ImageView ibtn, long id, boolean favorite);
+        void onFavoriteClick(ImageView ibtn, long id, long state);
     }
 
     public static class ImageViewFavorite extends ImageView {
-        long    id = -1;
-        boolean fav = false;
+        long id     = -1;
+        long state  = 0;
 
         public
         ImageViewFavorite(Context context, AttributeSet attrs) {
@@ -120,13 +120,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private final int
     getTitleColor(long stateFlag) {
-        return Feed.Item.isStateNew(stateFlag)?
+        return Feed.Item.isStateOpenNew(stateFlag)?
                 R.color.title_color_new: R.color.text_color_opened;
     }
 
     private final int
     getTextColor(long stateFlag) {
-        return Feed.Item.isStateNew(stateFlag)?
+        return Feed.Item.isStateOpenNew(stateFlag)?
                 R.color.text_color_new: R.color.text_color_opened;
     }
 
@@ -163,7 +163,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // TODO
         //   Do performance check on low-end-device.
         final long state = dbp.getItemInfoLong(id, DB.ColumnItem.STATE);
-        final boolean favorite = Feed.Item.isFavorite(dbp.getItemInfoLong(id, DB.ColumnItem.FAVORITE));
+        final boolean favorite = Feed.Item.isStatFavOn(state);
 
         final TextView channelv     = (TextView)view.findViewById(R.id.channel);
         final TextView titlev       = (TextView)view.findViewById(R.id.title);
@@ -182,14 +182,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Set favorite button.
         favImgv.id = id;
-        favImgv.fav = favorite;
+        favImgv.state = state;
         favImgv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (null == onAction)
                     return;
                 ImageViewFavorite iv = (ImageViewFavorite)v;
-                onAction.onFavoriteClick(iv, iv.id, iv.fav);
+                onAction.onFavoriteClick(iv, iv.id, iv.state);
             }
         });
 
