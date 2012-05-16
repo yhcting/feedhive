@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+    <style name="FeederTabTheme" parent="@android:style/Theme.Holo">
+        <item name="android:actionBarTabTextStyle">@style/FeederActionBarTabTextStyle</item>
+    </style>
+    <style name="FeederActionBarTabTextStyle" parent="android:TextAppearance.Holo.Widget.ActionBar.Title">
+        <item name="android:textSize">14sp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:width">100dip</item>
+        <item name="android:ellipsize">end</item>
+    </style>
 </resources>

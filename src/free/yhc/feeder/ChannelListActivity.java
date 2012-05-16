@@ -45,7 +45,6 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore.MediaColumns;
-import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -499,7 +498,6 @@ UnexpectedExceptionHandler.TrackedModule {
         boolean      fromGesture = false;
         ListView     listView;
         LinearLayout layout;
-        String       tabText;
     }
 
     private TabTag
@@ -664,7 +662,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Add new tab to action bar
         Tab tab = ab.newTab()
-                    .setCustomView(createTabView(text))
+                    .setText(text)
                     .setTag(cat.id)
                     .setTabListener(this);
 
@@ -674,7 +672,6 @@ UnexpectedExceptionHandler.TrackedModule {
         tag.categoryid = cat.id;
         tag.layout = layout;
         tag.listView = (ListView)layout.findViewById(R.id.list);
-        tag.tabText = text;
 
         tab.setTag(tag);
         ab.addTab(tab, false);
@@ -698,14 +695,9 @@ UnexpectedExceptionHandler.TrackedModule {
         selectDefaultAsSelected();
     }
 
-    private TextView
-    getTabTextView(Tab tab) {
-        return (TextView)((LinearLayout)tab.getCustomView()).findViewById(R.id.text);
-    }
-
     private String
     getTabText(Tab tab) {
-        return getTabTextView(tab).getText().toString();
+        return tab.getText().toString();
     }
 
     /**
@@ -862,13 +854,6 @@ UnexpectedExceptionHandler.TrackedModule {
         startActivity(intent);
     }
 
-    private View
-    createTabView(String text) {
-        LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(this, R.layout.channel_list_tab);
-        ((TextView)ll.findViewById(R.id.text)).setText(text);
-        return ll;
-    }
-
     private void
     onOpt_addCategory() {
         View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
@@ -976,7 +961,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (DBPolicy.S().isDuplicatedCategoryName(name)) {
                     LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
-                    ((TextView)ab.getSelectedTab().getCustomView().findViewById(R.id.text)).setText(name);
+                    ab.getSelectedTab().setText(name);
                     DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
                 }
                 dialog.dismiss();
@@ -1317,7 +1302,6 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onTabUnselected(Tab tab, FragmentTransaction ft) {
-        getTabTextView(tab).setEllipsize(TextUtils.TruncateAt.END);
         // to make sure
         getTag(tab).fromGesture = false;
     }
@@ -1325,7 +1309,6 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onTabReselected(Tab tab, FragmentTransaction ft) {
-        getTabTextView(tab).setEllipsize(TextUtils.TruncateAt.MARQUEE);
         if (!getTag(tab).fromGesture)
             flipper.show(tab);
         getTag(tab).fromGesture = false;
@@ -1536,5 +1519,6 @@ UnexpectedExceptionHandler.TrackedModule {
     onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         // Do nothing!
+
     }
 }
