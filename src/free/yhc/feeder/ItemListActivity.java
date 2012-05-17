@@ -35,7 +35,6 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.ContextMenu;
@@ -46,7 +45,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
@@ -66,6 +64,7 @@ import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity implements
+UILifecycle.OnEvent,
 UnexpectedExceptionHandler.TrackedModule {
     // Keys for extra value of intent : IKey (Intent Key)
     public static final String IKeyMode    = "mode";  // mode
@@ -86,21 +85,16 @@ UnexpectedExceptionHandler.TrackedModule {
     public static final int FilterNone        = 0; // no filter
     public static final int FilterNew         = 1; // new items of each channel.
 
+    private UILifecycle         uilc    = new UILifecycle(this);
     private OpMode              opMode  = null;
     private Handler             handler = new Handler();
     private final DBPolicy      db      = DBPolicy.S();
     private ListView            list    = null;
-    // Current running asyncTask
-    // Usually, this is used to cancel running task.
-    // This is directly controlled by this activity.
-    // And there is one-to-one mapping between activity and this asyncTask
-    // That's the difference from BGTask managed by BGTaskManager and RTTask.
-    private AsyncTask           runningAsyncTask = null;
 
     private class OpMode {
-        void    onCreateUIPreBG() {} // onCreate run in Main UI context.
-        void    onCreateBG() {} // onCreate run in background.
-        void    onCreateUIPostBG() {}
+        void    onCreate() {}
+        void    onResume() {}
+        Cursor  query()    { return null; }
 
         ItemListAdapter.OnAction
         getAdapterActionHandler() {
@@ -114,9 +108,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             };
         }
-
-        void    onResume() { }
-        Cursor  query() { return null; }
     }
 
     private class OpModeChannel extends OpMode {
@@ -132,7 +123,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreateUIPreBG() {
+        public void onCreate() {
             setTitle(db.getChannelInfoString(cid, DB.ColumnChannel.TITLE));
             // TODO
             //   How to use custom view + default option menu ???
@@ -201,13 +192,10 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreateUIPreBG() {
+        public void onCreate() {
             setTitle(getResources().getString(R.string.category) + ":" + db.getCategoryName(categoryid));
             getActionBar().setDisplayShowHomeEnabled(false);
-        }
 
-        @Override
-        public void onCreateBG() {
             long[] cids = DBPolicy.S().getChannelIds(categoryid);
             Long[] whereValues = Utils.convertArraylongToLong(cids);
             Long[] targetValues = new Long[whereValues.length];
@@ -216,7 +204,6 @@ UnexpectedExceptionHandler.TrackedModule {
             DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
                                           DB.ColumnChannel.ID, whereValues);
         }
-
 
         @Override
         public void onResume() {
@@ -256,7 +243,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreateUIPreBG() {
+        public void onCreate() {
             setTitle(getResources().getString(R.string.favorite_item));
             getActionBar().setDisplayShowHomeEnabled(false);
         }
@@ -297,33 +284,6 @@ UnexpectedExceptionHandler.TrackedModule {
                     DB.ColumnItem.LINK };
             return db.queryItemMask(columns, DB.ColumnItem.STATE,
                                     Feed.Item.MStatFav, Feed.Item.FStatFavOn);
-        }
-    }
-
-    private class OnCreateAsyncTask extends AsyncTask<Void, Void, Err> {
-        @Override
-        protected void onPreExecute() {
-            runningAsyncTask = this;
-            setProgressBarIndeterminateVisibility(true);
-            opMode.onCreateUIPreBG();
-        }
-
-        @Override
-        protected Err
-        doInBackground(Void... arg) {
-            opMode.onCreateBG();
-            return Err.NoErr;
-        }
-
-        @Override
-        protected void onPostExecute(Err result) {
-            runningAsyncTask = null;
-            list.setAdapter(new ItemListAdapter(ItemListActivity.this,
-                                                R.layout.item_row,
-                                                opMode.query(),
-                                                opMode.getAdapterActionHandler()));
-            setProgressBarIndeterminateVisibility(false);
-            opMode.onCreateUIPostBG();
         }
     }
 
@@ -792,10 +752,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
-        super.onCreate(savedInstanceState);
-        logI("==> ItemListActivity : onCreate");
+    onUICreate() {
+        logI("==> ItemListActivity : onUICreate");
+        getActionBar().show();
 
         int mode = getIntent().getIntExtra(IKeyMode, -1);
         eAssert(-1 != mode);
@@ -812,8 +771,6 @@ UnexpectedExceptionHandler.TrackedModule {
         default:
             eAssert(false);
         }
-        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-
         setContentView(R.layout.item_list);
         list = ((ListView)findViewById(R.id.list));
         eAssert(null != list);
@@ -827,21 +784,45 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
         registerForContextMenu(list);
-        new OnCreateAsyncTask().execute();
+
+        opMode.onCreate();
+
+        list.setAdapter(new ItemListAdapter(ItemListActivity.this,
+                R.layout.item_row,
+                opMode.query(),
+                opMode.getAdapterActionHandler()));
+    }
+
+    @Override
+    public void
+    onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
+        super.onCreate(savedInstanceState);
+        logI("==> ItemListActivity : onCreate");
+        setContentView(R.layout.plz_wait);
+        getActionBar().hide();
+
+        uilc.onCreate();
+    }
+
+    @Override
+    public void
+    onUIStart() {
+        logI("==> ItemListActivity : onUIStart");
     }
 
     @Override
     protected void
     onStart() {
-        logI("==> ItemListActivity : onStart");
         super.onStart();
+        logI("==> ItemListActivity : onStart");
+        uilc.onStart();
     }
 
     @Override
-    protected void
-    onResume() {
-        logI("==> ItemListActivity : onResume");
-        super.onResume();
+    public void
+    onUIResume() {
+        logI("==> ItemListActivity : onUIResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
@@ -851,31 +832,66 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     protected void
-    onPause() {
-        logI("==> ItemListActivity : onPause");
+    onResume() {
+        super.onResume();
+        logI("==> ItemListActivity : onResume");
+        uilc.onResume();
+    }
+
+    // See comments at ChannelListActivity.onWindowFocusChanged
+    @Override
+    public void
+    onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!uilc.isStarted())
+            uilc.triggerDelayedStart();
+    }
+
+    @Override
+    public void
+    onUIPause() {
+        logI("==> ItemListActivity : onUIPause");
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
         RTTask.S().unregisterManagerEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
         RTTask.S().unbind(this);
+    }
+
+    @Override
+    protected void
+    onPause() {
+        logI("==> ItemListActivity : onPause");
+        uilc.onPause();
         super.onPause();
+    }
+
+    @Override
+    public void
+    onUIStop() {
+        logI("==> ItemListActivity : onUIStop");
     }
 
     @Override
     protected void
     onStop() {
         logI("==> ItemListActivity : onStop");
+        uilc.onStop();
         super.onStop();
+    }
+
+    @Override
+    public void
+    onUIDestroy() {
+        logI("==> ItemListActivity : onUIDestroy");
+        if (null != list && null != getListAdapter() && null != getListAdapter().getCursor())
+            getListAdapter().getCursor().close();
     }
 
     @Override
     protected void
     onDestroy() {
         logI("==> ItemListActivity : onDestroy");
-        if (null != runningAsyncTask)
-            runningAsyncTask.cancel(true);
-        runningAsyncTask = null;
-        if (null != list && null != getListAdapter() && null != getListAdapter().getCursor())
-            getListAdapter().getCursor().close();
+        uilc.onDestroy();
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }

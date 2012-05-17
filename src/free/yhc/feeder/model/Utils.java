@@ -46,7 +46,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.TextView;
 
 public class Utils {
-    public static final boolean DBG = false;
+    public static final boolean DBG = true;
     private static final String TAG = "[Feeder]";
 
     // Format of nString (Number String)

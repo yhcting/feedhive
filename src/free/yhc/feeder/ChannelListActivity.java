@@ -82,14 +82,14 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements
 ActionBar.TabListener,
+UILifecycle.OnEvent,
 UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int ReqCPickImage = 0;
 
-    private ActionBar   ab;
-    private Flipper     flipper;
-
-    // Animation
+    private UILifecycle uilc    = new UILifecycle(this);
+    private ActionBar   ab      = null;
+    private Flipper     flipper = null;
 
     // Saved cid for Async execution.
     private long      cid_pickImage = -1;
@@ -1395,11 +1395,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
-        super.onCreate(savedInstanceState);
-
-        logI("==> ChannelListActivity : onCreate");
+    onUICreate() {
+        logI("==> ChannelListActivity : onUICreate");
+        getActionBar().show();
 
         Feed.Category[] cats;
         cats = DBPolicy.S().getCategories();
@@ -1424,28 +1422,46 @@ UnexpectedExceptionHandler.TrackedModule {
         // Select default category as current category.
         selectDefaultAsSelected();
         setupToolButtons();
+    }
+
+    @Override
+    public void
+    onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
+        super.onCreate(savedInstanceState);
+
+        logI("==> ChannelListActivity : onCreate");
+        setContentView(R.layout.plz_wait);
+        getActionBar().hide();
 
         // TODO
         // Is this best place to put this line of code (sendReportMail())???
         // More consideration is required.
         // Send error report if exists.
         UnexpectedExceptionHandler.S().sendReportMail(this);
+
+        uilc.onCreate();
+    }
+
+    @Override
+    public void
+    onUIStart() {
+        logI("==> ChannelListActivity : onUIStart");
+        // nothing to do
     }
 
     @Override
     protected void
     onStart() {
-        logI("==> ChannelListActivity : onStart");
         super.onStart();
-
+        logI("==> ChannelListActivity : onStart");
+        uilc.onStart();
     }
 
     @Override
-    protected void
-    onResume() {
-        logI("==> ChannelListActivity : onResume");
-        super.onResume();
-
+    public void
+    onUIResume() {
+        logI("==> ChannelListActivity : onUIResume");
         // NOTE
         // Case to think about
         // - new update task is registered between 'registerManagerEventListener' and 'getUpdateState'
@@ -1481,8 +1497,34 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     protected void
-    onPause() {
-        logI("==> ChannelListActivity : onPause");
+    onResume() {
+        super.onResume();
+        logI("==> ChannelListActivity : onResume");
+        uilc.onResume();
+    }
+
+    // NOTE
+    // Why 'onWindowFocusChanged' is used to start real-UI-jobs?
+    // Before starting real-UI-job (time-consuming-job), first screen - sign of life - should be shown to user.
+    // But, in Android, there is no callback that is called just after first draw.
+    // (Sing-of-life-screen doesn't shown if below 'handler.post' is triggered in onResume.)
+    // 'onWindowFocusChanged' is called at very early stage of Activity Lifecycle and it is called after first draw
+    // (There is no documented manual about this. But, it is just experimental result.)
+    // Even if it is called quite often, I think this callback is proper place to trigger real-UI-job.
+    // Not best place, but fair enough!
+    @Override
+    public void
+    onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!uilc.isStarted())
+            uilc.triggerDelayedStart();
+    }
+
+    @Override
+    public void
+    onUIPause() {
+        logI("==> ChannelListActivity : onUIPause");
+
         RTTask.S().unregisterManagerEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
@@ -1494,22 +1536,43 @@ UnexpectedExceptionHandler.TrackedModule {
         // I think this is Android's bug or implicit policy.
         // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
         RTTask.S().unbind(this);
+    }
+
+    @Override
+    protected void
+    onPause() {
+        logI("==> ChannelListActivity : onPause");
+        uilc.onPause();
         super.onPause();
+    }
+
+    @Override
+    public void
+    onUIStop() {
+        logI("==> ChannelListActivity : onUIStop");
     }
 
     @Override
     protected void
     onStop() {
         logI("==> ChannelListActivity : onStop");
+        uilc.onStop();
         super.onStop();
+    }
+
+    @Override
+    public void
+    onUIDestroy() {
+        logI("==> ChannelListActivity : onUIDestroy");
+        for (int i = 0; i < ab.getTabCount(); i++)
+            getListAdapter(ab.getTabAt(i)).getCursor().close();
     }
 
     @Override
     protected void
     onDestroy() {
         logI("==> ChannelListActivity : onDestroy");
-        for (int i = 0; i < ab.getTabCount(); i++)
-            getListAdapter(ab.getTabAt(i)).getCursor().close();
+        uilc.onDestroy();
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }
@@ -1519,6 +1582,5 @@ UnexpectedExceptionHandler.TrackedModule {
     onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         // Do nothing!
-
     }
 }
