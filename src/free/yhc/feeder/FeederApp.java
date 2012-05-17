@@ -47,7 +47,7 @@ public class FeederApp extends Application {
         RTTask.S();
 
         UnexpectedExceptionHandler.S().init(context);
-        // Initialise modules
+        // Initialize modules
         UIPolicy.init(context);
         RTTask.S().init(context);
     }

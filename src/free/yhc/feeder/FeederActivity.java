@@ -30,9 +30,9 @@ public class FeederActivity extends Activity {
     public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent intent = new Intent(FeederActivity.this, ChannelListActivity.class);
+        Intent intent = new Intent(this, ChannelListActivity.class);
         startActivity(intent);
-        FeederActivity.this.finish();
+        finish();
     }
 
     @Override
