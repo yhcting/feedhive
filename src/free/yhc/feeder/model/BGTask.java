@@ -82,7 +82,9 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         public void run() {
             if (BGTask.this.isAlive()) {
                 logI("BGTask : REPOST : wait for task is Done");
-                ownerHandler.post(new BGTaskPost(bCancelled));
+                // post message continuously may drop responsibility for user, in case that ownerHandler is attached to UI thread.
+                // To increase responsibility, post message with some delay.
+                ownerHandler.postDelayed(new BGTaskPost(bCancelled), 10);
                 return;
             }
 
