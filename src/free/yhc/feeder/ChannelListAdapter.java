@@ -84,8 +84,6 @@ UnexpectedExceptionHandler.TrackedModule {
             clearChangeState(cid);
         }
 
-        //logI(">>> [DO] BindView cid : " + cid);
-
         String title = getCursorString(c, DB.ColumnChannel.TITLE);
         String desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
 
