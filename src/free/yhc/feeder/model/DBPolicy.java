@@ -64,16 +64,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // Therefore, it is easy to caching and easy to avoid cache-synchronization issue.
     private HashMap<Long, Long> maxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
 
-    // Why this Map is introduced?
-    // ChannelListActivity is resumed, it always refresh whole list.
-    // That is cursor is always re-created.
-    // But, in most cases, channel information of DB is not changed.
-    // So, most of time, this refresh is just cost.
-    // To avoid this, marking channel version in this Map.
-    // This channel version is started from 0 and increased whenever channel information of DB is changed.
-    // With this, ChannelListActivity can check that refreshing is required or not.
-    private HashMap<Long, Long> chUpdVerMap = new HashMap<Long, Long>();
-
     enum ItemDataType {
         RAW,
         FILE
