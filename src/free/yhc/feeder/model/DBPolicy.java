@@ -26,6 +26,7 @@ import static free.yhc.feeder.model.Utils.logI;
 import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -56,6 +57,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static DBPolicy instance = null;
     private DB              db       = null;
+
+    // Getting max item id of channel takes longer time than expected.
+    // So, let's caching it.
+    // It is used at very few places.
+    // Therefore, it is easy to caching and easy to avoid cache-synchronization issue.
+    private HashMap<Long, Long> maxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
 
     enum ItemDataType {
         RAW,
@@ -563,6 +570,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 // If issued case is found, let's consider it at the moment.
                 if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
                     throw new FeederException(Err.DBUnknown);
+                // Invalidate cached value.
+                maxIdCache.remove(cid);
 
                 if (null != idop && null != f) {
                     // NOTE
@@ -915,6 +924,10 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long
     getItemInfoMaxId(long cid) {
+        Long v = maxIdCache.get(cid);
+        if (null != v)
+            return v;
+
         Cursor c = db.queryItemIds(cid, 1);
         if (!c.moveToFirst())
             return 0; // there is no item!
@@ -923,6 +936,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, this one is last item id.
         long lastId = c.getLong(0);
         c.close();
+        maxIdCache.put(cid, lastId);
         return lastId;
     }
 
