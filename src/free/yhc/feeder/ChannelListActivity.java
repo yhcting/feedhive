@@ -87,7 +87,9 @@ UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int ReqCPickImage = 0;
 
-    private UILifecycle uilc    = new UILifecycle(this);
+    private UILifecycle uilc ;
+    private View        contentv;
+    private View        waitv;
     private ActionBar   ab      = null;
     private Flipper     flipper = null;
 
@@ -1221,71 +1223,71 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    setupToolButtons() {
-        findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
+    setupToolButtons(View contentv) {
+        contentv.findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_addChannel();
             }
         });
 
-        findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_itemsCategory();
             }
         });
 
-        findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_itemsFavorite();
             }
         });
 
-        findViewById(R.id.btn_add_category).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_add_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_addCategory();
             }
         });
 
-        findViewById(R.id.btn_del_category).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_del_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_deleteCategory();
             }
         });
 
-        findViewById(R.id.btn_rename_category).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_rename_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_renameCategory();
             }
         });
 
-        findViewById(R.id.btn_del_dnfiles).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_del_dnfiles).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_deleteAllDnfiles();
             }
         });
 
-        findViewById(R.id.btn_setting).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_setting).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_setting();
             }
         });
 
-        findViewById(R.id.btn_predefined).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_predefined).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_selectPredefinedChannel();
             }
         });
 
-        findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
+        contentv.findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_information();
@@ -1395,20 +1397,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUICreate() {
+    onUICreate(View contentv) {
         logI("==> ChannelListActivity : onUICreate");
-        getActionBar().show();
-
         Feed.Category[] cats;
         cats = DBPolicy.S().getCategories();
 
         eAssert(cats.length > 0);
 
-        // Setup list view
-        setContentView(R.layout.channel_list);
-
         // Setup for swipe.
-        flipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
+        flipper = new Flipper(this, (ViewFlipper)contentv.findViewById(R.id.flipper));
+        setupToolButtons(contentv);
 
         // Setup Tabs
         ab = getActionBar();
@@ -1421,7 +1419,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Select default category as current category.
         selectDefaultAsSelected();
-        setupToolButtons();
     }
 
     @Override
@@ -1431,8 +1428,6 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
 
         logI("==> ChannelListActivity : onCreate");
-        setContentView(R.layout.plz_wait);
-        getActionBar().hide();
 
         // TODO
         // Is this best place to put this line of code (sendReportMail())???
@@ -1440,12 +1435,15 @@ UnexpectedExceptionHandler.TrackedModule {
         // Send error report if exists.
         UnexpectedExceptionHandler.S().sendReportMail(this);
 
+        uilc = new UILifecycle("Channel", this, this,
+                               LookAndFeel.inflateLayout(this, R.layout.channel_list),
+                               LookAndFeel.inflateLayout(this, R.layout.plz_wait));
         uilc.onCreate();
     }
 
     @Override
     public void
-    onUIStart() {
+    onUIStart(View contentv) {
         logI("==> ChannelListActivity : onUIStart");
         // nothing to do
     }
@@ -1460,7 +1458,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUIResume() {
+    onUIResume(View contentv) {
         logI("==> ChannelListActivity : onUIResume");
         // NOTE
         // Case to think about
@@ -1504,25 +1502,36 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     // NOTE
-    // Why 'onWindowFocusChanged' is used to start real-UI-jobs?
+    // Why 'onPostResume + delay(100ms)' is used to start real-UI-jobs?
     // Before starting real-UI-job (time-consuming-job), first screen - sign of life - should be shown to user.
     // But, in Android, there is no callback that is called just after first draw.
     // (Sing-of-life-screen doesn't shown if below 'handler.post' is triggered in onResume.)
     // 'onWindowFocusChanged' is called at very early stage of Activity Lifecycle and it is called after first draw
     // (There is no documented manual about this. But, it is just experimental result.)
-    // Even if it is called quite often, I think this callback is proper place to trigger real-UI-job.
-    // Not best place, but fair enough!
+    // Because of delay, sometimes this may not work as expected if system is very heavy loaded.
+    // Not best place, but fair enough - 100 ms is enough large in most case!
     @Override
-    public void
-    onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (!uilc.isStarted())
-            uilc.triggerDelayedStart();
+    protected void
+    onPostResume() {
+        super.onPostResume();
+        uilc.getHandler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                uilc.triggerDelayedNextState();
+            }
+        }, 100);
     }
 
     @Override
     public void
-    onUIPause() {
+    onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+
+    }
+
+    @Override
+    public void
+    onUIPause(View contentv) {
         logI("==> ChannelListActivity : onUIPause");
 
         RTTask.S().unregisterManagerEventListener(this);
@@ -1548,7 +1557,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUIStop() {
+    onUIStop(View contentv) {
         logI("==> ChannelListActivity : onUIStop");
     }
 
@@ -1562,7 +1571,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUIDestroy() {
+    onUIDestroy(View contentv) {
         logI("==> ChannelListActivity : onUIDestroy");
         for (int i = 0; i < ab.getTabCount(); i++)
             getListAdapter(ab.getTabAt(i)).getCursor().close();

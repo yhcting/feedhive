@@ -85,7 +85,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public static final int FilterNone        = 0; // no filter
     public static final int FilterNew         = 1; // new items of each channel.
 
-    private UILifecycle         uilc    = new UILifecycle(this);
+    private UILifecycle         uilc;
     private OpMode              opMode  = null;
     private Handler             handler = new Handler();
     private final DBPolicy      db      = DBPolicy.S();
@@ -752,7 +752,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUICreate() {
+    onUICreate(View contentv) {
         logI("==> ItemListActivity : onUICreate");
         getActionBar().show();
 
@@ -771,8 +771,7 @@ UnexpectedExceptionHandler.TrackedModule {
         default:
             eAssert(false);
         }
-        setContentView(R.layout.item_list);
-        list = ((ListView)findViewById(R.id.list));
+        list = ((ListView)contentv.findViewById(R.id.list));
         eAssert(null != list);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -799,15 +798,16 @@ UnexpectedExceptionHandler.TrackedModule {
         UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
         logI("==> ItemListActivity : onCreate");
-        setContentView(R.layout.plz_wait);
-        getActionBar().hide();
-
+        uilc = new UILifecycle("Item",
+                               this, this,
+                               LookAndFeel.inflateLayout(this, R.layout.item_list),
+                               LookAndFeel.inflateLayout(this, R.layout.plz_wait));
         uilc.onCreate();
     }
 
     @Override
     public void
-    onUIStart() {
+    onUIStart(View contentv) {
         logI("==> ItemListActivity : onUIStart");
     }
 
@@ -821,7 +821,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUIResume() {
+    onUIResume(View contentv) {
         logI("==> ItemListActivity : onUIResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
@@ -838,18 +838,22 @@ UnexpectedExceptionHandler.TrackedModule {
         uilc.onResume();
     }
 
-    // See comments at ChannelListActivity.onWindowFocusChanged
+    // See comments at ChannelListActivity.onPostResume
     @Override
-    public void
-    onWindowFocusChanged(boolean hasFocus) {
-        super.onWindowFocusChanged(hasFocus);
-        if (!uilc.isStarted())
-            uilc.triggerDelayedStart();
+    protected void
+    onPostResume() {
+        super.onPostResume();
+        uilc.getHandler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                uilc.triggerDelayedNextState();
+            }
+        }, 100);
     }
 
     @Override
     public void
-    onUIPause() {
+    onUIPause(View contentv) {
         logI("==> ItemListActivity : onUIPause");
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
         RTTask.S().unregisterManagerEventListener(this);
@@ -867,7 +871,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUIStop() {
+    onUIStop(View contentv) {
         logI("==> ItemListActivity : onUIStop");
     }
 
@@ -881,7 +885,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUIDestroy() {
+    onUIDestroy(View contentv) {
         logI("==> ItemListActivity : onUIDestroy");
         if (null != list && null != getListAdapter() && null != getListAdapter().getCursor())
             getListAdapter().getCursor().close();
