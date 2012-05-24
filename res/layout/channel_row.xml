@@ -116,7 +116,7 @@
                 android:layout_marginBottom="2dip"
                 android:textSize="@dimen/desc_text_size"
                 android:textColor="@color/text_color_new"
-                android:maxLines="1"
+                android:singleLine="true"
                 android:ellipsize="end"
                 />
         </LinearLayout>

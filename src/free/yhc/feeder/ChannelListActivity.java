@@ -96,9 +96,13 @@ UnexpectedExceptionHandler.TrackedModule {
     // Saved cid for Async execution.
     private long      cid_pickImage = -1;
 
-    private interface ActionDialogEditbox {
+    private interface EditTextDialogAction {
+        void prepare(Dialog dialog, EditText edit);
         void onOk(Dialog dialog, EditText edit);
-        void onCancel(Dialog dialog);
+    }
+
+    private interface ConfirmDialogAction {
+        void onOk(Dialog dialog);
     }
 
     private static class FlipperScrollView extends ScrollView {
@@ -765,20 +769,67 @@ UnexpectedExceptionHandler.TrackedModule {
         task.execute(new Long(cid));
     }
 
-    private void
-    setDialogEditTextAction(final AlertDialog dialog, final EditText edit, final ActionDialogEditbox act) {
+    private AlertDialog
+    buildOneLineEditTextDialog(int title, final EditTextDialogAction action) {
+        // Create "Enter Url" dialog
+        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
+        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
+                                                                    layout,
+                                                                    title);
+        // Set action for dialog.
+        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        edit.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
+                    if (!edit.getText().toString().isEmpty()) {
+                        action.onOk(dialog, ((EditText)v));
+                        return true;
+                    }
+                }
+                return false;
+            }
+        });
+        action.prepare(dialog, edit);
+
         dialog.setButton(getResources().getText(R.string.ok), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dia, int which) {
-                act.onOk(dialog, edit);
+                dialog.dismiss();
+                if (!edit.getText().toString().isEmpty())
+                    action.onOk(dialog, edit);
             }
         });
+
         dialog.setButton2(getResources().getText(R.string.cancel), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
             }
         });
+        return dialog;
+    }
+
+    private AlertDialog
+    buildConfirmDialog(int title, int description,
+                       final ConfirmDialogAction action) {
+        final AlertDialog dialog = LookAndFeel.createWarningDialog(this, title, description);
+        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface diag, int which) {
+                dialog.dismiss();
+                action.onOk(dialog);
+            }
+        });
+
+        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        return dialog;
     }
 
     private void
@@ -799,44 +850,68 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        // Create "Enter Url" dialog
-        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
-        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
-                                                                    layout,
-                                                                    R.string.channel_url);
         // Set action for dialog.
-        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
-        final ActionDialogEditbox editAction = new ActionDialogEditbox() {
+        final EditTextDialogAction action = new EditTextDialogAction() {
+            @Override
+            public void prepare(Dialog dialog, EditText edit) {
+                // start edit box with 'http://'
+                final String prefix = "http://";
+                edit.setText(prefix);
+                edit.setSelection(prefix.length());
+            }
+
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String url = edit.getText().toString();
-                dialog.dismiss();
-                if (!url.isEmpty() && !url.matches("http\\:\\/\\/\\s*"))
+                if (!url.matches("http\\:\\/\\/\\s*"))
                     addChannel(url);
             }
+        };
+        buildOneLineEditTextDialog(R.string.channel_url, action).show();
+    }
+
+    private void
+    onOpt_addYoutubeChannel_editDiag(final int optStringId) {
+        // Set action for dialog.
+        final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
-            public void onCancel(Dialog dialog) {
-                dialog.dismiss();
+            public void prepare(Dialog dialog, EditText edit) {}
+            @Override
+            public void onOk(Dialog dialog, EditText edit) {
+                switch (optStringId) {
+                case R.string.tag:
+                    addChannel(Utils.buildYoutubeFeedUrl_tag(edit.getText().toString()));
+                    break;
+                case R.string.uploader:
+                    addChannel(Utils.buildYoutubeFeedUrl_uploader(edit.getText().toString()));
+                    break;
+                case R.string.word_search:
+                    addChannel(Utils.buildYoutubeFeedUrl_search(edit.getText().toString()));
+                    break;
+                default:
+                    eAssert(false);
+                }
             }
         };
-        setDialogEditTextAction(dialog, edit, editAction);
+        buildOneLineEditTextDialog(optStringId, action).show();
+    }
 
-        // start edit box with 'http://'
-        final String prefix = "http://";
-        edit.setText(prefix);
-        edit.setSelection(prefix.length());
-        edit.setOnKeyListener(new View.OnKeyListener() {
+    private void
+    onOpt_addYoutubeChannel() {
+        final int[] optStringIds = { R.string.tag, R.string.uploader, R.string.word_search };
+        final CharSequence[] items = new CharSequence[optStringIds.length];
+        for (int i = 0; i < optStringIds.length; i++)
+            items[i] = getResources().getText(optStringIds[i]);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getResources().getText(R.string.way_youtube_subscribe));
+        builder.setItems(items, new DialogInterface.OnClickListener() {
             @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                // If the event is a key-down event on the "enter" button
-                if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    editAction.onOk(dialog, ((EditText) v));
-                    return true;
-                }
-                return false;
+            public void onClick(DialogInterface dialog, int item) {
+                onOpt_addYoutubeChannel_editDiag(optStringIds[item]);
             }
         });
-        dialog.show();
+        builder.create().show();
     }
 
     private void
@@ -858,21 +933,15 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_addCategory() {
-        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
-        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
-                                                                    layout,
-                                                                    R.string.add_category);
         // Set action for dialog.
-        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
-        final ActionDialogEditbox editAction = new ActionDialogEditbox() {
+        final EditTextDialogAction action = new EditTextDialogAction() {
+            @Override
+            public void prepare(Dialog dialog, EditText edit) {
+                edit.setHint(R.string.enter_name);
+            }
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
-                if (name.isEmpty()) {
-                    dialog.dismiss();
-                    return;
-                }
-
                 if (DBPolicy.S().isDuplicatedCategoryName(name)) {
                     LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
@@ -884,29 +953,9 @@ UnexpectedExceptionHandler.TrackedModule {
                         refreshList(addCategory(cat));
                     }
                 }
-                dialog.dismiss();
-            }
-            @Override
-            public void onCancel(Dialog dialog) {
-                dialog.dismiss();
             }
         };
-        setDialogEditTextAction(dialog, edit, editAction);
-
-        edit.setHint(R.string.enter_name);
-        edit.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean
-            onKey(View v, int keyCode, KeyEvent event) {
-                // If the event is a key-down event on the "enter" button
-                if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    editAction.onOk(dialog, (EditText)v);
-                    return true;
-                }
-                return false;
-            }
-        });
-        dialog.show();
+        buildOneLineEditTextDialog(R.string.add_category, action).show();
     }
 
     private void
@@ -920,75 +969,36 @@ UnexpectedExceptionHandler.TrackedModule {
         // 0 should be default category index!
         eAssert(ab.getSelectedNavigationIndex() > 0);
 
-        // Create "Enter Url" dialog
-        AlertDialog dialog =
-                LookAndFeel.createWarningDialog(this,
-                                                R.string.delete_category,
-                                                R.string.delete_category_msg);
-        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+        ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void onOk(Dialog dialog) {
                 deleteCategory(categoryid);
-                dialog.dismiss();
             }
-        });
-        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                // Do nothing
-                dialog.dismiss();
-            }
-        });
-        dialog.show();
-
+        };
+        buildConfirmDialog(R.string.delete_category, R.string.delete_category_msg, action)
+            .show();
     }
 
     private void
     onOpt_renameCategory() {
-        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
-        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
-                                                                    layout,
-                                                                    R.string.rename_category);
         // Set action for dialog.
-        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
-        final ActionDialogEditbox editAction = new ActionDialogEditbox() {
+        final EditTextDialogAction action = new EditTextDialogAction() {
+            @Override
+            public void prepare(Dialog dialog, EditText edit) {
+                edit.setHint(R.string.enter_name);
+            }
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
-                if (name.isEmpty()) {
-                    dialog.dismiss();
-                    return;
-                }
-
                 if (DBPolicy.S().isDuplicatedCategoryName(name)) {
                     LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
                     ab.getSelectedTab().setText(name);
                     DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
                 }
-                dialog.dismiss();
-            }
-            @Override
-            public void onCancel(Dialog dialog) {
-                dialog.dismiss();
             }
         };
-        setDialogEditTextAction(dialog, edit, editAction);
-
-        edit.setHint(R.string.enter_name);
-        edit.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean
-            onKey(View v, int keyCode, KeyEvent event) {
-                // If the event is a key-down event on the "enter" button
-                if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    editAction.onOk(dialog, (EditText)v);
-                    return true;
-                }
-                return false;
-            }
-        });
-        dialog.show();
+        buildOneLineEditTextDialog(R.string.rename_category, action).show();
     }
 
     private void
@@ -999,29 +1009,18 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        AlertDialog dialog =
-                LookAndFeel.createWarningDialog(this,
-                                                R.string.delete_all_downloaded_file,
-                                                R.string.delete_all_downloaded_file_msg);
-        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+        ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void onOk(Dialog dialog) {
                 SpinAsyncTask task = new SpinAsyncTask(ChannelListActivity.this,
                                                        new DeleteAllDnfilesEventHandler(),
                                                        R.string.delete_all_downloaded_file);
-
                 task.execute(new Object()); // just pass dummy object;
-                dialog.dismiss();
             }
-        });
-        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                // Do nothing
-                dialog.dismiss();
-            }
-        });
-        dialog.show();
+        };
+
+        buildConfirmDialog(R.string.delete_all_downloaded_file, R.string.delete_all_downloaded_file_msg, action)
+            .show();
     }
 
     private void
@@ -1060,48 +1059,28 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContext_unlistChannel(final long cid) {
-        AlertDialog dialog =
-                LookAndFeel.createWarningDialog(this,
-                                                R.string.unlist_channel,
-                                                R.string.unlist_channel_msg);
-        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+        ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void onOk(Dialog dialog) {
                 unlistChannel(ab.getSelectedTab(), cid);
-                dialog.dismiss();
             }
-        });
-        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                // Do nothing
-                dialog.dismiss();
-            }
-        });
-        dialog.show();
+        };
+
+        buildConfirmDialog(R.string.unlist_channel, R.string.unlist_channel_msg, action)
+            .show();
     }
 
     private void
     onContext_deleteChannel(final long cid) {
-        AlertDialog dialog =
-                LookAndFeel.createWarningDialog(this,
-                                                R.string.delete_channel,
-                                                R.string.delete_channel_msg);
-        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
+        ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void onOk(Dialog dialog) {
                 deleteChannel(ab.getSelectedTab(), cid);
-                dialog.dismiss();
             }
-        });
-        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                // Do nothing
-                dialog.dismiss();
-            }
-        });
-        dialog.show();
+        };
+
+        buildConfirmDialog(R.string.delete_channel, R.string.delete_channel_msg, action)
+            .show();
     }
 
     private void
@@ -1228,6 +1207,13 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onClick(View v) {
                 onOpt_addChannel();
+            }
+        });
+
+        contentv.findViewById(R.id.btn_add_youtube_channel).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_addYoutubeChannel();
             }
         });
 
@@ -1485,6 +1471,10 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         c.close();
 
+        if (null == ab) {
+            logW("ChannelListActivity : ab(action bar) is NULL");
+            ab = getActionBar();
+        }
         // Database data may be changed.
         // So refresh all list
         for (int i = 0; i < ab.getTabCount(); i++)

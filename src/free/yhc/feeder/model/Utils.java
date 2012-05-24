@@ -40,6 +40,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.text.Layout;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -693,5 +694,37 @@ public class Utils {
         // All scheduled time is passed for day.
         // smallest of tomorrow is nearest one.
         return dayBase + dayInMs + secs[0] * 1000;
+    }
+
+    // ================================================
+    //
+    // Utility Functions for Youtube
+    //
+    // ================================================
+    /**
+     *
+     * @param tag
+     * @return
+     *   null for invalid tag.
+     */
+    public static String
+    buildYoutubeFeedUrl_tag(String tag) {
+        String uri = "http://gdata.youtube.com/feeds/base/videos/-/" + Uri.encode(tag) + "?client=ytapi-youtube-browse&v=2";
+        return uri;
+
+    }
+
+    public static String
+    buildYoutubeFeedUrl_uploader(String uploader) {
+        String uri = "http://gdata.youtube.com/feeds/base/users/" + uploader + "/uploads";
+        return Uri.encode(uri);
+    }
+
+    public static String
+    buildYoutubeFeedUrl_search(String word) {
+        String uri = "http://gdata.youtube.com/feeds/base/videos?q="
+                        + Uri.encode(word)
+                        + "&client=ytapi-youtube-search&v=2";
+        return uri;
     }
 }
