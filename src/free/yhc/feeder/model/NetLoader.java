@@ -258,7 +258,7 @@ public class NetLoader {
                     logI("TIME: Open URL and Parseing as Dom : " + (System.currentTimeMillis() - time));
                     time = System.currentTimeMillis();
                     // Only RSS is supported at this version.
-                    res = new RSSParser().parse(dom);
+                    res = FeedParser.getParser(dom).parse(dom);
                     logI("TIME: RSSParsing : " + (System.currentTimeMillis() - time));
                     break; // done
                 } catch (IOException e) {

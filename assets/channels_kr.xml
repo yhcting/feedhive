@@ -118,6 +118,7 @@
 		<url>http://rss.cnn.com/rss/edition_us.rss</url>
 		<icon></icon>
 	</channel>
+
 	<!-- 인터넷 언론  -->
 	<channel>
 		<name>다음</name>
@@ -143,6 +144,7 @@
 		<url>http://feeds.feedburner.com/naver_news_popular</url>
 		<icon></icon>
 	</channel>
+
 	<!-- 시사방송  -->
 	<channel>
 		<name>나는 꼼수다</name>
@@ -246,6 +248,33 @@
 		<url>http://cbspodcast.com/podcast/newshow/newshow.xml</url>
 		<icon></icon>
 	</channel>
+
+	<!-- 유투브 -->
+	<channel>
+		<name>하니TV - 유투브</name>
+		<category>유투브</category>
+		<url>http://gdata.youtube.com/feeds/base/users/hanitv/uploads</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>김어준의 뉴욕타임스 - 유투브</name>
+		<category>유투브</category>
+		<url>http://gdata.youtube.com/feeds/base/videos?q=김어준의+뉴욕타임스&amp;client=ytapi-youtube-search&amp;v=2</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>뉴스타파 - 유투브</name>
+		<category>유투브</category>
+		<url>http://gdata.youtube.com/feeds/base/videos?q=뉴스타파&amp;client=ytapi-youtube-search&amp;v=2</url>
+		<icon></icon>
+	</channel>
+	<channel>
+		<name>제대로 뉴스데스크 - 유투브</name>
+		<category>유투브</category>
+		<url>http://gdata.youtube.com/feeds/base/videos?q=제대로+뉴스데스크&amp;client=ytapi-youtube-search&amp;v=2</url>
+		<icon></icon>
+	</channel>
+
 	<!-- 외국어 -->
 	<channel>
 		<name>English as a Second Language Podcast</name>
@@ -283,6 +312,7 @@
 		<url>http://abc.net.au/pm/rss/pmrss.xml</url>
 		<icon></icon>
 	</channel>
+
 	<!-- 교양 -->
 	<channel>
 		<name>김영하의 책 읽는 시간</name>
@@ -290,6 +320,7 @@
 		<url>http://feeds.feedburner.com/KIMYoungha?format=xml</url>
 		<icon></icon>
 	</channel>
+
 	<!-- 경제 -->
 	<channel>
 		<name>읽어주는 한국경제</name>
@@ -297,6 +328,7 @@
 		<url>http://feeds.feedburner.com/hankyung_radio?format=xml</url>
 		<icon></icon>
 	</channel>
+
 	<!-- 기술/과학 -->
 	<channel>
 		<name>나는 의사다</name>
@@ -316,6 +348,7 @@
 		<url>http://feeds.feedburner.com/cnet/NnTv?format=xml</url>
 		<icon></icon>
 	</channel>
+
 	<!-- MBC 표준 FM -->
 	<channel>
 		<name>건강한 아침 황선숙입니다.</name>
@@ -413,6 +446,7 @@
 		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000628100000100000</url>
 		<icon></icon>
 	</channel>
+
 	<!-- MBC FM4U -->
 	<channel>
 		<name>세상을 여는 아침 허일후입니다</name>
@@ -462,6 +496,7 @@
 		<url>http://minicast.imbc.com/PodCast/pod.aspx?code=1000580100000100000</url>
 		<icon></icon>
 	</channel>
+
 	<!-- SBS 파워 FM -->
 	<channel>
 		<name>정선희의 오늘같은밤</name>
@@ -535,6 +570,7 @@
 		<url>http://wizard2.sbs.co.kr/w3/podcast/V0000349380.xml</url>
 		<icon></icon>
 	</channel>
+
 	<!-- SBS 러브 FM -->
 	<channel>
 		<name>서두원의 시사초점</name>

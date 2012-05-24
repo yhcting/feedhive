@@ -110,7 +110,9 @@ public class Utils {
             DateUtils.PATTERN_RFC1123,
             // To support W3CDTF
             "yyyy-MM-d'T'HH:mm:ssZ",
-            "yyyy-MM-d'T'HH:mm:ss:SSSZ",
+            "yyyy-MM-d'T'HH:mm:ss'Z'",
+            "yyyy-MM-d'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-d'T'HH:mm:ss.SSS'Z'",
             // To support some non-standard formats.
             // (I hate this! But lot's of sites don't obey standard!!)
             "yyyy-MM-d HH:mm:ss",
