@@ -250,7 +250,9 @@ public class UILifecycle {
         logI(name + ": UI Lifecycle : onStart : " + sm.name() + " => " + next.name());
         if (State.STOPPED == sm) {
             setWaitView();
-            setDelayedNextState(State.UISTART);
+            // State SHOULD NOT jump to UISTART with skipping UICREATE
+            if (State.UICREATE != next)
+                setDelayedNextState(State.UISTART);
         }
         sm = State.STARTED;
     }
@@ -262,7 +264,9 @@ public class UILifecycle {
         logI(name + ": UI Lifecycle : onResume : " + sm.name() + " => " + next.name());
         if (State.PAUSED == sm) {
             setWaitView();
-            setDelayedNextState(State.UIRESUME);
+            // State SHOULD NOT jump to RESUME with skipping UISTART and UICREATE
+            if (State.UICREATE != next && State.UISTART != next)
+                setDelayedNextState(State.UIRESUME);
         }
         sm = State.RESUMED;
     }
