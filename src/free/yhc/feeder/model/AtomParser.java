@@ -63,9 +63,9 @@ UnexpectedExceptionHandler.TrackedModule {
        boolean
        parseItem(ItemValues iv, Node n)
                throws FeederException {
-           // 'updated' has priority
-           final short priUpdated    = 1;
-           final short priPublished  = 0;
+           // 'published' has priority
+           final short priUpdated    = 0;
+           final short priPublished  = 1;
 
            boolean ret = true;
 
