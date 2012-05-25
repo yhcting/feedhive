@@ -11,7 +11,7 @@
     <dimen name="divider_horizonal_margin">10dip</dimen>
     <dimen name="menu_row_vertical_padding">10dip</dimen>
     <dimen name="menu_text_size">20dip</dimen>
-    <dimen name="title_text_size">15dip</dimen>
+    <dimen name="title_text_size">14dip</dimen>
     <dimen name="desc_text_size">12dip</dimen>
     <dimen name="misc_text_size">10dip</dimen>
     <dimen name="small_text_size">9dip</dimen>
