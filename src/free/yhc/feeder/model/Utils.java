@@ -718,21 +718,26 @@ public class Utils {
      */
     public static String
     buildYoutubeFeedUrl_tag(String tag) {
-        String uri = "http://gdata.youtube.com/feeds/base/videos/-/" + Uri.encode(tag) + "?client=ytapi-youtube-browse&v=2";
+        String uri = "http://gdata.youtube.com/feeds/base/videos/-/"
+                        + Uri.encode(tag, null)
+                        + "?client=ytapi-youtube-browse&v=2";
         return uri;
-
     }
 
     public static String
     buildYoutubeFeedUrl_uploader(String uploader) {
-        String uri = "http://gdata.youtube.com/feeds/base/users/" + uploader + "/uploads";
-        return Uri.encode(uri);
+        String uri = "http://gdata.youtube.com/feeds/base/users/"
+                        + Uri.encode(uploader, null)
+                        + "/uploads";
+        return uri;
     }
 
     public static String
     buildYoutubeFeedUrl_search(String word) {
+        // space means "or" (not included at key word.)
+        word.replace(' ', '+');
         String uri = "http://gdata.youtube.com/feeds/base/videos?q="
-                        + Uri.encode(word)
+                        + Uri.encode(word, "+")
                         + "&client=ytapi-youtube-search&v=2";
         return uri;
     }
