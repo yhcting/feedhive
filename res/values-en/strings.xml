@@ -35,9 +35,8 @@
     <string name="oclock">o\'clock</string>
     <string name="time_spinner_prompt">Choose time(hour)</string>
 	<string name="way_youtube_subscribe">Way for subscribing</string>
-    <string name="tag">Tag</string>
     <string name="uploader">Uploader</string>
-    <string name="word_search">Word search</string>
+    <string name="word_search">Keyword</string>
     <string name="empty_list_help">Adding my first channel.</string>
     <string name="empty_list_add_channel_desc">Enter channel URL directly by touching this icon.</string>
     <string name="empty_list_add_youtube_channel_desc">Youtube channel - result of searching - can be added by touching this icon.</string>

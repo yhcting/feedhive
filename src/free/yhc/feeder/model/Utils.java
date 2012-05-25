@@ -710,35 +710,26 @@ public class Utils {
     // Utility Functions for Youtube
     //
     // ================================================
-    /**
-     *
-     * @param tag
-     * @return
-     *   null for invalid tag.
-     */
-    public static String
-    buildYoutubeFeedUrl_tag(String tag) {
-        String uri = "http://gdata.youtube.com/feeds/base/videos/-/"
-                        + Uri.encode(tag, null)
-                        + "?client=ytapi-youtube-browse&v=2";
-        return uri;
-    }
 
+    // NOTE
+    // At youtube API document, query "?q=xxxxxx&author=yyyy" should returns
+    //   query and author both matches.
+    // But, in reality, it doesn't work as expected.
+    // I think it's youtube's bug.
+    // So, until youtube query works as expected, combined query is not useful.
+    // So, just search by 'uploader' and 'keyword' are allowed.
     public static String
     buildYoutubeFeedUrl_uploader(String uploader) {
-        String uri = "http://gdata.youtube.com/feeds/base/users/"
-                        + Uri.encode(uploader, null)
-                        + "/uploads";
-        return uri;
+        return "http://gdata.youtube.com/feeds/api/users/"
+                + Uri.encode(uploader, null)
+                + "/uploads";
     }
 
     public static String
-    buildYoutubeFeedUrl_search(String word) {
-        // space means "or" (not included at key word.)
-        word.replace(' ', '+');
-        String uri = "http://gdata.youtube.com/feeds/base/videos?q="
-                        + Uri.encode(word, "+")
-                        + "&client=ytapi-youtube-search&v=2";
-        return uri;
+    buildYoutubeFeedUrl_search(String search) {
+        search = search.replaceAll("\\s+", "+");
+        return "http://gdata.youtube.com/feeds/api/videos?q="
+                + Uri.encode(search, "+")
+                + "&start-index=1&max-results=50&client=ytapi-youtube-search&orderby=published&v=2";
     }
 }

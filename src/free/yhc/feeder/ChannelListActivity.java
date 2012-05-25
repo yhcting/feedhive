@@ -885,9 +885,6 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 switch (optStringId) {
-                case R.string.tag:
-                    addChannel(Utils.buildYoutubeFeedUrl_tag(edit.getText().toString()));
-                    break;
                 case R.string.uploader:
                     addChannel(Utils.buildYoutubeFeedUrl_uploader(edit.getText().toString()));
                     break;
@@ -904,7 +901,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_addYoutubeChannel() {
-        final int[] optStringIds = { R.string.tag, R.string.uploader, R.string.word_search };
+        final int[] optStringIds = { R.string.uploader, R.string.word_search };
         final CharSequence[] items = new CharSequence[optStringIds.length];
         for (int i = 0; i < optStringIds.length; i++)
             items[i] = getResources().getText(optStringIds[i]);
