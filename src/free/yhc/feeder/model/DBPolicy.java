@@ -436,7 +436,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @return
      */
     public Err
-    getNewItems(Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
+    getNewItems(long cid, Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
         eAssert(null != items);
         logI("UpdateChannel DB Section Start");
 
@@ -469,15 +469,13 @@ UnexpectedExceptionHandler.TrackedModule {
                 //   So, I need to tune it.
                 //   At this moment, correctness is more important than performance.
                 Cursor c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
-                                        new ColumnItem[] { ColumnItem.TITLE,
+                                        new ColumnItem[] { ColumnItem.CHANNELID,
                                                            ColumnItem.PUBDATE,
                                                            ColumnItem.LINK,
-                                                           //ColumnItem.DESCRIPTION,
                                                            ColumnItem.ENCLOSURE_URL },
-                                        new String[] { item.title,
+                                        new String[] { "" + cid,
                                                        item.pubDate,
                                                        item.link,
-                                                       //item.parD.description,
                                                        item.enclosureUrl },
                                         0);
                 if (c.getCount() > 0) {

@@ -343,8 +343,8 @@ public class NetLoader {
             checkInterrupted();
 
             try {
-                if (null == bmdata &&  Utils.isValidValue(imageref))
-                    bmdata = downloadToRaw(parD.channel.imageref, null);
+                if (null == bmdata && Utils.isValidValue(imageref))
+                    bmdata = downloadToRaw(imageref, null);
             } catch (FeederException e) { }
             checkInterrupted();
 
@@ -364,7 +364,7 @@ public class NetLoader {
         time = System.currentTimeMillis();
 
         LinkedList<Feed.Item.ParD> newItems = new LinkedList<Feed.Item.ParD>();
-        dbp.getNewItems(parD.items, newItems);
+        dbp.getNewItems(cid, parD.items, newItems);
 
         DBPolicy.ItemDataOpInterface idop = null;
         // NOTE
