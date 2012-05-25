@@ -58,6 +58,7 @@ import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -157,11 +158,14 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        long cid = DBPolicy.S().insertNewChannel(categoryid, url);
-        if (cid < 0) {
-            LookAndFeel.showTextToast(this, R.string.warn_add_channel);
+        long cid = -1;
+        try {
+            cid = DBPolicy.S().insertNewChannel(categoryid, url);
+        } catch (FeederException e) {
+            LookAndFeel.showTextToast(this, e.getError().getMsgId());
             return;
         }
+
         // full update for this newly inserted channel
         BGTaskUpdateChannel task;
         if (imageref.isEmpty())

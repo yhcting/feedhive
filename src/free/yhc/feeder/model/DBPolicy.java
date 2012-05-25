@@ -373,22 +373,24 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param categoryid
      * @param url
      * @return
-     *   cid (success) / -1 (fails - ex. duplicated-named-channel)
+     *   cid (success)
+     * @throws FeederException
      */
     public long
-    insertNewChannel(long categoryid, String url) {
+    insertNewChannel(long categoryid, String url)
+            throws FeederException {
         eAssert(!url.endsWith("/"));
 
         long[] chState = new long[1];
         long cid = findChannel(chState, url);
 
         if (cid >= 0 && Feed.Channel.isStatUsed(chState[0]))
-            return -1;
+            throw new FeederException(Err.DBDuplicatedChannel);
 
         if (cid >= 0 && !Feed.Channel.isStatUsed(chState[0])) {
-            if (!UIPolicy.makeChannelDir(cid)) {
-                return -1;
-            }
+            if (!UIPolicy.makeChannelDir(cid))
+                throw new FeederException(Err.IOFile);
+
             // There is unused existing channel.
             // Let's reuse it.
             // Initialize some channel informations
@@ -420,7 +422,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // check duplication...
         if (!UIPolicy.makeChannelDir(cid)) {
             db.deleteChannel(cid);
-            return -1;
+            throw new FeederException(Err.IOFile);
         }
 
         return cid;

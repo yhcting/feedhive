@@ -75,6 +75,7 @@ import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -715,11 +716,15 @@ UnexpectedExceptionHandler.TrackedModule {
     addChannel(String url) {
         eAssert(url != null);
         url = Utils.removeTrailingSlash(url);
-        long cid = DBPolicy.S().insertNewChannel(getCurrentCategoryId(), url);
-        if (cid < 0) {
-            LookAndFeel.showTextToast(this, R.string.warn_add_channel);
+
+        long cid = -1;
+        try {
+            cid = DBPolicy.S().insertNewChannel(getCurrentCategoryId(), url);
+        } catch (FeederException e) {
+            LookAndFeel.showTextToast(this, e.getError().getMsgId());
             return;
         }
+
         // full update for this newly inserted channel
         BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
         RTTask.S().register(cid, RTTask.Action.Update, task);
