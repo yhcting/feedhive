@@ -714,6 +714,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     addChannel(String url) {
         eAssert(url != null);
+        url = Utils.removeTrailingSlash(url);
         long cid = DBPolicy.S().insertNewChannel(getCurrentCategoryId(), url);
         if (cid < 0) {
             LookAndFeel.showTextToast(this, R.string.warn_add_channel);
@@ -1504,6 +1505,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPostResume() {
         super.onPostResume();
+        logI("==> ChannelListActivity : onPostResume()");
         uilc.getHandler().postDelayed(new Runnable() {
             @Override
             public void run() {

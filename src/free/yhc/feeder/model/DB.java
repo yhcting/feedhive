@@ -56,7 +56,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // So, let's ignore it until real DB structure is needed to be changed.
     // => this can be resolved by 'DB Upgrade operation'.
     private static final String NAME    = "feader.db";
-    private static final int    VERSION = 1;
+    private static final int    VERSION = 2;
 
     private static final String TABLE_CATEGORY  = "category";
     private static final String TABLE_CHANNEL   = "channel";
@@ -285,6 +285,33 @@ UnexpectedExceptionHandler.TrackedModule {
      * DB UPGRADE
      *
      **************************************/
+    private void
+    upgradeTo2(SQLiteDatabase db) {
+        // New constraints is introduced.
+        // All url of channel SHOULD NOT ends with '/'.
+
+        Cursor c = db.query(TABLE_CHANNEL,
+                            new String[] { ColumnChannel.ID.getName(),
+                                           ColumnChannel.URL.getName() },
+                            null, null, null, null, null);
+        if (!c.moveToFirst()) {
+            c.close();
+            return; // nothing to do
+        }
+
+        do {
+            String url = c.getString(1);
+            if (url.endsWith("/")) {
+                url = Utils.removeTrailingSlash(url);
+                ContentValues cvs = new ContentValues();
+                cvs.put(ColumnChannel.URL.getName(), url);
+                db.update(TABLE_CHANNEL, cvs,
+                          ColumnChannel.ID.getName() + " = " + c.getLong(0),
+                          null);
+            }
+        } while (c.moveToNext());
+        c.close();
+    }
 
     /**************************************
      * Overriding.
@@ -305,6 +332,15 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        int dbv = oldVersion;
+        while (dbv < newVersion) {
+            switch (dbv) {
+            case 1:
+                upgradeTo2(db);
+                break;
+            }
+            dbv++;
+        }
     }
 
     @Override
@@ -563,9 +599,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * @param columns
-     * @param orderColumn
      * @param where
      * @param value
+     * @param orderColumn
      * @param bAsc
      * @param limit
      * @return

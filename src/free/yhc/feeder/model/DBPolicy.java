@@ -192,20 +192,19 @@ UnexpectedExceptionHandler.TrackedModule {
     findChannel(long[] state, String url) {
         long ret = -1;
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
-                                                         ColumnChannel.URL,
                                                          ColumnChannel.STATE},
-                                   null, dummyObject, null, false, 0);
+                                   ColumnChannel.URL, url,
+                                   null, false, 0);
         if (!c.moveToFirst()) {
             c.close();
             return -1;
         }
+
         do {
-            if (url.equals(c.getString(1))) {
-                if (null != state)
-                    state[0] = c.getLong(2);
-                ret = c.getLong(0);
-                break;
-            }
+            if (null != state)
+                state[0] = c.getLong(1);
+            ret = c.getLong(0);
+            break;
         } while(c.moveToNext());
 
         c.close();
@@ -378,6 +377,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long
     insertNewChannel(long categoryid, String url) {
+        eAssert(!url.endsWith("/"));
 
         long[] chState = new long[1];
         long cid = findChannel(chState, url);

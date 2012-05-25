@@ -843,6 +843,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPostResume() {
         super.onPostResume();
+        logI("==> ItemListActivity : onPostResume()");
         uilc.getHandler().postDelayed(new Runnable() {
             @Override
             public void run() {

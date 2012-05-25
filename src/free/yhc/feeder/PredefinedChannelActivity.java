@@ -61,6 +61,7 @@ import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 
 public class PredefinedChannelActivity extends Activity implements
@@ -237,7 +238,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 else if (cn.getNodeName().equals("category"))
                     ch.category = getTextValue(cn);
                 else if (cn.getNodeName().equals("url"))
-                    ch.url = getTextValue(cn);
+                    ch.url = Utils.removeTrailingSlash(getTextValue(cn));
                 else if (cn.getNodeName().equals("icon"))
                     ch.iconref = getTextValue(cn);
                 else
@@ -281,7 +282,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.URL);
         if (c.moveToFirst()) {
             do {
-                chMap.put(c.getString(0), true);
+                chMap.put(Utils.removeTrailingSlash(c.getString(0)), true);
             } while (c.moveToNext());
         }
 

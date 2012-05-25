@@ -696,6 +696,15 @@ public class Utils {
         return dayBase + dayInMs + secs[0] * 1000;
     }
 
+    public static String
+    removeTrailingSlash(String url) {
+        // Remove trailing '/'
+        // "http://xxx/" is same with "http://xxx"
+        if (url.endsWith("/"))
+            url = url.substring(0, url.lastIndexOf('/'));
+        return url;
+    }
+
     // ================================================
     //
     // Utility Functions for Youtube
