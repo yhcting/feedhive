@@ -171,6 +171,12 @@
 		<icon></icon>
 	</channel>
 	<channel>
+		<name>나는 친박이다</name>
+		<category>시사방송</category>
+		<url>http://www.iblug.com/xml/itunes/propark.xml</url>
+		<icon></icon>
+	</channel>
+	<channel>
 		<name>저공비행 (노회찬, 유시민)</name>
 		<category>시사방송</category>
 		<url>http://test.handypia.org/radio/jugong.xml</url>
