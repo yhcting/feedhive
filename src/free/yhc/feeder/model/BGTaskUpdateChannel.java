@@ -22,6 +22,7 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.logI;
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
@@ -29,6 +30,7 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
 
     private Context            context;
     private PowerManager.WakeLock wl;
+    private WifiManager.WifiLock  wfl;
     private volatile NetLoader loader = null;
     private Arg                arg    = null;
 
@@ -52,6 +54,8 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
         this.context = context;
         wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
                 .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
+        wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
+                .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTag);
         setPriority(UIPolicy.getPrefBGTaskPriority(context));
     }
 
@@ -60,6 +64,7 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     onPreRun() {
         synchronized (wl) {
             wl.acquire();
+            wfl.acquire();
         }
     }
 
@@ -68,6 +73,7 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     onPostRun (Err result) {
         synchronized (wl) {
             wl.release();
+            wfl.release();
         }
     }
 
@@ -76,8 +82,10 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     onCancel(Object param) {
         // If task is cancelled before started, then Wakelock under-lock exception is issued!
         synchronized (wl) {
-            if (wl.isHeld())
+            if (wl.isHeld()) {
                 wl.release();
+                wfl.release();
+            }
         }
     }
 

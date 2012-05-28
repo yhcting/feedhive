@@ -36,6 +36,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.PowerManager;
 import free.yhc.feeder.model.BGTask;
@@ -67,6 +68,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String CMD_RESCHED = "resched";
 
     private static PowerManager.WakeLock wl = null;
+    private static WifiManager.WifiLock  wfl = null;
     private static int                   wlcnt = 0;
 
 
@@ -180,8 +182,11 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == wl) {
             wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
+            wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
+                    .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTag);
             logI("ScheduledUpdater : WakeLock created and aquired");
             wl.acquire();
+            wfl.acquire();
         }
         wlcnt++;
         logI("ScheduledUpdater(GET) : current WakeLock count: " + wlcnt);
@@ -194,6 +199,7 @@ UnexpectedExceptionHandler.TrackedModule {
         logI("ScheduledUpdater(PUT) : current WakeLock count: " + wlcnt);
         if (0 == wlcnt) {
             wl.release();
+            wfl.release();
             // !! NOTE : Important.
             // if below line "wl = null" is removed, then RuntimeException is raised
             //   when 'getWakeLock' -> 'putWakeLock' -> 'getWakeLock' -> 'putWakeLock(*)'
@@ -202,6 +208,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // I'm not sure that this is Android FW's bug... or I missed something else...
             // Anyway, let's set 'wl' as 'null' here to re-create new WakeLock at next time.
             wl = null;
+            wfl = null;
             logI("ScheduledUpdater : WakeLock is released");
         }
     }
