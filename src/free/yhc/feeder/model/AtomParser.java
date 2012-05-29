@@ -31,7 +31,9 @@ import org.w3c.dom.Node;
 
 public class AtomParser extends FeedParser implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final short PRI_DEFAULT = 0;
+    // parsing priority of namespace supported (larger number has priority)
+    private static final short PRI_DEFAULT = 3;
+    private static final short PRI_MEDIA   = 2;
 
     // ========================================
     //        Default Atom Parser
@@ -88,7 +90,38 @@ UnexpectedExceptionHandler.TrackedModule {
            return ret;
        }
     }
+    // ========================================
+    //        Media
+    // ========================================
+    private class NSMediaParser extends NSParser {
+        NSMediaParser() {
+            super(PRI_MEDIA);
+        }
 
+        @Override
+        boolean
+        parseChannel(ChannelValues cv, Node n)
+                throws FeederException {
+            return false;
+       }
+
+       @Override
+       boolean
+       parseItem(ItemValues iv, Node n)
+               throws FeederException {
+           if (!n.getNodeName().equalsIgnoreCase("media:group"))
+               return false;
+
+           n = n.getFirstChild();
+           while (null != n) {
+               if (n.getNodeName().equalsIgnoreCase("media:description"))
+                   setValue(iv.description, getTextConstructsValue(n));
+               n = n.getNextSibling();
+           }
+
+           return true;
+       }
+    }
     // ===========================================================
     //
     // ===========================================================
@@ -99,6 +132,10 @@ UnexpectedExceptionHandler.TrackedModule {
         NamedNodeMap nnm = n.getAttributes();
         // add default namespace parser
         pl.add(new NSDefaultParser());
+
+        // To support 'media' name space.
+        if (null != nnm.getNamedItem("xmlns:media"))
+            pl.add(new NSMediaParser());
     }
 
     private String

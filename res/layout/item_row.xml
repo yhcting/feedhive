@@ -48,7 +48,7 @@
 	            android:layout_alignParentLeft="true"
 	            android:layout_toLeftOf="@id/favorite"
 	            android:textSize="@dimen/title_text_size"
-	            android:singleLine="true"
+	            android:maxLines="2"
 	            android:ellipsize="end"
 	            />
 	        <RelativeLayout
@@ -114,7 +114,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:textSize="@dimen/desc_text_size"
-            android:maxLines="3"
+            android:maxLines="5"
             android:ellipsize="end"
             />
         </LinearLayout>
