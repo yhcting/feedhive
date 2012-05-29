@@ -24,6 +24,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
+import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.Animation;
@@ -43,6 +44,7 @@ import free.yhc.feeder.model.Utils;
 
 public class ItemListAdapter extends CustomResourceCursorAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
+    private Handler   handler = new Handler();
     private DBPolicy  dbp = DBPolicy.S();
     private OnAction  onAction = null;
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
@@ -235,7 +237,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 // In Android 4.0.3 (ICS)
                 //   putting "((AnimationDrawable)img.getDrawable()).start();" is enough.
                 //   So, below code works well enough.
-                ((AnimationDrawable)imgv.getDrawable()).start();
+                // But in case of using UILifecycle below code doesn't work as expected just like
+                //   the case of Android 3.2(HC).
+                // ((AnimationDrawable)imgv.getDrawable()).start(); // <- this is not enough
+                // =>> IT'S ANDROID PLATFORM'S BUG!!
                 //
                 // In Android 3.2 (HC)
                 //   without using 'post', animation doesn't start when start itemListActivity.
@@ -243,14 +248,18 @@ UnexpectedExceptionHandler.TrackedModule {
                 //   In this case, below code works.
                 //
                 // This program's target platform is ICS
-                /*
-                img.post(new Runnable() {
+                //
+                // Another interesting point is, using 'imgv.post' doesn't work.
+                // But, in case of using handler, it works.
+                // I think it's definitely Android platform's BUG!
+                // So, below code is just workaround of platform BUG!
+                handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        ((AnimationDrawable)img.getDrawable()).start();
+                        ((AnimationDrawable)imgv.getDrawable()).start();
                     }
                 });
-                */
+
                 // bind event listener to show progress
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
                 progressv.switchOnEvent(onEvent);
