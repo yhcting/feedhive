@@ -36,6 +36,7 @@ import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
 
 import android.content.Context;
+import android.database.DatabaseUtils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
@@ -703,6 +704,25 @@ public class Utils {
         if (url.endsWith("/"))
             url = url.substring(0, url.lastIndexOf('/'));
         return url;
+    }
+
+    // ================================================
+    //
+    // Utility Functions for DB query
+    //
+    // ================================================
+    public static String
+    convertSearch2SQLWhereClause(String column, String search) {
+        String[] toks = search.split("\\s+");
+        String where = "";
+        int i = 0;
+        while (i < toks.length) {
+            where += column + " LIKE " + DatabaseUtils.sqlEscapeString("%" + toks[i] + "%");
+            if (++i >= toks.length)
+                break;
+            where += " AND ";
+        }
+        return where;
     }
 
     // ================================================

@@ -21,142 +21,132 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.os.Handler;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.AttributeSet;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ResourceCursorAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
+import free.yhc.feeder.model.AssetSQLiteHelper;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
-import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
-import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
 
 public class PredefinedChannelActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    private long        categoryid = -1;
-    private ListView    list;
-    private HashMap<String, Boolean> chMap = new HashMap<String, Boolean>();
+    // ========================================================================
+    //
+    // Constants for DB
+    // These values SHOULD MATCH asset DB.
+    //
+    // ========================================================================
+    private static final int DB_VERSION     = 1;
 
-    // predefined channel
-    private class PDChannel {
-        boolean bItem = true; // is this channel item that is described at predefined channel list?
-        String name = "";
-        String category = "";
-        String url = "";
-        String iconref = "";
+    private static final String DB_NAME     = "predefined_channels.db";
+    private static final String DB_ASSET    = "channels.db";
+
+    private static final String DB_TABLE = "channels";
+    private static final String DB_COL_ID       = "_id";
+    private static final String DB_COL_TITLE    = "title";
+    private static final String DB_COL_DESC     = "description";
+    private static final String DB_COL_URL      = "url";
+    private static final String DB_COL_ICONURL  = "iconurl";
+    private static final String DB_COL_CATEGORY = "category";
+    // country code value defined by "ISO 3166-1 alpha-3"
+    private static final String DB_COL_CCODE    = "countrycode";
+    private static final String DB_COL_STATE    = "state";
+
+    private static final String[] listCursorProj = new String[] { DB_COL_ID,
+                                                                  DB_COL_TITLE,
+                                                                  DB_COL_DESC,
+                                                                  DB_COL_URL,
+                                                                  DB_COL_ICONURL,
+                                                                  DB_COL_CATEGORY,
+                                                                  DB_COL_STATE };
+    // ========================================================================
+    // Members
+    // ========================================================================
+    private long                categoryid = -1;
+    private Handler             handler = new Handler();
+    private AssetSQLiteHelper   db = null;
+
+    // Runtime variable
+    private String prevCategory = "";
+    private String prevSearch   = "";
+
+    public static class ListRow extends LinearLayout {
+        String url;
+        String iconurl;
+
+        public
+        ListRow(Context context, AttributeSet attrs) {
+            super(context, attrs);
+        }
     }
 
-    private class PDChannelAdapter extends ArrayAdapter<PDChannel> {
-        private LayoutInflater inflater = null;
+    private class ListAdapter extends ResourceCursorAdapter {
         public
-        PDChannelAdapter(Context context, int textViewResourceId, PDChannel[] objects) {
-            super(context, textViewResourceId, objects);
-            inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
+        ListAdapter(Context context, int layout, Cursor c) {
+            super(context, layout, c);
         }
 
         @Override
-        public View
-        getView(int position, View convertView, ViewGroup parent) {
-            View row;
+        public void
+        bindView(View view, final Context context, final Cursor c) {
+            ListRow row = (ListRow)view;
 
-            if (null == convertView)
-                row = inflater.inflate(R.layout.predefined_channel_row, null);
-            else
-                row = convertView;
+            TextView titlev = (TextView)view.findViewById(R.id.title);
+            titlev.setText(c.getString(c.getColumnIndex(DB_COL_TITLE)));
+            row.url = c.getString(c.getColumnIndex(DB_COL_URL));
+            row.iconurl = c.getString(c.getColumnIndex(DB_COL_ICONURL));
 
-            // Check to this is first channel item in this category.
-            PDChannel pdc = (PDChannel)list.getAdapter().getItem(position);
-            if (pdc.bItem) {
-                // category layout should be removed.
-                LinearLayout catlo = (LinearLayout)row.findViewById(R.id.category_layout);
-                catlo.setVisibility(View.GONE);
-
-                LinearLayout itemlo = (LinearLayout)row.findViewById(R.id.item_layout);
-                itemlo.setVisibility(View.VISIBLE);
-                int colorRId = (null == chMap.get(pdc.url))? R.color.title_color_new: R.color.title_color_opened;
-                TextView tv = (TextView)row.findViewById(R.id.name);
-                tv.setTextColor(PredefinedChannelActivity.this.getResources().getColor(colorRId));
-                tv.setText(getItem(position).name);
-
-                // TODO
-                // It's extremely weird !!!
-                // "row.setFocusable(true)" / "row.setFocusable(false)" works exactly opposite
-                //   way against the way it should work!!!
-                //
-                // Current Status
-                //   "row.setFocusable(false)" => touch works for item.
-                //   "row.setFocusable(true)" => touch doesn't work for item.
-                //
-                // What happened to this!!!
-                // Need to check this!!!
-                // (I think this is definitely BUG of ANDROID FRAMEWORK!)
-                // => This case is same with below "else" case too.
-                row.setFocusable(false);
+            // TODO
+            // It's extremely weird !!!
+            // "titlev.setFocusable(true)" / "titlev.setFocusable(false)" works exactly opposite
+            //   way against the way it should work!!!
+            //
+            // Current Status
+            //   "titlev.setFocusable(false)" => touch works for item.
+            //   "titlev.setFocusable(true)" => touch doesn't work for item.
+            //
+            // What happened to this!!!
+            // Need to check this!!!
+            // (I think this is definitely BUG of ANDROID FRAMEWORK!)
+            // => This case is same with below "else" case too.
+            if (DBPolicy.S().isChannelUrlUsed(row.url)) {
+                titlev.setTextColor(context.getResources().getColor(R.color.title_color_opened));
+                titlev.setFocusable(true);
             } else {
-                LinearLayout catlo = (LinearLayout)row.findViewById(R.id.category_layout);
-                catlo.setVisibility(View.VISIBLE);
-                TextView catv = (TextView)row.findViewById(R.id.category);
-                catv.setText(pdc.category);
-
-                // item layout should be removed.
-                LinearLayout itemlo = (LinearLayout)row.findViewById(R.id.item_layout);
-                itemlo.setVisibility(View.GONE);
-
-                row.setFocusable(true);
+                titlev.setTextColor(context.getResources().getColor(R.color.title_color_new));
+                titlev.setFocusable(false);
             }
-
-            return row;
         }
-
     }
 
     private void
     addChannel(String url, String imageref) {
-        eAssert(url != null);
-
-        if (url.isEmpty()) {
-            LookAndFeel.showTextToast(this, R.string.warn_add_channel);
-            return;
-        }
-
-        if (null != chMap.get(url)) {
-            LookAndFeel.showTextToast(this, R.string.err_duplicated_channel);
-            return;
-        }
+        eAssert(Utils.isValidValue(url));
 
         long cid = -1;
         try {
@@ -175,92 +165,157 @@ UnexpectedExceptionHandler.TrackedModule {
         RTTask.S().register(cid, RTTask.Action.Update, task);
         RTTask.S().start(cid, RTTask.Action.Update);
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
-        chMap.put(url, true);
-        ((ArrayAdapter)list.getAdapter()).notifyDataSetChanged();
+        getAdapter().notifyDataSetChanged();
     }
 
-    private Node
-    findNodeByNameFromSiblings(Node n, String name) {
-        while (null != n) {
-            if (n.getNodeName().equalsIgnoreCase(name))
-                return n;
-            n = n.getNextSibling();
+
+    // ========================================================================
+    // DB Operations
+    // ========================================================================
+    private String[]
+    getCategories() {
+        Cursor c = db.sqlite().query(true,
+                                     DB_TABLE,
+                                     new String[] { DB_COL_CATEGORY },
+                                     null, null,
+                                     null, null,
+                                     DB_COL_CATEGORY,
+                                     null);
+        String[] cats = new String[c.getCount() + 1];
+
+        // cats[0] is for 'all'
+        cats[0] = getResources().getString(R.string.all);
+
+        int i = 1;
+        if (c.moveToFirst()) {
+            do {
+                cats[i++] = c.getString(0);
+            } while (c.moveToNext());
         }
-        return null;
+        c.close();
+        return cats;
     }
 
-    private String
-    getTextValue(Node n) {
-        Node t = findNodeByNameFromSiblings(n.getFirstChild(), "#text");
-        return (null != t)? t.getNodeValue(): "";
-    }
+    /**
+     *
+     * @param category
+     *   empty : for all categories
+     * @param search
+     *   empty : all channels.
+     */
+    private void
+    refreshList(String category, String search) {
+        String   where = null;
+        if (!category.isEmpty())
+            where = DB_COL_CATEGORY + " = " + DatabaseUtils.sqlEscapeString(category);
 
-    private Err
-    parsePredefinedChannelFile(LinkedList<PDChannel> chl,
-                               int[] nrCat, // [out] number of categories
-                               InputStream is) {
-        Document dom = null;
-        try {
-            dom = DocumentBuilderFactory
-                    .newInstance()
-                    .newDocumentBuilder()
-                    .parse(is);
-        } catch (IOException e) {
-            return Err.IOFile;
-        } catch (DOMException e) {
-            return Err.ParserUnsupportedFormat;
-        } catch (SAXException e) {
-            return Err.ParserUnsupportedFormat;
-        } catch (ParserConfigurationException e) {
-            return Err.ParserUnsupportedFormat;
+        if (!search.isEmpty()) {
+            if (null == where)
+                where = "";
+            else
+                where += " AND ";
+            where += Utils.convertSearch2SQLWhereClause(DB_COL_TITLE, search);
         }
 
-        HashMap<String, Boolean> catmap = new HashMap<String, Boolean>();
-        Element root = dom.getDocumentElement();
-        Node n = root.getFirstChild();
-        while (null != n) {
-            logI("Node : " + n.getNodeName());
-            if(n.getNodeName().startsWith("#")) {
-                n = n.getNextSibling();
-                continue;
-            }
+        // implement this.
+        Cursor c = db.sqlite().query(DB_TABLE,
+                                     listCursorProj,
+                                     where, null,
+                                     null, null,
+                                     DB_COL_TITLE);
+        getAdapter().changeCursor(c);
+    }
 
-            if(!n.getNodeName().equals("channel"))
-                return Err.ParserUnsupportedFormat;
+    private void
+    requestRefreshList() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                boolean needRefresh = false;
+                String category = "";
+                String search = "";
+                Spinner sp = (Spinner)findViewById(R.id.sp_category);
+                EditText et = (EditText)findViewById(R.id.editbox);
+                if (0 != sp.getSelectedItemPosition())
+                    category = (String)sp.getSelectedItem();
+                search = et.getText().toString();
 
-            PDChannel ch = new PDChannel();
-            Node cn = n.getFirstChild();
-            while (null != cn) {
-                logI("Child Node : " + cn.getNodeName());
-                if(cn.getNodeName().startsWith("#")) {
-                    cn = cn.getNextSibling();
-                    continue;
+                if (!prevCategory.equals(category)) {
+                    prevCategory = category;
+                    needRefresh = true;
+                }
+                if (!prevSearch.equals(search)) {
+                    prevSearch = search;
+                    needRefresh = true;
                 }
 
-                if (cn.getNodeName().equals("name"))
-                    ch.name = getTextValue(cn);
-                else if (cn.getNodeName().equals("category"))
-                    ch.category = getTextValue(cn);
-                else if (cn.getNodeName().equals("url"))
-                    ch.url = Utils.removeTrailingSlash(getTextValue(cn));
-                else if (cn.getNodeName().equals("icon"))
-                    ch.iconref = getTextValue(cn);
-                else
-                    return Err.ParserUnsupportedFormat;
-
-                cn = cn.getNextSibling();
+                if (needRefresh)
+                    refreshList(category, search);
             }
-            if (ch.category.isEmpty())
-                ch.category = "-"; // not specified category name
+        });
+    }
 
-            catmap.put(ch.category, true);
-            chl.addLast(ch);
-            n = n.getNextSibling();
-        }
-        if (null != nrCat)
-            nrCat[0] = catmap.size();
+    // ========================================================================
+    // For UI.
+    // ========================================================================
+    private ListAdapter
+    getAdapter() {
+        return (ListAdapter)((ListView)findViewById(R.id.list)).getAdapter();
+    }
 
-        return Err.NoErr;
+    private void
+    setCategorySpinner(final Spinner sp) {
+        final ArrayAdapter<String> adapter
+            = new ArrayAdapter<String>(this,
+                                       android.R.layout.simple_spinner_item,
+                                       getCategories());
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        sp.setAdapter(adapter);
+        sp.setSelection(0); // default is 'all'
+        sp.setOnItemSelectedListener(new OnItemSelectedListener() {
+            @Override
+            public void
+            onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                requestRefreshList();
+            }
+            @Override
+            public void
+            onNothingSelected(AdapterView<?> parent) {
+            }
+        });
+    }
+
+    private void
+    setSearchEdit(final EditText et) {
+        et.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void
+            afterTextChanged(Editable s) {
+                requestRefreshList();
+            }
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+        });
+    }
+
+    private void
+    setListView(final ListView lv) {
+        Cursor c = db.sqlite().query(DB_TABLE,
+                                     listCursorProj,
+                                     null, null,
+                                     null, null,
+                                     DB_COL_TITLE);
+        lv.setAdapter(new ListAdapter(this, R.layout.predefined_channel_row, c));
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void
+            onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                ListRow row = (ListRow)view;
+                addChannel(row.url, row.iconurl);
+            }
+        });
     }
 
     @Override
@@ -272,79 +327,18 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
-
         categoryid = this.getIntent().getLongExtra("category", -1);
         eAssert(categoryid >= 0);
 
+        db = new AssetSQLiteHelper(this, DB_NAME, DB_ASSET, DB_VERSION);
+        db.open();
+
         setContentView(R.layout.predefined_channel);
-        list = ((ListView) findViewById(R.id.list));
-        eAssert(null != list);
 
-        // Get already-registered channels
-        Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.URL);
-        if (c.moveToFirst()) {
-            do {
-                chMap.put(Utils.removeTrailingSlash(c.getString(0)), true);
-            } while (c.moveToNext());
-        }
-
-        AssetManager am = getAssets();
-        LinkedList<PDChannel> chl = new LinkedList<PDChannel>();
-        int[] nrCat = new int[1];
-        Err result = Err.IOFile;
-        try {
-            result = parsePredefinedChannelFile(chl, nrCat,
-                                                am.open(UIPolicy.getPredefinedChannelsAssetPath()));
-        } catch (IOException e) {}
-
-        if (Err.NoErr != result) {
-            LookAndFeel.showTextToast(this, result.getMsgId());
-            finish();
-        }
-
-        PDChannel[] chs = chl.toArray(new PDChannel[0]);
-        Arrays.sort(chs, new Comparator<PDChannel>() {
-            @Override
-            public int
-            compare(PDChannel ch0, PDChannel ch1) {
-                return ch0.category.compareTo(ch1.category);
-            }
-        });
-
-        if (0 == chs.length) {
-            LookAndFeel.showTextToast(this, R.string.warn_no_predefined_channel);
-            finish();
-        }
-
-        PDChannel[] adpChs = new PDChannel[chs.length + nrCat[0]];
-
-        String catName = ""; // initial value of cat name
-        int adpChsi = 0;
-        int chsi = 0;
-        while (adpChsi < adpChs.length && chsi < chs.length) {
-            eAssert(!chs[chsi].category.isEmpty());
-            if (!catName.equals(chs[chsi].category)) {
-                catName = chs[chsi].category;
-                PDChannel pdc = new PDChannel();
-                pdc.bItem = false;
-                pdc.category = catName;
-                adpChs[adpChsi++] = pdc;
-            }
-            adpChs[adpChsi++] = chs[chsi++];
-        }
-        eAssert(adpChsi == adpChs.length && chsi == chs.length);
-
-        list.setAdapter(new PDChannelAdapter(this, 0, adpChs));
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void
-            onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                PDChannel ch = (PDChannel)list.getAdapter().getItem(position);
-                addChannel(ch.url, ch.iconref);
-            }
-        });
+        setCategorySpinner((Spinner)findViewById(R.id.sp_category));
+        setSearchEdit((EditText)findViewById(R.id.editbox));
+        setListView((ListView)findViewById(R.id.list));
     }
 
     @Override
@@ -357,6 +351,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onDestroy() {
+        db.close();
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }

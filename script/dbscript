@@ -1,4 +1,11 @@
-DROP TABLE channels;
+PRAGMA user_version = 1;
+DROP TABLE "channels";
+DROP TABLE "android_metadata" ;
+
+CREATE TABLE "android_metadata" ("locale" TEXT DEFAULT 'ko_KR');
+INSERT INTO "android_metadata" VALUES ('ko_KR');
+INSERT INTO "android_metadata" VALUES ('en_US');
+
 CREATE TABLE channels (_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, url TEXT NOT NULL, iconurl TEXT NOT NULL, category TEXT NOT NULL, countrycode TEXT NOT NULL, state INTEGER NOT NULL);
 INSERT INTO channels VALUES (1, "오마이뉴스", "", "http://rss.ohmynews.com/rss/ohmynews.xml", "", "언론", "kor", 0);
 INSERT INTO channels VALUES (2, "노컷뉴스", "", "http://rss.nocutnews.co.kr/nocutnews.xml", "", "언론", "kor", 0);
