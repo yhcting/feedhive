@@ -239,7 +239,7 @@ public class NetLoader {
     private RSSParser.Result
     parseFeedUrl(String url)
             throws FeederException {
-        logI("Fetching Channel [" + url + "]\n");
+        logI("Fetching Channel [" + url + "]");
         RSSParser.Result res = null;
         long             time;
         int              retry = NET_RETRY;

@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,6 +51,11 @@ import android.widget.TextView;
 public class Utils {
     public static final boolean DBG = true;
     private static final String TAG = "[Feeder]";
+
+    // To enable logging to file - NOT LOGCAT
+    private static final boolean ENABLE_LOGF = false;
+    private static final String LOGF = "/sdcard/feeder.log";
+    private static FileWriter logout = null;
 
     // Format of nString (Number String)
     // <number>/<number>/ ... '/' is delimiter between number.
@@ -124,6 +130,17 @@ public class Utils {
     // =======================
     // Private
     // =======================
+    static {
+        if (ENABLE_LOGF) {
+            try {
+                logout = new FileWriter(LOGF);
+            } catch (IOException e) {
+                eAssert(false);
+            }
+        }
+    }
+
+
     /**
      * Decode image from file path(String) or raw data (byte[]).
      * @param image
@@ -156,27 +173,40 @@ public class Utils {
 
     public static void
     logI(String msg) {
-        if (!DBG)
+        if (!DBG || null == msg)
             return;
-        if (null != msg)
+        if (ENABLE_LOGF) {
+            try {
+                logout.write("[I] " + msg + "\n");
+                logout.flush();
+            } catch (IOException e) {}
+        } else
             Log.i(TAG, msg);
     }
 
     public static void
     logW(String msg) {
-        if (!DBG)
+        if (!DBG || null == msg)
             return;
-
-        if (null != msg)
+        if (ENABLE_LOGF) {
+            try {
+                logout.write("[W] " + msg + "\n");
+                logout.flush();
+            } catch (IOException e) {}
+        }else
             Log.w(TAG, msg);
     }
 
     public static void
     logE(String msg) {
-        if (!DBG)
+        if (!DBG || null == msg)
             return;
-
-        if (null != msg)
+        if (ENABLE_LOGF) {
+            try {
+                logout.write("[E] " + msg + "\n");
+                logout.flush();
+            } catch (IOException e) {}
+        } else
             Log.e(TAG, msg);
     }
 

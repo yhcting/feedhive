@@ -103,7 +103,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 return;
             }
 
-            logI("BGTask : REAL POST!!! cancelled(" + bCancelled + ") NR Listener (" + getListeners().length);
+            logI("BGTask : REAL POST!!! cancelled: " + bCancelled + ", NR Listener: " + getListeners().length);
             if (bCancelled) {
                 onEarlyCancel(cancelParam);
                 for (EventListener listener : getListeners()) {

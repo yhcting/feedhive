@@ -438,7 +438,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public Err
     getNewItems(long cid, Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
         eAssert(null != items);
-        logI("UpdateChannel DB Section Start");
+        logI("UpdateChannel DB Section Start : cid[" + cid + "]");
 
         try {
             for (Feed.Item.ParD item : items) {
