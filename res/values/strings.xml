@@ -56,6 +56,8 @@
     <string name="cancel">취소</string>
     <string name="canceling">취소 중</string>
     <string name="cancel_downloading">내려받기 취소.</string>
+    <string name="update_service_noti_title">예약된 업데이트</string>
+    <string name="update_service_noti_desc">예약된 업데이트 서비스가 시작되었습니다.</string>
     <string name="update_cancelled">업데이트가 취소 혹은 중단 되었습니다.</string>
     <string name="update_error">업데이트 도중 심각한 문제가 발생했습니다. 채널을 지우기를 권장합니다.</string>
     <string name="err_interrupted">동작이 취소 혹은 중단 되었습니다.</string>

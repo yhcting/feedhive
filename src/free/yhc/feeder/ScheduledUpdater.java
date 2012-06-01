@@ -30,6 +30,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -66,15 +68,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static final String CMD_ALARM   = "alarm";
     private static final String CMD_RESCHED = "resched";
+    private static final String CMD_CANCEL  = "cancel";
 
     private static PowerManager.WakeLock wl = null;
     private static WifiManager.WifiLock  wfl = null;
     private static int                   wlcnt = 0;
 
-
-    // To stop service at right time - when all tasks started by this service is done.
-    // Should be thread-safe. So, 'volatile' is used.
-    private volatile int                 taskCnt = 0;
+    // Unique Identification Number for the Notification.
+    // R.string.update doens't have any meaning except for random unique number.
+    private final int                    notificationId = R.string.update_service_noti_title;
+    private NotificationManager          nm;
 
     // If time is changed Feeder need to re-scheduling scheduled-update.
     public static class DateChangedReceiver extends BroadcastReceiver {
@@ -113,7 +116,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            getWakeLock(context);
+            getWakeLock(context.getApplicationContext());
         }
     }
 
@@ -137,7 +140,8 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onCancel(BGTask task, Object param) {
             logI("ScheduledUpdater(onCancel) : stopSelf (" + startId + ")");
-            stopSelf(startId);
+            if (0 == RTTask.S().getNRActiveTask())
+                stopSelf(startId);
         }
 
         @Override
@@ -149,7 +153,8 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             logI("ScheduledUpdater(onPostRun) : stopSelf (" + startId + ")");
-            stopSelf(startId);
+            if (0 == RTTask.S().getNRActiveTask())
+                stopSelf(startId);
         }
     }
 
@@ -397,6 +402,30 @@ UnexpectedExceptionHandler.TrackedModule {
     public void onCreate() {
         super.onCreate();
         UnexpectedExceptionHandler.S().registerModule(this);
+        nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+        // In this sample, we'll use the same text for the ticker and the expanded notification
+        CharSequence title = getText(R.string.update_service_noti_title);
+        CharSequence desc = getText(R.string.update_service_noti_desc);
+
+        Intent intent = new Intent(this, ScheduledUpdater.class);
+        intent.putExtra("cmd", CMD_CANCEL);
+
+        PendingIntent pi = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification.Builder nbldr = new Notification.Builder(this);
+        nbldr.setSmallIcon(R.drawable.icon_mini)
+             .setTicker(title)
+             .setWhen(System.currentTimeMillis())
+             .setContentTitle(title)
+             .setContentText(desc)
+             .setDeleteIntent(pi);
+        Notification noti = nbldr.getNotification();
+        nm.notify(notificationId, noti);
+        // NOTE
+        // ScheduledUpdate is NOT high priority service.
+        // So, this don't need to be foreground.
+        //startForeground(notificationId, noti);
     }
 
     // NOTE:
@@ -406,6 +435,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public int
     onStartCommand(Intent intent, int flags, int startId) {
         String cmd = intent.getStringExtra("cmd");
+
         try {
             // 'cmd' can be null.
             // So, DO NOT use "cmd.equals()"...
@@ -414,11 +444,22 @@ UnexpectedExceptionHandler.TrackedModule {
             else if (CMD_ALARM.equals(cmd)) {
                 long schedTime = intent.getLongExtra("time", -1);
                 doCmdAlarm(startId, schedTime);
+            } else if (CMD_CANCEL.equals(cmd)) {
+                ; // Do nothing at this moment.
+                /* -- below code doesn't work expected... why?? Am I missing something???
+                RTTask.S().cancelAll();
+                // This intent comes from notification.
+                // But, in this case wakelock isn't acquired (different from other cases.)
+                // So, acquire here to balance with 'putWakeLock()' below (in 'finally' scope).
+                getWakeLock(this.getApplicationContext());
+                // Stop this service.
+                stopSelf();
+                */
             } else
                 eAssert(false);
         } finally {
             // At any case wakelock should be released.
-            // update task has it's own wakelock.
+            // BGTask itself will manage wakelock for the background tasking.
             // We don't need to worry about update jobs.
             // Just release wakelock for this command.
             putWakeLock();
@@ -436,6 +477,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDestroy() {
+        nm.cancel(notificationId);
         UnexpectedExceptionHandler.S().unregisterModule(this);
         logI("ScheduledUpdater : onDestroy");
         super.onDestroy();

@@ -41,7 +41,7 @@ UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
     private static RTTask           instance = null;
 
-    private BGTaskManager           gbtm = null;
+    private BGTaskManager           bgtm = null;
     private LinkedList<BGTask>      readyQ = new LinkedList<BGTask>();
     private LinkedList<BGTask>      runQ = new LinkedList<BGTask>();
 
@@ -60,8 +60,7 @@ OnSharedPreferenceChangeListener {
     //       runQ.addLast(t);
     //   }
     private Object             taskQSync = new Object();
-
-    private volatile int       max_concurrent = 3; // temporally hard coding.
+    private volatile int       max_concurrent = 2; // temporally hard coding.
 
     private LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
 
@@ -100,20 +99,11 @@ OnSharedPreferenceChangeListener {
         }
     }
 
-    private class TaskInReady {
-        BGTask  task;
-        Object  arg;
-        TaskInReady(BGTask t, Object a) {
-            task = t;
-            arg = a;
-        }
-    }
-
-
     private class RunningBGTaskOnEvent implements BGTask.OnEvent {
         private void
         onEnd(BGTask task) {
             eAssert(!task.isAlive());
+
             // NOTE
             // Handling race condition with 'start()' function is very important!
             // Order of these codes are deeply related with avoiding unexpected race-condition.
@@ -127,8 +117,8 @@ OnSharedPreferenceChangeListener {
                 runQ.addLast(t);
             }
 
-            synchronized (gbtm) {
-                gbtm.start(t.getNick());
+            synchronized (bgtm) {
+                bgtm.start(t.getNick());
             }
         }
 
@@ -157,7 +147,7 @@ OnSharedPreferenceChangeListener {
 
 
     private RTTask() {
-        gbtm = new BGTaskManager();
+        bgtm = new BGTaskManager();
     }
 
     // Get singleton instance,.
@@ -232,11 +222,11 @@ OnSharedPreferenceChangeListener {
     itemsDownloading() {
         String[] tids;
         LinkedList<Long> l = new LinkedList<Long>();
-        synchronized (gbtm) {
-            tids = gbtm.getTaskIds();
+        synchronized (bgtm) {
+            tids = bgtm.getTaskIds();
             for (String tid : tids) {
                 if (Action.Download == actionFromId(tid)) {
-                    BGTask task = gbtm.peek(tid);
+                    BGTask task = bgtm.peek(tid);
                     long id = idFromId(tid);
                     if (null != task && isTaskInAction(task)) {
                         l.add(id); // all items
@@ -313,8 +303,8 @@ OnSharedPreferenceChangeListener {
      */
     public boolean
     register(long id, Action act, BGTask task) {
-        synchronized (gbtm) {
-            boolean r = gbtm.register(Id(act, id), task);
+        synchronized (bgtm) {
+            boolean r = bgtm.register(Id(act, id), task);
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
                     el.listener.onBGTaskRegister(id, task, act);
@@ -339,10 +329,10 @@ OnSharedPreferenceChangeListener {
 
         boolean r = false;
         BGTask task;
-        synchronized (gbtm) {
+        synchronized (bgtm) {
             // remove from manager.
-            task = gbtm.peek(taskId);
-            r = gbtm.unregister(taskId);
+            task = bgtm.peek(taskId);
+            r = bgtm.unregister(taskId);
         }
 
         if (!r || null == task)
@@ -368,8 +358,8 @@ OnSharedPreferenceChangeListener {
      */
     public int
     unbind(long id, Action act) {
-        synchronized (gbtm) {
-            return gbtm.unbind(Thread.currentThread(), Id(act, id));
+        synchronized (bgtm) {
+            return bgtm.unbind(Thread.currentThread(), Id(act, id));
         }
     }
 
@@ -381,8 +371,8 @@ OnSharedPreferenceChangeListener {
      */
     public int
     unbind(Object onEventKey) {
-        synchronized (gbtm) {
-            return gbtm.unbind(Thread.currentThread(), onEventKey);
+        synchronized (bgtm) {
+            return bgtm.unbind(Thread.currentThread(), onEventKey);
         }
     }
 
@@ -396,11 +386,22 @@ OnSharedPreferenceChangeListener {
      */
     public BGTask
     bind(long id, Action act, Object onEventKey, BGTask.OnEvent onEvent) {
-        synchronized (gbtm) {
-            return gbtm.bind(Id(act, id), onEventKey, onEvent);
+        synchronized (bgtm) {
+            return bgtm.bind(Id(act, id), onEventKey, onEvent);
         }
     }
 
+    /**
+     * get Number of active tasks.
+     * (Running task + task waiting it's turn in the ready queue.)
+     * @return
+     */
+    public int
+    getNRActiveTask() {
+        synchronized (taskQSync) {
+            return runQ.size() + readyQ.size();
+        }
+    }
     /**
      *
      * @param id
@@ -411,8 +412,8 @@ OnSharedPreferenceChangeListener {
      */
     public BGTask
     getTask(long id, Action act) {
-        synchronized (gbtm) {
-            return gbtm.peek(Id(act, id));
+        synchronized (bgtm) {
+            return bgtm.peek(Id(act, id));
         }
     }
 
@@ -426,8 +427,8 @@ OnSharedPreferenceChangeListener {
     getState(long id, Action act) {
         // channel is updating???
         BGTask task;
-        synchronized (gbtm) {
-            task = gbtm.peek(Id(act, id));
+        synchronized (bgtm) {
+            task = bgtm.peek(Id(act, id));
         }
 
         if (null == task)
@@ -459,8 +460,8 @@ OnSharedPreferenceChangeListener {
     public void
     consumeResult(long id, Action act) {
         BGTask task;
-        synchronized (gbtm) {
-            task = gbtm.peek(Id(act, id));
+        synchronized (bgtm) {
+            task = bgtm.peek(Id(act, id));
         }
         if (null == task)
             return;
@@ -479,8 +480,8 @@ OnSharedPreferenceChangeListener {
     start(long id, Action act) {
         String taskId = Id(act, id);
         BGTask t = null;
-        synchronized (gbtm) {
-            t = gbtm.peek(taskId);
+        synchronized (bgtm) {
+            t = bgtm.peek(taskId);
             if (null == t)
                 return false;
         }
@@ -495,8 +496,8 @@ OnSharedPreferenceChangeListener {
             // This SHOULD be 'bindPrior' is used.
             // operation related with 'runQ' and 'readyQ' SHOULD BE DONE
             //   before normal event listener is called!
-            synchronized (gbtm) {
-                gbtm.bindPrior(Id(act, id), null, new RunningBGTaskOnEvent());
+            synchronized (bgtm) {
+                bgtm.bindPrior(Id(act, id), null, new RunningBGTaskOnEvent());
             }
             // If there is no running task then start NOW!
             if (runQ.size() < max_concurrent) {
@@ -506,9 +507,9 @@ OnSharedPreferenceChangeListener {
                 readyQ.addLast(t);
         }
 
-        synchronized (gbtm) {
+        synchronized (bgtm) {
             if (bStartImmediate)
-                gbtm.start(taskId);
+                bgtm.start(taskId);
         }
 
         return true;
@@ -525,8 +526,8 @@ OnSharedPreferenceChangeListener {
     public boolean
     cancel(long id, Action act, Object arg) {
         BGTask t = null;
-        synchronized (gbtm) {
-            t = gbtm.peek(Id(act, id));
+        synchronized (bgtm) {
+            t = bgtm.peek(Id(act, id));
             if (null == t)
                 return true;
         }
@@ -535,8 +536,8 @@ OnSharedPreferenceChangeListener {
             readyQ.remove(t);
         }
 
-        synchronized (gbtm) {
-            return gbtm.cancel(Id(act, id), arg);
+        synchronized (bgtm) {
+            return bgtm.cancel(Id(act, id), arg);
         }
     }
 
@@ -548,15 +549,15 @@ OnSharedPreferenceChangeListener {
      */
     public Err
     getErr(long id, Action act) {
-        synchronized (gbtm) {
-            return gbtm.peek(Id(act, id)).getResult();
+        synchronized (bgtm) {
+            return bgtm.peek(Id(act, id)).getResult();
         }
     }
 
     public void
     cancelAll() {
-        synchronized (gbtm) {
-            gbtm.cancelAll();
+        synchronized (bgtm) {
+            bgtm.cancelAll();
         }
     }
 

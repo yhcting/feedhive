@@ -22,13 +22,22 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
+import android.os.PowerManager;
 
 public class BGTask<RunParam, CancelParam> extends Thread {
+    public static int OPT_WAKELOCK  = 0x01;
+    public static int OPT_WIFILOCK  = 0x02;
+
+
+    private Context          context;
     private String           nick = null; // can be used several purpose.
     private Handler          ownerHandler = new Handler();
     private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
@@ -37,8 +46,14 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     // Flags
     private volatile boolean cancelled = false;
 
+    private int              opt         = 0;
     private RunParam         runParam    = null;
     private CancelParam      cancelParam = null;
+
+    private static final String     WLTag = "BGTask";
+    private Object                  wlmx = new Object(); // Wakelock mutex
+    private PowerManager.WakeLock   wl = null;
+    private WifiManager.WifiLock    wfl = null;
 
     public interface OnEvent<RunParam, CancelParam> {
         // return : false (DO NOT run this task)
@@ -90,7 +105,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
             logI("BGTask : REAL POST!!! cancelled(" + bCancelled + ") NR Listener (" + getListeners().length);
             if (bCancelled) {
-                BGTask.this.onCancel(cancelParam);
+                onEarlyCancel(cancelParam);
                 for (EventListener listener : getListeners()) {
                     final OnEvent onEvent = listener.getOnEvent();
                     logI("BGTask : Post(Cancel) to onEvent : " + onEvent.toString());
@@ -101,8 +116,14 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                         }
                     });
                 }
+                ownerHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onLateCancel(cancelParam);
+                    }
+                });
             } else {
-                BGTask.this.onPostRun(result);
+                onEarlyPostRun(result);
                 for (EventListener listener : getListeners()) {
                     final OnEvent onEvent = listener.getOnEvent();
                     logI("BGTask : Post(Post) to onEvent : " + onEvent.toString());
@@ -114,26 +135,61 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                         }
                     });
                 }
+                ownerHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onLatePostRun(result);
+                    }
+                });
             }
         }
     }
 
-    public BGTask(RunParam arg) {
+    public BGTask(Context context, RunParam arg, int option) {
         super();
+        this.context = context;
         runParam = arg;
-    }
-
-    public BGTask(Object onEventKey, OnEvent onEvent) {
-        super();
-        synchronized (listenerList) {
-            EventListener listener = new EventListener(onEventKey, new Handler(), onEvent);
-            listenerList.addLast(listener);
-        }
+        opt = option;
     }
 
     // ==========================================
     // Private
     // ==========================================
+    private void
+    releaseWLock() {
+        synchronized (wlmx) {
+            if (null != wl) {
+                logI("< WakeLock >" + WLTag + nick + " >>>>>> release");
+                wl.release();
+                wl = null;
+            }
+
+            if (null != wfl) {
+                wfl.release();
+                wfl = null;
+            }
+        }
+    }
+
+    private void
+    aquireWLock() {
+        synchronized (wlmx) {
+            // acquire wakelock/wifilock if needed
+            if (0 != (OPT_WAKELOCK & opt)) {
+                logI("< WakeLock >" + WLTag + nick + " <<<<<< acquire");
+                wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
+                        .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag + nick);
+                wl.acquire();
+            }
+
+            if (0 != (OPT_WIFILOCK & opt)) {
+                wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
+                        .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTag + nick);
+                wfl.acquire();
+            }
+        }
+    }
+
     private EventListener[]
     getListeners() {
         synchronized (listenerList) {
@@ -199,11 +255,15 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      *
      * Key value is used to find event listener (onEvent).
      * Several event listener may share one key value.
+     * Event callback will be called on caller's thread message loop.
      * @param key
      * @param onEvent
      */
     public void
     registerEventListener(Object key, OnEvent onEvent) {
+        if (ownerHandler.getLooper().getThread() != Thread.currentThread())
+            logW("BGTask IMPORTANT : owner thread is different with event listener thread");
+
         // This is atomic expression
         synchronized (listenerList) {
             logI("BGTask : registerEventListener : key(" + key + ") onEvent(" + onEvent + ")");
@@ -215,11 +275,15 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     /**
      * Same with 'registerEventListener' except for that newly added listener
      *   will be added to the first of listener list.
+     * Event callback will be called on caller's thread message loop.
      * @param key
      * @param onEvent
      */
     public void
     registerPriorEventListener(Object key, OnEvent onEvent) {
+        if (ownerHandler.getLooper().getThread() != Thread.currentThread())
+            logW("BGTask IMPORTANT : owner thread is different with event listener thread");
+
         synchronized (listenerList) {
             EventListener listener = new EventListener(key, new Handler(), onEvent);
             listenerList.addFirst(listener);
@@ -291,7 +355,17 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
      */
     protected void
-    onPreRun() {}
+    onEarlyPreRun() {}
+
+    /**
+     * This will be called after all other registered listeners whose owner thread
+     *   is same with this Thread's owner (thread context in which this Thread object
+     *   is created (owner thread)) is executed.
+     * If other listener's owner thread is different with the owner of this Thread object,
+     *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
+     */
+    protected void
+    onLatePreRun() {}
 
     /**
      * This will be called prior to all other registered listeners whose owner thread
@@ -301,7 +375,19 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
      */
     protected void
-    onPostRun (Err result) {}
+    onEarlyPostRun (Err result) {}
+
+    /**
+     * This will be called after all other registered listeners whose owner thread
+     *   is same with this Thread's owner (thread context in which this Thread object
+     *   is created (owner thread)) is executed.
+     * If other listener's owner thread is different with the owner of this Thread object,
+     *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
+     */
+    protected void
+    onLatePostRun (Err result) {
+        releaseWLock();
+    }
 
     /**
      * This will be called prior to all other registered listeners whose owner thread
@@ -311,7 +397,19 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
      */
     protected void
-    onCancel(CancelParam param) {}
+    onEarlyCancel(CancelParam param) {}
+
+    /**
+     * This will be called after all other registered listeners whose owner thread
+     *   is same with this Thread's owner (thread context in which this Thread object
+     *   is created (owner thread)) is executed.
+     * If other listener's owner thread is different with the owner of this Thread object,
+     *   than order of listener's execution is unknown (it's dependent on thread scheduling.)
+     */
+    protected void
+    onLateCancel(CancelParam param) {
+        releaseWLock();
+    }
 
     /**
      * This will be called prior to all other registered listeners whose owner thread
@@ -339,10 +437,11 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         //   "try to start BGTask that is not managed".
         // And this is out of expectation.
         eAssert(null != nick);
+        aquireWLock();
         ownerHandler.post(new Runnable() {
             @Override
             public void run() {
-                onPreRun();
+                onEarlyPreRun();
                 for (EventListener listener : getListeners()) {
                     final OnEvent onEvent = listener.getOnEvent();
                     listener.getHandler().post(new Runnable() {
@@ -352,6 +451,12 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                         }
                     });
                 }
+                ownerHandler.post(new Runnable() {
+                   @Override
+                   public void run() {
+                       onLatePreRun();
+                   }
+                });
                 BGTask.super.start();
             }
         });

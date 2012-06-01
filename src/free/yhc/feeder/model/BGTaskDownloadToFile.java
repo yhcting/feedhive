@@ -26,15 +26,11 @@ import java.io.File;
 import java.io.OutputStream;
 
 import android.content.Context;
-import android.net.wifi.WifiManager;
-import android.os.PowerManager;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
     private static final String WLTag = "free.yhc.feeder.BGTaskDownloadToFile";
 
     private Context                 context;
-    private PowerManager.WakeLock   wl;
-    private WifiManager.WifiLock    wfl;
     private volatile OutputStream   ostream  = null;
     private volatile NetLoader      loader = null;
     private Arg                     arg      = null;
@@ -59,12 +55,8 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
 
     public
     BGTaskDownloadToFile(Context context, Arg arg) {
-        super(arg);
+        super(context.getApplicationContext(), arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
         this.context = context;
-        wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
-                .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
-        wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
-                .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTag);
         setPriority(UIPolicy.getPrefBGTaskPriority(context));
     }
 
@@ -73,37 +65,6 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     registerEventListener(Object key, OnEvent onEvent) {
         super.registerEventListener(key, onEvent);
         publishProgress(progress);
-    }
-
-    @Override
-    protected void
-    onPreRun() {
-        synchronized (wl) {
-            wl.acquire();
-            wfl.acquire();
-        }
-    }
-
-    @Override
-    protected void
-    onPostRun (Err result) {
-        synchronized (wl) {
-            wl.release();
-            wfl.release();
-        }
-    }
-
-    @Override
-    protected void
-    onCancel(Object param) {
-        // If task is cancelled before started, then Wakelock under-lock runtime exception is issued!
-        // So, 'wl.isHeld()' should be checked!
-        synchronized (wl) {
-            if (wl.isHeld()) {
-                wl.release();
-                wfl.release();
-            }
-        }
     }
 
     @Override
