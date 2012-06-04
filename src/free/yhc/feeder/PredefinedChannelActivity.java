@@ -184,19 +184,22 @@ UnexpectedExceptionHandler.TrackedModule {
     // ========================================================================
     private String[]
     getCategories() {
-        Cursor c = db.sqlite().query(true,
-                                     DB_TABLE,
-                                     DB_COL_CATEGORIES,
-                                     null, null,
-                                     null, null,
-                                     null, null);
         SortedSet<String> ss = new TreeSet<String>();
-        if (c.moveToFirst()) {
-            do {
-                ss.add(c.getString(0));
-            } while (c.moveToNext());
+        for (String col : DB_COL_CATEGORIES) {
+            Cursor c = db.sqlite().query(true,
+                                         DB_TABLE,
+                                         new String[] { col },
+                                         null, null,
+                                         null, null,
+                                         null, null);
+            if (c.moveToFirst())
+                do {
+                    String cat = c.getString(0);
+                    if (!cat.isEmpty())
+                        ss.add(cat);
+                } while (c.moveToNext());
+            c.close();
         }
-        c.close();
 
         String[] cats = new String[ss.size() + 1];
         // cats[0] is for 'all'
