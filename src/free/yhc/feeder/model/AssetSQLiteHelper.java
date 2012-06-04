@@ -21,6 +21,7 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -74,13 +75,14 @@ public class AssetSQLiteHelper {
             }
 
             db = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+            logI("AssetSQLiteHelper : App DB version: " + version + " / current DB version: " + db.getVersion());
             if (version > db.getVersion()) {
                 // need to overwrite old db with new asset db.
                 db.close();
                 FileOutputStream fos = new FileOutputStream(dbf);
                 Utils.copy(fos, is);
                 fos.close();
-                db = SQLiteDatabase.openDatabase(dbName, null, SQLiteDatabase.OPEN_READONLY);
+                db = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
             }
             is.close();
         } catch (SQLiteException e0) {
