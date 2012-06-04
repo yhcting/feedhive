@@ -23,6 +23,8 @@ package free.yhc.feeder;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.util.Calendar;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import android.app.Activity;
 import android.content.Context;
@@ -72,17 +74,25 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String DB_COL_DESC     = "description";
     private static final String DB_COL_URL      = "url";
     private static final String DB_COL_ICONURL  = "iconurl";
-    private static final String DB_COL_CATEGORY = "category";
     // country code value defined by "ISO 3166-1 alpha-3"
     private static final String DB_COL_CCODE    = "countrycode";
     private static final String DB_COL_STATE    = "state";
+    private static final String[] DB_COL_CATEGORIES = new String[] {"category0",
+                                                                    "category1",
+                                                                    "category2",
+                                                                    "category3",
+                                                                    "category4"};
 
     private static final String[] listCursorProj = new String[] { DB_COL_ID,
                                                                   DB_COL_TITLE,
                                                                   DB_COL_DESC,
                                                                   DB_COL_URL,
                                                                   DB_COL_ICONURL,
-                                                                  DB_COL_CATEGORY,
+                                                                  DB_COL_CATEGORIES[0],
+                                                                  DB_COL_CATEGORIES[1],
+                                                                  DB_COL_CATEGORIES[2],
+                                                                  DB_COL_CATEGORIES[3],
+                                                                  DB_COL_CATEGORIES[4],
                                                                   DB_COL_STATE };
     // ========================================================================
     // Members
@@ -176,23 +186,22 @@ UnexpectedExceptionHandler.TrackedModule {
     getCategories() {
         Cursor c = db.sqlite().query(true,
                                      DB_TABLE,
-                                     new String[] { DB_COL_CATEGORY },
+                                     DB_COL_CATEGORIES,
                                      null, null,
                                      null, null,
-                                     DB_COL_CATEGORY,
-                                     null);
-        String[] cats = new String[c.getCount() + 1];
-
-        // cats[0] is for 'all'
-        cats[0] = getResources().getString(R.string.all);
-
-        int i = 1;
+                                     null, null);
+        SortedSet<String> ss = new TreeSet<String>();
         if (c.moveToFirst()) {
             do {
-                cats[i++] = c.getString(0);
+                ss.add(c.getString(0));
             } while (c.moveToNext());
         }
         c.close();
+
+        String[] cats = new String[ss.size() + 1];
+        // cats[0] is for 'all'
+        cats[0] = getResources().getString(R.string.all);
+        System.arraycopy(ss.toArray(new String[0]), 0, cats, 1, ss.size());
         return cats;
     }
 
@@ -205,15 +214,19 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     refreshList(String category, String search) {
-        String   where = null;
-        if (!category.isEmpty())
-            where = DB_COL_CATEGORY + " = " + DatabaseUtils.sqlEscapeString(category);
+        String   where = "";
+        if (!category.isEmpty()) {
+            int i = 0;
+            while (i < DB_COL_CATEGORIES.length) {
+                where += DB_COL_CATEGORIES[i] + " = " + DatabaseUtils.sqlEscapeString(category);
+                if (++i < DB_COL_CATEGORIES.length)
+                    where += " OR ";
+            }
+        }
 
         if (!search.isEmpty()) {
-            if (null == where)
-                where = "";
-            else
-                where += " AND ";
+            if (!where.isEmpty())
+                where = "(" + where + ") AND ";
             where += Utils.convertSearch2SQLWhereClause(DB_COL_TITLE, search);
         }
 
@@ -314,6 +327,8 @@ UnexpectedExceptionHandler.TrackedModule {
             onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 ListRow row = (ListRow)view;
                 addChannel(row.url, row.iconurl);
+                setResult(RESULT_OK, null);
+                finish();
             }
         });
     }

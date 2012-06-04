@@ -752,6 +752,9 @@ public class Utils {
                 break;
             where += " AND ";
         }
+        if (!where.isEmpty())
+            where = "(" + where + ")";
+
         return where;
     }
 

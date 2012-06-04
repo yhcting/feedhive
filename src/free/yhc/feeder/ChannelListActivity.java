@@ -86,7 +86,8 @@ ActionBar.TabListener,
 UILifecycle.OnEvent,
 UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
-    private static final int ReqCPickImage = 0;
+    private static final int ReqCPickImage              = 0;
+    private static final int ReqCPickPredefinedChannel  = 1;
 
     private UILifecycle uilc ;
     private View        contentv;
@@ -96,6 +97,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // Saved cid for Async execution.
     private long      cid_pickImage = -1;
+    // To move list to bottom when resume.
+    private boolean   setCurrentListToBottom = false;
 
     private interface EditTextDialogAction {
         void prepare(Dialog dialog, EditText edit);
@@ -552,6 +555,18 @@ UnexpectedExceptionHandler.TrackedModule {
         return -1;
     }
 
+    private void
+    moveToBottomOfList() {
+        final ListView lv = getTag(ab.getSelectedTab()).listView;
+        lv.post(new Runnable() {
+            @Override
+            public void run() {
+                // Select the last row so it will scroll into view...
+                lv.setSelection(lv.getCount() - 1);
+            }
+        });
+    }
+
     private long
     getCategoryId(Tab tab) {
         return getTag(tab).categoryid;
@@ -733,17 +748,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // refresh current category.
         refreshList(ab.getSelectedTab(), cid);
-
         // Move to bottom of the list where newly inserted channel is located on.
         // (This is for feedback to user saying "new channel is now adding").
-        final ListView lv = getTag(ab.getSelectedTab()).listView;
-        lv.post(new Runnable() {
-            @Override
-            public void run() {
-                // Select the last row so it will scroll into view...
-                lv.setSelection(lv.getCount() - 1);
-            }
-        });
+        moveToBottomOfList();
     }
 
     /**
@@ -1036,7 +1043,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onOpt_selectPredefinedChannel() {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
         intent.putExtra("category", getCurrentCategoryId());
-        startActivity(intent);
+        startActivityForResult(intent, ReqCPickPredefinedChannel);
     }
 
     private void
@@ -1375,6 +1382,9 @@ UnexpectedExceptionHandler.TrackedModule {
         case ReqCPickImage:
             onResult_pickImage(resultCode, data);
             break;
+        case ReqCPickPredefinedChannel:
+            setCurrentListToBottom = true;
+            break;
         }
     }
 
@@ -1484,6 +1494,11 @@ UnexpectedExceptionHandler.TrackedModule {
             // 'notifyDataSetChanged' doesn't lead to refreshing channel row info
             //   in case of database is changed!
             refreshList(ab.getTabAt(i));
+
+        if (setCurrentListToBottom) {
+            moveToBottomOfList();
+            setCurrentListToBottom = false;
+        }
     }
 
     @Override

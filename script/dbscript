@@ -1,113 +1,810 @@
+-- ***************************************************************************
+-- Set version of DB.
+-- This should match DB_VERSION of PredefinedChannelActivity
+-- ***************************************************************************
 PRAGMA user_version = 1;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
+-- ***************************************************************************
+-- To use this DB at SQLiteDatabase of Android,
+--   'android_metadata' table should exist.
+-- ***************************************************************************
 CREATE TABLE "android_metadata" ("locale" TEXT DEFAULT 'ko_KR');
 INSERT INTO "android_metadata" VALUES ('ko_KR');
 INSERT INTO "android_metadata" VALUES ('en_US');
 
-CREATE TABLE channels (_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, url TEXT NOT NULL, iconurl TEXT NOT NULL, category TEXT NOT NULL, countrycode TEXT NOT NULL, state INTEGER NOT NULL);
-INSERT INTO channels VALUES (1, "오마이뉴스", "", "http://rss.ohmynews.com/rss/ohmynews.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (2, "노컷뉴스", "", "http://rss.nocutnews.co.kr/nocutnews.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (3, "한겨레", "", "http://www.hani.co.kr/rss", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (4, "경향신문", "", "http://www.khan.co.kr/rss/rssdata/total_news.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (5, "한국일보", "", "http://rss.hankooki.com/news/hk_main.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (6, "전자신문", "", "http://rss.etnews.com/Section901.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (7, "스포츠서울", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (8, "아이뉴스", "", "http://www.inews24.com/rss/news_inews.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (9, "민중의소리", "", "http://mediablog.vop.co.kr/rss", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (10, "매일경제", "", "http://file.mk.co.kr/news/rss/rss_30000001.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (11, "SBS", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=all", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (12, "MBC", "", "http://imnews.imbc.com/rss/news/news_00.xml", "", "언론", "kor", 0);
-INSERT INTO channels VALUES (13, "CNN Top stories", "", "http://rss.cnn.com/rss/edition.rss", "", "외국 언론", "kor", 0);
-INSERT INTO channels VALUES (14, "CNN Technology", "", "http://rss.cnn.com/rss/edition_technology.rss", "", "외국 언론", "kor", 0);
-INSERT INTO channels VALUES (15, "CNN Asia", "", "http://rss.cnn.com/rss/edition_asia.rss", "", "외국 언론", "kor", 0);
-INSERT INTO channels VALUES (16, "CNN US", "", "http://rss.cnn.com/rss/edition_us.rss", "", "외국 언론", "kor", 0);
-INSERT INTO channels VALUES (17, "다음", "", "http://www.daum.net/rss.xml", "", "인터넷 언론", "kor", 0);
-INSERT INTO channels VALUES (18, "네이버 - 게임", "", "http://feeds.feedburner.com/NaverNewsGameESports?format=xml", "", "인터넷 언론", "kor", 0);
-INSERT INTO channels VALUES (19, "네이버 - 경제", "", "http://feeds.feedburner.com/NaverNewsGlobalBusinessNews?format=xml", "", "인터넷 언론", "kor", 0);
-INSERT INTO channels VALUES (20, "네이버 - 많이 본 뉴스", "", "http://feeds.feedburner.com/naver_news_popular", "", "인터넷 언론", "kor", 0);
-INSERT INTO channels VALUES (21, "나는 꼼수다", "", "http://old.ddanzi.com/appstream/ddradio.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (22, "나는 꼽사리다", "", "http://old.ddanzi.com/appstream/ggobsari.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (23, "뉴스타파", "", "http://newstapa.com/rss", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (24, "애국전선", "", "http://cast.vop.co.kr/kfline.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (25, "나는 친박이다", "", "http://www.iblug.com/xml/itunes/propark.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (26, "저공비행 (노회찬, 유시민)", "", "http://test.handypia.org/radio/jugong.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (27, "이슈 털어주는 남자 (김종배)", "", "http://rss.ohmynews.com/RSS/podcast_etul_main.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (28, "희소식(이정희)", "", "http://cast.vop.co.kr/heenews.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (29, "허재현의 현장일기", "", "http://feeds.feedburner.com/iblug/OCnu?format=xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (30, "시사자키 정관용입니다", "", "http://cbspodcast.com/podcast/sisa/sisa.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (31, "변상욱의 기자수첩", "", "http://cbspodcast.com/podcast/newsshow_journal/newsshow_journal.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (32, "낭만자객", "", "http://cast.vop.co.kr/nang.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (33, "이해찬의 정석정치", "", "http://rss.ohmynews.com/rss/podcast_bbong_main.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (34, "김미화의 여러분", "", "http://cbspodcast.com/podcast/k_everyone/k_everyone.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (35, "라디오 반민특위", "", "http://www.615tv.net/podcastbanmin/jkbsbanmin.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (36, "정혜림의 도도한 뒷담화", "", "http://nemo.podics.com/131613387490", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (37, "망치부인 시사수다방", "", "http://nemo.podics.com/131192848437", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (38, "김현정의 뉴스쇼", "", "http://cbspodcast.com/podcast/newshow/newshow.xml", "", "시사방송", "kor", 0);
-INSERT INTO channels VALUES (39, "하니TV - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/hanitv/uploads", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (40, "뉴욕타임스 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%EB%89%B4%EC%9A%95%ED%83%80%EC%9E%84%EC%8A%A4&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (41, "뉴스타파 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/newstapa/uploads", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (42, "MBC 파업채널 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/mbcunion2012/uploads", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (43, "제대로 뉴스데스크 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%EC%A0%9C%EB%8C%80%EB%A1%9C+%EB%89%B4%EC%8A%A4%EB%8D%B0%EC%8A%A4%ED%81%AC&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (44, "리셋 KBS 뉴스 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%EB%A6%AC%EC%85%8B+kbs+%EB%89%B4%EC%8A%A4&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (45, "파워업 피디수첩 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%ED%8C%8C%EC%9B%8C%EC%97%85+pd+%EC%88%98%EC%B2%A9&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (46, "KBS 파업채널 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/kbsunion/uploads", "", "유투브", "kor", 0);
-INSERT INTO channels VALUES (47, "English as a Second Language Podcast", "", "http://feeds.feedburner.com/EnglishAsASecondLanguagePodcast?format=xml", "", "외국어", "kor", 0);
-INSERT INTO channels VALUES (48, "BBC 6 Minute English", "", "http://downloads.bbc.co.uk/podcasts/worldservice/how2/rss.xml", "", "외국어", "kor", 0);
-INSERT INTO channels VALUES (49, "BBC World Service : 60 Seconds Idea to Improve the World", "", "http://downloads.bbc.co.uk/podcasts/worldservice/forum60sec/rss.xml", "", "외국어", "kor", 0);
-INSERT INTO channels VALUES (50, "BBC A History of the World in 100 Objects", "", "http://downloads.bbc.co.uk/podcasts/radio4/ahow/rss.xml", "", "외국어", "kor", 0);
-INSERT INTO channels VALUES (51, "ABC AM", "", "http://abc.net.au/am/rss/amrss.xml", "", "외국어", "kor", 0);
-INSERT INTO channels VALUES (52, "ABC PM", "", "http://abc.net.au/pm/rss/pmrss.xml", "", "외국어", "kor", 0);
-INSERT INTO channels VALUES (53, "김영하의 책 읽는 시간", "", "http://feeds.feedburner.com/KIMYoungha?format=xml", "", "교양", "kor", 0);
-INSERT INTO channels VALUES (54, "읽어주는 한국경제", "", "http://feeds.feedburner.com/hankyung_radio?format=xml", "", "경제", "kor", 0);
-INSERT INTO channels VALUES (55, "나는 의사다", "", "http://www.docdocdoc.co.kr/podcast/iam_doctors.xml", "", "기술/과학", "kor", 0);
-INSERT INTO channels VALUES (56, "블로터", "", "http://feeds.feedburner.com/Bloter?format=xml", "", "기술/과학", "kor", 0);
-INSERT INTO channels VALUES (57, "CNET", "", "http://feeds.feedburner.com/cnet/NnTv?format=xml", "", "기술/과학", "kor", 0);
-INSERT INTO channels VALUES (58, "건강한 아침 황선숙입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002588100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (59, "손석희의 시선집중", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000674100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (60, "손에 잡히는 경제 이진우입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000671100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (61, "여성시대 양희은, 강석우입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000630100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (62, "성경섭이 만난 사람", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002424100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (63, "배한성, 배칠수의 고전열전", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002488100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (64, "지금은 라디오 시대", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002488100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (65, "김창옥의 세계는 그리고 우리는", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000681100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (66, "최양락의 재미있는 라디오", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000678100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (67, "윤하의 별이 빛나는 밤에", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000677100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (68, "신동의 심심타파", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000664100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (69, "이동진의 꿈꾸는 다락방", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002589100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (70, "세상을 바꾸는 생각", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002590100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (71, "김나진의 세계도시여행", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000621100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (72, "라디오 북클럽 김지은입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000698100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (73, "타박타박 세계사", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000628100000100000", "", "MBC 표준 FM", "kor", 0);
-INSERT INTO channels VALUES (74, "세상을 여는 아침 허일후입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000575100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (75, "오늘아침 심현보입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000576100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (76, "정오의 희망곡 스윗소로우입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1001919100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (77, "두시의 데이트 주영훈입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000586100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (78, "간미연의 친한친구", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002413100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (79, "FM 음악도시 성시경입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002600100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (80, "푸른밤 정엽입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000578100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (81, "이주연의 영화음악", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000580100000100000", "", "MBC FM4U", "kor", 0);
-INSERT INTO channels VALUES (82, "정선희의 오늘같은밤", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349378A.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (83, "김형준의 뮤직하이", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000328480.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (84, "김영철의 Fun Fun today", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000351036.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (85, "이숙영의 파워 FM", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000010343.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (86, "아름다운 이 아침 김창완", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000010355.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (87, "공형진의 씨네타운", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000321755.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (88, "최화정의 파워타임", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000010346.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (89, "두시탈출 컬투쇼", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000328482.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (90, "김창렬의 올드스쿨", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000329545.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (91, "붐의 영스트리트", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000352536.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (92, "이석훈의 텐텐클럽", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349380.xml", "", "SBS 파워 FM", "kor", 0);
-INSERT INTO channels VALUES (93, "서두원의 시사초점", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349385.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (94, "최영아의 책하고 놀자", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000328499.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (95, "SBS 전망대", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000337960.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (96, "정석문의 섹션라디오", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000329544.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (97, "정철진의 스마트경제", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000355936.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (98, "박준형의 시사갈갈", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000356536.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (99, "김지선,김일중의 세상을 만나자", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000337995.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (100, "라디오오디션 국민DJ를 찾습니다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000351237.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (101, "이성미의 이야기쇼", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349373.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (102, "희망사항 변진섭입니다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349388.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (103, "안선영의 라디오가 좋다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000340869.xml", "", "SBS 러브 FM", "kor", 0);
-INSERT INTO channels VALUES (104, "여러분의 국민DJ 이예랑입니다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000362236.xml", "", "SBS 러브 FM", "kor", 0);
+-- ***************************************************************************
+-- _id          : mandatory primary key required by Android SQLiteDatabase.
+-- title        : title of channel
+-- description  :
+-- url          : channel url
+-- iconurl      : channel icon url
+-- category     :
+-- countrycode  : country code defined by "ISO 3166-1 alpha-3"
+-- state        : state of this channel. this is not used now (reserved).
+-- ***************************************************************************
+CREATE TABLE channels (_id INTEGER PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, url TEXT NOT NULL, iconurl TEXT NOT NULL, category0 TEXT NOT NULL, category1 TEXT NOT NULL, category2 TEXT NOT NULL, category3 TEXT NOT NULL, category4 TEXT NOT NULL, countrycode TEXT NOT NULL, state INTEGER NOT NULL);
+
+-- ***************************************************************************
+-- Policy for base offset for '_id' field.
+--   Country            : 100000000
+--   Representative url : 100
+--
+-- That is,
+-- Max number of sub urls for one main url  : 1000
+-- Max number of main urls for one country  : 1000000
+-- Max number of countries                  : (enough -- 64bit is possible)
+-- ***************************************************************************
+
+-- ***************************************************************************
+--
+-- 'Country' base offset for 'kor' : 0
+--
+-- ***************************************************************************
+
+-- ===========================================================================
+-- Categories used for 'kor' (Sorted order)
+-- 게임
+-- 경제
+-- 교양
+-- 교육
+-- 국제
+-- 기술/과학
+-- 도서
+-- 라디오
+-- 만화
+-- 문화
+-- 블로그
+-- 사설
+-- 사진
+-- 사회
+-- 생활
+-- 스포츠
+-- 시사
+-- 어린이
+-- 언론
+-- 여행
+-- 연예
+-- 영화
+-- 외국 언론
+-- 외국어
+-- 유투브
+-- 육아
+-- 음식
+-- 음악
+-- 인터넷 뉴스
+-- 자동차
+-- 정치
+-- 지역
+-- 취업
+-- 팟캐스트
+-- ===========================================================================
+
+-- base offset for 오마이뉴스 : 0 (ID should starts from 1 : Android's constraints)
+INSERT INTO channels VALUES (1, "오마이뉴스 - 전체", "", "http://rss.ohmynews.com/rss/ohmynews.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2, "오마이뉴스 - 주요기사", "", "http://rss.ohmynews.com/rss/top.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3, "오마이뉴스 - 오늘의 사진", "", "http://rss.ohmynews.com/rss/todayphoto.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4, "오마이뉴스 - 사는 이야기", "", "http://rss.ohmynews.com/rss/life.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (5, "오마이뉴스 - 사회", "", "http://rss.ohmynews.com/rss/society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (6, "오마이뉴스 - 문화", "", "http://rss.ohmynews.com/rss/culture.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (7, "오마이뉴스 - 정치", "", "http://rss.ohmynews.com/rss/politics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (8, "오마이뉴스 - 경제", "", "http://rss.ohmynews.com/rss/economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (9, "오마이뉴스 - 민족/국제", "", "http://rss.ohmynews.com/rss/international.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10, "오마이뉴스 - 교육", "", "http://rss.ohmynews.com/rss/education.xml", "", "언론", "교육", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (11, "오마이뉴스 - 스포츠", "", "http://rss.ohmynews.com/rss/sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (12, "오마이뉴스 - 영화", "", "http://rss.ohmynews.com/rss/cinema.xml", "", "언론", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (13, "오마이뉴스 - 미디어", "", "http://rss.ohmynews.com/rss/media.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (14, "오마이뉴스 - 여행", "", "http://rss.ohmynews.com/rss/travel.xml", "", "언론", "여행", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (15, "오마이뉴스 - 책동네", "", "http://rss.ohmynews.com/rss/book.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (16, "오마이뉴스 - 여성", "", "http://rss.ohmynews.com/rss/woman.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (17, "오마이뉴스 - 광주전라", "", "http://rss.ohmynews.com/rss/jeolla.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (18, "오마이뉴스 - 부산경남", "", "http://rss.ohmynews.com/rss/gyeongnam.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (19, "오마이뉴스 - 대전충남", "", "http://rss.ohmynews.com/rss/chungnam.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (20, "오마이뉴스 - 인천경기", "", "http://rss.ohmynews.com/rss/gyeonggi.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (21, "오마이뉴스 - 해외리포트", "", "http://rss.ohmynews.com/rss/ab_reporter.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (22, "오마이뉴스 - 만화만평", "", "http://rss.ohmynews.com/rss/cartoon.xml", "", "언론", "만화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (23, "오마이스타 - 전체", "", "http://rss.ohmynews.com/rss/star.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (24, "오마이스타 - 주요기사", "", "http://rss.ohmynews.com/rss/startop.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (25, "오마이뉴스E - 전체", "", "http://rss.ohmynews.com/rss/ohmynews_e.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (50, "이슈 털어주는 남자 (김종배)", "", "http://rss.ohmynews.com/RSS/podcast_etul_main.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+
+
+-- base offset for 노컷뉴스 : 100
+INSERT INTO channels VALUES (100, "노컷뉴스 - 전체", "", "http://rss.nocutnews.co.kr/nocutnews.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (101, "노컷뉴스 - 정치", "", "http://rss.nocutnews.co.kr/NocutPolitics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (102, "노컷뉴스 - 사회", "", "http://rss.nocutnews.co.kr/NocutSocial.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (103, "노컷뉴스 - 경제", "", "http://rss.nocutnews.co.kr/NocutEconomy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (104, "노컷뉴스 - 산업", "", "http://rss.nocutnews.co.kr/NocutIndustry.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (105, "노컷뉴스 - 스포츠", "", "http://rss.nocutnews.co.kr/NocutSports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (106, "노컷뉴스 - 지역", "", "http://rss.nocutnews.co.kr/NocutLocal.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (107, "노컷뉴스 - 글로벌", "", "http://rss.nocutnews.co.kr/NocutGlobal.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (108, "노컷뉴스 - IT/과학", "", "http://rss.nocutnews.co.kr/NocutIT.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (109, "노컷뉴스 - 연예", "", "http://rss.nocutnews.co.kr/NocutEnter.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (110, "노컷뉴스 - 문화생활", "", "http://rss.nocutnews.co.kr/NocutCulture.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (111, "노컷뉴스 - 포토", "", "http://rss.nocutnews.co.kr/NocutPhoto.xml", "", "언론", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (112, "노컷뉴스 - 칼럼", "", "http://rss.nocutnews.co.kr/NocutColum.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (113, "노컷뉴스 - 기타", "", "http://rss.nocutnews.co.kr/NocutEtc.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (114, "노컷뉴스 - 특종", "", "http://rss.nocutnews.co.kr/NocutOnly.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (115, "노컷뉴스 - 핫이슈", "", "http://rss.nocutnews.co.kr/NocutHotissue.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (116, "노컷뉴스 - 연속기획", "", "http://rss.nocutnews.co.kr/NocutCplan.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (117, "노컷정보 - 전체", "", "http://rss.nocutnews.co.kr/NocutInfo.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (118, "노컷정보 - 정치부", "", "http://rss.nocutnews.co.kr/NocutPoliticsInfo.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (119, "노컷정보 - 사회부", "", "http://rss.nocutnews.co.kr/NocutSocialInfo.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (120, "노컷정보 - 경제부", "", "http://rss.nocutnews.co.kr/NocutEconomyInfo.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (121, "노컷정보 - 산업부", "", "http://rss.nocutnews.co.kr/NocutIndustryInfo.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (122, "노컷정보 - 연예부", "", "http://rss.nocutnews.co.kr/NocutEnterInfo.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (123, "노컷정보 - 지역", "", "http://rss.nocutnews.co.kr/NocutLocalInfo.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (124, "노컷뉴스 - 대구", "", "http://rss.nocutnews.co.kr/dgNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (125, "노컷뉴스 - 부산", "", "http://rss.nocutnews.co.kr/bsNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (126, "노컷뉴스 - 광주", "", "http://rss.nocutnews.co.kr/gjNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (127, "노컷뉴스 - 전북", "", "http://rss.nocutnews.co.kr/jbNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (128, "노컷뉴스 - 청주", "", "http://rss.nocutnews.co.kr/cjNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (129, "노컷뉴스 - 춘천", "", "http://rss.nocutnews.co.kr/chNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (130, "노컷뉴스 - 대전", "", "http://rss.nocutnews.co.kr/djNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (131, "노컷뉴스 - 포항", "", "http://rss.nocutnews.co.kr/phNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (132, "노컷뉴스 - 경남", "", "http://rss.nocutnews.co.kr/gnNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (133, "노컷뉴스 - 영동", "", "http://rss.nocutnews.co.kr/ydNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (134, "노컷뉴스 - 전남", "", "http://rss.nocutnews.co.kr/jnNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (135, "노컷뉴스 - 울산", "", "http://rss.nocutnews.co.kr/usNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (136, "노컷뉴스 - 제주", "", "http://rss.nocutnews.co.kr/jjNocut.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (137, "노컷V - 전체", "", "http://rss.nocutnews.co.kr/nocutv.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 한겨레 : 200
+INSERT INTO channels VALUES (200, "한겨레 - 전체", "", "http://www.hani.co.kr/rss", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (201, "한겨레 - 정치", "", "http://www.hani.co.kr/rss/politics", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (202, "한겨레 - 경제", "", "http://www.hani.co.kr/rss/economy", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (203, "한겨레 - 사회", "", "http://www.hani.co.kr/rss/society", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (204, "한겨레 - 국제", "", "http://www.hani.co.kr/rss/international", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (205, "한겨레 - 대중문화", "", "http://www.hani.co.kr/rss/culture", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (206, "한겨레 - 스포츠", "", "http://www.hani.co.kr/rss/sports", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (207, "한겨레 - 과학", "", "http://www.hani.co.kr/rss/science", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (208, "한겨레 - 사설/칼럼", "", "http://www.hani.co.kr/rss/opinion", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (209, "한겨레 - 만화만평", "", "http://www.hani.co.kr/rss/cartoon", "", "언론", "만화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (210, "한겨레 - English Edition", "", "http://www.hani.co.kr/rss/english_edition", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (211, "한겨레 - 섹션", "", "http://www.hani.co.kr/rss/specialsection", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (212, "한겨레 - 하니온리", "", "http://www.hani.co.kr/rss/hanionly", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (213, "한겨레 - 한겨레온리", "", "http://www.hani.co.kr/rss/hkronly/", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (214, "한겨레 - 멀티하니(사진뉴스)", "", "http://www.hani.co.kr/rss/multihani/", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (215, "한겨레 - 주요기사", "", "http://www.hani.co.kr/rss/lead", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (216, "한겨레 - 인기기사", "", "http://www.hani.co.kr/rss/newsrank", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 경향신문 : 300
+INSERT INTO channels VALUES (300, "경향신문 - 전체", "", "http://www.khan.co.kr/rss/rssdata/total_news.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (301, "경향신문 - 정치", "", "http://www.khan.co.kr/rss/rssdata/politic_news.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (302, "경향신문 - 경제", "", "http://www.khan.co.kr/rss/rssdata/economy_news.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (303, "경향신문 - 사회", "", "http://www.khan.co.kr/rss/rssdata/society_news.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (304, "경향신문 - 국제", "", "http://www.khan.co.kr/rss/rssdata/kh_world.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (305, "경향신문 - 스포츠", "", "http://www.khan.co.kr/rss/rssdata/kh_sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (306, "경향신문 - 문화", "", "http://www.khan.co.kr/rss/rssdata/culture_news.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (307, "경향신문 - 연예", "", "http://www.khan.co.kr/rss/rssdata/kh_entertainment.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (308, "경향신문 - IT", "", "http://www.khan.co.kr/rss/rssdata/it_news.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (309, "경향신문 - 전국", "", "http://www.khan.co.kr/rss/rssdata/local_news.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (310, "경향신문 - 기획", "", "http://www.khan.co.kr/rss/rssdata/kh_special.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (311, "경향신문 - 인물", "", "http://www.khan.co.kr/rss/rssdata/people_news.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (312, "경향신문 - 오피니언", "", "http://www.khan.co.kr/rss/rssdata/opinion_news.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (313, "스포츠경향 - 전체", "", "http://www.khan.co.kr/rss/rssdata/sktotal_news.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (314, "스포츠경향 - 스포츠", "", "http://www.khan.co.kr/rss/rssdata/sksports_news.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (315, "스포츠경향 - 연예", "", "http://www.khan.co.kr/rss/rssdata/sk_entertainment.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (316, "스포츠경향 - 생활/레저", "", "http://www.khan.co.kr/rss/rssdata/skentertain_news.xml", "", "언론", "생활", "", "", "", "kor", 0);
+
+
+-- base offset for 한국일보 : 400
+INSERT INTO channels VALUES (400, "한국일보 - 전체", "", "http://rss.hankooki.com/news/hk_main.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (401, "한국일보 - 정치", "", "http://rss.hankooki.com/news/hk_politics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (402, "한국일보 - 경제", "", "http://rss.hankooki.com/news/hk_economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (403, "한국일보 - 사회", "", "http://rss.hankooki.com/news/hk_society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (404, "한국일보 - 문화", "", "http://rss.hankooki.com/news/hk_culture.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (405, "한국일보 - 라이프", "", "http://rss.hankooki.com/news/hk_life.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (406, "한국일보 - 국제", "", "http://rss.hankooki.com/news/hk_world.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (407, "한국일보 - IT", "", "http://rss.hankooki.com/news/hk_it_tech.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (408, "한국일보 - 피플", "", "http://rss.hankooki.com/news/hk_people.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (409, "한국일보 - 스포츠", "", "http://rss.hankooki.com/news/hk_sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (410, "한국일보 - 연예", "", "http://rss.hankooki.com/news/hk_entv.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (411, "한국일보 - 사설/칼럼", "", "http://rss.hankooki.com/news/hk_opinion.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (412, "한국일보 - 포토", "", "http://rss.hankooki.com/news/hk_photoi.xml", "", "언론", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (413, "한국일보 - TV", "", "http://rss.hankooki.com/news/hk_tv.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (414, "스포츠한국 - 스포츠", "", "http://rss.hankooki.com/sports/sp_sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (415, "스포츠한국 - 연예", "", "http://rss.hankooki.com/sports/sp_entv.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (416, "스포츠한국 - 라이프", "", "http://rss.hankooki.com/sports/sp_life.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (417, "스포츠한국 - 인조이", "", "http://rss.hankooki.com/sports/sp_enjoy.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (418, "서울경제 - 전체", "", "http://rss.hankooki.com/economy/sk_main.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (419, "서울경제 - 경제", "", "http://rss.hankooki.com/economy/sk_economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (420, "서울경제 - 증권", "", "http://rss.hankooki.com/economy/sk_stock.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (421, "서울경제 - 부동산", "", "http://rss.hankooki.com/economy/sk_estate.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (422, "서울경제 - 산업", "", "http://rss.hankooki.com/economy/sk_industry.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (423, "서울경제 - 국제", "", "http://rss.hankooki.com/economy/sk_world.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (424, "서울경제 - 정치", "", "http://rss.hankooki.com/economy/sk_politics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (425, "서울경제 - 사회", "", "http://rss.hankooki.com/economy/sk_society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (426, "서울경제 - 문화/스포츠", "", "http://rss.hankooki.com/economy/sk_culture.xml", "", "언론", "문화", "스포츠", "", "", "kor", 0);
+INSERT INTO channels VALUES (427, "서울경제 - 오피니언", "", "http://rss.hankooki.com/economy/sk_opinion.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (428, "소년한국 - 전체", "", "http://rss.hankooki.com/kids/kd_main.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (429, "소년한국 - 어린이뉴스", "", "http://rss.hankooki.com/kids/kd_news.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (430, "소년한국 - 배움터", "", "http://rss.hankooki.com/kids/kd_learn.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (431, "소년한국 - 놀이터", "", "http://rss.hankooki.com/kids/kd_play.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (432, "소년한국 - 우리들세상", "", "http://rss.hankooki.com/kids/kd_childworld.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (433, "골프매거진", "", "http://rss.hankooki.com/magazine/gm_main.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (434, "파퓰러사이언스", "", "http://rss.hankooki.com/magazine/pop_main.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (435, "주간한국", "", "http://rss.hankooki.com/magazine/wk_main.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 전자신문 : 500
+INSERT INTO channels VALUES (500, "전자신문 - 뉴스", "", "http://rss.etnews.com/Section901.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (501, "전자신문 - 뉴스속보", "", "http://rss.etnews.com/Section902.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (502, "전자신문 - 인기기사", "", "http://rss.etnews.com/Section903.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (503, "전자신문 - 추천기사", "", "http://rss.etnews.com/Section904.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (504, "전자신문 - 통신방송", "", "http://rss.etnews.com/Section031.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (505, "전자신문 - 네트워크", "", "http://rss.etnews.com/Section034.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (506, "전자신문 - 정보화", "", "http://rss.etnews.com/Section041.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (507, "전자신문 - 솔루션", "", "http://rss.etnews.com/Section042.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (508, "전자신문 - 보안", "", "http://rss.etnews.com/Section045.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (509, "전자신문 - 디바이스/산전", "", "http://rss.etnews.com/Section061.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (510, "전자신문 - 에너지/신성장", "", "http://rss.etnews.com/Section062.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (511, "전자신문 - 생활가전", "", "http://rss.etnews.com/Section601.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (512, "전자신문 - 정보가전", "", "http://rss.etnews.com/Section602.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (513, "전자신문 - 자동차", "", "http://rss.etnews.com/Section603.xml", "", "언론", "자동차", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (514, "전자신문 - 유통", "", "http://rss.etnews.com/Section604.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (515, "전자신문 - 콘텐츠", "", "http://rss.etnews.com/Section101.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (516, "전자신문 - 인터넷", "", "http://rss.etnews.com/Section102.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (517, "전자신문 - 게임", "", "http://rss.etnews.com/Section103.xml", "", "언론", "게임", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (518, "전자신문 - 교육/과학", "", "http://rss.etnews.com/Section021.xml", "", "언론", "기술/과학", "교육", "", "", "kor", 0);
+INSERT INTO channels VALUES (519, "전자신문 - 금융/증권", "", "http://rss.etnews.com/Section022.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (520, "전자신문 - 전국뉴스", "", "http://rss.etnews.com/Section023.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (521, "전자신문 - 경제", "", "http://rss.etnews.com/Section024.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (522, "전자신문 - 부동산", "", "http://rss.etnews.com/Section026.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (523, "전자신문 - 국제", "", "http://rss.etnews.com/Section05.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (524, "전자신문 - 열린마당", "", "http://rss.etnews.com/Section11.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 스포츠서울 : 600
+INSERT INTO channels VALUES (600, "스포츠서울 - 전체", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (601, "스포츠서울 - 야구", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=1", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (602, "스포츠서울 - 축구", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=2", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (603, "스포츠서울 - 스포츠 종합", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=3", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (604, "스포츠서울 - 연예", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=4", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (605, "스포츠서울 - 라이프", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=5", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (606, "스포츠서울 - 경마/경륜/경정", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=6", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (607, "스포츠서울 - 해외", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=7", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (608, "스포츠서울 - 경제", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=8", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (609, "스포츠서울 - 문화", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=9", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (610, "스포츠서울 - 선데이", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=10", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (611, "스포츠서울 - 정치", "", "http://www.sportsseoul.com/rss/rss.asp?cp_flag=1&cat_flag=11", "", "언론", "정치", "", "", "", "kor", 0);
+
+
+-- base offset for 아이뉴스24 : 700
+INSERT INTO channels VALUES (700, "아이뉴스24 - IT/시사 전체", "", "http://www.inews24.com/rss/news_inews.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (701, "아이뉴스24 - IT", "", "http://www.inews24.com/rss/news_it.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (702, "아이뉴스24 - 경제", "", "http://www.inews24.com/rss/news_economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (703, "아이뉴스24 - 정치", "", "http://www.inews24.com/rss/news_politics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (704, "아이뉴스24 - 사회", "", "http://www.inews24.com/rss/news_society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (705, "아이뉴스24 - 문화", "", "http://www.inews24.com/rss/news_culture.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (706, "아이뉴스24 - 생활", "", "http://www.inews24.com/rss/news_life.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (707, "아이뉴스24 - 연예/스포츠", "", "http://www.inews24.com/rss/news_joy.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (708, "아이뉴스24 - 연예", "", "http://www.inews24.com/rss/news_enter.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (709, "아이뉴스24 - 스포츠", "", "http://www.inews24.com/rss/news_sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (710, "아이뉴스24 - 게임", "", "http://www.inews24.com/rss/news_game.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (711, "아이뉴스24 - 포토/TV", "", "http://www.inews24.com/rss/news_phototv.xml", "", "언론", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (712, "아이뉴스24 - 오피니언", "", "http://www.inews24.com/rss/news_opinion.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (713, "아이뉴스24 - 엠톡", "", "http://www.inews24.com/rss/news_mtalk.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 민중의소리 : 800
+INSERT INTO channels VALUES (800, "민중의소리 - 시민사회포털", "", "http://ngo.vop.co.kr/rss", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (850, "애국전선", "", "http://cast.vop.co.kr/kfline.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (851, "정혜림의 도도한 뒷담화", "", "http://nemo.podics.com/131613387490", "", "시사", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (852, "낭만자객", "", "http://cast.vop.co.kr/nang.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (853, "희소식(이정희)", "", "http://cast.vop.co.kr/heenews.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+
+
+-- base offset for 매일경제 : 900
+INSERT INTO channels VALUES (900, "매일경제 - 헤드라인", "", "http://file.mk.co.kr/news/rss/rss_30000001.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (901, "매일경제 - 전체", "", "http://file.mk.co.kr/news/rss/rss_40300001.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (902, "매일경제 - 경제", "", "http://file.mk.co.kr/news/rss/rss_30100041.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (903, "매일경제 - 정치", "", "http://file.mk.co.kr/news/rss/rss_30200030.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (904, "매일경제 - 사회", "", "http://file.mk.co.kr/news/rss/rss_50400012.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (905, "매일경제 - 국제", "", "http://file.mk.co.kr/news/rss/rss_30300018.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (906, "매일경제 - 기업/경영", "", "http://file.mk.co.kr/news/rss/rss_50100032.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (907, "매일경제 - 증권", "", "http://file.mk.co.kr/news/rss/rss_50200011.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (908, "매일경제 - 부동산", "", "http://file.mk.co.kr/news/rss/rss_50300009.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (909, "매일경제 - 문화/연예", "", "http://file.mk.co.kr/news/rss/rss_30000023.xml", "", "언론", "문화", "연예", "", "", "kor", 0);
+INSERT INTO channels VALUES (910, "매일경제 - 스포츠", "", "http://file.mk.co.kr/news/rss/rss_50600001.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (911, "매일경제 - 게임", "", "http://file.mk.co.kr/news/rss/rss_50700001.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (912, "매일경제 - 오피니언", "", "http://file.mk.co.kr/news/rss/rss_30500041.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (913, "매일경제 - 이코노미 전체", "", "http://file.mk.co.kr/news/rss/rss_50000001.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (914, "매일경제 - 시티라이프 전체", "", "http://file.mk.co.kr/news/rss/rss_60000007.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for SBS : 1000
+INSERT INTO channels VALUES (1000, "SBS - 전체", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=all", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1001, "SBS - 정치", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=politics", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1002, "SBS - 경제", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=economy", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1003, "SBS - 사회", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=society", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1004, "SBS - 연예", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=entertainment", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1005, "SBS - 국제", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=international", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1006, "SBS - 스포츠", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=sports", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1007, "SBS - 문화/과학", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=culture", "", "언론", "기술/과학", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (1008, "SBS - 8뉴스", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=8news", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1009, "SBS - 아침종합뉴스", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=morning_news", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1010, "SBS - 생생뉴스", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=real_news", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1011, "SBS - 뉴스랭킹", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=ranking", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1012, "SBS - 피겨", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=figure", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1013, "SBS - 취재파일", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=news_file", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1014, "SBS - 영상토크", "", "http://api.sbs.co.kr/xml/news/rss.jsp?pmDiv=vod_talk", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for MBC : 1100
+INSERT INTO channels VALUES (1100, "MBC - 뉴스 - 전체", "", "http://imnews.imbc.com/rss/news/news_00.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1101, "MBC - 뉴스 - 정치", "", "http://imnews.imbc.com/rss/news/news_01.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1102, "MBC - 뉴스 - 통일외교", "", "http://imnews.imbc.com/rss/news/news_02.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1103, "MBC - 뉴스 - 국제", "", "http://imnews.imbc.com/rss/news/news_03.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1104, "MBC - 뉴스 - 경제", "", "http://imnews.imbc.com/rss/news/news_04.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1105, "MBC - 뉴스 - 사회", "", "http://imnews.imbc.com/rss/news/news_05.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1106, "MBC - 뉴스 - 문화/연예", "", "http://imnews.imbc.com/rss/news/news_06.xml", "", "언론", "문화", "연예", "", "", "kor", 0);
+INSERT INTO channels VALUES (1107, "MBC - 뉴스 - 스포츠", "", "http://imnews.imbc.com/rss/news/news_07.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1108, "MBC - 뉴스 - 건강/과학", "", "http://imnews.imbc.com/rss/news/news_08.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1109, "MBC - 다시보기 - 뉴스데스크", "", "http://imnews.imbc.com/rss/replay/replay_01.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1110, "MBC - 다시보기 - 뉴스투데이", "", "http://imnews.imbc.com/rss/replay/replay_02.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1111, "MBC - 다시보기 - 1045뉴스", "", "http://imnews.imbc.com/rss/replay/replay_03.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1112, "MBC - 다시보기 - 뉴스와경제", "", "http://imnews.imbc.com/rss/replay/replay_04.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1113, "MBC - 다시보기 - 5시뉴스", "", "http://imnews.imbc.com/rss/replay/replay_05.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1114, "MBC - 다시보기 - 저녁뉴스", "", "http://imnews.imbc.com/rss/replay/replay_06.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1115, "MBC - 다시보기 - 스포츠뉴스", "", "http://imnews.imbc.com/rss/replay/replay_07.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1116, "MBC - 다시보기 - 뉴스24", "", "http://imnews.imbc.com/rss/replay/replay_08.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1117, "MBC - 위클리 - 시사매거진 2580", "", "http://imnews.imbc.com/rss/weekly/weekly_01.xml", "", "언론", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1118, "MBC - 위클리 - 100분토론", "", "http://imnews.imbc.com/rss/weekly/weekly_02.xml", "", "언론", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1119, "MBC - 위클리 - 뉴스후", "", "http://imnews.imbc.com/rss/weekly/weekly_03.xml", "", "언론", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1120, "MBC - 위클리 - 지구촌리포트", "", "http://imnews.imbc.com/rss/weekly/weekly_04.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1121, "MBC - 위클리 - 통일전망대", "", "http://imnews.imbc.com/rss/weekly/weekly_07.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1122, "MBC - 위클리 - 경제매거진M", "", "http://imnews.imbc.com/rss/weekly/weekly_05.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1123, "MBC - 위클리 - 일요인터뷰", "", "http://imnews.imbc.com/rss/weekly/weekly_08.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1124, "MBC - 위클리 - 스포츠매거진", "", "http://imnews.imbc.com/rss/weekly/weekly_06.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1125, "MBC - 풀영상 - 라이브", "", "http://imnews.imbc.com/rss/fullmov/fullmov_01.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1126, "MBC - 풀영상 - MBC", "", "http://imnews.imbc.com/rss/fullmov/fullmov_02.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1127, "MBC - 풀영상 - 해외", "", "http://imnews.imbc.com/rss/fullmov/fullmov_03.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1128, "MBC - 풀영상 - 스포츠", "", "http://imnews.imbc.com/rss/fullmov/fullmov_04.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1129, "MBC - 풀영상 - 토론회", "", "http://imnews.imbc.com/rss/fullmov/fullmov_05.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1130, "MBC - 풀영상 - 연예", "", "http://imnews.imbc.com/rss/fullmov/fullmov_06.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1131, "MBC - 기자칼럼", "", "http://imnews.imbc.com/rss/mpeople/rptcolumn.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1132, "MBC - 시민기자뉴스", "", "http://imnews.imbc.com/rss/citizen/movnews.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 한국경제 : 1200
+INSERT INTO channels VALUES (1200, "읽어주는 한국경제", "", "http://feeds.feedburner.com/hankyung_radio?format=xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1201, "한국경제 - 증권", "", "http://rss.hankyung.com/new/news_stock.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1202, "한국경제 - 경제/금융", "", " http://rss.hankyung.com/new/news_economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1203, "한국경제 - 부동산", "", "http://rss.hankyung.com/new/news_estate.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1204, "한국경제 - 산업", "", "http://rss.hankyung.com/new/news_industry.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1205, "한국경제 - 국제", "", "http://rss.hankyung.com/new/news_intl.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1206, "한국경제 - 정치", "", "http://rss.hankyung.com/new/news_politics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1207, "한국경제 - 사회", "", "http://rss.hankyung.com/new/news_society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1208, "한국경제 - 스포츠/문화", "", "http://rss.hankyung.com/new/news_sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1209, "한국경제 - 사설/칼럼", "", "http://rss.hankyung.com/new/news_column.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1210, "한국경제 - 포토", "", "http://rss.hankyung.com/new/news_photo.xml", "", "언론", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1211, "한국경제 - 화제의 뉴스", "", "http://rss.hankyung.com/new/news_hot.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1212, "한국경제 - 칼럼", "", "http://rss.hankyung.com/new/column_all.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1213, "한국경제 - 증권 칼럼", "", "http://rss.hankyung.com/new/column_stock.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1214, "한국경제 - 부동산 칼럼", "", "http://rss.hankyung.com/new/column_land.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1215, "한국경제 - 재테크 칼럼", "", "http://rss.hankyung.com/new/column_ft.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1216, "한국경제 - 자동차 칼럼", "", "http://rss.hankyung.com/new/column_auto.xml", "", "언론", "자동차", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1217, "한국경제 - 골프 칼럼", "", "http://rss.hankyung.com/new/column_golf.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1218, "한국경제 - 직장인 칼럼", "", "http://rss.hankyung.com/new/column_community.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1219, "한국경제 - 므흣한 영어", "", "http://rss.hankyung.com/new/column_english.xml", "", "언론", "외국어", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1220, "한국경제 - 폴", "", "http://rss.hankyung.com/new/poll.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1221, "한국경제 - 불새 상품뉴스", "", "http://rss.hankyung.com/new/bulsae.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 다음 : 1300
+INSERT INTO channels VALUES (1300, "다음 첫화면 - 전체", "", "http://www.daum.net/rss.xml", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1301, "다음 첫화면 - 뉴스", "", "http://www.daum.net/pub/rss_news.xml", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1302, "다음 첫화면 - 스포츠", "", "http://www.daum.net/pub/rss_sports.xml", "", "인터넷 뉴스", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1303, "다음 첫화면 - 연예", "", "http://www.daum.net/pub/rss_entertain.xml", "", "인터넷 뉴스", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1304, "미디어다음 - 시사종합", "", "http://media.daum.net/syndication/today_sisa.rss", "", "인터넷 뉴스", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1305, "미디어다음 - 연예", "", "http://media.daum.net/syndication/today_entertain.rss", "", "인터넷 뉴스", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1306, "미디어다음 - 스포츠", "", "http://media.daum.net/syndication/today_sports.rss", "", "인터넷 뉴스", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1307, "미디어다음 - 사회", "", "http://media.daum.net/syndication/society.rss", "", "인터넷 뉴스", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1308, "미디어다음 - 정치", "", "http://media.daum.net/syndication/politics.rss", "", "인터넷 뉴스", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1309, "미디어다음 - 경제", "", "http://media.daum.net/syndication/economic.rss", "", "인터넷 뉴스", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1310, "미디어다음 - 국제", "", "http://media.daum.net/syndication/foreign.rss", "", "인터넷 뉴스", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1311, "미디어다음 - 문화/생활", "", "http://media.daum.net/syndication/culture.rss", "", "인터넷 뉴스", "문화", "생활", "", "", "kor", 0);
+INSERT INTO channels VALUES (1312, "미디어다음 - 기술/과학", "", "http://media.daum.net/syndication/digital.rss", "", "인터넷 뉴스", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1313, "미디어다음 - 블로거뉴스 - 베스트", "", "http://bloggernews.media.daum.net/best/rss", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1314, "미디어다음 - 블로거뉴스 - 인기글", "", "http://bloggernews.media.daum.net/ch/all/rss", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1315, "미디어다음 - 영화 - 기획특집", "", "http://aggregate.movie.daum.net/provider/rss/feature.xml", "", "인터넷 뉴스", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1316, "미디어다음 - 영화 - 리뷰", "", "http://aggregate.movie.daum.net/provider/rss/review.xml", "", "인터넷 뉴스", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1317, "미디어다음 - 영화 - 피플", "", "http://aggregate.movie.daum.net/provider/rss/people.xml", "", "인터넷 뉴스", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1318, "미디어다음 - 영화 - 개봉예정작", "", "http://aggregate.movie.daum.net/provider/rss/futureshow.xml", "", "인터넷 뉴스", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1319, "미디어다음 - 영화 - 네티즌리뷰", "", "http://aggregate.movie.daum.net/provider/rss/netizenReview.xml", "", "인터넷 뉴스", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1320, "다음뷰 - 베스트", "", "http://v.daum.net/best/rss", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1321, "다음뷰 - 전체", "", "http://v.daum.net/all/rss", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1322, "다음뷰 - 라이프", "", "http://v.daum.net/ch/life/rss", "", "인터넷 뉴스", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1323, "다음뷰 - 문화/연예", "", "http://v.daum.net/ch/art/rss", "", "인터넷 뉴스", "문화", "연예", "", "", "kor", 0);
+INSERT INTO channels VALUES (1324, "다음뷰 - IT/과학", "", "http://v.daum.net/ch/technology/rss", "", "인터넷 뉴스", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1325, "다음뷰 - 스포츠", "", "http://v.daum.net/ch/sports/rss", "", "인터넷 뉴스", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1326, "다음뷰 - 경제", "", "http://v.daum.net/ch/economy/rss", "", "인터넷 뉴스", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1327, "다음뷰 - 시사", "", "http://v.daum.net/ch/current/rss", "", "인터넷 뉴스", "시사", "", "", "", "kor", 0);
+
+
+-- base offset for 네이버 : 1400
+INSERT INTO channels VALUES (1400, "네이버 - 많이 본 뉴스", "", "http://feeds.feedburner.com/naver_news_popular", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1401, "네이버 - 게임", "", "http://feeds.feedburner.com/NaverNewsGameESports?format=xml", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1402, "네이버 - 경제", "", "http://feeds.feedburner.com/NaverNewsGlobalBusinessNews?format=xml", "", "인터넷 뉴스", "경제", "", "", "", "kor", 0);
+
+
+-- base offset for 딴지일보 : 1500
+INSERT INTO channels VALUES (1500, "딴지일보", "", "http://feeds.feedburner.com/ddanzi?format=xml", "", "인터넷 뉴스", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1550, "나는 꼼수다", "", "http://old.ddanzi.com/appstream/ddradio.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1551, "나는 꼽사리다", "", "http://old.ddanzi.com/appstream/ggobsari.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+
+
+-- base offset for '외국어' : 1600
+INSERT INTO channels VALUES (1600, "English as a Second Language Podcast", "", "http://feeds.feedburner.com/EnglishAsASecondLanguagePodcast?format=xml", "", "외국어", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1601, "BBC 6 Minute English", "", "http://downloads.bbc.co.uk/podcasts/worldservice/how2/rss.xml", "", "외국어", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1602, "BBC World Service : 60 Seconds Idea to Improve the World", "", "http://downloads.bbc.co.uk/podcasts/worldservice/forum60sec/rss.xml", "", "외국어", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1603, "BBC A History of the World in 100 Objects", "", "http://downloads.bbc.co.uk/podcasts/radio4/ahow/rss.xml", "", "외국어", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1604, "ABC AM", "", "http://abc.net.au/am/rss/amrss.xml", "", "외국어", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1605, "ABC PM", "", "http://abc.net.au/pm/rss/pmrss.xml", "", "외국어", "", "", "", "", "kor", 0);
+
+
+-- base offset for 'MBC 라디오' : 1700
+INSERT INTO channels VALUES (1700, "건강한 아침 황선숙입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002588100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1701, "손석희의 시선집중", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000674100000100000", "", "라디오", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1702, "손에 잡히는 경제 이진우입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000671100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1703, "여성시대 양희은, 강석우입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000630100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1704, "성경섭이 만난 사람", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002424100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1705, "배한성, 배칠수의 고전열전", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002488100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1706, "지금은 라디오 시대", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002488100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1707, "김창옥의 세계는 그리고 우리는", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000681100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1708, "최양락의 재미있는 라디오", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000678100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1709, "윤하의 별이 빛나는 밤에", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000677100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1710, "신동의 심심타파", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000664100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1711, "이동진의 꿈꾸는 다락방", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002589100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1712, "세상을 바꾸는 생각", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002590100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1713, "김나진의 세계도시여행", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000621100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1714, "라디오 북클럽 김지은입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000698100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1715, "타박타박 세계사", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000628100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1716, "세상을 여는 아침 허일후입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000575100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1717, "오늘아침 심현보입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000576100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1718, "정오의 희망곡 스윗소로우입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1001919100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1719, "두시의 데이트 주영훈입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000586100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1720, "간미연의 친한친구", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002413100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1721, "FM 음악도시 성시경입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1002600100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1722, "푸른밤 정엽입니다", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000578100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1723, "이주연의 영화음악", "", "http://minicast.imbc.com/PodCast/pod.aspx?code=1000580100000100000", "", "라디오", "", "", "", "", "kor", 0);
+
+
+-- base offset for 'SBS 라디오' : 1800
+INSERT INTO channels VALUES (1800, "정선희의 오늘같은밤", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349378A.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1801, "김형준의 뮤직하이", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000328480.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1802, "김영철의 Fun Fun today", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000351036.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1803, "이숙영의 파워 FM", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000010343.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1804, "아름다운 이 아침 김창완", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000010355.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1805, "공형진의 씨네타운", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000321755.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1806, "최화정의 파워타임", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000010346.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1807, "두시탈출 컬투쇼", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000328482.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1808, "김창렬의 올드스쿨", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000329545.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1809, "붐의 영스트리트", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000352536.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1810, "이석훈의 텐텐클럽", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349380.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1811, "서두원의 시사초점", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349385.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1812, "최영아의 책하고 놀자", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000328499.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1813, "SBS 전망대", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000337960.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1814, "정석문의 섹션라디오", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000329544.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1815, "정철진의 스마트경제", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000355936.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1816, "박준형의 시사갈갈", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000356536.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1817, "김지선,김일중의 세상을 만나자", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000337995.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1818, "라디오오디션 국민DJ를 찾습니다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000351237.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1819, "이성미의 이야기쇼", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349373.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1820, "희망사항 변진섭입니다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000349388.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1821, "안선영의 라디오가 좋다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000340869.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1822, "여러분의 국민DJ 이예랑입니다", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000362236.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1823, "컬투쇼 레전드 사연 BEST 50", "", "http://wizard2.sbs.co.kr/w3/podcast/V0000364436.xml", "", "라디오", "", "", "", "", "kor", 0);
+
+
+-- base offset for 유투브 : 1900
+INSERT INTO channels VALUES (1900, "하니TV - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/hanitv/uploads", "", "유투브", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1901, "뉴욕타임스 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%EB%89%B4%EC%9A%95%ED%83%80%EC%9E%84%EC%8A%A4&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "시사", "", "", "", "kor", 0);
+-- iblug is better than youtube! (to avoid duplication)
+-- INSERT INTO channels VALUES (1902, "뉴스타파 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/newstapa/uploads", "", "유투브", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1903, "MBC 파업채널 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/mbcunion2012/uploads", "", "유투브", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1904, "제대로 뉴스데스크 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%EC%A0%9C%EB%8C%80%EB%A1%9C+%EB%89%B4%EC%8A%A4%EB%8D%B0%EC%8A%A4%ED%81%AC&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1905, "리셋 KBS 뉴스 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%EB%A6%AC%EC%85%8B+kbs+%EB%89%B4%EC%8A%A4&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1906, "파워업 피디수첩 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/videos?q=%ED%8C%8C%EC%9B%8C%EC%97%85+pd+%EC%88%98%EC%B2%A9&amp;orderby=published&amp;start-index=1&amp;max-results=50&amp;client=ytapi-youtube-search&amp;v=2", "", "유투브", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (1907, "KBS 파업채널 - 유투브", "", "http://gdata.youtube.com/feeds/mobile/users/kbsunion/uploads", "", "유투브", "시사", "", "", "", "kor", 0);
+
+
+-- base offset for 노무현 : 2000
+
+
+-- base offset for 시사인 : 2100
+INSERT INTO channels VALUES (2100, "시사인 - 전체기사", "", "http://www.sisainlive.com/rss.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2101, "시사인 - 인기기사", "", "http://www.sisainlive.com/rss/clickTop.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2102, "시사인 - 커버/특집", "", "http://www.sisainlive.com/rss/S1N1.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2103, "시사인 - 정치/경제", "", "http://www.sisainlive.com/rss/S1N2.xml", "", "언론", "정치", "경제", "", "", "kor", 0);
+INSERT INTO channels VALUES (2104, "시사인 - 사회/문화", "", "http://www.sisainlive.com/rss/S1N3.xml", "", "언론", "사회", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (2105, "시사인 - 국제/한반도", "", "http://www.sisainlive.com/rss/S1N4.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2106, "시사인 - 인터뷰/오피니언", "", "http://www.sisainlive.com/rss/S1N5.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2107, "시사인 - 실용/과학", "", "http://www.sisainlive.com/rss/S1N6.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2108, "시사인 - 사진/만화", "", "http://www.sisainlive.com/rss/S1N7.xml", "", "언론", "만화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2109, "시사인 - 책꽃이", "", "http://www.sisainlive.com/rss/S1N8.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2110, "시사인 - 놀이터", "", "http://www.sisainlive.com/rss/S1N9.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2111, "시사인 - 광고페이지", "", "http://www.sisainlive.com/rss/S1N10.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2112, "시사인 - 공지", "", "http://www.sisainlive.com/rss/S1N11.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2113, "고재열의 독설닷컴", "", "http://poisontongue.sisain.co.kr/rss/xml", "", "시사", "", "", "", "", "kor", 0);
+
+
+-- base offset for 머니투데이 : 2200
+INSERT INTO channels VALUES (2200, "머니투데이 - 최신기사", "", "http://rss.mt.co.kr/mt_news.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2201, "머니투데이 - 투자속보", "", "http://rss.mt.co.kr/mt_news_stock.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2202, "머니투데이 - 오피니언", "", "http://rss.mt.co.kr/mt_column.xml", "", "언론", "사설", "경제", "", "", "kor", 0);
+INSERT INTO channels VALUES (2203, "머니투데이 - 스타뉴스", "", "http://rss.mt.co.kr/st_news.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2204, "머니투데이 - 스타일M", "", "http://rss.mt.co.kr/stylem_news.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2205, "머니투데이 - 자동차", "", "http://rss.mt.co.kr/autom_news.xml", "", "언론", "자동차", "", "", "", "kor", 0);
+
+
+-- base offset for 한겨레21 : 2300
+INSERT INTO channels VALUES (2300, "한겨레21 - 표지이야기", "", "http://h21.hani.co.kr/rss/cover", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2301, "한겨레21 - 특집", "", "http://h21.hani.co.kr/rss/special", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2302, "한겨레21 - 정치", "", "http://h21.hani.co.kr/rss/politics", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2303, "한겨레21 - 경제", "", "http://h21.hani.co.kr/rss/economy", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2304, "한겨레21 - 사회", "", "http://h21.hani.co.kr/rss/society", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2305, "한겨레21 - 세계", "", "http://h21.hani.co.kr/rss/world", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2306, "한겨레21 - 사진", "", "http://h21.hani.co.kr/rss/photo", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2307, "한겨레21 - 문화", "", "http://h21.hani.co.kr/rss/culture", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2308, "한겨레21 - 스포츠", "", "http://h21.hani.co.kr/rss/sports", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2309, "한겨레21 - 독자", "", "http://h21.hani.co.kr/rss/reader", "", "언론", "사설", "", "", "", "kor", 0);
+
+
+-- base offset for MBN : 2400
+INSERT INTO channels VALUES (2400, "MBN - 전체", "", "http://mbn.mk.co.kr/rss", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2401, "MBN - 정치", "", "http://mbn.mk.co.kr/rss/politics", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2402, "MBN - 경제", "", "http://mbn.mk.co.kr/rss/economy", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2403, "MBN - 사회", "", "http://mbn.mk.co.kr/rss/society", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2404, "MBN - 문화", "", "http://mbn.mk.co.kr/rss/culture", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2405, "MBN - 스포츠", "", "http://mbn.mk.co.kr/rss/sports", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2406, "MBN - 국제", "", "http://mbn.mk.co.kr/rss/international", "국제", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2407, "MBN - 증권", "", "http://mbn.mk.co.kr/rss/stock", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2408, "MBN - 부동산", "", "http://mbn.mk.co.kr/rss/estate", "", "언론", "경제", "", "", "", "kor", 0);
+
+
+-- base offset for 스카우트 : 2500
+INSERT INTO channels VALUES (2500, "스카우트 - 서울", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=1", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2501, "스카우트 - 강원", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=2", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2502, "스카우트 - 경기", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=3", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2503, "스카우트 - 경남", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=4", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2504, "스카우트 - 경북", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=5", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2505, "스카우트 - 광주", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=6", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2506, "스카우트 - 대구", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=7", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2507, "스카우트 - 대전", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=8", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2508, "스카우트 - 부산", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=9", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2509, "스카우트 - 울산", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=10", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2510, "스카우트 - 인천", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=11", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2511, "스카우트 - 전남", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=12", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2512, "스카우트 - 전북", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=13", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2513, "스카우트 - 제주", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=14", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2514, "스카우트 - 충남", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=15", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2515, "스카우트 - 충북", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=16", "", "취업", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2516, "스카우트 - 전국", "", "http://www.scout.co.kr/jobs/area/rss.asp?ac=17", "", "취업", "", "", "", "", "kor", 0);
+
+
+-- base offset for KoreaHerald: 2600
+INSERT INTO channels VALUES (2600, "KoreaHerald - National", "", "http://www.koreaherald.com/rss/020100000000.xml", "", "언론", "외국어", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2601, "KoreaHerald - Business", "", "http://www.koreaherald.com/rss/020200000000.xml", "", "언론", "외국어", "경제", "", "", "kor", 0);
+INSERT INTO channels VALUES (2602, "KoreaHerald - Life/Style", "", "http://www.koreaherald.com/rss/020300000000.xml", "", "언론", "외국어", "생활", "", "", "kor", 0);
+INSERT INTO channels VALUES (2603, "KoreaHerald - Entertainment", "", "http://www.koreaherald.com/rss/020400000000.xml", "", "언론", "외국어", "연예", "", "", "kor", 0);
+INSERT INTO channels VALUES (2604, "KoreaHerald - Opinion", "", "http://www.koreaherald.com/rss/020600000000.xml", "", "언론", "외국어", "사설", "", "", "kor", 0);
+INSERT INTO channels VALUES (2605, "KoreaHerald - English Cafe", "", "http://www.koreaherald.com/rss/021000000000.xml", "", "언론", "외국어", "", "", "", "kor", 0);
+
+
+-- base offset for KBS: 2700
+INSERT INTO channels VALUES (2700, "KBS - 드라마", "", "http://www.kbs.co.kr/rss/drama.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2701, "KBS - 드라마", "", "http://www.kbs.co.kr/rss/enter.xml", "", "언론", "연예", "", "", "", "kor", 0);
+
+
+-- base offset for 세계일보: 2800
+INSERT INTO channels VALUES (2800, "세계일보 - 최신", "", "http://rss.segye.com/segye_recent.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2801, "세계일보 - 종합", "", "http://rss.segye.com/segye_total.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2802, "세계일보 - 정치", "", "http://rss.segye.com/segye_politic.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2803, "세계일보 - 국제", "", "http://rss.segye.com/segye_international.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2804, "세계일보 - 경제", "", "http://rss.segye.com/segye_economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2805, "세계일보 - 사회", "", "http://rss.segye.com/segye_society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2806, "세계일보 - 문화", "", "http://rss.segye.com/segye_culture.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2807, "세계일보 - 스포츠", "", "http://rss.segye.com/segye_sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2808, "세계일보 - 연예", "", "http://rss.segye.com/segye_entertainment.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2809, "세계일보 - 피플", "", "http://rss.segye.com/segye_people.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2810, "세계일보 - 오피니언", "", "http://rss.segye.com/segye_opinion.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2811, "세계일보 - 전국", "", "http://rss.segye.com/segye_local.xml", "", "언론", "지역", "", "", "", "kor", 0);
+
+
+-- base offset for 미디어오늘: 2900
+INSERT INTO channels VALUES (2900, "미디어오늘 - 전체", "", "http://www.mediatoday.co.kr/rss/allArticle.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2901, "미디어오늘 - 인기", "", "http://www.mediatoday.co.kr/rss/clickTop.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2902, "미디어오늘 - 미디어", "", "http://www.mediatoday.co.kr/rss/S1N1.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2903, "미디어오늘 - 정치", "", "http://www.mediatoday.co.kr/rss/S1N4.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2904, "미디어오늘 - 경제", "", "http://www.mediatoday.co.kr/rss/S1N5.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2905, "미디어오늘 - 사회", "", "http://www.mediatoday.co.kr/rss/S1N6.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2906, "미디어오늘 - 문화", "", "http://www.mediatoday.co.kr/rss/S1N7.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (2907, "미디어오늘 - 국제", "", "http://www.mediatoday.co.kr/rss/S1N23.xml", "", "언론", "국제", "", "", "", "kor", 0);
+
+
+-- base offset for 파이낸셜 뉴스: 3000
+INSERT INTO channels VALUES (3000, "파이낸셜 뉴스 - 전체", "", "http://www.fnnews.com/rss/fn_realnews_all.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3001, "파이낸셜 뉴스 - 인기기사", "", "http://www.fnnews.com/rss/fn_manyview_all.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3002, "파이낸셜 뉴스 - 증권", "", "http://www.fnnews.com/rss/fn_realnews_stock.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3003, "파이낸셜 뉴스 - 금융", "", "http://www.fnnews.com/rss/fn_realnews_finance.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3004, "파이낸셜 뉴스 - 부동산", "", "http://www.fnnews.com/rss/fn_realnews_realestate.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3005, "파이낸셜 뉴스 - 산업", "", "http://www.fnnews.com/rss/fn_realnews_industry.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3006, "파이낸셜 뉴스 - 경제", "", "http://www.fnnews.com/rss/fn_realnews_economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3007, "파이낸셜 뉴스 - IT/과학", "", "http://www.fnnews.com/rss/fn_realnews_it.xml", "", "언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3008, "파이낸셜 뉴스 - 유통", "", "http://www.fnnews.com/rss/fn_realnews_circulation.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3009, "파이낸셜 뉴스 - 국제", "", "http://www.fnnews.com/rss/fn_realnews_international.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3010, "파이낸셜 뉴스 - 정치", "", "http://www.fnnews.com/rss/fn_realnews_politics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3011, "파이낸셜 뉴스 - 지역경제/사회", "", "http://www.fnnews.com/rss/fn_realnews_society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3012, "파이낸셜 뉴스 - 문화", "", "http://www.fnnews.com/rss/fn_realnews_culture.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3013, "파이낸셜 뉴스 - 스포츠", "", "http://www.fnnews.com/rss/fn_realnews_sports.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3014, "파이낸셜 뉴스 - 교육", "", "http://www.fnnews.com/rss/fn_realnews_edu.xml", "", "언론", "교육", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3015, "파이낸셜 뉴스 - 피플", "", "http://www.fnnews.com/rss/fn_realnews_people.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 부산일보: 3100
+INSERT INTO channels VALUES (3100, "부산일보 - 종합", "", "http://news20.busan.com/content/rss/1010000000.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3101, "부산일보 - 사회", "", "http://news20.busan.com/content/rss/1010010000.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3102, "부산일보 - 경제/해양", "", "http://news20.busan.com/content/rss/1010020000.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3103, "부산일보 - 정치", "", "http://news20.busan.com/content/rss/1010030000.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3104, "부산일보 - 문화", "", "http://news20.busan.com/content/rss/1010090000.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3105, "부산일보 - 국제", "", "http://news20.busan.com/content/rss/1010100000.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3106, "부산일보 - 사람", "", "http://news20.busan.com/content/rss/1010010100.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3107, "부산일보 - 사설/칼럼", "", "http://news20.busan.com/content/rss/1010110000.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3108, "부산일보 - 스포츠", "", "http://news20.busan.com/content/rss/1010050000.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3109, "부산일보 - 연예", "", "http://news20.busan.com/content/rss/1010130000.xml", "", "언론", "연예", "", "", "", "kor", 0);
+
+
+-- base offset for 제주일보: 3200
+INSERT INTO channels VALUES (3200, "제주일보 - 전체기사", "", "http://www.jejunews.com/rss/allArticle.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3201, "제주일보 - 정치/행정", "", "http://www.jejunews.com/rss/S1N1.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3202, "제주일보 - 사회", "", "http://www.jejunews.com/rss/S1N2.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3203, "제주일보 - 지역", "", "http://www.jejunews.com/rss/S1N3.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3204, "제주일보 - 문화", "", "http://www.jejunews.com/rss/S1N4.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3205, "제주일보 - 경제", "", "http://www.jejunews.com/rss/S1N5.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3206, "제주일보 - 기획", "", "http://www.jejunews.com/rss/S1N6.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3207, "제주일보 - 스포츠", "", "http://www.jejunews.com/rss/S1N7.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3208, "제주일보 - 사람과 사람", "", "http://www.jejunews.com/rss/S1N8.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3209, "제주일보 - 오피니언", "", "http://www.jejunews.com/rss/S1N9.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3210, "제주일보 - 열린페이지", "", "http://www.jejunews.com/rss/S1N10.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3211, "제주일보 - 라이프", "", "http://www.jejunews.com/rss/S1N11.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3212, "제주일보 - 미분류", "", "http://www.jejunews.com/rss/S1N13.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3213, "제주일보 - 교육/과학", "", "http://www.jejunews.com/rss/S1N17.xml", "", "언론", "교육", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3214, "제주일보 - 국제", "", "http://www.jejunews.com/rss/S1N18.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3215, "제주일보 - 전국종합", "", "http://www.jejunews.com/rss/S1N19.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3216, "제주일보 - 제주만평", "", "http://www.jejunews.com/rss/S1N20.xml", "", "언론", "만화", "", "", "", "kor", 0);
+
+
+-- base offset for 중부매일: 3300
+INSERT INTO channels VALUES (3300, "중부매일 - 전체기사", "", "http://www.jbnews.com/rss/allArticle.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3301, "중부매일 - 인기기사", "", "http://www.jbnews.com/rss/clickTop.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3302, "중부매일 - 정치", "", "http://www.jbnews.com/rss/S1N1.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3303, "중부매일 - 경제", "", "http://www.jbnews.com/rss/S1N2.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3304, "중부매일 - 사회", "", "http://www.jbnews.com/rss/S1N3.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3305, "중부매일 - 문화", "", "http://www.jbnews.com/rss/S1N4.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3306, "중부매일 - 충북", "", "http://www.jbnews.com/rss/S1N5.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3307, "중부매일 - 대전/충남", "", "http://www.jbnews.com/rss/S1N6.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3308, "중부매일 - 오피니언", "", "http://www.jbnews.com/rss/S1N7.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3309, "중부매일 - 사람들", "", "http://www.jbnews.com/rss/S1N8.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3310, "중부매일 - 포토", "", "http://www.jbnews.com/rss/S1N9.xml", "", "언론", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3311, "중부매일 - 스포츠/연예", "", "http://www.jbnews.com/rss/S1N10.xml", "", "언론", "스포츠", "연예", "", "", "kor", 0);
+INSERT INTO channels VALUES (3312, "중부매일 - 라이프", "", "http://www.jbnews.com/rss/S1N11.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3313, "중부매일 - 기획특집", "", "http://www.jbnews.com/rss/S1N12.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3314, "중부매일 - 시민기자", "", "http://www.jbnews.com/rss/S1N13.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3315, "중부매일 - 미분류", "", "http://www.jbnews.com/rss/S1N14.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3316, "중부매일 - 임시", "", "http://www.jbnews.com/rss/S1N15.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3317, "중부매일 - 국제", "", "http://www.jbnews.com/rss/S1N16.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3318, "중부매일 - 전국", "", "http://www.jbnews.com/rss/S1N18.xml", "", "언론", "지역", "", "", "", "kor", 0);
+
+
+-- base offset for 광주일보: 3400
+INSERT INTO channels VALUES (3400, "광주일보 - 전체기사", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article01.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3401, "광주일보 - 인기기사", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article31.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3402, "광주일보 - 정치", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article02.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3403, "광주일보 - 경제", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article03.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3404, "광주일보 - 사회", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article04.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3405, "광주일보 - 시군별뉴스", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article05.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3406, "광주일보 - 문화", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article06.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3407, "광주일보 - 피플/라이프", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article07.xml", "", "언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3408, "광주일보 - 외신", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article08.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3409, "광주일보 - 스포츠", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article09.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3410, "광주일보 - 연예", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article10.xml", "", "언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3411, "광주일보 - 사설", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article11.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3412, "광주일보 - 칼럼", "", "http://www.kwangju.co.kr:8080/wikitree/content/rss/article12.xml", "", "언론", "사설", "", "", "", "kor", 0);
+
+
+-- base offset for 강원도민일보 : 3500
+INSERT INTO channels VALUES (3500, "강원도민일보 - 전체기사", "", "http://www.kado.net/rss/allArticle.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3501, "강원도민일보 - 인기기사", "", "http://www.kado.net/rss/clickTop.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3502, "강원도민일보 - 정치", "", "http://www.kado.net/rss/S1N1.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3503, "강원도민일보 - 경제", "", "http://www.kado.net/rss/S1N2.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3504, "강원도민일보 - 사회", "", "http://www.kado.net/rss/S1N3.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3505, "강원도민일보 - 문화", "", "http://www.kado.net/rss/S1N4.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3506, "강원도민일보 - 스포츠", "", "http://www.kado.net/rss/S1N5.xml", "", "언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3507, "강원도민일보 - 지역", "", "http://www.kado.net/rss/S1N6.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3508, "강원도민일보 - 도민마당", "", "http://www.kado.net/rss/S1N7.xml", "", "언론", "지역", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3509, "강원도민일보 - 오피니언", "", "http://www.kado.net/rss/S1N8.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3510, "강원도민일보 - 특집", "", "http://www.kado.net/rss/S1N9.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
+-- base offset for 이글루스: 3600
+INSERT INTO channels VALUES (3600, "이글루스 - 전체", "", "http://valley.egloos.com/rss/theme.php", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3601, "이글루스 - 영화", "", "http://valley.egloos.com/theme/rss/recent/movie", "", "인터넷 뉴스", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3602, "이글루스 - 음악", "", "http://valley.egloos.com/theme/rss/recent/music", "", "인터넷 뉴스", "음악", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3603, "이글루스 - 도서", "", "http://valley.egloos.com/theme/rss/recent/book", "", "인터넷 뉴스", "도서", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3604, "이글루스 - 뉴스비평", "", "http://valley.egloos.com/theme/rss/recent/news", "", "인터넷 뉴스", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3605, "이글루스 - 게임", "", "http://valley.egloos.com/theme/rss/recent/game", "", "인터넷 뉴스", "게임", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3606, "이글루스 - 공연/전시", "", "http://valley.egloos.com/theme/rss/recent/performance", "", "인터넷 뉴스", "교양", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3607, "이글루스 - 과학", "", "http://valley.egloos.com/theme/rss/recent/science", "", "인터넷 뉴스", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3608, "이글루스 - 만화", "", "http://valley.egloos.com/theme/rss/recent/comic", "", "인터넷 뉴스", "만화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3609, "이글루스 - 방송/연예", "", "http://valley.egloos.com/theme/rss/recent/entertainment", "", "인터넷 뉴스", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3610, "이글루스 - 사진", "", "http://valley.egloos.com/theme/rss/recent/photo", "", "인터넷 뉴스", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3611, "이글루스 - 세계", "", "http://valley.egloos.com/theme/rss/recent/world", "", "인터넷 뉴스", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3612, "이글루스 - 스포츠", "", "http://valley.egloos.com/theme/rss/recent/sports", "", "인터넷 뉴스", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3613, "이글루스 - 애니메이션", "", "http://valley.egloos.com/theme/rss/recent/animation", "", "인터넷 뉴스", "만화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3614, "이글루스 - 애완동물", "", "http://valley.egloos.com/theme/rss/recent/pet", "", "인터넷 뉴스", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3615, "이글루스 - 얼리어답터", "", "http://valley.egloos.com/theme/rss/recent/earlyadopter", "", "인터넷 뉴스", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3616, "이글루스 - 여행", "", "http://valley.egloos.com/theme/rss/recent/travel", "", "인터넷 뉴스", "여행", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3617, "이글루스 - 역시", "", "http://valley.egloos.com/theme/rss/recent/history", "", "인터넷 뉴스", "교양", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3618, "이글루스 - 연애", "", "http://valley.egloos.com/theme/rss/recent/love", "", "인터넷 뉴스", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3619, "이글루스 - 육아", "", "http://valley.egloos.com/theme/rss/recent/baby", "", "인터넷 뉴스", "육아", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3620, "이글루스 - 음식", "", "http://valley.egloos.com/theme/rss/recent/food", "", "인터넷 뉴스", "음식", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3621, "이글루스 - 자동차", "", "http://valley.egloos.com/theme/rss/recent/auto", "", "인터넷 뉴스", "자동차", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3622, "이글루스 - 지름", "", "http://valley.egloos.com/theme/rss/recent/shopping", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3623, "이글루스 - 창작", "", "http://valley.egloos.com/theme/rss/recent/creation", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3624, "이글루스 - 토이", "", "http://valley.egloos.com/theme/rss/recent/toy", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3625, "이글루스 - 패션/뷰티", "", "http://valley.egloos.com/theme/rss/recent/fashion", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3626, "이글루스 - IT", "", "http://valley.egloos.com/theme/rss/recent/technology", "", "인터넷 뉴스", "기술/과학", "", "", "", "kor", 0);
+
+
+-- base offset for 티스토리: 3700
+INSERT INTO channels VALUES (3700, "티스토리 - 전체", "", "http://tistory.com/category/all/rss", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3701, "티스토리 - 이슈", "", "http://tistory.com/category/issue/rss", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3702, "티스토리 - 사진", "", "http://tistory.com/category/photo/rss", "", "인터넷 뉴스", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3703, "티스토리 - 영화", "", "http://tistory.com/category/movie/rss", "", "인터넷 뉴스", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3704, "티스토리 - 여행", "", "http://tistory.com/category/travel/rss", "", "인터넷 뉴스", "여행", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3705, "티스토리 - 음식", "", "http://tistory.com/category/food/rss", "", "인터넷 뉴스", "음식", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3706, "티스토리 - 리뷰", "", "http://tistory.com/category/review/rss", "", "인터넷 뉴스", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3707, "티스토리 - IT", "", "http://tistory.com/category/it/rss", "", "인터넷 뉴스", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3708, "티스토리 - 스포츠", "", "http://tistory.com/category/sports/rss", "", "인터넷 뉴스", "스포츠", "", "", "", "kor", 0);
+
+
+-- base offset for hanitv: 3800
+INSERT INTO channels VALUES (3800, "김어준의 뉴욕타임스 - 오디오", "", "http://vod.hani.co.kr/podcast/cctv_audio.xml.rss", "", "언론", "팟캐스트", "", "", "", "kor", 0);
+
+
+-- base offset for iblug: 3900
+INSERT INTO channels VALUES (3900, "파업채널M", "", "http://www.iblug.com/xml/itunes/mbcunion.xml", "", "언론", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3901, "파업채널 리셋 KBS", "", "http://www.iblug.com/xml/itunes/kbsunion.xml", "", "언론", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3902, "뉴스타파", "", "http://www.iblug.com/xml/itunes/newstapa.xml", "", "언론", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3903, "이상호기자의 발뉴스", "", "http://www.iblug.com/xml/itunes/balnews.xml", "", "언론", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3904, "나는 친박이다", "", "http://www.iblug.com/xml/itunes/propark.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3905, "허재현의 현장일기", "", "http://feeds.feedburner.com/iblug/OCnu?format=xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3906, "노무현의 사람사는 세상", "", "http://www.iblug.com/xml/itunes/rohmoohyun.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+
+
+
+-- base offset for each single feed : 10000000
+INSERT INTO channels VALUES (10000000, "싱크TV", "", "http://thinktv.kr/rss/news.xml", "", "시사", "", "", "", "", "kor", 0);
+-- iblug is better than youtube! (to avoid duplication)
+-- INSERT INTO channels VALUES (10000001, "뉴스타파", "", "http://newstapa.com/rss", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000002, "영어 중상급자를 위한 방송", "", "http://practicus.co.kr/podcastgen/feed.xml", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000003, "저공비행 (노회찬, 유시민)", "", "http://test.handypia.org/radio/jugong.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000005, "시사자키 정관용입니다", "", "http://cbspodcast.com/podcast/sisa/sisa.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000006, "변상욱의 기자수첩", "", "http://cbspodcast.com/podcast/newsshow_journal/newsshow_journal.xml", "팟캐스트", "시사", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000007, "이해찬의 정석정치", "", "http://rss.ohmynews.com/rss/podcast_bbong_main.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000008, "김미화의 여러분", "", "http://cbspodcast.com/podcast/k_everyone/k_everyone.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000009, "라디오 반민특위", "", "http://www.615tv.net/podcastbanmin/jkbsbanmin.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000010, "망치부인 시사수다방", "", "http://nemo.podics.com/131192848437", "", "시사", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000011, "김현정의 뉴스쇼", "", "http://cbspodcast.com/podcast/newshow/newshow.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000012, "나는 의사다", "", "http://www.docdocdoc.co.kr/podcast/iam_doctors.xml", "", "기술/과학", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000013, "블로터", "", "http://feeds.feedburner.com/Bloter?format=xml", "", "기술/과학", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000014, "CNET", "", "http://feeds.feedburner.com/cnet/NnTv?format=xml", "", "기술/과학", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000015, "김영하의 책 읽는 시간", "", "http://feeds.feedburner.com/KIMYoungha?format=xml", "", "교양", "도서", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000016, "스피킹맥스 영어공식", "", "http://www.speakingmax.com/podcast/maxpodcast.php", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000017, "법륜스님의 즉문즉설", "", "http://jungto.libsyn.com/rss", "", "교양", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000018, "TEDTalks", "", "http://feeds.feedburner.com/TedtalksHD", "", "팟캐스트", "", "", "", "", "kor", 0);
