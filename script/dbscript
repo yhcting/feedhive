@@ -2,7 +2,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 1;
+PRAGMA user_version = 2;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
