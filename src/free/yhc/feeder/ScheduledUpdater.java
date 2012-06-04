@@ -26,6 +26,7 @@ import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Calendar;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -78,6 +79,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // R.string.update doens't have any meaning except for random unique number.
     private final int                    notificationId = R.string.update_service_noti_title;
     private NotificationManager          nm;
+    private final HashSet<Long>          taskset = new HashSet<Long>();
 
     // If time is changed Feeder need to re-scheduling scheduled-update.
     public static class DateChangedReceiver extends BroadcastReceiver {
@@ -140,8 +142,11 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onCancel(BGTask task, Object param) {
             logI("ScheduledUpdater(onCancel) : stopSelf (" + startId + ")");
-            if (0 == RTTask.S().getNRActiveTask())
-                stopSelf(startId);
+            synchronized (taskset) {
+                taskset.remove(cid);
+                if (taskset.isEmpty())
+                    stopSelf();
+            }
         }
 
         @Override
@@ -153,8 +158,11 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             logI("ScheduledUpdater(onPostRun) : stopSelf (" + startId + ")");
-            if (0 == RTTask.S().getNRActiveTask())
-                stopSelf(startId);
+            synchronized (taskset) {
+                taskset.remove(cid);
+                if (taskset.isEmpty())
+                    stopSelf();
+            }
         }
     }
 
@@ -378,6 +386,7 @@ UnexpectedExceptionHandler.TrackedModule {
             RTTask.S().register(cid, RTTask.Action.Update, task);
             RTTask.S().bind(cid, RTTask.Action.Update, null, task);
             logI("ScheduledUpdater : start update BGTask for [" + cid + "]");
+            taskset.add(cid);
             RTTask.S().start(cid, RTTask.Action.Update);
         }
 
