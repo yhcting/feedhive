@@ -473,6 +473,9 @@ UnexpectedExceptionHandler.TrackedModule {
             // Just release wakelock for this command.
             putWakeLock();
         }
+
+        if (taskset.isEmpty())
+            stopSelf();
         return START_NOT_STICKY;
     }
 
