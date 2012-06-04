@@ -347,7 +347,8 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPreRun(BGTask task) {
-            ; // nothing to do
+            // icon should be changed from 'ready' to 'running'
+            dataSetChanged(id);
         }
 
         @Override
