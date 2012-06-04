@@ -22,7 +22,7 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -596,13 +596,13 @@ OnSharedPreferenceChangeListener {
     public long[]
     getItemsDownloading(long[] cids) {
         long[] dnids = getItemsDownloading();
-        HashMap<Long, Object> m = new HashMap<Long, Object>(); // cid hash map for fast lookup.
+        HashSet<Long> set = new HashSet<Long>();
         for (long cid : cids)
-            m.put(cid, new Object());
+            set.add(cid);
 
         LinkedList<Long> l = new LinkedList<Long>();
         for (long dnid : dnids)
-            if (null != m.get(DBPolicy.S().getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
+            if (set.contains(DBPolicy.S().getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
                 l.add(dnid);
 
         return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
