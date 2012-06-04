@@ -292,8 +292,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onProgress(BGTask task, long progress) {
-        }
+        onProgress(BGTask task, long progress) {}
 
         @Override
         public void
@@ -327,6 +326,35 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+
+    private class DownloadBGTaskOnEvent implements BGTask.OnEvent {
+        private long    cid = -1;
+        DownloadBGTaskOnEvent(long cid) {
+            this.cid = cid;
+        }
+
+        @Override
+        public void
+        onProgress(BGTask task, long progress) {}
+
+        @Override
+        public void
+        onCancel(BGTask task, Object param) {
+            if (0 == RTTask.S().getItemsDownloading(cid).length)
+                dataSetChanged(getListView(getMyTab(cid)), cid);
+        }
+
+        @Override
+        public void
+        onPreRun(BGTask task) {}
+
+        @Override
+        public void
+        onPostRun(BGTask task, Err result) {
+            if (0 == RTTask.S().getItemsDownloading(cid).length)
+                dataSetChanged(getListView(getMyTab(cid)), cid);
+        }
+    }
 
     private class PickIconEventHandler implements SpinAsyncTask.OnEvent {
         private long cid = -1;
@@ -1480,6 +1508,9 @@ UnexpectedExceptionHandler.TrackedModule {
                 long cid = c.getLong(0);
                 if (RTTask.TaskState.Idle != RTTask.S().getState(cid, RTTask.Action.Update))
                     RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
+                long[] ids = RTTask.S().getItemsDownloading(cid);
+                for (long id : ids)
+                    RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent(cid));
             } while (c.moveToNext());
         }
         c.close();

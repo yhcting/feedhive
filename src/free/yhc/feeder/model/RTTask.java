@@ -607,4 +607,18 @@ OnSharedPreferenceChangeListener {
 
         return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
     }
+
+    /**
+     * Get channel id where this download task is belonging to.
+     * @param task
+     * @return
+     */
+    public long
+    getItemIdOfDownloadTask(BGTask task) {
+        // Nick is task id.
+        // See BGTM for details
+        String id = task.getNick();
+        eAssert(Action.Download == actionFromId(id));
+        return idFromId(id);
+    }
 }

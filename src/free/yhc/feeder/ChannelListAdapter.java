@@ -31,8 +31,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.AttributeSet;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.TextView;
 import free.yhc.feeder.model.DB;
@@ -147,37 +145,34 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-
-        // NOTE
-        //   "anim.cancel -> anim.reset -> setAlpha(1.0f)", all these three are required
-        //     to restore from animation to normal image viewing.
-        //   without them, alpha value during animation remains even after animation is cancelled.
-        Animation anim = chIcon.getAnimation();
-        if (null != anim) {
-            anim.cancel();
-            anim.reset();
-        }
-        chIcon.setAlpha(1.0f);
-
         if (null == bm)
             // fail to decode.
             chIcon.setImageResource(R.drawable.ic_warn_image);
         else
             chIcon.setImageBitmap(bm);
 
+        ImageView noti_up = (ImageView)view.findViewById(R.id.noti_update);
+        ImageView noti_dn = (ImageView)view.findViewById(R.id.noti_download);
+
         RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
-        if (RTTask.TaskState.Idle == state) {
-            ;
-        } else if (RTTask.TaskState.Running == state
-                   || RTTask.TaskState.Ready == state) {
-            chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
-        } else if (RTTask.TaskState.Canceling == state) {
-            chIcon.setImageResource(R.drawable.ic_block);
-            chIcon.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
-        } else if (RTTask.TaskState.Failed == state) {
-            chIcon.setImageResource(R.drawable.ic_info);
-        } else
+        noti_up.setVisibility(View.VISIBLE);
+        if (RTTask.TaskState.Idle == state)
+            noti_up.setVisibility(View.GONE);
+        else if (RTTask.TaskState.Ready == state)
+            noti_up.setImageResource(R.drawable.ic_pause);
+        else if (RTTask.TaskState.Running == state)
+            noti_up.setImageResource(R.drawable.ic_refresh);
+        else if (RTTask.TaskState.Canceling == state)
+            noti_up.setImageResource(R.drawable.ic_block);
+        else if (RTTask.TaskState.Failed == state)
+            noti_up.setImageResource(R.drawable.ic_info);
+        else
             eAssert(false);
+
+        if (0 == RTTask.S().getItemsDownloading(cid).length)
+            noti_dn.setVisibility(View.GONE);
+        else
+            noti_dn.setVisibility(View.VISIBLE);
 
         ((TextView)view.findViewById(R.id.title)).setText(title);
         ((TextView)view.findViewById(R.id.description)).setText(desc);

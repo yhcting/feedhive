@@ -25,6 +25,31 @@
             android:src="@drawable/ic_warn_image"
             android:clickable="true"
             />
+        <ImageView
+            android:id="@+id/noti_update"
+            android:layout_width="20dip"
+            android:layout_height="20dip"
+            android:layout_alignLeft="@id/image"
+            android:layout_alignTop="@id/image"
+            android:gravity="center"
+            android:scaleType="fitCenter"
+            android:alpha="0.7"
+            android:focusable="false"
+            android:background="#000000"
+            />
+        <ImageView
+            android:id="@+id/noti_download"
+            android:layout_width="20dip"
+            android:layout_height="20dip"
+            android:layout_alignRight="@id/image"
+            android:layout_alignTop="@id/image"
+            android:gravity="center"
+            android:scaleType="fitCenter"
+            android:alpha="0.7"
+            android:focusable="false"
+            android:background="#000000"
+            android:src="@drawable/download_anim0"
+            />
         <view
             class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
             android:id="@+id/imgup"
