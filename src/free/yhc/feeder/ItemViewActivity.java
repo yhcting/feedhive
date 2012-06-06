@@ -173,7 +173,6 @@ UnexpectedExceptionHandler.TrackedModule {
             anim.cancel();
             anim.reset();
         }
-        imgbtn.setAlpha(0.5f);
 
         RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
         logI("ItemViewActivity : setupLayout : state : " + state.name());

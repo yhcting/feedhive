@@ -27,6 +27,7 @@
         android:clickable="true"
         android:gravity="center"
         android:scaleType="fitCenter"
+        android:alpha="0.5"
         android:background="#000000"
         />
 </RelativeLayout>
