@@ -90,7 +90,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            getWakeLock(context);
+            getWakeLock(context.getApplicationContext());
         }
     }
 
@@ -455,15 +455,14 @@ UnexpectedExceptionHandler.TrackedModule {
                 doCmdAlarm(startId, schedTime);
             } else if (CMD_CANCEL.equals(cmd)) {
                 ; // Do nothing at this moment.
-                /* -- below code doesn't work expected... why?? Am I missing something???
-                RTTask.S().cancelAll();
+                // below code doesn't work expected... why?? Am I missing something???
+                // RTTask.S().cancelAll();
                 // This intent comes from notification.
                 // But, in this case wakelock isn't acquired (different from other cases.)
                 // So, acquire here to balance with 'putWakeLock()' below (in 'finally' scope).
                 getWakeLock(this.getApplicationContext());
                 // Stop this service.
-                stopSelf();
-                */
+                // stopSelf();
             } else
                 eAssert(false);
         } finally {
