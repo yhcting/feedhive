@@ -44,6 +44,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore.MediaColumns;
 import android.util.AttributeSet;
 import android.view.ContextMenu;
@@ -89,6 +90,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final int ReqCPickImage              = 0;
     private static final int ReqCPickPredefinedChannel  = 1;
 
+    private Handler     handler = new Handler();
     private UILifecycle uilc ;
     private View        contentv;
     private View        waitv;
@@ -585,10 +587,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     moveToBottomOfList() {
-        final ListView lv = getTag(ab.getSelectedTab()).listView;
-        lv.post(new Runnable() {
+        handler.post(new Runnable() {
             @Override
             public void run() {
+                ListView lv = getTag(ab.getSelectedTab()).listView;
                 // Select the last row so it will scroll into view...
                 lv.setSelection(lv.getCount() - 1);
             }
@@ -824,10 +826,10 @@ UnexpectedExceptionHandler.TrackedModule {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    if (!edit.getText().toString().isEmpty()) {
+                    dialog.dismiss();
+                    if (!edit.getText().toString().isEmpty())
                         action.onOk(dialog, ((EditText)v));
-                        return true;
-                    }
+                    return true;
                 }
                 return false;
             }
