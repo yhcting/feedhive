@@ -587,14 +587,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     moveToBottomOfList() {
-        handler.post(new Runnable() {
+        handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 ListView lv = getTag(ab.getSelectedTab()).listView;
                 // Select the last row so it will scroll into view...
                 lv.setSelection(lv.getCount() - 1);
             }
-        });
+        }, 100);
     }
 
     private long
