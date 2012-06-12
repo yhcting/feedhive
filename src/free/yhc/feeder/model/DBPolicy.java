@@ -22,6 +22,7 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+import static free.yhc.feeder.model.Utils.logW;
 
 import java.io.File;
 import java.util.Calendar;
@@ -442,6 +443,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         try {
             for (Feed.Item.ParD item : items) {
+                boolean dup = false;
                 // ignore not-verified item
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
@@ -468,28 +470,78 @@ UnexpectedExceptionHandler.TrackedModule {
                 //     Cons : drop performance.
                 //   So, I need to tune it.
                 //   At this moment, correctness is more important than performance.
-                Cursor c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
-                                        new ColumnItem[] { ColumnItem.CHANNELID,
-                                                           ColumnItem.PUBDATE,
-                                                           ColumnItem.LINK,
-                                                           ColumnItem.ENCLOSURE_URL },
-                                        new String[] { "" + cid,
-                                                       item.pubDate,
-                                                       item.link,
-                                                       item.enclosureUrl },
-                                        0);
-                if (c.getCount() > 0) {
-                    c.close();
-                    continue; // duplicated
+
+                // NOTE
+                //   In case of some RSS sites(ex. iblug), link/enclosure url is continuously changed
+                //     without any modification.
+                //   At this case, Feeder regarded this updated item as new one.
+                //   So, to avoid this, algorithm is changed to less-strict-way to tell whether
+                //     this item is new or not.
+                //   New algorithm is, (Note that 'pubdata' is optional element of RSS.)
+                //     if [ 'pubdate' is available ]
+                //         if [ 'pubdate' and 'title' is same ]
+                //             this is same item
+                //             if [ 'link' or 'enclosure_url' is changed ]
+                //                 update to new one
+                //         else
+                //             this is new item.
+                //     else
+                //         if [ 'link' and 'enclosure_url' is same ]
+                //             this is same item
+                //         else
+                //             this is new item.
+                Cursor c = null;
+                if (item.pubDate.isEmpty()) {
+                    c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
+                                     new ColumnItem[] { ColumnItem.CHANNELID,
+                                                        ColumnItem.LINK,
+                                                        ColumnItem.ENCLOSURE_URL },
+                                     new String[] { "" + cid,
+                                                    item.link,
+                                                    item.enclosureUrl },
+                                     0);
+                    if (c.getCount() > 0)
+                        dup = true;
+
+                } else {
+                    c = db.queryItem(new ColumnItem[] { ColumnItem.ID,
+                                                        ColumnItem.LINK,
+                                                        ColumnItem.ENCLOSURE_URL},
+                                     new ColumnItem[] { ColumnItem.CHANNELID,
+                                                        ColumnItem.PUBDATE,
+                                                        ColumnItem.TITLE },
+                                     new String[] { "" + cid,
+                                                    item.pubDate,
+                                                    item.title },
+                                     0);
+                    if (c.moveToFirst()) {
+                        if (c.getCount() > 1)
+                            logW("There are more than one candidate item for duplication!\n" +
+                                 "    title   : " + item.title +
+                                 "    pubdate : " + item.pubDate);
+                        // duplicated one.
+                        // check that link url is changed.
+                        if (!(item.link.equals(c.getString(1))
+                            && item.enclosureUrl.equals(c.getString(2)))) {
+                            // pubdate and title is same but link is updated
+                            // So, let's update DB for this item.
+                            ContentValues cvs = new ContentValues();
+                            cvs.put(ColumnItem.LINK.getName(), item.link);
+                            cvs.put(ColumnItem.ENCLOSURE_URL.getName(), item.enclosureUrl);
+                            db.updateItem(c.getLong(0), cvs);
+                        }
+                        dup = true;
+                    }
                 }
 
                 c.close();
-
-                // NOTE
-                //   Why add to First?
-                //   Usually, recent item is located at top of item list in the feed.
-                //   So, to make bottom item have smaller ID, 'addFirst' is used.
-                newItems.addFirst(item);
+                if (!dup) {
+                    // NOTE
+                    //   Why add to First?
+                    //   Usually, recent item is located at top of item list in the feed.
+                    //   So, to make bottom item have smaller ID, 'addFirst' is used.
+                    newItems.addFirst(item);
+                }
 
                 checkInterrupted();
             }
