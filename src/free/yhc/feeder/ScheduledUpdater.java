@@ -371,6 +371,10 @@ UnexpectedExceptionHandler.TrackedModule {
         Iterator<Long> itr = chl.listIterator();
         while (itr.hasNext()) {
             long cid = itr.next();
+            // NOTE
+            // onStartCommand() is run on UIThread.
+            // So, I don't need to worry about race-condition caused from re-entrance of this function
+            // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
             RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
             if (RTTask.TaskState.Canceling == state
                 || RTTask.TaskState.Running == state
@@ -383,9 +387,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 //   to know why this 'unregister' is required.
                 RTTask.S().unregister(cid, RTTask.Action.Update);
 
-                // NOTE
-                // onStartCommand() is run on UIThread.
-                // So, I don't need to worry about race-condition caused from re-entrance of this function
                 UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
                 RTTask.S().register(cid, RTTask.Action.Update, task);
                 RTTask.S().bind(cid, RTTask.Action.Update, null, task);
