@@ -141,9 +141,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
-            logI("ScheduledUpdater(onCancel) : stopSelf (" + startId + ")");
+            logI("ScheduledUpdater(onCancel) : " + cid);
             synchronized (taskset) {
                 taskset.remove(cid);
+                logI("    taskset size : " + taskset.size());
                 if (taskset.isEmpty())
                     stopSelf();
             }
@@ -157,7 +158,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
-            logI("ScheduledUpdater(onPostRun) : stopSelf (" + startId + ")");
+            logI("ScheduledUpdater(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
             synchronized (taskset) {
                 taskset.remove(cid);
                 if (taskset.isEmpty())
@@ -374,20 +375,28 @@ UnexpectedExceptionHandler.TrackedModule {
             if (RTTask.TaskState.Canceling == state
                 || RTTask.TaskState.Running == state
                 || RTTask.TaskState.Ready == state) {
-                logI("Channel [" + cid + "] is already under updating/canceling.\n" +
-                     "So scheduled update is skipped");
+                logI("doCmdAlarm : Channel [" + cid + "] is already active.\n" +
+                     "             So scheduled update is skipped");
             } else {
                 // unregister gracefully to start update.
                 // There is sanity check in BGTaskManager - see BGTaskManager
                 //   to know why this 'unregister' is required.
                 RTTask.S().unregister(cid, RTTask.Action.Update);
+
+                // NOTE
+                // onStartCommand() is run on UIThread.
+                // So, I don't need to worry about race-condition caused from re-entrance of this function
+                UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
+                RTTask.S().register(cid, RTTask.Action.Update, task);
+                RTTask.S().bind(cid, RTTask.Action.Update, null, task);
+                logI("doCmdAlarm : start update BGTask for [" + cid + "]");
+                synchronized (taskset) {
+                    if (!taskset.add(cid)) {
+                        logW("doCmdAlarm : starts duplicated update! : " + cid);
+                    }
+                }
+                RTTask.S().start(cid, RTTask.Action.Update);
             }
-            UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
-            RTTask.S().register(cid, RTTask.Action.Update, task);
-            RTTask.S().bind(cid, RTTask.Action.Update, null, task);
-            logI("ScheduledUpdater : start update BGTask for [" + cid + "]");
-            taskset.add(cid);
-            RTTask.S().start(cid, RTTask.Action.Update);
         }
 
         // register next scheduled-update.
@@ -473,8 +482,10 @@ UnexpectedExceptionHandler.TrackedModule {
             putWakeLock();
         }
 
-        if (taskset.isEmpty())
-            stopSelf();
+        synchronized (taskset) {
+            if (taskset.isEmpty())
+                stopSelf();
+        }
         return START_NOT_STICKY;
     }
 
