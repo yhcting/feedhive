@@ -55,6 +55,7 @@ public class Utils {
     // To enable logging to file - NOT LOGCAT
     private static final boolean ENABLE_LOGF = false;
     private static final String LOGF = "/sdcard/feeder.log";
+    private static final String LOGF_LAST = LOGF + "-last";
     private static FileWriter logout = null;
 
     // Format of nString (Number String)
@@ -133,7 +134,11 @@ public class Utils {
     static {
         if (ENABLE_LOGF) {
             try {
-                logout = new FileWriter(LOGF);
+                File logf = new File(LOGF);
+                File logfLast = new File(LOGF_LAST);
+                logfLast.delete();
+                logf.renameTo(logfLast);
+                logout = new FileWriter(logf);
             } catch (IOException e) {
                 eAssert(false);
             }
