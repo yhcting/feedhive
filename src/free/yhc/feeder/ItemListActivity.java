@@ -24,6 +24,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
+import java.util.Calendar;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -40,6 +41,7 @@ import android.os.Handler;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -49,9 +51,12 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.Spinner;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
@@ -92,9 +97,39 @@ UnexpectedExceptionHandler.TrackedModule {
     private ListView            list    = null;
 
     private class OpMode {
+        // 'State' of item may be changed often dynamically (ex. when open item)
+        // So, to synchronized cursor information with item state, we need to refresh cursor
+        //   whenever item state is changed.
+        // But it's big overhead.
+        // So, in case STATE, it didn't included in list cursor, but read from DB if needed.
+        protected final DB.ColumnItem[] queryProjection = new DB.ColumnItem[] {
+                    DB.ColumnItem.ID, // Mandatory.
+                    DB.ColumnItem.TITLE,
+                    DB.ColumnItem.DESCRIPTION,
+                    DB.ColumnItem.ENCLOSURE_LENGTH,
+                    DB.ColumnItem.ENCLOSURE_URL,
+                    DB.ColumnItem.ENCLOSURE_TYPE,
+                    DB.ColumnItem.PUBDATE,
+                    DB.ColumnItem.LINK };
+
+        protected String search = "";
+        protected long   fromPubtime = -1;
+        protected long   toPubtime = -1;
+
         void    onCreate() {}
         void    onResume() {}
         Cursor  query()    { return null; }
+        long    minPubtime() { return -1; }
+        void    setFilter(String search, long fromPubtime, long toPubtime) {
+            this.search = search;
+            this.fromPubtime = fromPubtime;
+            this.toPubtime = toPubtime;
+        }
+
+        boolean isFilterEnabled() {
+            return !search.isEmpty()
+                   || ((fromPubtime <= toPubtime) && (fromPubtime > 0));
+        }
 
         ItemListAdapter.OnAction
         getAdapterActionHandler() {
@@ -123,7 +158,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreate() {
+        void onCreate() {
             setTitle(db.getChannelInfoString(cid, DB.ColumnChannel.TITLE));
             // TODO
             //   How to use custom view + default option menu ???
@@ -144,7 +179,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onResume() {
+        void onResume() {
             // See comments in 'ChannelListActivity.onPause()'
             // Bind update task if needed
             RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
@@ -160,31 +195,24 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public Cursor query() {
-            // 'State' of item may be changed often dynamically (ex. when open item)
-            // So, to synchronized cursor information with item state, we need to refresh cursor
-            //   whenever item state is changed.
-            // But it's big overhead.
-            // So, in case STATE, it didn't included in list cursor, but read from DB if needed.
-            DB.ColumnItem[] columns = new DB.ColumnItem[] {
-                        DB.ColumnItem.ID, // Mandatory.
-                        DB.ColumnItem.TITLE,
-                        DB.ColumnItem.DESCRIPTION,
-                        DB.ColumnItem.ENCLOSURE_LENGTH,
-                        DB.ColumnItem.ENCLOSURE_URL,
-                        DB.ColumnItem.ENCLOSURE_TYPE,
-                        DB.ColumnItem.PUBDATE,
-                        DB.ColumnItem.LINK };
-            return db.queryItem(cid, columns);
+        Cursor query() {
+            return db.queryItem(cid, queryProjection, search, fromPubtime, toPubtime);
+        }
+
+        @Override
+        long minPubtime() {
+            return db.getItemMinPubtime(cid);
         }
     }
 
     private class OpModeCategory extends OpMode {
         private long categoryid; // category id
+        private long[] cids = null;
 
         OpModeCategory(Intent intent) {
             categoryid = intent.getLongExtra("categoryid", -1);
             eAssert(-1 != categoryid);
+            cids = DBPolicy.S().getChannelIds(categoryid);
         }
 
         long getCategoryId() {
@@ -192,11 +220,10 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreate() {
+        void onCreate() {
             setTitle(getResources().getString(R.string.category) + ":" + db.getCategoryName(categoryid));
             getActionBar().setDisplayShowHomeEnabled(false);
 
-            long[] cids = DBPolicy.S().getChannelIds(categoryid);
             Long[] whereValues = Utils.convertArraylongToLong(cids);
             Long[] targetValues = new Long[whereValues.length];
             for (int i = 0; i < whereValues.length; i++)
@@ -206,9 +233,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onResume() {
-            long[] cids = DBPolicy.S().getChannelIds(categoryid);
-
+        void onResume() {
             // Bind update task if needed
             for (long cid : cids) {
                 RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
@@ -222,19 +247,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public Cursor query() {
-            DB.ColumnItem[] columns = new DB.ColumnItem[] {
-                    DB.ColumnItem.ID, // Mandatory.
-                    DB.ColumnItem.CHANNELID,
-                    DB.ColumnItem.TITLE,
-                    DB.ColumnItem.DESCRIPTION,
-                    DB.ColumnItem.ENCLOSURE_LENGTH,
-                    DB.ColumnItem.ENCLOSURE_URL,
-                    DB.ColumnItem.ENCLOSURE_TYPE,
-                    DB.ColumnItem.PUBDATE,
-                    DB.ColumnItem.LINK };
-            long[] cids = DBPolicy.S().getChannelIds(categoryid);
-            return db.queryItem(cids, columns);
+        Cursor query() {
+            return db.queryItem(cids, queryProjection, search, fromPubtime, toPubtime);
+        }
+
+        @Override
+        long minPubtime() {
+            return db.getItemMinPubtime(cids);
         }
     }
 
@@ -243,13 +262,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onCreate() {
+        void onCreate() {
             setTitle(getResources().getString(R.string.favorite_item));
             getActionBar().setDisplayShowHomeEnabled(false);
         }
 
         @Override
-        public void onResume() {
+        void onResume() {
             long[] ids = RTTask.S().getItemsDownloading();
             for (long id : ids)
                 if (Feed.Item.isStatFavOn(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.STATE)))
@@ -257,7 +276,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public ItemListAdapter.OnAction
+        ItemListAdapter.OnAction
         getAdapterActionHandler() {
             return new ItemListAdapter.OnAction() {
                 @Override
@@ -271,19 +290,17 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public Cursor query() {
-            DB.ColumnItem[] columns = new DB.ColumnItem[] {
-                    DB.ColumnItem.ID, // Mandatory.
-                    DB.ColumnItem.CHANNELID,
-                    DB.ColumnItem.TITLE,
-                    DB.ColumnItem.DESCRIPTION,
-                    DB.ColumnItem.ENCLOSURE_LENGTH,
-                    DB.ColumnItem.ENCLOSURE_URL,
-                    DB.ColumnItem.ENCLOSURE_TYPE,
-                    DB.ColumnItem.PUBDATE,
-                    DB.ColumnItem.LINK };
-            return db.queryItemMask(columns, DB.ColumnItem.STATE,
-                                    Feed.Item.MStatFav, Feed.Item.FStatFavOn);
+        Cursor query() {
+            return db.queryItemMask(queryProjection, DB.ColumnItem.STATE,
+                                    Feed.Item.MStatFav, Feed.Item.FStatFavOn,
+                                    search, fromPubtime, toPubtime);
+        }
+
+        @Override
+        long minPubtime() {
+            return db.getItemMinPubtime(DB.ColumnItem.STATE,
+                                        Feed.Item.MStatFav,
+                                        Feed.Item.FStatFavOn);
         }
     }
 
@@ -745,6 +762,140 @@ UnexpectedExceptionHandler.TrackedModule {
         return true;
     }
 
+    /**
+     * build string array of numbers. (from <= x < to)
+     * @param from
+     * @param to
+     *   exclusive
+     * @return
+     */
+    private String[]
+    buildStringArray(int from, int to) {
+        // get years array
+        String[] ss = new String[to - from];
+        for (int i = 0; i < ss.length; i++)
+            ss[i] = "" + from++;
+        return ss;
+    }
+
+    private void
+    setSpinner(View v, int id, String[] entries, int selectpos,
+               AdapterView.OnItemSelectedListener selectedListener) {
+        Spinner sp = (Spinner)v.findViewById(id);
+        ArrayAdapter<String> spinnerArrayAdapter
+            = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, entries);
+        sp.setAdapter(spinnerArrayAdapter);
+        sp.setSelection(selectpos);
+        if (null != selectedListener)
+            sp.setOnItemSelectedListener(selectedListener);
+    }
+
+    private void
+    onSearchBtnClick() {
+        // Empty list SHOULD not have visible-search button.
+        // I can skip testing return value of opMode.minPubtime()
+        final Calendar since = Calendar.getInstance();
+        since.setTimeInMillis(opMode.minPubtime());
+        final Calendar now = Calendar.getInstance();
+        if (now.getTimeInMillis() < since.getTimeInMillis()) {
+            LookAndFeel.showTextToast(this, R.string.warn_no_item_before_now);
+            return;
+        }
+
+        // Setup search dialog controls
+        final View diagV  =  LookAndFeel.inflateLayout(this, R.layout.item_list_search);
+        final AlertDialog diag =
+                LookAndFeel.createEditTextDialog(this, diagV, R.string.feed_search);
+
+        String[] years = buildStringArray(since.get(Calendar.YEAR), now.get(Calendar.YEAR) + 1);
+        setSpinner(diagV, R.id.sp_year0, years, 0, new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void
+            onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR) + position);
+                String[] months = buildStringArray(mons[0], mons[1] + 1);
+                setSpinner(diagV, R.id.sp_month0, months, 0, null); // select first (eariest) month
+            }
+            @Override
+            public void
+            onNothingSelected(AdapterView<?> parent) {}
+        }); // select first (eariest) year
+
+        int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR));
+        String[] months = buildStringArray(mons[0], mons[1] + 1);
+        setSpinner(diagV, R.id.sp_month0, months, 0, null); // select first (eariest) month
+
+        setSpinner(diagV, R.id.sp_year1, years, years.length - 1, new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void
+            onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR) + position);
+                String[] months = buildStringArray(mons[0], mons[1] + 1);
+                setSpinner(diagV, R.id.sp_month1, months, months.length - 1, null); // select first (eariest) month
+            }
+            @Override
+            public void
+            onNothingSelected(AdapterView<?> parent) {}
+        }); // select last (latest) year
+        mons = Utils.getMonths(since, now, now.get(Calendar.YEAR));
+        months = buildStringArray(mons[0], mons[1] + 1);
+        setSpinner(diagV, R.id.sp_month1, months, months.length - 1, null); // select last (latest) month
+
+        diag.setButton(getResources().getText(R.string.ok), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dia, int which) {
+                int y0, y1, m0, m1;
+                Spinner sp = (Spinner)diagV.findViewById(R.id.sp_year0);
+                y0 = Integer.parseInt((String)sp.getSelectedItem());
+                sp = (Spinner)diagV.findViewById(R.id.sp_year1);
+                y1 = Integer.parseInt((String)sp.getSelectedItem());
+                sp = (Spinner)diagV.findViewById(R.id.sp_month0);
+                m0 = Integer.parseInt((String)sp.getSelectedItem());
+                sp = (Spinner)diagV.findViewById(R.id.sp_month1);
+                m1 = Integer.parseInt((String)sp.getSelectedItem());
+                String search = ((EditText)diagV.findViewById(R.id.search)).getText().toString();
+
+                Calendar from = Calendar.getInstance();
+                Calendar to = Calendar.getInstance();
+
+                // Set as min value.
+                from.set(Calendar.YEAR, y0);
+                from.set(Calendar.MONDAY, Utils.monthToCalendarMonth(m0));
+                from.set(Calendar.DAY_OF_MONTH, from.getMinimum(Calendar.DAY_OF_MONTH));
+                from.set(Calendar.HOUR_OF_DAY, from.getMinimum(Calendar.HOUR_OF_DAY));
+                from.set(Calendar.MINUTE, 0);
+                from.set(Calendar.SECOND, 0);
+
+                // Set as max value.
+                to.set(Calendar.YEAR, y1);
+                to.set(Calendar.MONDAY, Utils.monthToCalendarMonth(m1));
+                to.set(Calendar.DAY_OF_MONTH, to.getMaximum(Calendar.DAY_OF_MONTH));
+                to.set(Calendar.HOUR_OF_DAY, to.getMaximum(Calendar.HOUR_OF_DAY));
+                to.set(Calendar.MINUTE, 59);
+                to.set(Calendar.SECOND, 59);
+
+                diag.setTitle(R.string.plz_wait);
+                opMode.setFilter(search, from.getTimeInMillis(), to.getTimeInMillis());
+                handler.post(new Runnable() {
+                   @Override
+                   public void run() {
+                       refreshList();
+                       diag.dismiss();
+                   }
+                });
+            }
+        });
+
+        diag.setButton2(getResources().getText(R.string.cancel), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                diag.dismiss();
+            }
+        });
+
+        diag.show();
+    }
+
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
@@ -784,6 +935,14 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
         registerForContextMenu(list);
+
+        ((ImageView)contentv.findViewById(R.id.searchbtn)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                onSearchBtnClick();
+            }
+        });
 
         opMode.onCreate();
 
@@ -827,6 +986,12 @@ UnexpectedExceptionHandler.TrackedModule {
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
+        View searchBtn = findViewById(R.id.searchbtn);
+        if (getListAdapter().isEmpty())
+            searchBtn.setVisibility(View.GONE);
+        else
+            searchBtn.setVisibility(View.VISIBLE);
+
         opMode.onResume();
         dataSetChanged();
     }
@@ -909,4 +1074,20 @@ UnexpectedExceptionHandler.TrackedModule {
         // Do nothing!
     }
 
+    @Override
+    public boolean
+    onKeyDown(int keyCode, KeyEvent event)  {
+        /* Backing to original list takes too much time
+         * Without any notification to user, this functionality would better not to be used.
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
+            if (null != opMode && opMode.isFilterEnabled()) {
+                // Disable filter.
+                opMode.setFilter("", -1, -1);
+                refreshList();
+                return true;
+            }
+        }
+         */
+        return super.onKeyDown(keyCode, event);
+    }
 }

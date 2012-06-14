@@ -37,6 +37,7 @@
     <string name="way_youtube_subscribe">채널 구독 방법</string>
     <string name="uploader">작성자</string>
     <string name="word_search">검색어</string>
+    <string name="feed_search">피드 검색</string>
     <string name="empty_list_help">채널 추가 시작하기.</string>
     <string name="empty_list_add_channel_desc">를 터치해서 원하는 채널의 URL을 직접 입력할 수 있습니다.</string>
     <string name="empty_list_add_youtube_channel_desc">를 터치해서 유투브의 검색내용을 채널로 저장하고 피드를 받아 볼 수 있습니다.</string>
@@ -102,6 +103,7 @@
     <string name="warn_find_gallery_app">이미지 갤러리 프로그램을 찾을 수 없습니다.</string>
     <string name="warn_no_predefined_channel">저장된 채널 정보가 없습니다.</string>
     <string name="warn_no_downloaded_page">내려받은 페이지 정보가 없습니다.</string>
+    <string name="warn_no_item_before_now">현재시간 이전에 저장된 피드가 없습니다.</string>
     <string name="default_category_name">미분류</string>
     <string name="change_category">카테고리 변경</string>
     <string name="select_category">카테고리 선택</string>

@@ -189,6 +189,91 @@ UnexpectedExceptionHandler.TrackedModule {
         public String getConstraint() { return constraint; }
     }
 
+
+    // =====================================================
+    // Helper function for generating query
+    // =====================================================
+    public static String
+    buildSQLWhere(String column, String search) {
+        String[] toks = search.split("\\s+");
+        String where = "";
+        int i = 0;
+        while (i < toks.length && !toks[0].isEmpty()) {
+            where += column + " LIKE " + DatabaseUtils.sqlEscapeString("%" + toks[i] + "%");
+            if (++i >= toks.length)
+                break;
+            where += " AND ";
+        }
+        if (!where.isEmpty())
+            where = "(" + where + ")";
+
+        return where;
+    }
+
+    public static String
+    buildSQLWhere(String[] columns, String[] searchs, long fromPubtime, long toPubtime) {
+        String wh = "";
+        // check that pubtime is valid value or not.
+        if (fromPubtime >= 0 && toPubtime >= fromPubtime)
+            wh += "("
+                  + ColumnItem.PUBTIME.getName() + " >= " + fromPubtime + " AND "
+                  + ColumnItem.PUBTIME.getName() + " <= " + toPubtime
+                  + ")";
+
+        if (null != columns && null != searchs) {
+            eAssert(columns.length == searchs.length);
+            String whSearch = "";
+            int i = 0;
+            while (i < columns.length) {
+                String tmp = buildSQLWhere(columns[i], searchs[i]);
+                if (!tmp.isEmpty())
+                    whSearch += whSearch.isEmpty()? tmp: " OR " + tmp;
+                i++;
+            }
+
+            if (!whSearch.isEmpty())
+                wh += wh.isEmpty()? whSearch: " AND (" + whSearch + ")";
+        }
+
+        if (!wh.isEmpty())
+            wh = "(" + wh + ")";
+
+        return wh;
+    }
+
+
+    /**
+     * This function will generate SQL string like below
+     * cols[0] 'operator' vals[0] 'join' cols[1] 'operator' vals[1] 'join' ...
+     * @param cols
+     * @param vals
+     * @param operator
+     * @param join
+     * @return
+     */
+    private static String
+    buildSQLWhere(Column[] cols, Object[] vals, String operator, String join) {
+        String clause = null;
+        if (null != cols && null != vals) {
+            eAssert(cols.length == vals.length);
+            clause = "";
+            operator = " " + operator + " ";
+            join = " " + join + " ";
+            for (int i = 0; i < cols.length;) {
+                clause += cols[i].getName() + operator
+                            + DatabaseUtils.sqlEscapeString(vals[i].toString());
+                if (++i < cols.length)
+                    clause += join;
+            }
+        }
+
+        if (null != clause && !clause.isEmpty())
+            clause = "(" + clause + ")";
+
+        return clause;
+    }
+
+
     static long
     getDefaultCategoryId() {
         return 0;
@@ -227,33 +312,6 @@ UnexpectedExceptionHandler.TrackedModule {
         sql = sql.replace(", );", ");");
         logI("SQL Cmd : " + sql + "\n");
         return sql;
-    }
-
-    /**
-     * This function will generate SQL string like below
-     * cols[0] 'operator' vals[0] 'join' cols[1] 'operator' vals[1] 'join' ...
-     * @param cols
-     * @param vals
-     * @param operator
-     * @param join
-     * @return
-     */
-    private static String
-    buildSQLClauseString(Column[] cols, Object[] vals, String operator, String join) {
-        String clause = null;
-        if (null != cols && null != vals) {
-            eAssert(cols.length == vals.length);
-            clause = "";
-            operator = " " + operator + " ";
-            join = " " + join + " ";
-            for (int i = 0; i < cols.length;) {
-                clause += cols[i].getName() + operator
-                            + DatabaseUtils.sqlEscapeString(vals[i].toString());
-                if (++i < cols.length)
-                    clause += join;
-            }
-        }
-        return clause;
     }
 
     /**
@@ -642,7 +700,7 @@ UnexpectedExceptionHandler.TrackedModule {
                         orderColumn.getName() + (bAsc? " ASC": " DESC");
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
-                        buildSQLClauseString(wheres, values, "=", "AND"),
+                        buildSQLWhere(wheres, values, "=", "AND"),
                         null, null, null,
                         order,
                         (limit > 0)? "" + limit: null);
@@ -694,7 +752,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // That is, cancel between deleting items of channel is ok.
         // This doens't break DB's constraints.
         // So, we don't need to block BD with 'transaction' concept.
-        String chWhereStr = buildSQLClauseString(wheres, values, "=", "OR");
+        String chWhereStr = buildSQLWhere(wheres, values, "=", "OR");
 
         // getting channels to delete.
         Cursor c = db.query(TABLE_CHANNEL,
@@ -719,7 +777,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // delete items first
         long nrItems = db.delete(TABLE_ITEM,
-                                 buildSQLClauseString(cols, cids, "=", "OR"),
+                                 buildSQLWhere(cols, cids, "=", "OR"),
                                  null);
         // then delete channel.
         db.delete(TABLE_CHANNEL, chWhereStr, null);
@@ -790,7 +848,7 @@ UnexpectedExceptionHandler.TrackedModule {
     Cursor
     queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit) {
         eAssert(null != where && null != value);
-        return queryItem(columns, new ColumnItem[] { where }, new Object[] { value }, limit);
+        return queryItemAND(columns, new ColumnItem[] { where }, new Object[] { value }, limit);
     }
 
     /**
@@ -806,11 +864,11 @@ UnexpectedExceptionHandler.TrackedModule {
      * @return
      */
     Cursor
-    queryItem(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
+    queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
         // recently inserted item is located at top of rows.
         return db.query(TABLE_ITEM,
                         getColumnNames(columns),
-                        buildSQLClauseString(wheres, values, "=", "AND"),
+                        buildSQLWhere(wheres, values, "=", "AND"),
                         null, null, null,
                         itemQueryDefaultOrder,
                         (limit > 0)? "" + limit: null);
@@ -825,13 +883,29 @@ UnexpectedExceptionHandler.TrackedModule {
      *   mask value used to masking 'where' value.
      * @param value
      *   value should be same after masking operation.
+     * @param searchFields
+     * @param searchs
+     * @param fromPubtime
+     * @param toPubtime
      * @return
      */
     Cursor
-    queryItemMask(ColumnItem[] columns, ColumnItem where, long mask, long value) {
+    queryItemMask(ColumnItem[] columns,
+                  ColumnItem where, long mask, long value,
+                  ColumnItem[] searchFields, String[] searchs,
+                  long fromPubtime, long toPubtime) {
+        // NOTE
+        // To improve DB query performance, query for search would better to
+        //   be located at later as possible.
+        // (query for search is most expensive operation)
+        String wh = where.getName() + " & " + mask + " = " + value;
+        String search = buildSQLWhere(getColumnNames(searchFields), searchs,
+                                  fromPubtime, toPubtime);
+        if (!search.isEmpty())
+            wh = "(" + wh + ") AND " + search;
         return db.query(TABLE_ITEM,
                 getColumnNames(columns),
-                where.getName() + " & " + mask + " = " + value,
+                wh,
                 null, null, null,
                 itemQueryDefaultOrder);
     }
@@ -846,78 +920,134 @@ UnexpectedExceptionHandler.TrackedModule {
      *   if (null == values) than this is ignored.
      * @param values
      *   if (null == wheres) than this is ignored.
+     * @param searchFields
+     * @param searchs
+     * @param fromPubtime
+     * @param toPubtime
      * @param limit
      *   ( <= 0) means "All"
      * @return
      */
-   Cursor
-   queryItemOR(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
-       // recently inserted item is located at top of rows.
-       return db.query(TABLE_ITEM,
-                       getColumnNames(columns),
-                       buildSQLClauseString(wheres, values, "=", "OR"),
-                       null, null, null,
-                       itemQueryDefaultOrder,
-                       (limit > 0)? "" + limit: null);
-   }
+    Cursor
+    queryItemOR(ColumnItem[] columns,
+                ColumnItem[] wheres, Object[] values,
+                ColumnItem[] searchFields, String[] searchs,
+                long fromPubtime, long toPubtime,
+                long limit) {
+        // NOTE
+        // To improve DB query performance, query for search would better to
+        //   be located at later as possible.
+        // (query for search is most expensive operation)
+        String wh = buildSQLWhere(wheres, values, "=", "OR");
+        String search = buildSQLWhere(getColumnNames(searchFields), searchs,
+                                      fromPubtime, toPubtime);
+        if (!search.isEmpty())
+            wh += " AND " + search;
+        // recently inserted item is located at top of rows.
+        return db.query(TABLE_ITEM,
+                        getColumnNames(columns),
+                        wh,
+                        null, null, null,
+                        itemQueryDefaultOrder,
+                        (limit > 0)? "" + limit: null);
+    }
 
-   /**
-    * Delete item from item table.
-    * @param where
-    * @param value
-    * @return
-    *   number of items deleted.
-    */
-   long
-   deleteItem(ColumnItem where, Object value) {
-       return deleteItemOR(new ColumnItem[] { where }, new Object[] { value });
-   }
 
-   /**
-    * Delete item from item table.
-    * wheres and values are joined with "OR".
-    * That is, wheres[0] == values[0] OR wheres[1] == values[1] ...
-    * @param wheres
-    * @param values
-    * @return
-    */
-   long
-   deleteItemOR(ColumnItem[] wheres, Object[] values) {
-       return db.delete(TABLE_ITEM,
-                        buildSQLClauseString(wheres, values, "=", "OR"),
-                        null);
-   }
+    /**
+     * Delete item from item table.
+     * @param where
+     * @param value
+     * @return
+     *   number of items deleted.
+     */
+    long
+    deleteItem(ColumnItem where, Object value) {
+        return deleteItemOR(new ColumnItem[] { where }, new Object[] { value });
+    }
 
-   // ========================================================================
-   //
-   // NOT GENERAL functions.
-   // (Used only for special reasons - usually due to performance reason)
-   //
-   // ========================================================================
-   /**
-    * Get ids of items belongs to given channel by descending order.
-    * (That is, latest inserted one on first).
-    * Why? Due to performance reason.
-    * Getting descending-ordered-id by quering items to DB, is quite fast.
-    * (Because id is auto-incrementing primary key.)
-    *
-    * Take your attention that this is NOT usual default order of item query at this application.
-    * (default order is descending order of publish time.
-    *  Without any description, 'descending order of publish time' is default for all other DB query functions.)
-    *
-    * NOTE
-    * Why this function is NOT general form?
-    * That is only for performance (Nothing else!).
-    * @param cid
-    * @param limit
-    * @return
-    */
-   Cursor
-   queryItemIds(long cid, long limit) {
-       return db.query(TABLE_ITEM, new String[] {ColumnItem.ID.getName()},
-                       ColumnItem.CHANNELID.getName() + " = " + cid,
-                       null, null, null,
-                       ColumnItem.ID.getName() + " DESC",
-                       (limit > 0)? "" + limit: null);
-   }
+    /**
+     * Delete item from item table.
+     * wheres and values are joined with "OR".
+     * That is, wheres[0] == values[0] OR wheres[1] == values[1] ...
+     * @param wheres
+     * @param values
+     * @return
+     */
+    long
+    deleteItemOR(ColumnItem[] wheres, Object[] values) {
+        return db.delete(TABLE_ITEM,
+                         buildSQLWhere(wheres, values, "=", "OR"),
+                         null);
+    }
+
+    // ========================================================================
+    //
+    // NOT GENERAL functions.
+    // (Used only for special reasons - usually due to performance reason)
+    //
+    // ========================================================================
+    /**
+     * Get ids of items belongs to given channel by descending order.
+     * (That is, latest inserted one on first).
+     * Why? Due to performance reason.
+     * Getting descending-ordered-id by quering items to DB, is quite fast.
+     * (Because id is auto-incrementing primary key.)
+     *
+     * Take your attention that this is NOT usual default order of item query at this application.
+     * (default order is descending order of publish time.
+     *  Without any description, 'descending order of publish time' is default for all other DB query functions.)
+     *
+     * NOTE
+     * Why this function is NOT general form?
+     * That is only for performance (Nothing else!).
+     * @param cid
+     * @param limit
+     * @return
+     */
+    Cursor
+    queryItemIds(long cid, long limit) {
+        return db.query(TABLE_ITEM, new String[] {ColumnItem.ID.getName()},
+                        ColumnItem.CHANNELID.getName() + " = " + cid,
+                        null, null, null,
+                        ColumnItem.ID.getName() + " DESC",
+                        (limit > 0)? "" + limit: null);
+    }
+
+    /**
+     *
+     * @param cids
+     * @param column
+     * @param bMax
+     * @return
+     */
+    Cursor
+    queryItemMinMax(long[] cids, ColumnItem column, boolean bMax) {
+        String where = "";
+        int i = 0;
+        while (i < cids.length) {
+            where += ColumnItem.CHANNELID.getName() + " = " + cids[i];
+            if (++i < cids.length)
+                where += " OR ";
+        }
+        return db.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
+                           + ") FROM " + TABLE_ITEM
+                           + " WHERE " + where, null);
+    }
+
+    /**
+     *
+     * @param where
+     * @param mask
+     * @param value
+     * @param column
+     * @param bMax
+     * @return
+     */
+    Cursor
+    queryItemMinMax(ColumnItem where, long mask, long value, ColumnItem column, boolean bMax) {
+        String wh = where.getName() + " & " + mask + " = " + value;
+        return db.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
+                           + ") FROM " + TABLE_ITEM
+                           + " WHERE " + wh, null);
+    }
 }

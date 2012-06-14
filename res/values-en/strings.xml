@@ -37,6 +37,7 @@
 	<string name="way_youtube_subscribe">Way for subscribing</string>
     <string name="uploader">Uploader</string>
     <string name="word_search">Keyword</string>
+    <string name="feed_search">Feed search</string>
     <string name="empty_list_help">Adding my first channel.</string>
     <string name="empty_list_add_channel_desc">Enter channel URL directly by touching this icon.</string>
     <string name="empty_list_add_youtube_channel_desc">Youtube channel - result of searching - can be added by touching this icon.</string>
@@ -103,6 +104,7 @@
     <string name="warn_find_gallery_app">Fail to find media gallery application to select image.</string>
     <string name="warn_no_predefined_channel">There is no predefined channel.</string>
     <string name="warn_no_downloaded_page">There is no downloaded page data</string>
+    <string name="warn_no_item_before_now">There is no item that is stored before now.</string>
     <string name="default_category_name">Default</string>
     <string name="change_category">Change category</string>
     <string name="select_category">Select category</string>

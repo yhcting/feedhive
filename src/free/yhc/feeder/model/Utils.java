@@ -37,7 +37,6 @@ import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
 
 import android.content.Context;
-import android.database.DatabaseUtils;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
@@ -53,7 +52,7 @@ public class Utils {
     private static final String TAG = "[Feeder]";
 
     // To enable logging to file - NOT LOGCAT
-    private static final boolean ENABLE_LOGF = false;
+    private static final boolean ENABLE_LOGF = true;
     private static final String LOGF = "/sdcard/feeder.log";
     private static final String LOGF_LAST = LOGF + "-last";
     private static FileWriter logout = null;
@@ -601,7 +600,6 @@ public class Utils {
         */
     }
 
-
     /**
      * Convert given string to valid (OS supported) file name.
      * To do this, some characters that are not allowed as file name, are replaced with
@@ -648,6 +646,15 @@ public class Utils {
         return s.replaceFirst("\\s+$", "");
     }
 
+    public static String
+    removeTrailingSlash(String url) {
+        // Remove trailing '/'
+        // "http://xxx/" is same with "http://xxx"
+        if (url.endsWith("/"))
+            url = url.substring(0, url.lastIndexOf('/'));
+        return url;
+    }
+
     /**
      * Is any available active network at this device?
      * @param context
@@ -662,6 +669,12 @@ public class Utils {
         else
             return false;
     }
+
+    // ================================================
+    //
+    // Utility Functions for Date
+    //
+    // ================================================
 
     /**
      * Get time milliseconds at 00:00:00(hh:mm:ss) of given day.
@@ -732,36 +745,65 @@ public class Utils {
         return dayBase + dayInMs + secs[0] * 1000;
     }
 
-    public static String
-    removeTrailingSlash(String url) {
-        // Remove trailing '/'
-        // "http://xxx/" is same with "http://xxx"
-        if (url.endsWith("/"))
-            url = url.substring(0, url.lastIndexOf('/'));
-        return url;
+    /**
+     * Covert month(Gregorian calendar) to Android Calendar's month-value.
+     * For example, 1 -> Calendar.JANUARY
+     * @param mon
+     * @return
+     */
+    public static int
+    monthToCalendarMonth(int mon) {
+        // Android Calendar starts month from 0
+        // That is JANUARY is 0
+        return mon - 1;
     }
 
-    // ================================================
-    //
-    // Utility Functions for DB query
-    //
-    // ================================================
-    public static String
-    convertSearch2SQLWhereClause(String column, String search) {
-        String[] toks = search.split("\\s+");
-        String where = "";
-        int i = 0;
-        while (i < toks.length) {
-            where += column + " LIKE " + DatabaseUtils.sqlEscapeString("%" + toks[i] + "%");
-            if (++i >= toks.length)
-                break;
-            where += " AND ";
-        }
-        if (!where.isEmpty())
-            where = "(" + where + ")";
-
-        return where;
+    /**
+     * Android Calendar's month-value to month(Gregorian calendar).
+     * For example, Calendar.JANUARY -> 1
+     * @param calMon
+     * @return
+     */
+    public static int
+    calendarMonthToMonth(int calMon) {
+        // Android Calendar starts month from 0
+        // That is JANUARY is 0
+        return calMon + 1;
     }
+    /**
+     *
+     * @param since
+     * @param now
+     * @param year
+     * @return
+     *   null if error (ex. "since > now", "year < since" or "year > now")
+     *   otherwise int[2] is returned.
+     *   int[0] : min month (inclusive) [1 ~ 12]
+     *   int[1] : max month (inclusive) [1 ~ 12]
+     */
+    public static int[]
+    getMonths(Calendar since, Calendar now, int year) {
+        int sy = since.get(Calendar.YEAR);
+        int ny = now.get(Calendar.YEAR);
+        if (since.getTimeInMillis() > now.getTimeInMillis()
+            || sy > year
+            || ny < year)
+            return null;
+
+        // check trivial case at first
+        if (year > sy && year < ny)
+            return new int[] {1, 12};
+
+        int minm = 1;  // min month
+        int maxm = 12; // max month
+        if (year == sy)
+            minm = calendarMonthToMonth(since.get(Calendar.MONTH));
+        if (year == ny)
+            maxm = calendarMonthToMonth(now.get(Calendar.MONTH));
+        return new int[] {minm, maxm};
+    }
+
+
 
     // ================================================
     //

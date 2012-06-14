@@ -492,28 +492,28 @@ UnexpectedExceptionHandler.TrackedModule {
                 //             this is new item.
                 Cursor c = null;
                 if (item.pubDate.isEmpty()) {
-                    c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
-                                     new ColumnItem[] { ColumnItem.CHANNELID,
-                                                        ColumnItem.LINK,
-                                                        ColumnItem.ENCLOSURE_URL },
-                                     new String[] { "" + cid,
-                                                    item.link,
-                                                    item.enclosureUrl },
+                    c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID },
+                                        new ColumnItem[] { ColumnItem.CHANNELID,
+                                                           ColumnItem.LINK,
+                                                           ColumnItem.ENCLOSURE_URL },
+                                        new String[] { "" + cid,
+                                                       item.link,
+                                                       item.enclosureUrl },
                                      0);
                     if (c.getCount() > 0)
                         dup = true;
 
                 } else {
-                    c = db.queryItem(new ColumnItem[] { ColumnItem.ID,
-                                                        ColumnItem.LINK,
-                                                        ColumnItem.ENCLOSURE_URL},
-                                     new ColumnItem[] { ColumnItem.CHANNELID,
-                                                        ColumnItem.PUBDATE,
-                                                        ColumnItem.TITLE },
-                                     new String[] { "" + cid,
-                                                    item.pubDate,
-                                                    item.title },
-                                     0);
+                    c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID,
+                                                           ColumnItem.LINK,
+                                                           ColumnItem.ENCLOSURE_URL},
+                                        new ColumnItem[] { ColumnItem.CHANNELID,
+                                                           ColumnItem.PUBDATE,
+                                                           ColumnItem.TITLE },
+                                        new String[] { "" + cid,
+                                                       item.pubDate,
+                                                       item.title },
+                                        0);
                     if (c.moveToFirst()) {
                         if (c.getCount() > 1)
                             logW("There are more than one candidate item for duplication!\n" +
@@ -992,13 +992,57 @@ UnexpectedExceptionHandler.TrackedModule {
         return lastId;
     }
 
+    /**
+     *
+     * @param cid
+     * @return
+     *   -1 if there is no item otherwise time in millis.
+     */
+    public long
+    getItemMinPubtime(long cid) {
+        return getItemMinPubtime(new long[] { cid });
+    }
+
+    /**
+     *
+     * @param cids
+     * @return
+     *   -1 if there is no item otherwise time in millis.
+     */
+    public long
+    getItemMinPubtime(long[] cids) {
+        long v = -1;
+        Cursor c = db.queryItemMinMax(cids, DB.ColumnItem.PUBTIME, false);
+        if (c.moveToFirst())
+            v = c.getLong(0);
+        c.close();
+        return v;
+    }
+
+    /**
+     *
+     * @param where
+     * @param mask
+     * @param value
+     * @return
+     *   -1 if there is no item otherwise time in millis.
+     */
+    public long
+    getItemMinPubtime(ColumnItem where, long mask, long value) {
+        long v = -1;
+        Cursor c = db.queryItemMinMax(where, mask, value, DB.ColumnItem.PUBTIME, false);
+        if (c.moveToFirst())
+            v = c.getLong(0);
+        c.close();
+        return v;
+    }
 
     private Object
     getItemInfoObject(long id, ColumnItem column) {
-        Cursor c = db.queryItem(new ColumnItem[] { column },
-                                new ColumnItem[] { ColumnItem.ID },
-                                new Object[] { id },
-                                0);
+        Cursor c = db.queryItemAND(new ColumnItem[] { column },
+                                   new ColumnItem[] { ColumnItem.ID },
+                                   new Object[] { id },
+                                   0);
         Object ret = null;
         if (c.moveToFirst())
             ret = getCursorValue(c, 0);
@@ -1026,10 +1070,10 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public String[]
     getItemInfoStrings(long id, ColumnItem[] columns) {
-        Cursor c = db.queryItem(columns,
-                                new ColumnItem[] { ColumnItem.ID },
-                                new Object[] { id },
-                                0);
+        Cursor c = db.queryItemAND(columns,
+                                   new ColumnItem[] { ColumnItem.ID },
+                                   new Object[] { id },
+                                   0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -1051,11 +1095,24 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
-        return db.queryItem(columns,
-                            new ColumnItem[] { ColumnItem.CHANNELID },
-                            new Object[] { cid },
-                            0);
+        return queryItem(cid, columns, null, -1, -1);
     }
+
+    /**
+     * Query item information belonging to given channel.
+     * @param cid
+     * @param columns
+     * @param search
+     * @param fromPubtime
+     * @param toPubtime
+     * @return
+     */
+    public Cursor
+    queryItem(long cid, ColumnItem[] columns,
+              String search, long fromPubtime, long toPubtime) {
+        return queryItem(new long[] { cid }, columns, search, fromPubtime, toPubtime);
+    }
+
 
     /**
      * Query item information belonging to given channels.
@@ -1065,10 +1122,30 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public Cursor
     queryItem(long[] cids, ColumnItem[] columns) {
+        return queryItem(cids, columns, null, -1, -1);
+    }
+
+    /**
+     * Query item information belonging to given channels.
+     * @param cids
+     * @param columns
+     * @param search
+     * @param fromPubtime
+     * @param toPubtime
+     * @return
+     */
+    public Cursor
+    queryItem(long[] cids, ColumnItem[] columns,
+              String search, long fromPubtime, long toPubtime) {
         ColumnItem[] cols = new ColumnItem[cids.length];
         for (int i = 0; i < cols.length; i++)
             cols[i] = ColumnItem.CHANNELID;
-        return db.queryItemOR(columns, cols, Utils.convertArraylongToLong(cids), 0);
+        return db.queryItemOR(columns,
+                              cols, Utils.convertArraylongToLong(cids),
+                              new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
+                              new String[] { search, search },
+                              fromPubtime, toPubtime,
+                              0);
     }
 
     /**
@@ -1081,8 +1158,30 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public Cursor
     queryItemMask(ColumnItem[] columns, ColumnItem where, long mask, long value) {
-        return db.queryItemMask(columns, where, mask, value);
+        return queryItemMask(columns, where, mask, value, null, -1, -1);
     }
+
+    /**
+     * Query items with masking value.
+     * Usually used to select items with flag value.
+     * @param columns
+     * @param mask
+     * @param value
+     * @param search
+     * @param fromPubtime
+     * @param toPubtime
+     * @return
+     */
+    public Cursor
+    queryItemMask(ColumnItem[] columns,
+                  ColumnItem where, long mask, long value,
+                  String search, long fromPubtime, long toPubtime) {
+        return db.queryItemMask(columns, where, mask, value,
+                                new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
+                                new String[] { search, search },
+                                fromPubtime, toPubtime);
+    }
+
 
     /**
      * Update state value of item.

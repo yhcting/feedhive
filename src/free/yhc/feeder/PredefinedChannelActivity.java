@@ -48,6 +48,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import free.yhc.feeder.model.AssetSQLiteHelper;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
+import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
@@ -230,7 +231,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (!search.isEmpty()) {
             if (!where.isEmpty())
                 where = "(" + where + ") AND ";
-            where += Utils.convertSearch2SQLWhereClause(DB_COL_TITLE, search);
+            where += DB.buildSQLWhere(DB_COL_TITLE, search);
         }
 
         // implement this.
