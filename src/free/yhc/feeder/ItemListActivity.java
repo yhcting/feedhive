@@ -104,6 +104,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, in case STATE, it didn't included in list cursor, but read from DB if needed.
         protected final DB.ColumnItem[] queryProjection = new DB.ColumnItem[] {
                     DB.ColumnItem.ID, // Mandatory.
+                    DB.ColumnItem.CHANNELID,
                     DB.ColumnItem.TITLE,
                     DB.ColumnItem.DESCRIPTION,
                     DB.ColumnItem.ENCLOSURE_LENGTH,
@@ -531,17 +532,67 @@ UnexpectedExceptionHandler.TrackedModule {
         RTTask.S().start(cid, RTTask.Action.Update);
     }
 
-    // 'public' to use java reflection
-    public void
-    onActionDnEnclosure(long action, View view, long id, int position) {
-        String enclosureUrl = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
+    private void
+    onActionOpen_http(long action, View view, long id, int position, String url, String protocol) {
+        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
+        if (RTTask.TaskState.Failed == state) {
+            LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.Download).getMsgId());
+            RTTask.S().consumeResult(id, RTTask.Action.Download);
+            dataSetChanged(id);
+            return;
+        }
+
+        if (Feed.Channel.isActProgIn(action)) {
+            Intent intent = new Intent(this, ItemViewActivity.class);
+            intent.putExtra("id", id);
+            startActivity(intent);
+        } else if (Feed.Channel.isActProgEx(action)) {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            try {
+                startActivity(intent);
+            } catch (ActivityNotFoundException e) {
+                LookAndFeel.showTextToast(this,
+                        getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
+                return;
+            }
+        } else
+            eAssert(false);
+
+        changeItemState_opened(id, position);
+    }
+
+    private void
+    onActionOpen_rtsp(long action, View view, long id, int position, String url, String protocol) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            LookAndFeel.showTextToast(this,
+                    getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
+            return;
+        }
+
+        changeItemState_opened(id, position);
+    }
+
+    private void
+    onActionOpen(long action, View view, long id, int position, String url) {
+        String protocol = url.substring(0, url.indexOf("://"));
+        if (protocol.equalsIgnoreCase("rtsp"))
+            onActionOpen_rtsp(action, view, id, position, url, protocol);
+        else // default : handle as http
+            onActionOpen_http(action, view, id, position, url, protocol);
+    }
+
+    private void
+    onActionDn(long action, View view, long id, int position, String url) {
         // 'enclosure' is used.
         File f = UIPolicy.getItemDataFile(id);
         eAssert(null != f);
         if (f.exists()) {
             // "RSS described media type" vs "mime type by guessing from file extention".
             // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
-            String type = Utils.guessMimeTypeFromUrl(enclosureUrl);
+            String type = Utils.guessMimeTypeFromUrl(url);
             if (null == type)
                 type = getCursorInfoString(DB.ColumnItem.ENCLOSURE_TYPE, position);
 
@@ -569,7 +620,7 @@ UnexpectedExceptionHandler.TrackedModule {
             RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
             if (RTTask.TaskState.Idle == state) {
                 BGTaskDownloadToFile dnTask
-                    = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(enclosureUrl,
+                    = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(url,
                                                                                   f,
                                                                                   UIPolicy.getNewTempFile()));
                 RTTask.S().register(id, RTTask.Action.Download, dnTask);
@@ -591,45 +642,24 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    // 'public' to use java reflection
-    public void
-    onActionLink(long action, View view, long id, final int position) {
-        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
-        if (RTTask.TaskState.Failed == state) {
-            LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.Download).getMsgId());
-            RTTask.S().consumeResult(id, RTTask.Action.Download);
-            dataSetChanged(id);
-            return;
-        }
-
-        if (Feed.Channel.isActProgIn(action)) {
-            Intent intent = new Intent(this, ItemViewActivity.class);
-            intent.putExtra("id", id);
-            startActivity(intent);
-        } else if (Feed.Channel.isActProgEx(action)) {
-            Intent intent = new Intent(Intent.ACTION_VIEW,
-                                       Uri.parse(DBPolicy.S().getItemInfoString(id, DB.ColumnItem.LINK)));
-            try {
-                startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                LookAndFeel.showTextToast(this,
-                        getResources().getText(R.string.warn_find_app_to_open).toString() + " [text/html]");
-                return;
-            }
-        } else
-            eAssert(false);
-
-        changeItemState_opened(id, position);
-    }
-
     private void
     onAction(long action, View view, long id, final int position) {
         // NOTE
         // This is very simple policy!
+        String url = null;
         if (Feed.Channel.isActTgtLink(action))
-            onActionLink(action, view, id, position);
+            url = getCursorInfoString(DB.ColumnItem.LINK, position);
         else if (Feed.Channel.isActTgtEnclosure(action))
-            onActionDnEnclosure(action, view, id, position);
+            url = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
+        else
+            eAssert(false);
+
+        if (Feed.Channel.isActOpOpen(action))
+            onActionOpen(action, view, id, position, url);
+        else if (Feed.Channel.isActOpDn(action))
+            onActionDn(action, view, id, position, url);
+        else
+            eAssert(false);
     }
 
     private void

@@ -176,6 +176,11 @@ public class Feed {
         }
 
         public static final boolean
+        isActOpDn(long flag) {
+            return bitIsSet(flag, FActOpDn, MActOp);
+        }
+
+        public static final boolean
         isActTgtLink(long flag) {
             return bitIsSet(flag, FActTgtLink, MActTgt);
         }

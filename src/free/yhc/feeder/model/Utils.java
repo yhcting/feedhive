@@ -820,16 +820,16 @@ public class Utils {
     // So, just search by 'uploader' and 'keyword' are allowed.
     public static String
     buildYoutubeFeedUrl_uploader(String uploader) {
-        return "http://gdata.youtube.com/feeds/mobile/users/"
+        return "http://gdata.youtube.com/feeds/api/users/"
                 + Uri.encode(uploader, null)
-                + "/uploads";
+                + "/uploads?format=5";
     }
 
     public static String
     buildYoutubeFeedUrl_search(String search) {
         search = search.replaceAll("\\s+", "+");
-        return "http://gdata.youtube.com/feeds/mobile/videos?q="
+        return "http://gdata.youtube.com/feeds/api/videos?q="
                 + Uri.encode(search, "+")
-                + "&start-index=1&max-results=50&client=ytapi-youtube-search&orderby=published&v=2";
+                + "&start-index=1&max-results=50&client=ytapi-youtube-search&orderby=published&format=5&v=2";
     }
 }

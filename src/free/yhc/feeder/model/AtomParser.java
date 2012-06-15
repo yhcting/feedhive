@@ -98,29 +98,63 @@ UnexpectedExceptionHandler.TrackedModule {
             super(PRI_MEDIA);
         }
 
+        private void
+        setContent(ItemValues iv, Node n) {
+            NamedNodeMap nnm = n.getAttributes();
+            short nodepri = 0;
+
+            // NOTE
+            // YOUTUBE SPECIFIC PARSING - START
+            // handle attribute for youtube "yt" namespace in "media:content"
+            Node attrN = nnm.getNamedItem("yt:format");
+            short  ytformat = 1;
+            if (null != attrN)
+                ytformat = Short.parseShort(attrN.getNodeValue());
+
+            // only ytformat 5 has highest priority
+            if (5 == ytformat)
+                nodepri += 100;
+            else
+                nodepri += ytformat;
+            // YOUTUBE SPECIFIC PARSING - END
+
+
+            // larger yt:format value is preferred
+            // use yt:format value as node priority.
+            attrN = nnm.getNamedItem("url");
+            if (null != attrN)
+                setValue(iv.enclosure_url, attrN.getNodeValue(), nodepri);
+            attrN = nnm.getNamedItem("type");
+            if (null != attrN)
+                setValue(iv.enclosure_type, attrN.getNodeValue(), nodepri);
+        }
+
+
         @Override
         boolean
         parseChannel(ChannelValues cv, Node n)
                 throws FeederException {
             return false;
-       }
+        }
 
-       @Override
-       boolean
-       parseItem(ItemValues iv, Node n)
-               throws FeederException {
-           if (!n.getNodeName().equalsIgnoreCase("media:group"))
-               return false;
+        @Override
+        boolean
+        parseItem(ItemValues iv, Node n)
+                throws FeederException {
+            if (!n.getNodeName().equalsIgnoreCase("media:group"))
+                return false;
 
-           n = n.getFirstChild();
-           while (null != n) {
-               if (n.getNodeName().equalsIgnoreCase("media:description"))
-                   setValue(iv.description, getTextConstructsValue(n));
-               n = n.getNextSibling();
-           }
+            n = n.getFirstChild();
+            while (null != n) {
+                if (n.getNodeName().equalsIgnoreCase("media:description"))
+                    setValue(iv.description, getTextConstructsValue(n));
+                else if (n.getNodeName().equalsIgnoreCase("media:content"))
+                    setContent(iv, n);
+                n = n.getNextSibling();
+            }
 
-           return true;
-       }
+            return true;
+        }
     }
     // ===========================================================
     //

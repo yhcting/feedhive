@@ -30,9 +30,6 @@ import org.w3c.dom.Node;
 import android.text.Html;
 
 public abstract class FeedParser {
-    private static final int    NS_PRI_SHIFT       = 16;
-    private static final short  NODE_PRI_DEFAULT   = 0;
-
     // Result data format from parse.
     class Result {
         Feed.Channel.ParD channel = new Feed.Channel.ParD();
@@ -117,12 +114,20 @@ public abstract class FeedParser {
     //
     // ===========================================================
     protected abstract class NSParser {
+        private static final int    NS_PRI_SHIFT       = 16;
+        private static final short  NODE_PRI_DEFAULT   = 0;
+
         private short     nspri;
 
         private NSParser(){} // block default constructor.
 
         NSParser(short priority) {
             nspri = priority;
+        }
+
+        private final int
+        pri(int nsPri, int nodePri) {
+            return (nsPri << NS_PRI_SHIFT) | nodePri;
         }
 
         /**
@@ -188,11 +193,6 @@ public abstract class FeedParser {
     //        Common Utility Functions
     //
     // ========================================
-    protected final int
-    pri(int nsPri, int nodePri) {
-        return (nsPri << NS_PRI_SHIFT) | nodePri;
-    }
-
     /**
      * Print(logI) next node name.
      * @param n
