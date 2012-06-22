@@ -47,13 +47,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // NOTE
     // variable 'items' SHOULD BE MODIFIED ONLY ON UI THREAD CONTEXT!!!
-    protected Object[]      items       = new Object[0];
+    protected Object[]      items;
 
-    // TODO
-    // Is there any better way to handle first loading at adapter without using this kind of HACK?
-    // (Using 'firstTime' flag for HACK is very dirty and difficult to maintain... Any better way??)
     private   int           nrseq       = 0;    // This is used only on UI Thread context.
-    private   boolean       firstTime   = true; // This is used only on UI Thread context.
 
     // For synchronization
     // Read/Write operation to java primitive/reference is atomic!
@@ -76,7 +72,7 @@ UnexpectedExceptionHandler.TrackedModule {
          * @return
          *   return value is not used yet. it is just reserved.
          */
-        int requestData(AsyncAdapter adapter, long nrseq, int from, int sz);
+        int requestData(AsyncAdapter adapter, Object priv, long nrseq, int from, int sz);
     }
 
     interface OnRequestData {
@@ -100,6 +96,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private enum LDType {
+        INIT,
         NEXT,
         PREV,
         RELOAD
@@ -142,6 +139,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // 1/3 of dataReqSz is reloaded together.
         this.firstLDahead = dataReqSz / 3;
         firstDummyView = new View(context);
+        items = new Object[] { dummyItem };
     }
 
     protected boolean
@@ -231,15 +229,10 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    requestDataAsync(final int from, final int sz) {
+    requestDataAsync(final LDType ldtype, final int from, final int sz) {
         logI("Data request UI : from " + from + ", # " + sz);
 
         eAssert(isUiThread());
-
-        // Why skip in case of firstTime?
-        // See comments at reloadDataSet.
-        if (!firstTime)
-            backupListViewState();
 
         final long reqSeq = ++nrseq;
         dpDone = false;
@@ -254,7 +247,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
                 logI(">>> async request RUN - START: from " + from + ", # " + sz);
-                dp.requestData(AsyncAdapter.this, reqSeq, from, sz);
+                dp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, sz);
                 waitDpDone(reqSeq, 50);
                 logI(">>> async request RUN - END: from " + from + ", # " + sz);
                 return Err.NoErr;
@@ -279,18 +272,9 @@ UnexpectedExceptionHandler.TrackedModule {
     reloadDataSetAsync() {
         eAssert(isUiThread());
         // Loading is already in progress
-
-        // Why back up here?
-        // Because, real request is done at 'getView()'
-        // But before calling 'getView()', all item information is set to dummy (firstTime is set as 'true')
-        // So, in this case, ListView's state saved at 'requestDataAsync' is just dummy information.
-        // To avoid this case, save current ListView's state here and skip backup at 'requestDataAsync'
-        if (!firstTime)
-            backupListViewState();
-        firstTime = true;
-        items = new Object[0];
-        dataCnt = -1;
-        notifyDataSetChanged();
+        int from = posTop + prevState.firstVisiblePos - firstLDahead;
+        from = from < 0? 0: from;
+        requestDataAsync(LDType.RELOAD, from, dataReqSz);
     }
 
     /**
@@ -302,10 +286,11 @@ UnexpectedExceptionHandler.TrackedModule {
      *   If
      */
     public void
-    provideItems(final long reqSeq, final int from, final Object[] aitems, final boolean eod) {
+    provideItems(final Object priv, final long reqSeq, final int from, final Object[] aitems, final boolean eod) {
         logI("AsyncAdapter provideItems - START : from " + from + ", # " + aitems.length);
         eAssert(maxArrSz > aitems.length);
 
+        final LDType ldtype = (LDType)priv;
         // NOTE
         // Changing 'items' array SHOULD BE processed on UI Thread Context!!!
         // This is very important!
@@ -323,7 +308,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     return;
 
                 final Object[] newItems;
-                if (0 == items.length) {
+                if (LDType.INIT == ldtype || LDType.RELOAD == ldtype) {
                     newItems = buildNewItemsArray(LDType.RELOAD, from, aitems.length);
                     System.arraycopy(aitems, 0, newItems, 0, aitems.length);
                 } else if (from == posTop + items.length) {
@@ -352,7 +337,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 items = newItems;
                 if (null != onRD)
                     onRD.onDataProvided(AsyncAdapter.this, reqSeq, from, aitems.length);
-                firstTime = false;
                 notifyDataSetChanged();
                 // Restore list view's previous location.
                 int pos = prevState.firstVisiblePos - posDelta;
@@ -376,7 +360,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return "[ AsyncAdapter ]"
                 + "  dataCnt       : " + dataCnt + "\n"
                 + "  items.length  : " + items.length + "\n"
-                + "  firstTime     : " + firstTime + "\n"
                 + "  posTop        : " + posTop + "\n";
     }
 
@@ -384,14 +367,6 @@ UnexpectedExceptionHandler.TrackedModule {
     public int getCount() {
         eAssert(isUiThread());
         //Log.i(TAG, ">>> getCount");
-
-        // Why '1' at first time?
-        // If 0 is returned, getView() is never called.
-        // But, AysncAdapter decides whether new items should be loaded or not at getView().
-        // So, for getView() to be called, '1' is returned.
-        // This is a kind of HACK to the ListView.
-        if (firstTime)
-            return 1;
         return items.length;
     }
 
@@ -400,8 +375,6 @@ UnexpectedExceptionHandler.TrackedModule {
     getItem(int pos) {
         eAssert(isUiThread());
         //Log.i(TAG, ">>> getItem : " + position);
-        if (firstTime)
-            return dummyItem;
         if (pos < 0 || pos >= items.length)
             return null;
         return items[pos];
@@ -418,12 +391,11 @@ UnexpectedExceptionHandler.TrackedModule {
     public View getView(int position, View convertView, ViewGroup parent) {
         //Log.i(TAG, ">>> getView : " + position);
 
-        if (firstTime) {
+        if (1 == items.length && items[0] == dummyItem) {
             // reload some of previous item too.
             int from = posTop + prevState.firstVisiblePos - firstLDahead;
             from = from < 0? 0: from;
-            requestDataAsync(from, dataReqSz);
-            //firstTime = false;
+            requestDataAsync(LDType.INIT, from, dataReqSz);
             return firstDummyView;
         }
 
@@ -441,11 +413,11 @@ UnexpectedExceptionHandler.TrackedModule {
         if (position == 0 && posTop > 0) {
             int szReq = (posTop > dataReqSz)? dataReqSz: posTop;
             // This is first item
-            requestDataAsync(posTop - szReq, szReq);
+            requestDataAsync(LDType.PREV, posTop - szReq, szReq);
         } else if (items.length - 1 == position
                    && (dataCnt < 0 || posTop + items.length < dataCnt)) {
             // This is last item
-            requestDataAsync(posTop + position + 1, dataReqSz);
+            requestDataAsync(LDType.NEXT, posTop + position + 1, dataReqSz);
         }
         return v;
     }

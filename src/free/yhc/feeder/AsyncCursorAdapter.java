@@ -109,7 +109,7 @@ AsyncAdapter.OnRequestData {
 
     @Override
     public int
-    requestData(final AsyncAdapter adapter, long nrseq, final int from, final int sz) {
+    requestData(final AsyncAdapter adapter, Object priv, long nrseq, final int from, final int sz) {
         eAssert(null != cur && null != ibldr);
         logI("AsyncCursorAdapter : requestData - START");
         Object[] items;
@@ -137,7 +137,7 @@ AsyncAdapter.OnRequestData {
             } else
                 eAssert(0 == cur.getCount());
         }
-        adapter.provideItems(nrseq, from, items, eod);
+        adapter.provideItems(priv, nrseq, from, items, eod);
         logI("AsyncCursorAdapter : requestData - END");
         return 0;
     }

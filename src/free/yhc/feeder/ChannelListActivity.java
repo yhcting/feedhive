@@ -1517,15 +1517,25 @@ UnexpectedExceptionHandler.TrackedModule {
         // default is "full refresh"
         long cids[] = new long[0];
         boolean fullRefresh = true;
+        boolean fullRefreshCurrent = false;
         if (DBPolicy.S().isChannelWatcherRegistered(this))
             cids = DBPolicy.S().getChannelWatcherUpdated(this);
         fullRefresh = cids.length > channelRefreshThreshold? true: false;
+
+        // NOTE
+        // Channel may be added or deleted.
+        // And channel operation is only allowed on current selected list
+        //   according to use case.
+        if (DBPolicy.S().isChannelTableWatcherRegistered(this)
+            && DBPolicy.S().isChannelTableWatcherUpdated(this))
+            fullRefreshCurrent = true;
 
         // We don't need to worry about item table change.
         // Because, if item is newly inserted, that means some of channel is updated.
         // And that channel will be updated according to DB changes.
 
         DBPolicy.S().unregisterChannelWatcher(this);
+        DBPolicy.S().unregisterChannelTableWatcher(this);
 
         if (fullRefresh) {
             for (int i = 0; i < ab.getTabCount(); i++)
@@ -1533,8 +1543,10 @@ UnexpectedExceptionHandler.TrackedModule {
         } else {
             // only small amount of channel is updated. do synchronous update.
             for (int i = 0; i < ab.getTabCount(); i++)
-                refreshListItem(ab.getTabAt(i), cids);
-
+                if (fullRefreshCurrent && ab.getTabAt(i) == ab.getSelectedTab())
+                    refreshListAsync(ab.getTabAt(i));
+                else
+                    refreshListItem(ab.getTabAt(i), cids);
         }
 
         /*
@@ -1557,6 +1569,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onPause() {
         logI("==> ChannelListActivity : onPause");
         DBPolicy.S().registerChannelWatcher(this);
+        DBPolicy.S().registerChannelTableWatcher(this);
         RTTask.S().unregisterManagerEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.

@@ -50,6 +50,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private final HashMap<Object, HashSet<Long>> chMark = new HashMap<Object, HashSet<Long>>();
     // Marker whether item table size is changed or not by insert or delete
     private final HashMap<Object, Boolean>       itmTblMark = new HashMap<Object, Boolean>();
+    // Marker whether channel table size is changed or not by insert or delete
+    private final HashMap<Object, Boolean>       chTblMark = new HashMap<Object, Boolean>();
 
     /**************************************
      *
@@ -582,7 +584,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     // =======================================
-    // Item Watcher
+    // Item Table Watcher
     // =======================================
     private void
     markItemTableChanged() {
@@ -607,6 +609,34 @@ UnexpectedExceptionHandler.TrackedModule {
     boolean
     isItemTableWatcherUpdated(Object key) {
         return isBooleanMarkerUpdated(itmTblMark, key);
+    }
+
+    // =======================================
+    // Channel Table Watcher
+    // =======================================
+    private void
+    markChannelTableChanged() {
+        markBooleanChanged(chTblMark);
+    }
+
+    void
+    registerChannelTableWatcher(Object key) {
+        registerToBooleanMarker(chTblMark, key);
+    }
+
+    boolean
+    isChannelTableWatcherRegistered(Object key) {
+        return isRegisteredToBooleanMarker(chTblMark, key);
+    }
+
+    void
+    unregisterChannelTableWatcher(Object key) {
+        unregisterToBooleanMarker(chTblMark, key);
+    }
+
+    boolean
+    isChannelTableWatcherUpdated(Object key) {
+        return isBooleanMarkerUpdated(chTblMark, key);
     }
 
     /**************************************
@@ -725,12 +755,14 @@ UnexpectedExceptionHandler.TrackedModule {
     insertChannel(ContentValues values) {
         long cid = db.insert(TABLE_CHANNEL, null, values);
         markChannelChanged(cid);
+        markChannelTableChanged();
         return cid;
     }
 
     long
     deleteChannel(long cid) {
         markChannelChanged(cid);
+        markChannelTableChanged();
         return db.delete(TABLE_CHANNEL,
                         ColumnChannel.ID.getName() + " = " + cid,
                         null);
