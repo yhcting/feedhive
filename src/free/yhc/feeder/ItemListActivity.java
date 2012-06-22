@@ -70,8 +70,8 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final int DataReqSz  = 30;
-    private static final int DataArrMax = 80;
+    private static final int DataReqSz  = 20;
+    private static final int DataArrMax = 500;
 
     // Keys for extra value of intent : IKey (Intent Key)
     public static final String IKeyMode    = "mode";  // mode
@@ -137,10 +137,11 @@ UnexpectedExceptionHandler.TrackedModule {
         getAdapterActionHandler() {
             return new ItemListAdapter.OnAction() {
                 @Override
-                public void onFavoriteClick(ImageView ibtn, long id, long state) {
+                public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MStatFav;
                     DBPolicy.S().updateItem_state(id, state);
+                    adapter.updateItemState(position, state);
                     dataSetChanged(id);
                 }
             };
@@ -221,6 +222,10 @@ UnexpectedExceptionHandler.TrackedModule {
             return categoryid;
         }
 
+        long[] getCids() {
+            return cids;
+        }
+
         @Override
         void onCreate() {
             setTitle(getResources().getString(R.string.category) + ":" + db.getCategoryName(categoryid));
@@ -282,7 +287,7 @@ UnexpectedExceptionHandler.TrackedModule {
         getAdapterActionHandler() {
             return new ItemListAdapter.OnAction() {
                 @Override
-                public void onFavoriteClick(ImageView ibtn, long id, long state) {
+                public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MStatFav;
                     DBPolicy.S().updateItem_state(id, state);
@@ -507,6 +512,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (Feed.Item.isStateOpenNew(state)) {
             state = Utils.bitSet(state, Feed.Item.FStatOpenOpened, Feed.Item.MStatOpen);
             db.updateItem_state(id, state);
+            getListAdapter().updateItemState(position, state);
             dataSetChanged(id);
             return true;
         }
@@ -1004,13 +1010,50 @@ UnexpectedExceptionHandler.TrackedModule {
             searchBtn.setVisibility(View.VISIBLE);
 
         opMode.onResume();
-        dataSetChanged();
+
+        boolean fullRefresh = false;
+
+        // NOTE
+        // Check that whether list is needed to be fully refreshed or not.
+        // How to check it!
+        // If one of channel that are belongs to current item list, is changed
+        //   and item table is changed, than I can decide that current viewing items are updated.
+        long[] watchCids = new long[0];
+        if (DBPolicy.S().isChannelWatcherRegistered(this))
+            watchCids = DBPolicy.S().getChannelWatcherUpdated(this);
+
+        long[] cids = new long[0];
+        if (opMode instanceof OpModeChannel)
+            cids = new long[] { ((OpModeChannel)opMode).getChannelId() };
+        else if (opMode instanceof OpModeCategory)
+            cids = ((OpModeCategory)opMode).getCids();
+
+        // Simple algorithm : nested loop because # of channel is small enough in most cases.
+        boolean channelChanged = false;
+        for (long wcid : watchCids) {
+            for (long cid : cids)
+                if (cid == wcid) {
+                    channelChanged = true;
+                    break;
+                }
+        }
+
+        if (channelChanged
+            && DBPolicy.S().isItemTableWatcherUpdated(this))
+            fullRefresh = true;
+
+        if (fullRefresh)
+            refreshList();
+        else
+            dataSetChanged();
     }
 
     @Override
     protected void
     onPause() {
         logI("==> ItemListActivity : onPause");
+        DBPolicy.S().registerChannelWatcher(this);
+        DBPolicy.S().registerItemTableWatcher(this);
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
         RTTask.S().unregisterManagerEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'

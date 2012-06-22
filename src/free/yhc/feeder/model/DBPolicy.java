@@ -1216,4 +1216,53 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.deleteItemOR(wheres, values);
     }
 
+    // ===============================================
+    //
+    // DB Watcher (Just delegation)
+    //
+    // ===============================================
+    public void
+    registerChannelWatcher(Object key) {
+        db.registerChannelWatcher(key);
+    }
+
+    public boolean
+    isChannelWatcherRegistered(Object key) {
+        return db.isChannelWatcherRegistered(key);
+    }
+
+    public void
+    unregisterChannelWatcher(Object key) {
+        db.unregisterChannelWatcher(key);
+    }
+
+    public boolean
+    isChannelWatcherUpdated(Object key, long cid) {
+        return db.isChannelWatcherUpdated(key, cid);
+    }
+
+    public long[]
+    getChannelWatcherUpdated(Object key) {
+        return db.getChannelWatcherUpdated(key);
+    }
+
+    public void
+    registerItemTableWatcher(Object key) {
+        db.registerItemTableWatcher(key);
+    }
+
+    public boolean
+    isItemTableWatcherRegistered(Object key) {
+        return db.isItemTableWatcherRegistered(key);
+    }
+
+    public void
+    unregisterItemTableWatcher(Object key) {
+        db.unregisterItemTableWatcher(key);
+    }
+
+    public boolean
+    isItemTableWatcherUpdated(Object key) {
+        return db.isItemTableWatcherUpdated(key);
+    }
 }

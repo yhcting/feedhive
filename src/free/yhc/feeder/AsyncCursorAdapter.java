@@ -98,7 +98,7 @@ AsyncAdapter.OnRequestData {
                 if (cur.moveToPosition(id))
                     setItem(pos ,ibldr.buildItem(this, cur));
                 else
-                    eAssert(false);
+                    ;// ignore
             }
         }
         // TODO

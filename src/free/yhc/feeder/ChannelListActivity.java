@@ -86,11 +86,13 @@ public class ChannelListActivity extends Activity implements
 ActionBar.TabListener,
 UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
-    private static final int ReqCPickImage              = 0;
-    private static final int ReqCPickPredefinedChannel  = 1;
+    private static final int reqCPickImage              = 0;
+    private static final int reqCPickPredefinedChannel  = 1;
 
-    private static final int DataReqSz  = 30;
-    private static final int DataArrMax = 200;
+    private static final int dataReqSz  = 20;
+    private static final int dataArrMax = 200;
+
+    private static final int channelRefreshThreshold = 2;
 
     private Handler     handler = new Handler();
     private ActionBar   ab      = null;
@@ -210,7 +212,7 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(null != list);
             list.setAdapter(new ChannelListAdapter(context, null,
                                                    R.layout.channel_row, list,
-                                                   DataReqSz, DataArrMax,
+                                                   dataReqSz, dataArrMax,
                                                    new OnAdapterActionHandler()));
             list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
@@ -467,7 +469,7 @@ UnexpectedExceptionHandler.TrackedModule {
         onPostExecute(SpinAsyncTask task, Err result) {
             LookAndFeel.showTextToast(ChannelListActivity.this,
                                       nrDelItems + getResources().getString(R.string.channel_deleted_msg));
-            refreshList(ab.getSelectedTab());
+            refreshListAsync(ab.getSelectedTab());
             ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
         }
     }
@@ -635,8 +637,8 @@ UnexpectedExceptionHandler.TrackedModule {
         if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
         DBPolicy.S().updateChannel(cid, DB.ColumnChannel.CATEGORYID, getTag(to).categoryid);
-        refreshList(from);
-        refreshList(to);
+        refreshListAsync(from);
+        refreshListAsync(to);
         return true;
     }
 
@@ -677,10 +679,18 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     refreshListItem(Tab tab, long cid) {
+        refreshListItem(tab, new long[] { cid });
+    }
+
+    private void
+    refreshListItem(Tab tab, long[] cids) {
         Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
         ChannelListAdapter adapter = getListAdapter(tab);
         adapter.changeCursor(newCursor);
-        adapter.reloadItem(adapter.findItemId(cid));
+        int[] ids = new int[cids.length];
+        for (int i = 0; i < ids.length; i++)
+            ids[i] = adapter.findItemId(cids[i]);
+        adapter.reloadItem(ids);
     }
 
     /**
@@ -688,7 +698,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param tab
      */
     private void
-    refreshList(Tab tab) {
+    refreshListAsync(Tab tab) {
         Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
         getListAdapter(tab).changeCursor(newCursor);
         getListAdapter(tab).reloadDataSetAsync();
@@ -718,7 +728,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         tab.setTag(tag);
         ab.addTab(tab, false);
-        refreshList(tab); // create cursor adapters
+        refreshListAsync(tab); // create cursor adapters
         return tab;
     }
 
@@ -730,7 +740,7 @@ UnexpectedExceptionHandler.TrackedModule {
     deleteCategory(long categoryid) {
         DBPolicy.S().deleteCategory(categoryid);
         // channel list of default category is changed.
-        refreshList(getDefaultTab());
+        refreshListAsync(getDefaultTab());
 
         Tab curTab = ab.getSelectedTab();
         ab.removeTab(curTab);
@@ -768,7 +778,7 @@ UnexpectedExceptionHandler.TrackedModule {
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
-        refreshList(ab.getSelectedTab());
+        refreshListAsync(ab.getSelectedTab());
         // Move to bottom of the list where newly inserted channel is located on.
         // (This is for feedback to user saying "new channel is now adding").
         // TODO
@@ -786,7 +796,7 @@ UnexpectedExceptionHandler.TrackedModule {
     unlistChannel(Tab tab, long cid) {
         eAssert(null != tab);
         DBPolicy.S().unlistChannel(cid);
-        refreshList(tab);
+        refreshListAsync(tab);
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
     }
 
@@ -983,7 +993,7 @@ UnexpectedExceptionHandler.TrackedModule {
                         LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
                     else {
                         eAssert(cat.id >= 0);
-                        refreshList(addCategory(cat));
+                        refreshListAsync(addCategory(cat));
                     }
                 }
             }
@@ -1066,7 +1076,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onOpt_selectPredefinedChannel() {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
         intent.putExtra("category", getCurrentCategoryId());
-        startActivityForResult(intent, ReqCPickPredefinedChannel);
+        startActivityForResult(intent, reqCPickPredefinedChannel);
     }
 
     private void
@@ -1188,7 +1198,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             startActivityForResult(Intent.createChooser(i,
                                                         getResources().getText(R.string.pick_icon)),
-                                   ReqCPickImage);
+                                   reqCPickImage);
         } catch (ActivityNotFoundException e) {
             LookAndFeel.showTextToast(this, R.string.warn_find_gallery_app);
             return;
@@ -1404,10 +1414,10 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-        case ReqCPickImage:
+        case reqCPickImage:
             onResult_pickImage(resultCode, data);
             break;
-        case ReqCPickPredefinedChannel:
+        case reqCPickPredefinedChannel:
             setCurrentListToBottom = true;
             break;
         }
@@ -1503,19 +1513,36 @@ UnexpectedExceptionHandler.TrackedModule {
             logW("ChannelListActivity : ab(action bar) is NULL");
             ab = getActionBar();
         }
-        // Database data may be changed.
-        // So refresh all list
+
+        // default is "full refresh"
+        long cids[] = new long[0];
+        boolean fullRefresh = true;
+        if (DBPolicy.S().isChannelWatcherRegistered(this))
+            cids = DBPolicy.S().getChannelWatcherUpdated(this);
+        fullRefresh = cids.length > channelRefreshThreshold? true: false;
+
+        // We don't need to worry about item table change.
+        // Because, if item is newly inserted, that means some of channel is updated.
+        // And that channel will be updated according to DB changes.
+
+        DBPolicy.S().unregisterChannelWatcher(this);
+
+        if (fullRefresh) {
+            for (int i = 0; i < ab.getTabCount(); i++)
+                refreshListAsync(ab.getTabAt(i));
+        } else {
+            // only small amount of channel is updated. do synchronous update.
+            for (int i = 0; i < ab.getTabCount(); i++)
+                refreshListItem(ab.getTabAt(i), cids);
+
+        }
+
         /*
-        for (int i = 0; i < ab.getTabCount(); i++)
-            // 'notifyDataSetChanged' doesn't lead to refreshing channel row info
-            //   in case of database is changed!
-            refreshList(ab.getTabAt(i));
-*/
-        refreshList(ab.getSelectedTab());
         if (setCurrentListToBottom) {
             moveToBottomOfList();
             setCurrentListToBottom = false;
         }
+        */
     }
 
    @Override
@@ -1529,7 +1556,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPause() {
         logI("==> ChannelListActivity : onPause");
-
+        DBPolicy.S().registerChannelWatcher(this);
         RTTask.S().unregisterManagerEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.

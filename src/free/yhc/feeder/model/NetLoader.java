@@ -261,6 +261,8 @@ public class NetLoader {
                     res = FeedParser.getParser(dom).parse(dom);
                     logI("TIME: RSSParsing : " + (System.currentTimeMillis() - time));
                     break; // done
+                } catch (MalformedURLException e) {
+                    throw new FeederException(Err.InvalidURL);
                 } catch (IOException e) {
                     if (cancelled)
                         throw new FeederException(Err.UserCancelled);

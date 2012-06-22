@@ -123,7 +123,7 @@
     <string name="pref_maxnr_bgtask">Maximum BG Tasks</string>
     <string name="pref_maxnr_bgtask_desc">Maximum number of background tasks that can be run concurrently.</string>
     <string name="pref_bgtask_prio">Priority of background task</string>
-    <string name="pref_bgtask_prio_desc">Update or download performance will be increased with higher value, but responsibility will be worse.</string>
+    <string name="pref_bgtask_prio_desc">Since verion 2.0.0, this value is not used.</string>
     <string name="pref_send_err_report">Sending error report</string>
     <string name="pref_send_err_report_desc">Error report is sent when application is crashed.</string>
 </resources>

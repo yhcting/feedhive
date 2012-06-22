@@ -44,11 +44,14 @@ UnexpectedExceptionHandler.TrackedModule {
                                              // This is decided when provider set 'eod - End Of Data' flag.
 
     private   ListViewState prevState   = new ListViewState();
+
+    // NOTE
+    // variable 'items' SHOULD BE MODIFIED ONLY ON UI THREAD CONTEXT!!!
+    protected Object[]      items       = new Object[0];
+
     // TODO
     // Is there any better way to handle first loading at adapter without using this kind of HACK?
     // (Using 'firstTime' flag for HACK is very dirty and difficult to maintain... Any better way??)
-    protected Object[]      items       = new Object[0];
-
     private   int           nrseq       = 0;    // This is used only on UI Thread context.
     private   boolean       firstTime   = true; // This is used only on UI Thread context.
 
@@ -159,6 +162,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     protected void
     setItem(int pos, Object item) {
+        eAssert(isUiThread());
         if (pos >= 0 && pos < items.length)
             items[pos] = item;
     }
@@ -173,6 +177,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private Object[]
     buildNewItemsArray(LDType ldtype, int from, int sz) {
+        eAssert(isUiThread());
         eAssert(0 <= sz);
         if (0 == sz)
             return new Object[0];
@@ -377,6 +382,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public int getCount() {
+        eAssert(isUiThread());
         //Log.i(TAG, ">>> getCount");
 
         // Why '1' at first time?
@@ -392,6 +398,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public Object
     getItem(int pos) {
+        eAssert(isUiThread());
         //Log.i(TAG, ">>> getItem : " + position);
         if (firstTime)
             return dummyItem;

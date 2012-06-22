@@ -47,11 +47,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // below two vars are used to improve app performance to check some DB data are changed or not.
     // These are NOT functionality purpose BUT performance.
-    private final HashMap<Object, HashSet<Long>> chUpdMark = new HashMap<Object, HashSet<Long>>();
+    private final HashMap<Object, HashSet<Long>> chMark = new HashMap<Object, HashSet<Long>>();
     // Marker whether item table size is changed or not by insert or delete
-    private final HashMap<Object, Boolean>       itemszUpdMark = new HashMap<Object, Boolean>();
-    // Marker whether # of channels in category is changed or not by updating channel
-    private final HashMap<Object, HashSet<Long>> catszUpdMark = new HashMap<Object, HashSet<Long>>();
+    private final HashMap<Object, Boolean>       itmTblMark = new HashMap<Object, Boolean>();
 
     /**************************************
      *
@@ -461,6 +459,11 @@ UnexpectedExceptionHandler.TrackedModule {
     /**************************************
      * DB monitoring
      **************************************/
+
+
+    // =======================================
+    // INTERNAL - HashSet Marker
+    // =======================================
     private void
     markHashSetChanged(HashMap<Object, HashSet<Long>> hm, long id) {
         synchronized (hm) {
@@ -477,6 +480,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    private boolean
+    isRegisteredToHashSetMarker(HashMap<Object, HashSet<Long>> hm, Object key) {
+        synchronized (hm) {
+            return (null != hm.get(key));
+        }
+    }
+
     private void
     unregisterToHashSetMarker(HashMap<Object, HashSet<Long>> hm, Object key) {
         synchronized (hm) {
@@ -484,15 +494,25 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    public boolean
+    private boolean
     isHashSetMarkerUpdated(HashMap<Object, HashSet<Long>> hm, Object key, long id) {
         synchronized (hm) {
             return hm.get(key).contains(id);
         }
     }
 
+    private long[]
+    getHashSetMarkerUpdated(HashMap<Object, HashSet<Long>> hm, Object key) {
+        synchronized (hm) {
+            return Utils.convertArrayLongTolong(hm.get(key).toArray(new Long[0]));
+        }
+    }
+
+    // =======================================
+    // INTERNAL - Boolean Marker
+    // =======================================
     private void
-    markBooleanChanged(HashMap<Object, Boolean> hm, long id) {
+    markBooleanChanged(HashMap<Object, Boolean> hm) {
         synchronized (hm) {
             Iterator<Object> itr = hm.keySet().iterator();
             while (itr.hasNext())
@@ -504,6 +524,13 @@ UnexpectedExceptionHandler.TrackedModule {
     registerToBooleanMarker(HashMap<Object, Boolean> hm, Object key) {
         synchronized (hm) {
             hm.put(key, false);
+        }
+    }
+
+    private boolean
+    isRegisteredToBooleanMarker(HashMap<Object, Boolean> hm, Object key) {
+        synchronized (hm) {
+            return (null != hm.get(key));
         }
     }
 
@@ -519,6 +546,67 @@ UnexpectedExceptionHandler.TrackedModule {
         synchronized (hm) {
             return hm.get(key);
         }
+    }
+
+    // =======================================
+    // Channel Watcher
+    // =======================================
+    private void
+    markChannelChanged(long cid) {
+        markHashSetChanged(chMark, cid);
+    }
+
+    void
+    registerChannelWatcher(Object key) {
+        registerToHashSetMarker(chMark, key);
+    }
+
+    boolean
+    isChannelWatcherRegistered(Object key) {
+        return isRegisteredToHashSetMarker(chMark, key);
+    }
+
+    void
+    unregisterChannelWatcher(Object key) {
+        unregisterToHashSetMarker(chMark, key);
+    }
+
+    boolean
+    isChannelWatcherUpdated(Object key, long cid) {
+        return isHashSetMarkerUpdated(chMark, key, cid);
+    }
+
+    long[]
+    getChannelWatcherUpdated(Object key) {
+        return getHashSetMarkerUpdated(chMark, key);
+    }
+
+    // =======================================
+    // Item Watcher
+    // =======================================
+    private void
+    markItemTableChanged() {
+        markBooleanChanged(itmTblMark);
+    }
+
+    void
+    registerItemTableWatcher(Object key) {
+        registerToBooleanMarker(itmTblMark, key);
+    }
+
+    boolean
+    isItemTableWatcherRegistered(Object key) {
+        return isRegisteredToBooleanMarker(itmTblMark, key);
+    }
+
+    void
+    unregisterItemTableWatcher(Object key) {
+        unregisterToBooleanMarker(itmTblMark, key);
+    }
+
+    boolean
+    isItemTableWatcherUpdated(Object key) {
+        return isBooleanMarkerUpdated(itmTblMark, key);
     }
 
     /**************************************
@@ -635,11 +723,14 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     insertChannel(ContentValues values) {
-        return db.insert(TABLE_CHANNEL, null, values);
+        long cid = db.insert(TABLE_CHANNEL, null, values);
+        markChannelChanged(cid);
+        return cid;
     }
 
     long
     deleteChannel(long cid) {
+        markChannelChanged(cid);
         return db.delete(TABLE_CHANNEL,
                         ColumnChannel.ID.getName() + " = " + cid,
                         null);
@@ -655,6 +746,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     updateChannel(long cid, ContentValues values) {
+        markChannelChanged(cid);
         return db.update(TABLE_CHANNEL,
                 values,
                 ColumnChannel.ID.getName() + " = " + cid,
@@ -671,6 +763,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     updateChannel(long cid, ColumnChannel field, Object v) {
+        markChannelChanged(cid);
         ContentValues cvs = new ContentValues();
         if (v instanceof String)
             cvs.put(field.getName(), (String)v);
@@ -709,6 +802,11 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(targetValues.length == whereValues.length);
         if (targetValues.length <= 0)
             return;
+
+        if (where.equals(ColumnChannel.ID)) {
+            for (Object o : whereValues)
+                markChannelChanged((Long)o);
+        }
 
         StringBuilder sbldr = new StringBuilder();
         sbldr.append("UPDATE " + TABLE_CHANNEL + " ")
@@ -845,6 +943,7 @@ UnexpectedExceptionHandler.TrackedModule {
         int i = 0;
         do {
             cids[i] = c.getLong(0);
+            markChannelChanged(cids[i]);
             cols[i] = DB.ColumnItem.CHANNELID;
             i++;
         } while (c.moveToNext());
@@ -853,6 +952,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long nrItems = db.delete(TABLE_ITEM,
                                  buildSQLWhere(cols, cids, "=", "OR"),
                                  null);
+        markItemTableChanged();
         // then delete channel.
         db.delete(TABLE_CHANNEL, chWhereStr, null);
         return nrItems;
@@ -872,6 +972,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     insertItem(ContentValues values) {
+        markItemTableChanged();
         return db.insert(TABLE_ITEM, null, values);
     }
 
@@ -1049,6 +1150,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
+        markItemTableChanged();
         return db.delete(TABLE_ITEM,
                          buildSQLWhere(wheres, values, "=", "OR"),
                          null);

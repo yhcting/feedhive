@@ -125,12 +125,13 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     interface OnAction {
-        void onFavoriteClick(ImageView ibtn, long id, long state);
+        void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state);
     }
 
     public static class ImageViewFavorite extends ImageView {
         long id     = -1;
         long state  = 0;
+        int  position = -1;
 
         public
         ImageViewFavorite(Context context, AttributeSet attrs) {
@@ -214,6 +215,15 @@ AsyncCursorAdapter.ItemBuilder {
             return (int)getItemId(pos);
     }
 
+    public void
+    updateItemState(int position, long v) {
+        ItemInfo ii = (ItemInfo)getItem(position);
+        if (null != ii) {
+            ii.state = v;
+            setItem(position, ii);
+        }
+    }
+
     @Override
     public Object
     buildItem(AsyncCursorAdapter adapter, Cursor c) {
@@ -274,13 +284,14 @@ AsyncCursorAdapter.ItemBuilder {
         // Set favorite button.
         favImgv.id = ii.id;
         favImgv.state = ii.state;
+        favImgv.position = position;
         favImgv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (null == onAction)
                     return;
                 ImageViewFavorite iv = (ImageViewFavorite)v;
-                onAction.onFavoriteClick(iv, iv.id, iv.state);
+                onAction.onFavoriteClick(ItemListAdapter.this, iv, iv.position, iv.id, iv.state);
             }
         });
 
