@@ -69,8 +69,10 @@ import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity implements
-UILifecycle.OnEvent,
 UnexpectedExceptionHandler.TrackedModule {
+    private static final int DataReqSz  = 30;
+    private static final int DataArrMax = 80;
+
     // Keys for extra value of intent : IKey (Intent Key)
     public static final String IKeyMode    = "mode";  // mode
     public static final String IKeyFilter  = "filter";// filter
@@ -90,7 +92,6 @@ UnexpectedExceptionHandler.TrackedModule {
     public static final int FilterNone        = 0; // no filter
     public static final int FilterNew         = 1; // new items of each channel.
 
-    private UILifecycle         uilc;
     private OpMode              opMode  = null;
     private Handler             handler = new Handler();
     private final DBPolicy      db      = DBPolicy.S();
@@ -398,23 +399,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return (ItemListAdapter)list.getAdapter();
     }
 
-    private String
-    getCursorInfoString(DB.ColumnItem column, int position) {
-        eAssert(null != list);
-        Cursor c = getListAdapter().getCursor();
-        if (!c.moveToPosition(position)) {
-            eAssert(false);
-            return null;
-        }
-        return c.getString(c.getColumnIndex(column.getName()));
-    }
-
     private void
     dataSetChanged() {
         if (null == list || null == getListAdapter())
             return;
 
-        getListAdapter().clearChangeState();
+        //getListAdapter().clearChangeState();
         getListAdapter().notifyDataSetChanged();
     }
 
@@ -424,16 +414,18 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
 
         ItemListAdapter la = getListAdapter();
+        /*
         la.clearChangeState();
         for (int i = list.getFirstVisiblePosition();
              i <= list.getLastVisiblePosition();
              i++) {
-            long itemId = la.getItemId(i);
+            long itemId = la.getItem(i).id;
             if (itemId == id)
-                la.addChanged(itemId);
+                la.addChanged(la.getItemId(i));
             else
-                la.addUnchanged(itemId);
+                la.addUnchanged(la.getItemId(i));
         }
+        */
         la.notifyDataSetChanged();
     }
 
@@ -444,7 +436,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         Cursor newCursor = opMode.query();
         getListAdapter().changeCursor(newCursor);
-        dataSetChanged(id);
+        getListAdapter().reloadItem(getListAdapter().findItemId(id));
     }
 
     private void
@@ -457,7 +449,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, we don't need to think about async. loading.
         Cursor newCursor = opMode.query();
         getListAdapter().changeCursor(newCursor);
-        dataSetChanged();
+        getListAdapter().reloadDataSetAsync();
     }
 
     private void
@@ -594,7 +586,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
             String type = Utils.guessMimeTypeFromUrl(url);
             if (null == type)
-                type = getCursorInfoString(DB.ColumnItem.ENCLOSURE_TYPE, position);
+                type = getListAdapter().getItemInfo_encType(position);
 
             if (!Utils.isMimeType(type))
                 type = "text/plain"; // this is default.
@@ -648,9 +640,9 @@ UnexpectedExceptionHandler.TrackedModule {
         // This is very simple policy!
         String url = null;
         if (Feed.Channel.isActTgtLink(action))
-            url = getCursorInfoString(DB.ColumnItem.LINK, position);
+            url = getListAdapter().getItemInfo_link(position);
         else if (Feed.Channel.isActTgtEnclosure(action))
-            url = getCursorInfoString(DB.ColumnItem.ENCLOSURE_URL, position);
+            url = getListAdapter().getItemInfo_encUrl(position);
         else
             eAssert(false);
 
@@ -757,12 +749,12 @@ UnexpectedExceptionHandler.TrackedModule {
     onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
-
+        long dbId = getListAdapter().getItemInfo_id(info.position);
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        if (UIPolicy.getItemDataFile(info.id).exists())
+        if (UIPolicy.getItemDataFile(dbId).exists())
             menu.findItem(R.id.delete_dnfile).setVisible(true);
     }
 
@@ -770,13 +762,14 @@ UnexpectedExceptionHandler.TrackedModule {
     public boolean
     onContextItemSelected(MenuItem mItem) {
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
+        long dbId = getListAdapter().getItemInfo_id(info.position);
         switch (mItem.getItemId()) {
         case R.id.delete_dnfile:
-            logI(" Delete Downloaded File : ID : " + info.id + " / " + info.position);
-            onContext_deleteDnFile(info.id, info.position);
+            logI(" Delete Downloaded File : ID : " + dbId + " / " + info.position);
+            onContext_deleteDnFile(dbId, info.position);
             return true;
         case R.id.mark_unopened:
-            logI(" Mark As Unactioned : ID : " + info.id + " / " + info.position);
+            logI(" Mark As Unactioned : ID : " + dbId + " / " + info.position);
             return true;
         }
         return false;
@@ -934,8 +927,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUICreate(View contentv) {
-        logI("==> ItemListActivity : onUICreate");
+    onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
+        super.onCreate(savedInstanceState);
+        logI("==> ItemListActivity : onCreate");
         getActionBar().show();
 
         int mode = getIntent().getIntExtra(IKeyMode, -1);
@@ -953,20 +948,22 @@ UnexpectedExceptionHandler.TrackedModule {
         default:
             eAssert(false);
         }
-        list = ((ListView)contentv.findViewById(R.id.list));
+        setContentView(R.layout.item_list);
+        list = ((ListView)findViewById(R.id.list));
         eAssert(null != list);
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void
-            onItemClick (AdapterView<?> parent, View view, int position, long id) {
-                long cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
+            onItemClick (AdapterView<?> parent, View view, int position, long itemId) {
+                long dbId = getListAdapter().getItemInfo_id(position);
+                long cid = getListAdapter().getItemInfo_cid(position);
                 long act = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-                onAction(act, view, id, position);
+                onAction(act, view, dbId, position);
             }
         });
         registerForContextMenu(list);
 
-        ((ImageView)contentv.findViewById(R.id.searchbtn)).setOnClickListener(new View.OnClickListener() {
+        ((ImageView)findViewById(R.id.searchbtn)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // TODO Auto-generated method stub
@@ -977,28 +974,12 @@ UnexpectedExceptionHandler.TrackedModule {
         opMode.onCreate();
 
         list.setAdapter(new ItemListAdapter(ItemListActivity.this,
-                R.layout.item_row,
-                opMode.query(),
-                opMode.getAdapterActionHandler()));
-    }
-
-    @Override
-    public void
-    onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
-        super.onCreate(savedInstanceState);
-        logI("==> ItemListActivity : onCreate");
-        uilc = new UILifecycle("Item",
-                               this, this,
-                               LookAndFeel.inflateLayout(this, R.layout.item_list),
-                               LookAndFeel.inflateLayout(this, R.layout.plz_wait));
-        uilc.onCreate();
-    }
-
-    @Override
-    public void
-    onUIStart(View contentv) {
-        logI("==> ItemListActivity : onUIStart");
+                                            opMode.query(),
+                                            R.layout.item_row,
+                                            list,
+                                            DataReqSz,
+                                            DataArrMax,
+                                            opMode.getAdapterActionHandler()));
     }
 
     @Override
@@ -1006,13 +987,13 @@ UnexpectedExceptionHandler.TrackedModule {
     onStart() {
         super.onStart();
         logI("==> ItemListActivity : onStart");
-        uilc.onStart();
     }
 
     @Override
-    public void
-    onUIResume(View contentv) {
-        logI("==> ItemListActivity : onUIResume");
+    protected void
+    onResume() {
+        super.onResume();
+        logI("==> ItemListActivity : onResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
@@ -1028,71 +1009,26 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     protected void
-    onResume() {
-        super.onResume();
-        logI("==> ItemListActivity : onResume");
-        uilc.onResume();
-    }
-
-    // See comments at ChannelListActivity.onPostResume
-    @Override
-    protected void
-    onPostResume() {
-        super.onPostResume();
-        logI("==> ItemListActivity : onPostResume()");
-        uilc.getHandler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                uilc.triggerDelayedNextState();
-            }
-        }, 100);
-    }
-
-    @Override
-    public void
-    onUIPause(View contentv) {
-        logI("==> ItemListActivity : onUIPause");
+    onPause() {
+        logI("==> ItemListActivity : onPause");
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
         RTTask.S().unregisterManagerEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
         RTTask.S().unbind(this);
-    }
-
-    @Override
-    protected void
-    onPause() {
-        logI("==> ItemListActivity : onPause");
-        uilc.onPause();
         super.onPause();
-    }
-
-    @Override
-    public void
-    onUIStop(View contentv) {
-        logI("==> ItemListActivity : onUIStop");
     }
 
     @Override
     protected void
     onStop() {
         logI("==> ItemListActivity : onStop");
-        uilc.onStop();
         super.onStop();
-    }
-
-    @Override
-    public void
-    onUIDestroy(View contentv) {
-        logI("==> ItemListActivity : onUIDestroy");
-        if (null != list && null != getListAdapter() && null != getListAdapter().getCursor())
-            getListAdapter().getCursor().close();
     }
 
     @Override
     protected void
     onDestroy() {
         logI("==> ItemListActivity : onDestroy");
-        uilc.onDestroy();
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }

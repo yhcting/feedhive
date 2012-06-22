@@ -52,7 +52,7 @@ public class Utils {
     private static final String TAG = "[Feeder]";
 
     // To enable logging to file - NOT LOGCAT
-    private static final boolean ENABLE_LOGF = true;
+    private static final boolean ENABLE_LOGF = false;
     private static final String LOGF = "/sdcard/feeder.log";
     private static final String LOGF_LAST = LOGF + "-last";
     private static FileWriter logout = null;

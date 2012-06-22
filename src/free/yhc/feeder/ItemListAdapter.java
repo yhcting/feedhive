@@ -21,8 +21,10 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.model.Utils.logI;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.StaleDataException;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Handler;
 import android.util.AttributeSet;
@@ -30,6 +32,7 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
@@ -42,8 +45,8 @@ import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
-public class ItemListAdapter extends CustomResourceCursorAdapter implements
-UnexpectedExceptionHandler.TrackedModule {
+public class ItemListAdapter extends AsyncCursorAdapter implements
+AsyncCursorAdapter.ItemBuilder {
     private Handler   handler = new Handler();
     private DBPolicy  dbp = DBPolicy.S();
     private OnAction  onAction = null;
@@ -64,6 +67,21 @@ UnexpectedExceptionHandler.TrackedModule {
             onEvent = newOnEvent;
             newOnEvent.setTextView(this);
         }
+    }
+
+    private static class ItemInfo {
+        long        id              = -1;
+        long        state           = 0;
+        long        cid             = -1;
+        boolean     bChannel        = false;
+        String      cTitle          = "";
+        String      title           = "";
+        String      desc            = "";
+        String      pubDate         = "";
+        String      link            = "";
+        String      enclosureLen    = "";
+        String      enclosureUrl    = "";
+        String      enclosureType   = "";
     }
 
     private class DownloadProgressOnEvent implements BGTask.OnEvent<BGTaskDownloadToFile.Arg, Object> {
@@ -135,27 +153,100 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ ItemListAdapter ]";
+        return super.dump(lv) + "[ ItemListAdapter ]";
     }
 
-    public ItemListAdapter(Context context, int layout, Cursor c, OnAction actionListener) {
-        super(context, layout, c);
+    public
+    ItemListAdapter(Context        context,
+                    Cursor         cursor,
+                    int            rowLayout,
+                    ListView       lv,
+                    final int      dataReqSz,
+                    final int      maxArrSz,
+                    OnAction       actionListener) {
+        super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
+        setItemBuilder(this);
         UnexpectedExceptionHandler.S().registerModule(this);
         dummyTextView = new TextView(context);
         onAction = actionListener;
     }
 
+    public long
+    getItemInfo_id(int position) {
+        return ((ItemInfo)super.getItem(position)).id;
+    }
+
+    public long
+    getItemInfo_cid(int position) {
+        return ((ItemInfo)super.getItem(position)).cid;
+    }
+
+    public String
+    getItemInfo_link(int position) {
+        return ((ItemInfo)super.getItem(position)).link;
+    }
+
+    public String
+    getItemInfo_encUrl(int position) {
+        return ((ItemInfo)super.getItem(position)).enclosureUrl;
+    }
+
+    public String
+    getItemInfo_encType(int position) {
+        return ((ItemInfo)super.getItem(position)).enclosureType;
+    }
+
+    public int
+    findPosition(long id) {
+        for (int i = 0; i < getCount(); i++) {
+            if (getItemInfo_id(i) == id)
+                    return i;
+        }
+        return -1;
+    }
+
+    public int
+    findItemId(long id) {
+        int pos = findPosition(id);
+        if (pos < 0)
+            return -1;
+        else
+            return (int)getItemId(pos);
+    }
+
+    @Override
+    public Object
+    buildItem(AsyncCursorAdapter adapter, Cursor c) {
+        logI("ChannelListAdapter : buildItem - START");
+        ItemInfo i = new ItemInfo();
+        try {
+            i.id = getCursorLong(c, DB.ColumnItem.ID);
+            i.state = dbp.getItemInfoLong(i.id, DB.ColumnItem.STATE);
+            i.title = getCursorString(c, DB.ColumnChannel.TITLE);
+            i.desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
+            i.pubDate = getCursorString(c, DB.ColumnItem.PUBDATE);
+            i.enclosureLen = getCursorString(c, DB.ColumnItem.ENCLOSURE_LENGTH);
+            i.enclosureUrl = getCursorString(c, DB.ColumnItem.ENCLOSURE_URL);
+            i.link = getCursorString(c, DB.ColumnItem.LINK);
+
+            int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
+            i.bChannel = (0 <= cidx);
+            if (i.bChannel) {
+                i.cid = c.getLong(cidx);
+                i.cTitle = DBPolicy.S().getChannelInfoString(i.cid, DB.ColumnChannel.TITLE);
+            }
+
+        } catch (StaleDataException e) {
+            eAssert(false);
+        }
+        logI("ChannelListAdapter : buildItem - END");
+        return i;
+    }
+
     @Override
     public void
-    bindView(View view, Context context, Cursor c) {
-        final long id = getCursorLong(c, DB.ColumnItem.ID);
-
-        try {
-            if (!isChanged(id))
-                return;
-        } finally {
-            clearChangeState(id);
-        }
+    bindView(View v, final Context context, int position)  {
+        ItemInfo ii = (ItemInfo)getItem(position);
 
         // NOTE
         //   Check performance drop for this DB access...
@@ -164,27 +255,25 @@ UnexpectedExceptionHandler.TrackedModule {
         //   But, definitely slower than before...
         // TODO
         //   Do performance check on low-end-device.
-        final long state = dbp.getItemInfoLong(id, DB.ColumnItem.STATE);
-        final boolean favorite = Feed.Item.isStatFavOn(state);
+        final boolean favorite = Feed.Item.isStatFavOn(ii.state);
 
-        final TextView channelv     = (TextView)view.findViewById(R.id.channel);
-        final TextView titlev       = (TextView)view.findViewById(R.id.title);
-        final TextView descv        = (TextView)view.findViewById(R.id.description);
-        final ProgressTextView progressv = (ProgressTextView)view.findViewById(R.id.progress);
-        final TextView datev        = (TextView)view.findViewById(R.id.date);
-        final TextView infov        = (TextView)view.findViewById(R.id.info);
-        final ImageView imgv        = (ImageView)view.findViewById(R.id.image);
-        final ImageViewFavorite favImgv   = (ImageViewFavorite)view.findViewById(R.id.favorite);
+        final TextView channelv     = (TextView)v.findViewById(R.id.channel);
+        final TextView titlev       = (TextView)v.findViewById(R.id.title);
+        final TextView descv        = (TextView)v.findViewById(R.id.description);
+        final ProgressTextView progressv = (ProgressTextView)v.findViewById(R.id.progress);
+        final TextView datev        = (TextView)v.findViewById(R.id.date);
+        final TextView infov        = (TextView)v.findViewById(R.id.info);
+        final ImageView imgv        = (ImageView)v.findViewById(R.id.image);
+        final ImageViewFavorite favImgv   = (ImageViewFavorite)v.findViewById(R.id.favorite);
 
-        int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
-        if (cidx < 0)
+        if (ii.bChannel)
             channelv.setVisibility(View.GONE);
         else
-            channelv.setText(DBPolicy.S().getChannelInfoString(c.getLong(cidx), DB.ColumnChannel.TITLE));
+            channelv.setText(ii.cTitle);
 
         // Set favorite button.
-        favImgv.id = id;
-        favImgv.state = state;
+        favImgv.id = ii.id;
+        favImgv.state = ii.state;
         favImgv.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -200,18 +289,14 @@ UnexpectedExceptionHandler.TrackedModule {
         else
             favImgv.setImageResource(R.drawable.favorite_off);
 
-        String title = getCursorString(c, DB.ColumnItem.TITLE);
+        titlev.setText(ii.title);
+        descv.setText(ii.desc);
+        datev.setText(ii.pubDate);
 
-        titlev.setText(title);
-        descv.setText(getCursorString(c, DB.ColumnItem.DESCRIPTION));
-        datev.setText(getCursorString(c, DB.ColumnItem.PUBDATE));
-
-        String length = getCursorString(c, DB.ColumnItem.ENCLOSURE_LENGTH);
-        String url = getCursorString(c, DB.ColumnItem.ENCLOSURE_URL);
-        if (url.isEmpty())
+        if (ii.enclosureUrl.isEmpty())
             infov.setText("html");
         else
-            infov.setText(Utils.getExtentionFromUrl(url) + " : " + length);
+            infov.setText(Utils.getExtentionFromUrl(ii.enclosureUrl) + " : " + ii.enclosureLen);
 
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
@@ -224,10 +309,10 @@ UnexpectedExceptionHandler.TrackedModule {
         imgv.setAlpha(1.0f);
         progressv.setVisibility(View.GONE);
 
-        if (UIPolicy.getItemDataFile(id).exists()) {
+        if (UIPolicy.getItemDataFile(ii.id).exists()) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
-            RTTask.TaskState dnState = RTTask.S().getState(id, RTTask.Action.Download);
+            RTTask.TaskState dnState = RTTask.S().getState(ii.id, RTTask.Action.Download);
             if (RTTask.TaskState.Idle == dnState) {
                 imgv.setImageResource(R.drawable.download_anim0);
             } else if (RTTask.TaskState.Ready == dnState) {
@@ -265,7 +350,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
                 progressv.switchOnEvent(onEvent);
                 RTTask.S().unbind(progressv);
-                RTTask.S().bind(id, RTTask.Action.Download, progressv, onEvent);
+                RTTask.S().bind(ii.id, RTTask.Action.Download, progressv, onEvent);
                 progressv.setVisibility(View.VISIBLE);
             } else if (RTTask.TaskState.Failed == dnState) {
                 imgv.setImageResource(R.drawable.ic_info);
@@ -276,10 +361,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 eAssert(false);
         }
 
-        titlev.setTextColor(context.getResources().getColor(getTitleColor(state)));
-        descv.setTextColor(context.getResources().getColor(getTextColor(state)));
-        datev.setTextColor(context.getResources().getColor(getTextColor(state)));
-        infov.setTextColor(context.getResources().getColor(getTextColor(state)));
+        titlev.setTextColor(context.getResources().getColor(getTitleColor(ii.state)));
+        descv.setTextColor(context.getResources().getColor(getTextColor(ii.state)));
+        datev.setTextColor(context.getResources().getColor(getTextColor(ii.state)));
+        infov.setTextColor(context.getResources().getColor(getTextColor(ii.state)));
     }
 
     @Override

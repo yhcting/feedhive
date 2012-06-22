@@ -22,6 +22,11 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -40,6 +45,13 @@ UnexpectedExceptionHandler.TrackedModule {
      **************************************/
     private SQLiteDatabase db = null;
 
+    // below two vars are used to improve app performance to check some DB data are changed or not.
+    // These are NOT functionality purpose BUT performance.
+    private final HashMap<Object, HashSet<Long>> chUpdMark = new HashMap<Object, HashSet<Long>>();
+    // Marker whether item table size is changed or not by insert or delete
+    private final HashMap<Object, Boolean>       itemszUpdMark = new HashMap<Object, Boolean>();
+    // Marker whether # of channels in category is changed or not by updating channel
+    private final HashMap<Object, HashSet<Long>> catszUpdMark = new HashMap<Object, HashSet<Long>>();
 
     /**************************************
      *
@@ -445,6 +457,68 @@ UnexpectedExceptionHandler.TrackedModule {
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         return "[ DB ]";
+    }
+    /**************************************
+     * DB monitoring
+     **************************************/
+    private void
+    markHashSetChanged(HashMap<Object, HashSet<Long>> hm, long id) {
+        synchronized (hm) {
+            Iterator<Object> itr = hm.keySet().iterator();
+            while (itr.hasNext())
+                hm.get(itr.next()).add(id);
+        }
+    }
+
+    private void
+    registerToHashSetMarker(HashMap<Object, HashSet<Long>> hm, Object key) {
+        synchronized (hm) {
+            hm.put(key, new HashSet<Long>());
+        }
+    }
+
+    private void
+    unregisterToHashSetMarker(HashMap<Object, HashSet<Long>> hm, Object key) {
+        synchronized (hm) {
+            hm.put(key, new HashSet<Long>());
+        }
+    }
+
+    public boolean
+    isHashSetMarkerUpdated(HashMap<Object, HashSet<Long>> hm, Object key, long id) {
+        synchronized (hm) {
+            return hm.get(key).contains(id);
+        }
+    }
+
+    private void
+    markBooleanChanged(HashMap<Object, Boolean> hm, long id) {
+        synchronized (hm) {
+            Iterator<Object> itr = hm.keySet().iterator();
+            while (itr.hasNext())
+                hm.put(itr.next(), true);
+        }
+    }
+
+    private void
+    registerToBooleanMarker(HashMap<Object, Boolean> hm, Object key) {
+        synchronized (hm) {
+            hm.put(key, false);
+        }
+    }
+
+    private void
+    unregisterToBooleanMarker(HashMap<Object, Boolean> hm, Object key) {
+        synchronized (hm) {
+            hm.remove(key);
+        }
+    }
+
+    private boolean
+    isBooleanMarkerUpdated(HashMap<Object, Boolean> hm, Object key) {
+        synchronized (hm) {
+            return hm.get(key);
+        }
     }
 
     /**************************************

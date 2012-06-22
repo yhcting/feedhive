@@ -28,13 +28,16 @@ import android.os.AsyncTask;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.NetLoader;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.UnexpectedExceptionHandler.DumpLevel;
 
 public class SpinAsyncTask extends AsyncTask<Object, Integer, Err> implements
+UnexpectedExceptionHandler.TrackedModule,
 DialogInterface.OnDismissListener,
 DialogInterface.OnCancelListener,
 DialogInterface.OnClickListener
 {
-
+    private String         name         = ""; // for debugging
     private Context        context      = null;
     private long           cid          = -1;
     private ProgressDialog dialog       = null;
@@ -49,19 +52,28 @@ DialogInterface.OnClickListener
         void onCancel(SpinAsyncTask task);
     }
 
-    SpinAsyncTask(Context context, OnEvent onEvent, int msgid) {
-        super();
-        this.context = context;
-        this.onEvent = onEvent;
-        this.msgid   = msgid;
-    }
-
-    SpinAsyncTask(Context context, OnEvent onEvent, int msgid, boolean cancelable) {
-        super();
+    private void
+    constructor(Context context, OnEvent onEvent, int msgid, boolean cancelable) {
+        UnexpectedExceptionHandler.S().registerModule(this);
         this.context = context;
         this.onEvent = onEvent;
         this.msgid   = msgid;
         this.cancelable = cancelable;
+    }
+
+    SpinAsyncTask(Context context, OnEvent onEvent, int msgid) {
+        super();
+        constructor(context, onEvent, msgid, true);
+    }
+
+    SpinAsyncTask(Context context, OnEvent onEvent, int msgid, boolean cancelable) {
+        super();
+        constructor(context, onEvent, msgid, cancelable);
+    }
+
+    public void
+    setName(String newName) {
+        name = newName;
     }
 
     public Err
@@ -74,6 +86,12 @@ DialogInterface.OnClickListener
         } catch (FeederException e) {
             return e.getError();
         }
+    }
+
+    @Override
+    public String
+    dump(DumpLevel lvl) {
+        return "[ SpinAsyncTask : " + name + " ]";
     }
 
     // return :
@@ -99,11 +117,18 @@ DialogInterface.OnClickListener
 
     @Override
     public void
+    onCancelled(Err result) {
+        dialog.dismiss();
+    }
+
+    @Override
+    public void
     onCancel(DialogInterface dialogI) {
         if (!cancelable)
             return;
         cancelWork();
-        onEvent.onCancel(this);
+        if (null != onEvent)
+            onEvent.onCancel(this);
     }
 
     @Override
@@ -118,6 +143,7 @@ DialogInterface.OnClickListener
     @Override
     protected void
     onPostExecute(Err result) {
+        logI("* postExecuted : SpinSyncTask\n");
         dialog.dismiss();
 
         // In normal case, onPostExecute is not called in case of 'user-cancel'.
@@ -159,4 +185,11 @@ DialogInterface.OnClickListener
         super.onProgressUpdate(v);
     }
     */
+
+    @Override
+    protected void
+    finalize() throws Throwable {
+        super.finalize();
+        UnexpectedExceptionHandler.S().unregisterModule(this);
+    }
 }

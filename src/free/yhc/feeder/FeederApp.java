@@ -23,7 +23,7 @@ package free.yhc.feeder;
 import android.app.Application;
 import android.content.Context;
 import android.content.res.Configuration;
-import free.yhc.feeder.model.DB;
+import free.yhc.feeder.model.DBThread;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -43,7 +43,9 @@ public class FeederApp extends Application {
     private void
     initialize(Context context) {
         // Create singleton instances
-        DB.newSession(context).open();
+        DBThread.createSingleton(context);
+        DBThread.S().start();
+
         RTTask.S();
 
         UnexpectedExceptionHandler.S().init(context);

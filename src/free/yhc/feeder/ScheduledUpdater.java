@@ -85,12 +85,27 @@ UnexpectedExceptionHandler.TrackedModule {
     public static class DateChangedReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            // TODO
+            // At some devices, time is set whenever device back to active from sleep.
+            // So, this receiver is called too often.
+            // To avoid this, just ignore this intent until any better solution is found.
+            //
+            // FIXME
+            // Because Feeder ignores this intent, when system time is changed,
+            //   scheduled update isn't re-scheduled!
+            // This is bug, but in most cases, system time is not changed manually.
+            // So, let's ignore this exceptional case.
+            //
+            // TODO
+            // Any better way??
+            /*
             Intent svc = new Intent(context, ScheduledUpdater.class);
             svc.putExtra("cmd", CMD_RESCHED);
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
             getWakeLock(context.getApplicationContext());
+            */
         }
     }
 
@@ -455,6 +470,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onStartCommand(Intent intent, int flags, int startId) {
         String cmd = intent.getStringExtra("cmd");
 
+        logI("ScheduledUpdate : onStartCommand : " + cmd);
         try {
             // 'cmd' can be null.
             // So, DO NOT use "cmd.equals()"...

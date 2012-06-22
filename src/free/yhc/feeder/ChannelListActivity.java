@@ -84,16 +84,15 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements
 ActionBar.TabListener,
-UILifecycle.OnEvent,
 UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int ReqCPickImage              = 0;
     private static final int ReqCPickPredefinedChannel  = 1;
 
+    private static final int DataReqSz  = 30;
+    private static final int DataArrMax = 200;
+
     private Handler     handler = new Handler();
-    private UILifecycle uilc ;
-    private View        contentv;
-    private View        waitv;
     private ActionBar   ab      = null;
     private Flipper     flipper = null;
 
@@ -209,16 +208,18 @@ UnexpectedExceptionHandler.TrackedModule {
             LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(context, R.layout.list);
             ListView list = ((ListView)ll.findViewById(R.id.list));
             eAssert(null != list);
-            list.setAdapter(new ChannelListAdapter(context, R.layout.channel_row, null,
+            list.setAdapter(new ChannelListAdapter(context, null,
+                                                   R.layout.channel_row, list,
+                                                   DataReqSz, DataArrMax,
                                                    new OnAdapterActionHandler()));
             list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void
-                onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
                     Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
                     intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeChannel);
                     intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
-                    intent.putExtra("cid", id);
+                    intent.putExtra("cid", ((ChannelListAdapter)parent.getAdapter()).getItemInfo_cid(position));
                     startActivity(intent);
                 }
             });
@@ -302,7 +303,7 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(cid >= 0);
             // NOTE : refresh??? just 'notifying' is enough?
             // In current DB policy, sometimes DB may be updated even if updating is cancelled!
-            refreshList(getMyTab(cid), cid);
+            refreshListItem(getMyTab(cid), cid);
         }
 
         @Override
@@ -324,7 +325,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // NOTE : refresh??? just 'notifying' is enough?
             // It should be 'refresh' due to after successful update,
             //   some channel information in DB may be changed.
-            refreshList(getMyTab(cid), cid);
+            refreshListItem(getMyTab(cid), cid);
         }
     }
 
@@ -359,7 +360,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private class PickIconEventHandler implements SpinAsyncTask.OnEvent {
-        private long cid = -1;
+        private long    cid = -1;
+        private Bitmap  bm = null;
         @Override
         public Err
         onDoWork(SpinAsyncTask task, Object... objs) {
@@ -382,9 +384,8 @@ UnexpectedExceptionHandler.TrackedModule {
             logI("Pick Icon : file [" + filePath + "]");
 
             // Make url string from file path
-            Bitmap bm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
+            bm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
             byte[] imageData = Utils.compressBitmap(bm);
-            bm.recycle();
 
             if (null == imageData)
                 return Err.CodecDecode;
@@ -403,12 +404,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
             if (Err.NoErr == result)
-                //NOTE
-                //  "getListAdapter().notifyDataSetChanged();" doesn't works here... why??
-                //  DB data may be changed! So, we need to re-create cursor again.
-                //  'notifyDataSetChanged' is just for recreating list item view.
-                //  (DB item doens't reloaded!)
-                refreshList(ab.getSelectedTab(), cid);
+                getCurrentListAdapter().setChannelIcon(cid, bm);
             else
                 LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
@@ -508,9 +504,9 @@ UnexpectedExceptionHandler.TrackedModule {
                 return; // nothing to do
 
 
-            DBPolicy.S().updatechannel_switchPosition(adapter.getItemId(pos - 1),
-                                                      adapter.getItemId(pos));
-            refreshList(ab.getSelectedTab());
+            DBPolicy.S().updatechannel_switchPosition(adapter.getItemInfo_cid(pos - 1),
+                                                      adapter.getItemInfo_cid(pos));
+            adapter.switchPos(pos, pos + 1);
         }
 
         @Override
@@ -527,9 +523,9 @@ UnexpectedExceptionHandler.TrackedModule {
                 return; // nothing to do
 
 
-            DBPolicy.S().updatechannel_switchPosition(adapter.getItemId(pos),
-                                                      adapter.getItemId(pos + 1));
-            refreshList(ab.getSelectedTab());
+            DBPolicy.S().updatechannel_switchPosition(adapter.getItemInfo_cid(pos),
+                                                      adapter.getItemInfo_cid(pos + 1));
+            adapter.switchPos(pos, pos + 1);
         }
     }
 
@@ -579,7 +575,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private int
     getPosition(ChannelListAdapter adapter, long cid) {
         for (int i = 0; i < adapter.getCount(); i++) {
-            if (adapter.getItemId(i) == cid)
+            if (adapter.getItemInfo_cid(i) == cid)
                 return i;
         }
         return -1;
@@ -651,7 +647,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     dataSetChanged(ListView lv) {
-        ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
+        // ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
         ((ChannelListAdapter)lv.getAdapter()).notifyDataSetChanged();
     }
 
@@ -663,33 +659,28 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     dataSetChanged(ListView lv, long cid) {
+        /*
         ChannelListAdapter cla = (ChannelListAdapter)lv.getAdapter();
         ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
         for (int i = lv.getFirstVisiblePosition();
              i <= lv.getLastVisiblePosition();
              i++) {
-            long itemId = cla.getItemId(i);
-            if (itemId == cid)
-                cla.addChanged(itemId);
+            long itemCid = cla.getChannelId(i);
+            if (itemCid == cid)
+                cla.addChanged(cla.getItemId(i));
             else
-                cla.addUnchanged(itemId);
+                cla.addUnchanged(cla.getItemId(i));
         }
+        */
         ((ChannelListAdapter)lv.getAdapter()).notifyDataSetChanged();
     }
 
-    /**
-     * Cursor is changed and rebind view whose id is 'cid'
-     * @param tab
-     * @param cid
-     */
     private void
-    refreshList(Tab tab, long cid) {
-        // NOTE
-        // Usually, number of channels are not big.
-        // So, we don't need to think about async. loading.
+    refreshListItem(Tab tab, long cid) {
         Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
-        getListAdapter(tab).changeCursor(newCursor);
-        dataSetChanged(getTag(tab).listView, cid);
+        ChannelListAdapter adapter = getListAdapter(tab);
+        adapter.changeCursor(newCursor);
+        adapter.reloadItem(adapter.findItemId(cid));
     }
 
     /**
@@ -700,7 +691,7 @@ UnexpectedExceptionHandler.TrackedModule {
     refreshList(Tab tab) {
         Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
         getListAdapter(tab).changeCursor(newCursor);
-        dataSetChanged(getTag(tab).listView);
+        getListAdapter(tab).reloadDataSetAsync();
     }
 
     private Tab
@@ -777,10 +768,12 @@ UnexpectedExceptionHandler.TrackedModule {
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
-        refreshList(ab.getSelectedTab(), cid);
+        refreshList(ab.getSelectedTab());
         // Move to bottom of the list where newly inserted channel is located on.
         // (This is for feedback to user saying "new channel is now adding").
-        moveToBottomOfList();
+        // TODO
+        // How can I implement to move end of list.
+        // moveToBottomOfList();
     }
 
     /**
@@ -1167,7 +1160,7 @@ UnexpectedExceptionHandler.TrackedModule {
         list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void
-            onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
                 changeCategory(cid,
                                ab.getSelectedTab(),
                                (Tab)list.getAdapter().getItem(position));
@@ -1242,78 +1235,78 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    setupToolButtons(View contentv) {
-        contentv.findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
+    setupToolButtons() {
+        findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_addChannel();
             }
         });
 
-        contentv.findViewById(R.id.btn_add_youtube_channel).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_add_youtube_channel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_addYoutubeChannel();
             }
         });
 
-        contentv.findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_itemsCategory();
             }
         });
 
-        contentv.findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_itemsFavorite();
             }
         });
 
-        contentv.findViewById(R.id.btn_add_category).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_add_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_addCategory();
             }
         });
 
-        contentv.findViewById(R.id.btn_del_category).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_del_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_deleteCategory();
             }
         });
 
-        contentv.findViewById(R.id.btn_rename_category).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_rename_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_renameCategory();
             }
         });
 
-        contentv.findViewById(R.id.btn_del_dnfiles).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_del_dnfiles).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_deleteAllDnfiles();
             }
         });
 
-        contentv.findViewById(R.id.btn_setting).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_setting).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_setting();
             }
         });
 
-        contentv.findViewById(R.id.btn_predefined).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_predefined).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_selectPredefinedChannel();
             }
         });
 
-        contentv.findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 onOpt_information();
@@ -1350,7 +1343,8 @@ UnexpectedExceptionHandler.TrackedModule {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
-        RTTask.TaskState updateState = RTTask.S().getState(mInfo.id, RTTask.Action.Update);
+        long dbId = getCurrentListAdapter().getItemInfo_cid(mInfo.position);
+        RTTask.TaskState updateState = RTTask.S().getState(dbId, RTTask.Action.Update);
 
         if (RTTask.TaskState.Running == updateState
             || RTTask.TaskState.Ready == updateState
@@ -1363,7 +1357,7 @@ UnexpectedExceptionHandler.TrackedModule {
             */
         }
 
-        if (RTTask.S().getItemsDownloading(mInfo.id).length > 0) {
+        if (RTTask.S().getItemsDownloading(dbId).length > 0) {
             menu.findItem(R.id.unlist).setEnabled(false);
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
@@ -1375,29 +1369,30 @@ UnexpectedExceptionHandler.TrackedModule {
     onContextItemSelected(MenuItem mItem) {
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
 
+        long dbId = getCurrentListAdapter().getItemInfo_cid(info.position);
         switch (mItem.getItemId()) {
         case R.id.unlist:
-            onContext_unlistChannel(info.id);
+            onContext_unlistChannel(dbId);
             return true;
 
         case R.id.delete:
-            onContext_deleteChannel(info.id);
+            onContext_deleteChannel(dbId);
             return true;
 
         case R.id.delete_dnfile:
-            onContext_deleteDownloaded(info.id);
+            onContext_deleteDownloaded(dbId);
             return true;
 
         case R.id.change_category:
-            onContext_changeCategory(info.id);
+            onContext_changeCategory(dbId);
             return true;
 
         case R.id.setting:
-            onContext_setting(info.id);
+            onContext_setting(dbId);
             return true;
 
         case R.id.pick_icon:
-            onContext_pickIcon(info.id);
+            onContext_pickIcon(dbId);
             return true;
         }
         return false;
@@ -1426,32 +1421,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onUICreate(View contentv) {
-        logI("==> ChannelListActivity : onUICreate");
-        Feed.Category[] cats;
-        cats = DBPolicy.S().getCategories();
-
-        eAssert(cats.length > 0);
-
-        // Setup for swipe.
-        flipper = new Flipper(this, (ViewFlipper)contentv.findViewById(R.id.flipper));
-        setupToolButtons(contentv);
-
-        // Setup Tabs
-        ab = getActionBar();
-        ab.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-        ab.setDisplayShowTitleEnabled(false);
-        ab.setDisplayShowHomeEnabled(false);
-
-        for (Feed.Category cat : cats)
-            addCategory(cat);
-
-        // Select default category as current category.
-        selectDefaultAsSelected();
-    }
-
-    @Override
-    public void
     onCreate(Bundle savedInstanceState) {
         UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
@@ -1464,31 +1433,44 @@ UnexpectedExceptionHandler.TrackedModule {
         // Send error report if exists.
         UnexpectedExceptionHandler.S().sendReportMail(this);
 
-        uilc = new UILifecycle("Channel", this, this,
-                               LookAndFeel.inflateLayout(this, R.layout.channel_list),
-                               LookAndFeel.inflateLayout(this, R.layout.plz_wait));
-        uilc.onCreate();
+        setContentView(R.layout.channel_list);
+
+        Feed.Category[] cats;
+        cats = DBPolicy.S().getCategories();
+
+        eAssert(cats.length > 0);
+
+        // Setup for swipe.
+        flipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
+        setupToolButtons();
+
+        // Setup Tabs
+        ab = getActionBar();
+        ab.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        ab.setDisplayShowTitleEnabled(false);
+        ab.setDisplayShowHomeEnabled(false);
+
+        for (Feed.Category cat : cats)
+            addCategory(cat);
+
+        // Select default category as current category.
+        selectDefaultAsSelected();
+
     }
 
-    @Override
-    public void
-    onUIStart(View contentv) {
-        logI("==> ChannelListActivity : onUIStart");
-        // nothing to do
-    }
 
     @Override
     protected void
     onStart() {
         super.onStart();
         logI("==> ChannelListActivity : onStart");
-        uilc.onStart();
     }
 
     @Override
-    public void
-    onUIResume(View contentv) {
-        logI("==> ChannelListActivity : onUIResume");
+    protected void
+    onResume() {
+        super.onResume();
+        logI("==> ChannelListActivity : onResume");
         // NOTE
         // Case to think about
         // - new update task is registered between 'registerManagerEventListener' and 'getUpdateState'
@@ -1523,48 +1505,20 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         // Database data may be changed.
         // So refresh all list
+        /*
         for (int i = 0; i < ab.getTabCount(); i++)
             // 'notifyDataSetChanged' doesn't lead to refreshing channel row info
             //   in case of database is changed!
             refreshList(ab.getTabAt(i));
-
+*/
+        refreshList(ab.getSelectedTab());
         if (setCurrentListToBottom) {
             moveToBottomOfList();
             setCurrentListToBottom = false;
         }
     }
 
-    @Override
-    protected void
-    onResume() {
-        super.onResume();
-        logI("==> ChannelListActivity : onResume");
-        uilc.onResume();
-    }
-
-    // NOTE
-    // Why 'onPostResume + delay(100ms)' is used to start real-UI-jobs?
-    // Before starting real-UI-job (time-consuming-job), first screen - sign of life - should be shown to user.
-    // But, in Android, there is no callback that is called just after first draw.
-    // (Sing-of-life-screen doesn't shown if below 'handler.post' is triggered in onResume.)
-    // 'onWindowFocusChanged' is called at very early stage of Activity Lifecycle and it is called after first draw
-    // (There is no documented manual about this. But, it is just experimental result.)
-    // Because of delay, sometimes this may not work as expected if system is very heavy loaded.
-    // Not best place, but fair enough - 100 ms is enough large in most case!
-    @Override
-    protected void
-    onPostResume() {
-        super.onPostResume();
-        logI("==> ChannelListActivity : onPostResume()");
-        uilc.getHandler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                uilc.triggerDelayedNextState();
-            }
-        }, 100);
-    }
-
-    @Override
+   @Override
     public void
     onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -1572,9 +1526,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    public void
-    onUIPause(View contentv) {
-        logI("==> ChannelListActivity : onUIPause");
+    protected void
+    onPause() {
+        logI("==> ChannelListActivity : onPause");
 
         RTTask.S().unregisterManagerEventListener(this);
         // Why This should be here (NOT 'onStop'!)
@@ -1587,43 +1541,22 @@ UnexpectedExceptionHandler.TrackedModule {
         // I think this is Android's bug or implicit policy.
         // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
         RTTask.S().unbind(this);
-    }
 
-    @Override
-    protected void
-    onPause() {
-        logI("==> ChannelListActivity : onPause");
-        uilc.onPause();
         super.onPause();
-    }
-
-    @Override
-    public void
-    onUIStop(View contentv) {
-        logI("==> ChannelListActivity : onUIStop");
     }
 
     @Override
     protected void
     onStop() {
         logI("==> ChannelListActivity : onStop");
-        uilc.onStop();
+        //uilc.onStop();
         super.onStop();
-    }
-
-    @Override
-    public void
-    onUIDestroy(View contentv) {
-        logI("==> ChannelListActivity : onUIDestroy");
-        for (int i = 0; i < ab.getTabCount(); i++)
-            getListAdapter(ab.getTabAt(i)).getCursor().close();
     }
 
     @Override
     protected void
     onDestroy() {
         logI("==> ChannelListActivity : onDestroy");
-        uilc.onDestroy();
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }

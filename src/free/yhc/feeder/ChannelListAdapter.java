@@ -27,11 +27,13 @@ import java.util.Date;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.database.StaleDataException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DB.ColumnChannel;
@@ -39,8 +41,9 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class ChannelListAdapter extends CustomResourceCursorAdapter implements
-UnexpectedExceptionHandler.TrackedModule {
+public class ChannelListAdapter extends AsyncCursorAdapter implements
+AsyncCursorAdapter.ItemBuilder {
+    private static Date dummyDate = new Date();
     private OnAction  onAction = null;
 
     interface OnAction {
@@ -58,59 +61,111 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    private static class ItemInfo {
+        long        cid             = -1;
+        String      title           = "";
+        String      desc            = "";
+        Date        lastUpdate      = dummyDate;
+        long        maxItemId       = 0;
+        long        oldLastItemId   = 0;
+        Bitmap      bm              = null;
+    }
+
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ ChannelListAdapter ]";
+        return super.dump(lv) + "[ ChannelListAdapter ]";
     }
 
-    ChannelListAdapter(Context context, int layout, Cursor c, OnAction actionListener) {
-        super(context, layout, c);
+    ChannelListAdapter(Context        context,
+                       Cursor         cursor,
+                       int            rowLayout,
+                       ListView       lv,
+                       final int      dataReqSz,
+                       final int      maxArrSz,
+                       OnAction       actionListener) {
+        super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
+        setItemBuilder(this);
         UnexpectedExceptionHandler.S().registerModule(this);
         onAction = actionListener;
     }
 
-    @Override
+    public int
+    findPosition(long cid) {
+        for (int i = 0; i < getCount(); i++) {
+            if (getItemInfo_cid(i) == cid)
+                    return i;
+        }
+        return -1;
+    }
+
+    public int
+    findItemId(long cid) {
+        int pos = findPosition(cid);
+        if (pos < 0)
+            return -1;
+        else
+            return (int)getItemId(pos);
+    }
+
     public void
-    bindView(View view, final Context context, final Cursor c) {
-        long cid = getCursorLong(c, DB.ColumnChannel.ID);
+    switchPos(int pos0, int pos1) {
+        eAssert(isUiThread());
+        Object sv = getItem(pos0);
+        setItem(pos0, getItem(pos1));
+        setItem(pos1, sv);
+        notifyDataSetChanged();
+    }
 
+    public void
+    setChannelIcon(long cid, Bitmap bm) {
+        eAssert(isUiThread());
+        ItemInfo ii = (ItemInfo)getItem(findItemId(cid));
+        if (null != ii) {
+            if (null != ii.bm)
+                ii.bm.recycle();
+            ii.bm = bm;
+        }
+        notifyDataSetChanged();
+    }
+
+    public long
+    getItemInfo_cid(int position) {
+        return ((ItemInfo)super.getItem(position)).cid;
+    }
+
+    @Override
+    public Object
+    buildItem(AsyncCursorAdapter adapter, Cursor c) {
+        //logI("ChannelListAdapter : buildItem - START");
+        ItemInfo i = new ItemInfo();
         try {
-            if (!isChanged(cid))
-                return;
-        } finally {
-            clearChangeState(cid);
+            i.cid = getCursorLong(c, DB.ColumnChannel.ID);
+            i.title = getCursorString(c, DB.ColumnChannel.TITLE);
+            i.desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
+            i.lastUpdate = new Date(getCursorLong(c, DB.ColumnChannel.LASTUPDATE));
+            i.maxItemId = DBPolicy.S().getItemInfoMaxId(i.cid);
+            i.oldLastItemId = DBPolicy.S().getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
+            i.bm = null;
+            byte[] imgRaw = getCursorBlob(c, DB.ColumnChannel.IMAGEBLOB);
+            if (imgRaw.length > 0)
+                i.bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
+        } catch (StaleDataException e) {
+            eAssert(false);
         }
+        //logI("ChannelListAdapter : buildItem - END");
+        return i;
+    }
 
-        String title = getCursorString(c, DB.ColumnChannel.TITLE);
-        String desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
+    @Override
+    protected void
+    bindView(View v, final Context context, int position)  {
+        ItemInfo ii = ((ItemInfo)getItem(position));
 
-        // date to readable string
-        Date lastupdate = new Date(getCursorLong(c, DB.ColumnChannel.LASTUPDATE));
-        String date = DateFormat.getInstance().format(lastupdate);
+        long nrNew = ii.maxItemId - ii.oldLastItemId;
 
-        // === Set 'age' ===
-        // calculate age and convert to readable string.
-        String age;
-        { // just for temporal variable scope
-            long ageTime = new Date().getTime() - lastupdate.getTime();
-            // Show "day:hours"
-            long ageHours = ageTime/ (1000 * 60 * 60);
-            long ageDay = ageHours / 24;
-            ageHours %= 24;
-            age = String.format("%2d:%2d", ageDay, ageHours);
-        }
-
-        long nrNew = DBPolicy.S().getItemInfoMaxId(cid)
-                        - DBPolicy.S().getChannelInfoLong(cid, ColumnChannel.OLDLAST_ITEMID);
-
-        Bitmap bm = null;
-        byte[] imgRaw = getCursorBlob(c, DB.ColumnChannel.IMAGEBLOB);
-        if (imgRaw.length > 0)
-            bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
-
-        ImageViewEx chIcon = (ImageViewEx)view.findViewById(R.id.image);
-        chIcon.cid = cid;
+        ImageViewEx chIcon = (ImageViewEx)v.findViewById(R.id.image);
+        chIcon.cid = ii.cid;
         chIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -121,8 +176,8 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        ImageViewEx ibtn = (ImageViewEx)view.findViewById(R.id.imgup);
-        ibtn.cid = cid;
+        ImageViewEx ibtn = (ImageViewEx)v.findViewById(R.id.imgup);
+        ibtn.cid = ii.cid;
         ibtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -133,8 +188,8 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        ibtn = (ImageViewEx)view.findViewById(R.id.imgdown);
-        ibtn.cid = cid;
+        ibtn = (ImageViewEx)v.findViewById(R.id.imgdown);
+        ibtn.cid = ii.cid;
         ibtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -145,16 +200,16 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        if (null == bm)
+        if (null == ii.bm)
             // fail to decode.
             chIcon.setImageResource(R.drawable.ic_warn_image);
         else
-            chIcon.setImageBitmap(bm);
+            chIcon.setImageBitmap(ii.bm);
 
-        ImageView noti_up = (ImageView)view.findViewById(R.id.noti_update);
-        ImageView noti_dn = (ImageView)view.findViewById(R.id.noti_download);
+        ImageView noti_up = (ImageView)v.findViewById(R.id.noti_update);
+        ImageView noti_dn = (ImageView)v.findViewById(R.id.noti_download);
 
-        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+        RTTask.TaskState state = RTTask.S().getState(ii.cid, RTTask.Action.Update);
         noti_up.setVisibility(View.VISIBLE);
         if (RTTask.TaskState.Idle == state)
             noti_up.setVisibility(View.GONE);
@@ -169,16 +224,29 @@ UnexpectedExceptionHandler.TrackedModule {
         else
             eAssert(false);
 
-        if (0 == RTTask.S().getItemsDownloading(cid).length)
+        if (0 == RTTask.S().getItemsDownloading(ii.cid).length)
             noti_dn.setVisibility(View.GONE);
         else
             noti_dn.setVisibility(View.VISIBLE);
 
-        ((TextView)view.findViewById(R.id.title)).setText(title);
-        ((TextView)view.findViewById(R.id.description)).setText(desc);
-        ((TextView)view.findViewById(R.id.date)).setText(date);
-        ((TextView)view.findViewById(R.id.age)).setText(age);
-        ImageView msgImage = ((ImageView)view.findViewById(R.id.msg_img));
+        String date = DateFormat.getInstance().format(ii.lastUpdate);
+        // === Set 'age' ===
+        // calculate age and convert to readable string.
+        String age;
+        { // just for temporal variable scope
+            long ageTime = new Date().getTime() - ii.lastUpdate.getTime();
+            // Show "day:hours"
+            long ageHours = ageTime/ (1000 * 60 * 60);
+            long ageDay = ageHours / 24;
+            ageHours %= 24;
+            age = String.format("%2d:%2d", ageDay, ageHours);
+        }
+
+        ((TextView)v.findViewById(R.id.title)).setText(ii.title);
+        ((TextView)v.findViewById(R.id.description)).setText(ii.desc);
+        ((TextView)v.findViewById(R.id.date)).setText(date);
+        ((TextView)v.findViewById(R.id.age)).setText(age);
+        ImageView msgImage = ((ImageView)v.findViewById(R.id.msg_img));
         if (nrNew > 0)
             msgImage.setVisibility(View.VISIBLE);
         else
@@ -186,8 +254,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    protected void finalize() throws Throwable {
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+    protected void
+    finalize() throws Throwable {
         super.finalize();
+        UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 }
