@@ -20,6 +20,7 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.isValidValue;
 
 import java.io.File;
@@ -27,6 +28,8 @@ import java.io.IOException;
 import java.util.Locale;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 /*
  * Functions related with UIPolicy...
  *     - initial setting of values.
@@ -270,8 +273,6 @@ public class UIPolicy {
      */
     public static int
     getPrefBGTaskPriority(Context context) {
-        return Thread.MIN_PRIORITY;
-        /* --- Disable this option -----
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         String prio = prefs.getString("bgtask_prio", "low");
         if ("low".equals(prio))
@@ -284,6 +285,5 @@ public class UIPolicy {
             eAssert(false);
             return Thread.MIN_PRIORITY;
         }
-        */
     }
 }
