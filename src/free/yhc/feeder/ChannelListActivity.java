@@ -692,6 +692,7 @@ UnexpectedExceptionHandler.TrackedModule {
         for (int i = 0; i < ids.length; i++)
             ids[i] = adapter.findItemId(cids[i]);
         adapter.reloadItem(ids);
+        adapter.notifyDataSetChanged();
     }
 
     /**

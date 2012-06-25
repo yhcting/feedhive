@@ -101,9 +101,6 @@ AsyncAdapter.OnRequestData {
                     ;// ignore
             }
         }
-        // TODO
-        // May optimization is needed to update only for changed item.
-        notifyDataSetChanged();
     }
 
     @Override
