@@ -233,10 +233,15 @@ UnexpectedExceptionHandler.TrackedModule {
 
             Long[] whereValues = Utils.convertArraylongToLong(cids);
             Long[] targetValues = new Long[whereValues.length];
-            for (int i = 0; i < whereValues.length; i++)
-                targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
-            DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
-                                          DB.ColumnChannel.ID, whereValues);
+            DBPolicy.S().getDelayedChannelUpdate();
+            try {
+                for (int i = 0; i < whereValues.length; i++)
+                    targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
+                DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
+                                              DB.ColumnChannel.ID, whereValues);
+            } finally {
+                DBPolicy.S().putDelayedChannelUpdate();
+            }
         }
 
         @Override
@@ -277,9 +282,14 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         void onResume() {
             long[] ids = RTTask.S().getItemsDownloading();
-            for (long id : ids)
-                if (Feed.Item.isStatFavOn(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.STATE)))
-                    RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+            DBPolicy.S().getDelayedChannelUpdate();
+            try {
+                for (long id : ids)
+                    if (Feed.Item.isStatFavOn(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.STATE)))
+                        RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+            } finally {
+                DBPolicy.S().putDelayedChannelUpdate();
+            }
         }
 
         @Override

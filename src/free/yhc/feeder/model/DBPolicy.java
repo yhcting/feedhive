@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -64,6 +65,14 @@ UnexpectedExceptionHandler.TrackedModule {
     // It is used at very few places.
     // Therefore, it is easy to caching and easy to avoid cache-synchronization issue.
     private HashMap<Long, Long> maxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
+
+    // NOTE
+    // This is a kind of dirty-HACK!
+    // When user try to access item tables at DB during updating channels(adding new items),
+    //   it may take too long time because DB is continuously accessed by channel updater.
+    // This may let user annoying.
+    // So, this HACK is used!
+    private AtomicInteger       delayedChannelUpdate = new AtomicInteger(0);
 
     enum ItemDataType {
         RAW,
@@ -229,6 +238,27 @@ UnexpectedExceptionHandler.TrackedModule {
             UnexpectedExceptionHandler.S().registerModule(instance);
         }
         return instance;
+    }
+
+    /**
+     * Delay channel DB update (inserting items) until all 'get' request is put by 'putDelayedInsertItems()'.
+     * This is very dangerous! (May lead to infinite loop!)
+     * So, DO NOT USER this function if you don't know what your are doing!
+     * (Only main UI Thread can use this function!)
+     */
+    public void
+    getDelayedChannelUpdate() {
+        eAssert(delayedChannelUpdate.get() >= 0);
+        delayedChannelUpdate.incrementAndGet();
+    }
+
+    /**
+     * See getDelayedInsertItems()
+     */
+    public void
+    putDelayedChannelUpdate() {
+        eAssert(delayedChannelUpdate.get() > 0);
+        delayedChannelUpdate.decrementAndGet();
     }
 
     public void
@@ -541,6 +571,20 @@ UnexpectedExceptionHandler.TrackedModule {
                     //   Usually, recent item is located at top of item list in the feed.
                     //   So, to make bottom item have smaller ID, 'addFirst' is used.
                     newItems.addFirst(item);
+                }
+
+                long timems = System.currentTimeMillis();
+                    // Dangerous!!
+                    // Always be careful when using 'delayedChannelUpdate'
+                    // This may lead to infinite loop!
+                while (0 < delayedChannelUpdate.get()) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {}
+                    if (System.currentTimeMillis() - timems > 10 * 60 * 1000)
+                        // Over 10 minutes, updating is delayed!
+                        // This is definitely unexpected error!!
+                        eAssert(false);
                 }
 
                 checkInterrupted();

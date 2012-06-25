@@ -601,10 +601,14 @@ OnSharedPreferenceChangeListener {
             set.add(cid);
 
         LinkedList<Long> l = new LinkedList<Long>();
-        for (long dnid : dnids)
-            if (set.contains(DBPolicy.S().getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
-                l.add(dnid);
-
+        DBPolicy.S().getDelayedChannelUpdate();
+        try {
+            for (long dnid : dnids)
+                if (set.contains(DBPolicy.S().getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
+                    l.add(dnid);
+        } finally {
+            DBPolicy.S().putDelayedChannelUpdate();
+        }
         return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
     }
 

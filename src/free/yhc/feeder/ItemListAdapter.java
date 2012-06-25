@@ -254,6 +254,20 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     @Override
+    public int
+    requestData(final AsyncAdapter adapter, Object priv, long nrseq, final int from, final int sz) {
+        // Override to use "delayed item update"
+        int ret;
+        try {
+            DBPolicy.S().getDelayedChannelUpdate();
+            ret = super.requestData(adapter, priv, nrseq, from, sz);
+        } finally {
+            DBPolicy.S().putDelayedChannelUpdate();
+        }
+        return ret;
+    }
+
+    @Override
     public void
     bindView(View v, final Context context, int position)  {
         ItemInfo ii = (ItemInfo)getItem(position);

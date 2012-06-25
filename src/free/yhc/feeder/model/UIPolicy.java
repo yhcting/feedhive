@@ -270,7 +270,7 @@ public class UIPolicy {
      */
     public static int
     getPrefBGTaskPriority(Context context) {
-        return Thread.MAX_PRIORITY;
+        return Thread.MIN_PRIORITY;
         /* --- Disable this option -----
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         String prio = prefs.getString("bgtask_prio", "low");

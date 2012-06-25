@@ -508,7 +508,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             DBPolicy.S().updatechannel_switchPosition(adapter.getItemInfo_cid(pos - 1),
                                                       adapter.getItemInfo_cid(pos));
-            adapter.switchPos(pos, pos + 1);
+            adapter.switchPos(pos - 1, pos);
         }
 
         @Override
@@ -1496,18 +1496,23 @@ UnexpectedExceptionHandler.TrackedModule {
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
         // See comments in 'onPause()'
-        Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
-        if (c.moveToFirst()) {
-            do {
-                long cid = c.getLong(0);
-                if (RTTask.TaskState.Idle != RTTask.S().getState(cid, RTTask.Action.Update))
-                    RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
-                long[] ids = RTTask.S().getItemsDownloading(cid);
-                for (long id : ids)
-                    RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent(cid));
-            } while (c.moveToNext());
+        DBPolicy.S().getDelayedChannelUpdate();
+        try {
+            Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
+            if (c.moveToFirst()) {
+                do {
+                    long cid = c.getLong(0);
+                    if (RTTask.TaskState.Idle != RTTask.S().getState(cid, RTTask.Action.Update))
+                        RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
+                    long[] ids = RTTask.S().getItemsDownloading(cid);
+                    for (long id : ids)
+                        RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent(cid));
+                } while (c.moveToNext());
+            }
+            c.close();
+        } finally {
+            DBPolicy.S().putDelayedChannelUpdate();
         }
-        c.close();
 
         if (null == ab) {
             logW("ChannelListActivity : ab(action bar) is NULL");
