@@ -221,6 +221,22 @@ UnexpectedExceptionHandler.TrackedModule {
         return ret;
     }
 
+    private void
+    checkDelayedChannelUpdate() {
+        long timems = System.currentTimeMillis();
+            // Dangerous!!
+            // Always be careful when using 'delayedChannelUpdate'
+            // This may lead to infinite loop!
+        while (0 < delayedChannelUpdate.get()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {}
+            if (System.currentTimeMillis() - timems > 10 * 60 * 1000)
+                // Over 10 minutes, updating is delayed!
+                // This is definitely unexpected error!!
+                eAssert(false);
+        }
+    }
     // ======================================================
     //
     // ======================================================
@@ -572,21 +588,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     //   So, to make bottom item have smaller ID, 'addFirst' is used.
                     newItems.addFirst(item);
                 }
-
-                long timems = System.currentTimeMillis();
-                    // Dangerous!!
-                    // Always be careful when using 'delayedChannelUpdate'
-                    // This may lead to infinite loop!
-                while (0 < delayedChannelUpdate.get()) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {}
-                    if (System.currentTimeMillis() - timems > 10 * 60 * 1000)
-                        // Over 10 minutes, updating is delayed!
-                        // This is definitely unexpected error!!
-                        eAssert(false);
-                }
-
+                checkDelayedChannelUpdate();
                 checkInterrupted();
             }
         } catch (FeederException e) {
@@ -681,6 +683,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     throw e;
                 ; // if feeder fails to get item data, just ignore it!
             }
+            checkDelayedChannelUpdate();
             checkInterrupted();
         }
         logI("DBPolicy : new " + newItems.size() + " items are inserted");
