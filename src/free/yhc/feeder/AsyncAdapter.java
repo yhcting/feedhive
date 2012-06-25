@@ -43,8 +43,6 @@ UnexpectedExceptionHandler.TrackedModule {
     private   int           dataCnt     = -1;// real-data-count.
                                              // This is decided when provider set 'eod - End Of Data' flag.
 
-    private   ListViewState prevState   = new ListViewState();
-
     // NOTE
     // variable 'items' SHOULD BE MODIFIED ONLY ON UI THREAD CONTEXT!!!
     protected Object[]      items;
@@ -100,12 +98,6 @@ UnexpectedExceptionHandler.TrackedModule {
         NEXT,
         PREV,
         RELOAD
-    }
-
-    private class ListViewState {
-        int   posTop  = 0;
-        int   topY    = 0;
-        int   firstVisiblePos = 0;
     }
 
     /**
@@ -177,9 +169,6 @@ UnexpectedExceptionHandler.TrackedModule {
     buildNewItemsArray(LDType ldtype, int from, int sz) {
         eAssert(isUiThread());
         eAssert(0 <= sz);
-        if (0 == sz)
-            return new Object[0];
-
         Object[] newItems = null;
 
         if (LDType.RELOAD == ldtype) {
@@ -209,15 +198,6 @@ UnexpectedExceptionHandler.TrackedModule {
         } else
             eAssert(false);
         return newItems;
-    }
-
-    private void
-    backupListViewState() {
-        // Store current list view state to restore after data is reloaded.
-        View v = lv.getChildAt(0);
-        prevState.posTop = posTop;
-        prevState.topY = (v == null) ? 0 : v.getTop();
-        prevState.firstVisiblePos = lv.getFirstVisiblePosition();
     }
 
     private void
@@ -271,8 +251,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     reloadDataSetAsync() {
         eAssert(isUiThread());
-        // Loading is already in progress
-        int from = posTop + prevState.firstVisiblePos - firstLDahead;
+        int from = posTop + lv.getFirstVisiblePosition() - firstLDahead;
         from = from < 0? 0: from;
         requestDataAsync(LDType.RELOAD, from, dataReqSz);
     }
@@ -327,23 +306,28 @@ UnexpectedExceptionHandler.TrackedModule {
                     newItems = null;
                 }
 
+                View v = lv.getChildAt(0);
+                int posTopSv = posTop;
+                int topY = (v == null) ? 0 : v.getTop();
+                int firstVisiblePos = lv.getFirstVisiblePosition();
+
+                items = newItems;
+
                 if (eod)
                     dataCnt = posTop + items.length;
 
                 // This is run on UI Thread.
                 // So, we don't need to worry about race-condition.
-                int posDelta = posTop - prevState.posTop;
+                int posDelta = posTop - posTopSv;
 
-                items = newItems;
                 if (null != onRD)
                     onRD.onDataProvided(AsyncAdapter.this, reqSeq, from, aitems.length);
                 notifyDataSetChanged();
                 // Restore list view's previous location.
-                int pos = prevState.firstVisiblePos - posDelta;
+                int pos = firstVisiblePos - posDelta;
                 pos = pos < 0? 0: pos;
-                int topY = prevState.topY;
                 if (0 == pos && 0 == posTop && topY < 0)
-                    topY = 0; // we canot before 'first item'
+                    topY = 0; // we cannot before 'first item'
                 lv.setSelectionFromTop(pos, topY);
                 // check again at UI thread
                 dpDone = true;
@@ -393,7 +377,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         if (1 == items.length && items[0] == dummyItem) {
             // reload some of previous item too.
-            int from = posTop + prevState.firstVisiblePos - firstLDahead;
+            int from = posTop + lv.getFirstVisiblePosition() - firstLDahead;
             from = from < 0? 0: from;
             requestDataAsync(LDType.INIT, from, dataReqSz);
             return firstDummyView;

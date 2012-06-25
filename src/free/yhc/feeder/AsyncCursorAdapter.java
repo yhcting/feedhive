@@ -135,7 +135,7 @@ AsyncAdapter.OnRequestData {
                 } while (i < szAvail && cur.moveToNext());
                 eAssert(i == szAvail);
             } else
-                eAssert(0 == cur.getCount());
+                eAssert(0 == cur.getCount() || 0 == szAvail);
         }
         adapter.provideItems(priv, nrseq, from, items, eod);
         logI("AsyncCursorAdapter : requestData - END");
