@@ -290,10 +290,11 @@ AsyncCursorAdapter.ItemBuilder {
         final ImageView imgv        = (ImageView)v.findViewById(R.id.image);
         final ImageViewFavorite favImgv   = (ImageViewFavorite)v.findViewById(R.id.favorite);
 
-        if (ii.bChannel)
-            channelv.setVisibility(View.GONE);
-        else
+        if (ii.bChannel) {
+            channelv.setVisibility(View.VISIBLE);
             channelv.setText(ii.cTitle);
+        } else
+            channelv.setVisibility(View.GONE);
 
         // Set favorite button.
         favImgv.id = ii.id;
