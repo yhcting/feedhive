@@ -879,45 +879,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_addChannel() {
-        if (0 == ab.getNavigationItemCount()) {
-            eAssert(false);
-            return;
-        }
-
-        if (0 > ab.getSelectedNavigationIndex()) {
-            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
-            return;
-        }
-
-        if (!Utils.isNetworkAvailable(this)) {
-            // TODO Handling error
-            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
-            return;
-        }
-
-        // Set action for dialog.
-        final EditTextDialogAction action = new EditTextDialogAction() {
-            @Override
-            public void prepare(Dialog dialog, EditText edit) {
-                // start edit box with 'http://'
-                final String prefix = "http://";
-                edit.setText(prefix);
-                edit.setSelection(prefix.length());
-            }
-
-            @Override
-            public void onOk(Dialog dialog, EditText edit) {
-                String url = edit.getText().toString();
-                if (!url.matches("http\\:\\/\\/\\s*"))
-                    addChannel(url);
-            }
-        };
-        buildOneLineEditTextDialog(R.string.channel_url, action).show();
-    }
-
-    private void
-    onOpt_addYoutubeChannel_editDiag(final int optStringId) {
+    onOpt_addChannel_youtubeEditDiag(final int optStringId) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -940,7 +902,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_addYoutubeChannel() {
+    onOpt_addChannel_youtube() {
         final int[] optStringIds = { R.string.uploader, R.string.word_search };
         final CharSequence[] items = new CharSequence[optStringIds.length];
         for (int i = 0; i < optStringIds.length; i++)
@@ -951,11 +913,79 @@ UnexpectedExceptionHandler.TrackedModule {
         builder.setItems(items, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int item) {
-                onOpt_addYoutubeChannel_editDiag(optStringIds[item]);
+                onOpt_addChannel_youtubeEditDiag(optStringIds[item]);
             }
         });
         builder.create().show();
     }
+
+
+    private void
+    onOpt_addChannel_url() {
+        // Set action for dialog.
+        final EditTextDialogAction action = new EditTextDialogAction() {
+            @Override
+            public void prepare(Dialog dialog, EditText edit) {
+                // start edit box with 'http://'
+                final String prefix = "http://";
+                edit.setText(prefix);
+                edit.setSelection(prefix.length());
+            }
+
+            @Override
+            public void onOk(Dialog dialog, EditText edit) {
+                String url = edit.getText().toString();
+                if (!url.matches("http\\:\\/\\/\\s*"))
+                    addChannel(url);
+            }
+        };
+        buildOneLineEditTextDialog(R.string.channel_url, action).show();
+    }
+
+    private void
+    onOpt_addChannel() {
+        if (0 == ab.getNavigationItemCount()) {
+            eAssert(false);
+            return;
+        }
+
+        if (0 > ab.getSelectedNavigationIndex()) {
+            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
+            return;
+        }
+
+        if (!Utils.isNetworkAvailable(this)) {
+            // TODO Handling error
+            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
+            return;
+        }
+
+        final int[] optStringIds = { R.string.enter_channel_address, R.string.youtube_channel };
+        final CharSequence[] items = new CharSequence[optStringIds.length];
+        for (int i = 0; i < optStringIds.length; i++)
+            items[i] = getResources().getText(optStringIds[i]);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getResources().getText(R.string.select_channel_type));
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int item) {
+                switch (optStringIds[item]) {
+                case R.string.enter_channel_address:
+                    onOpt_addChannel_url();
+                    break;
+                case R.string.youtube_channel:
+                    onOpt_addChannel_youtube();
+                    break;
+                default:
+                    eAssert(false);
+                }
+            }
+        });
+        builder.create().show();
+
+    }
+
 
     private void
     onOpt_itemsCategory() {
@@ -1250,13 +1280,6 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onClick(View v) {
                 onOpt_addChannel();
-            }
-        });
-
-        findViewById(R.id.btn_add_youtube_channel).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onOpt_addYoutubeChannel();
             }
         });
 

@@ -34,13 +34,15 @@
     <string name="setting">Setting</string>
     <string name="oclock">o\'clock</string>
     <string name="time_spinner_prompt">Choose time(hour)</string>
+    <string name="select_channel_type">Select channel type</string>
+    <string name="enter_channel_address">Enter channel URL</string>
+    <string name="youtube_channel">Youtube channel</string>
 	<string name="way_youtube_subscribe">Way for subscribing</string>
     <string name="uploader">Uploader</string>
     <string name="word_search">Keyword</string>
     <string name="feed_search">Feed search</string>
     <string name="empty_list_help">Adding my first channel.</string>
     <string name="empty_list_add_channel_desc">Enter channel URL directly by touching this icon.</string>
-    <string name="empty_list_add_youtube_channel_desc">Youtube channel - result of searching - can be added by touching this icon.</string>
     <string name="empty_list_predefined_desc">Select channel from recommended predefined channel list by touching this icon.</string>
     <string name="empty_list_btn_desc">About other buttons</string>
     <string name="empty_list_items_favorite">List favorite items.</string>

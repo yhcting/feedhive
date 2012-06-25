@@ -34,13 +34,15 @@
     <string name="setting">설정</string>
     <string name="oclock">시</string>
     <string name="time_spinner_prompt">시간 선택(시)</string>
+    <string name="select_channel_type">채널 종류 선택</string>
+    <string name="enter_channel_address">직접 주소 입력</string>
+    <string name="youtube_channel">유투브 채널</string>
     <string name="way_youtube_subscribe">채널 구독 방법</string>
     <string name="uploader">작성자</string>
     <string name="word_search">검색어</string>
     <string name="feed_search">피드 검색</string>
     <string name="empty_list_help">채널 추가 시작하기.</string>
     <string name="empty_list_add_channel_desc">를 터치해서 원하는 채널의 URL을 직접 입력할 수 있습니다.</string>
-    <string name="empty_list_add_youtube_channel_desc">를 터치해서 유투브의 검색내용을 채널로 저장하고 피드를 받아 볼 수 있습니다.</string>
     <string name="empty_list_predefined_desc">를 터치해서 추천 채널 리스트에서 원하는 채널을 고를 수 있습니다.</string>
     <string name="empty_list_btn_desc">기타 버튼 설명</string>
     <string name="empty_list_items_favorite">관심 피드로 설정한 피드 아이템들을 보여줍니다.</string>

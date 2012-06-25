@@ -28,16 +28,6 @@
                 android:clickable="true"
                 />
             <ImageView
-                android:id="@+id/btn_add_youtube_channel"
-                android:layout_width="@dimen/chlist_bottom_btn_width"
-                android:layout_height="match_parent"
-                android:layout_weight="1.0"
-                android:gravity="center"
-                android:scaleType="fitCenter"
-                android:src="@drawable/youtube"
-                android:clickable="true"
-                />
-            <ImageView
                 android:id="@+id/btn_items_favorite"
                 android:layout_width="@dimen/chlist_bottom_btn_width"
                 android:layout_height="match_parent"

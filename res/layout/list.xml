@@ -55,27 +55,6 @@
 	        <LinearLayout
 	            android:layout_width="match_parent"
 	            android:layout_height="wrap_content"
-	            android:layout_marginTop="15dip"
-	            android:orientation="horizontal"
-	            >
-	            <ImageView
-	                android:layout_width="@dimen/chlist_bottom_btn_width"
-	                android:layout_height="@dimen/chlist_bottom_btn_height"
-	                android:gravity="center"
-	                android:scaleType="fitCenter"
-	                android:src="@drawable/youtube"
-	                />
-	            <TextView
-	                android:layout_width="fill_parent"
-	                android:layout_height="wrap_content"
-	                android:textSize="@dimen/title_text_size"
-	                android:textColor="@color/text_color_new"
-	                android:text="@string/empty_list_add_youtube_channel_desc"
-	                />
-	        </LinearLayout>
-	        <LinearLayout
-	            android:layout_width="match_parent"
-	            android:layout_height="wrap_content"
 	            android:layout_marginTop="10dip"
 	            android:orientation="horizontal"
 	            >
