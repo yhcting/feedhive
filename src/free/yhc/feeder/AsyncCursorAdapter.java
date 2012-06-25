@@ -106,6 +106,11 @@ AsyncAdapter.OnRequestData {
         notifyDataSetChanged();
     }
 
+    @Override
+    public void
+    removeItem(int position) {
+        super.removeItem(position);
+    }
 
     @Override
     public int

@@ -142,7 +142,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     state = state ^ Feed.Item.MStatFav;
                     DBPolicy.S().updateItem_state(id, state);
                     adapter.updateItemState(position, state);
-                    dataSetChanged(id);
+                    dataSetChanged();
                 }
             };
         }
@@ -301,7 +301,9 @@ UnexpectedExceptionHandler.TrackedModule {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MStatFav;
                     DBPolicy.S().updateItem_state(id, state);
-                    refreshList();
+                    eAssert(!Feed.Item.isStatFavOn(state));
+                    adapter.removeItem(position);
+                    dataSetChanged();
                 }
             };
         }

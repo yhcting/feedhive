@@ -637,7 +637,8 @@ UnexpectedExceptionHandler.TrackedModule {
         if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
         DBPolicy.S().updateChannel(cid, DB.ColumnChannel.CATEGORYID, getTag(to).categoryid);
-        refreshListAsync(from);
+        getListAdapter(from).removeItem(getListAdapter(from).findPosition(cid));
+        dataSetChanged(this.getListView(from));
         refreshListAsync(to);
         return true;
     }

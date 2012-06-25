@@ -38,10 +38,16 @@ UnexpectedExceptionHandler.TrackedModule {
     // By using 'dpDone' flag, below variables are free from race-condition.
     // Please check & confirm this.
     // (If not, I SHOULD USE LOCK for synchronization!)
-    private   int           posTop      = 0; // position of top item
-                                             // this is position of item located at item array[0].
-    private   int           dataCnt     = -1;// real-data-count.
-                                             // This is decided when provider set 'eod - End Of Data' flag.
+
+    // position of top item
+    // this is position of item located at item array[0].
+    private   int           posTop      = 0;
+
+    // NOTE
+    // Accessed only in UI Thread Context!
+    // real-data-count.
+    // This is decided when provider set 'eod - End Of Data' flag.
+    private   int           dataCnt     = -1;
 
     // NOTE
     // variable 'items' SHOULD BE MODIFIED ONLY ON UI THREAD CONTEXT!!!
@@ -156,6 +162,43 @@ UnexpectedExceptionHandler.TrackedModule {
         if (pos >= 0 && pos < items.length)
             items[pos] = item;
     }
+
+    /**
+     *
+     * @param pos
+     *   position of this value is like below.
+     *   +--------+---------+--------+---------+-----
+     *   | pos[0] | item[0] | pos[1] | item[1] | ...
+     *   +--------+---------+--------+---------+-----
+     * @param item
+     */
+    protected void
+    insertItem(int pos, Object item) {
+        eAssert(isUiThread());
+        eAssert(pos >= 0 && pos <= items.length);
+        Object[] newItems = new Object[items.length + 1];
+        System.arraycopy(items, 0, newItems, 0, pos);
+        System.arraycopy(items, pos, newItems, pos + 1, items.length - pos);
+        newItems[pos] = item;
+        if (dataCnt > 0)
+            dataCnt++;
+        items = newItems;
+    }
+
+    protected void
+    removeItem(int pos) {
+        eAssert(isUiThread());
+        if (pos < 0 || pos >= items.length)
+            // nothing to do
+            return;
+        Object[] newItems = new Object[items.length - 1];
+        System.arraycopy(items, 0, newItems, 0, pos);
+        System.arraycopy(items, pos + 1, newItems, pos, items.length - pos - 1);
+        if (dataCnt > 0)
+            dataCnt--;
+        items = newItems;
+    }
+
     /**
      *
      * @param ldtype
