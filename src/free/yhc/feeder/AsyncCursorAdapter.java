@@ -38,6 +38,12 @@ AsyncAdapter.OnRequestData {
         ibldr = bldr;
     }
 
+    /**
+     * Change cursor of this adapter.
+     * To loading from cursor, call {@link AsyncCursorAdapter#reloadItem(int)},
+     *   {@link AsyncCursorAdapter#reloadItem(int[])} or {@link AsyncAdapter#reloadDataSetAsync()}
+     * @param newCur
+     */
     public void
     changeCursor(Cursor newCur) {
         logI("AsyncCursorAdapter : changeCursor");
@@ -82,7 +88,6 @@ AsyncAdapter.OnRequestData {
 
     /**
      * reload only 1 item synchronously!
-     * (This is NOT async call!)
      * @param itemId
      */
     public void
@@ -90,6 +95,10 @@ AsyncAdapter.OnRequestData {
         reloadItem(new int[] { itemId } );
     }
 
+    /**
+     * reload several items synchronously.
+     * @param itemIds
+     */
     public void
     reloadItem(int[] itemIds) {
         for (int id : itemIds) {
@@ -103,6 +112,11 @@ AsyncAdapter.OnRequestData {
         }
     }
 
+    /**
+     * remove item.
+     * underlying cursor data is not changed.
+     * only loaded array is changed.
+     */
     @Override
     public void
     removeItem(int position) {

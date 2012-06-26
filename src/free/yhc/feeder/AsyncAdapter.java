@@ -53,7 +53,9 @@ UnexpectedExceptionHandler.TrackedModule {
     // variable 'items' SHOULD BE MODIFIED ONLY ON UI THREAD CONTEXT!!!
     protected Object[]      items;
 
-    private   int           nrseq       = 0;    // This is used only on UI Thread context.
+    // This is used only on UI Thread context.
+    // So, this is not needed to be 'volatile'
+    private   int           nrseq       = 0;
 
     // For synchronization
     // Read/Write operation to java primitive/reference is atomic!
@@ -61,6 +63,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private volatile boolean dpDone     = false;
     private SpinAsyncTask    dpTask     = null;
 
+    /**
+     * provide data to this adapter asynchronously
+     */
     interface DataProvider {
         /**
          * NOTE
@@ -185,6 +190,11 @@ UnexpectedExceptionHandler.TrackedModule {
         items = newItems;
     }
 
+    /**
+     * Remove item.
+     * Item count is decreased by 1
+     * @param pos
+     */
     protected void
     removeItem(int pos) {
         eAssert(isUiThread());
@@ -390,6 +400,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 + "  posTop        : " + posTop + "\n";
     }
 
+    /**
+     * @return
+     *   number of items that is loaded to array.(NOT real count.)
+     */
     @Override
     public int getCount() {
         eAssert(isUiThread());
@@ -407,6 +421,10 @@ UnexpectedExceptionHandler.TrackedModule {
         return items[pos];
     }
 
+    /**
+     * item id is 'absolute' position of this item.
+     * posTop + position
+     */
     @Override
     public long
     getItemId(int position) {

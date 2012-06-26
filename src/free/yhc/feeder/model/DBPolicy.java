@@ -257,7 +257,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * Delay channel DB update (inserting items) until all 'get' request is put by 'putDelayedInsertItems()'.
+     * Delay channel DB update (inserting items) until all 'get' request is put by calling
+     *   {@link DBPolicy#putDelayedChannelUpdate()}.
      * This is very dangerous! (May lead to infinite loop!)
      * So, DO NOT USER this function if you don't know what your are doing!
      * (Only main UI Thread can use this function!)
@@ -269,7 +270,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * See getDelayedInsertItems()
+     * See {@link DBPolicy#getDelayedChannelUpdate()}
      */
     public void
     putDelayedChannelUpdate() {
