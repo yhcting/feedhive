@@ -303,6 +303,10 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onCancel(BGTask task, Object param) {
             eAssert(cid >= 0);
+            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            if (isActivityFinishing())
+                return;
+
             // NOTE : refresh??? just 'notifying' is enough?
             // In current DB policy, sometimes DB may be updated even if updating is cancelled!
             refreshListItem(getMyTab(cid), cid);
@@ -319,6 +323,10 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             eAssert(Err.UserCancelled != result);
+            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            if (isActivityFinishing())
+                return;
+
             // In normal case, onPostExecute is not called in case of 'user-cancel'.
             // below code is for safety.
             if (Err.UserCancelled == result)
@@ -345,6 +353,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
+            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            if (isActivityFinishing())
+                return;
+
             if (0 == RTTask.S().getItemsDownloading(cid).length)
                 dataSetChanged(getListView(getMyTab(cid)), cid);
         }
@@ -356,6 +368,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
+            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            if (isActivityFinishing())
+                return;
+
             if (0 == RTTask.S().getItemsDownloading(cid).length)
                 dataSetChanged(getListView(getMyTab(cid)), cid);
         }
@@ -536,6 +552,11 @@ UnexpectedExceptionHandler.TrackedModule {
         boolean      fromGesture = false;
         ListView     listView;
         LinearLayout layout;
+    }
+
+    private boolean
+    isActivityFinishing() {
+        return isFinishing();
     }
 
     private TabTag

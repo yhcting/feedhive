@@ -337,6 +337,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
+            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            if (isActivityFinishing())
+                return;
+
             requestSetUpdateButton();
         }
 
@@ -349,6 +353,19 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
+            // WHY below code is required?
+            // Even if activity is already in 'pause', 'stop' or 'destroy' state,
+            //   corresponding callback is run on UI Thread.
+            // So, it is posted to message loop.
+            // But, in case that there are messages already in message - ex refreshing list -
+            //   in message queue before each callback is posted, those messages will be handled
+            //   even if activity is already in finishing state.
+            // Therefore, in this exceptional case, some operations that require alive-activity,
+            //   are failed or do something unexpected.
+            // To avoid this, let's check activity state before moving forward
+            if (isActivityFinishing())
+                return;
+
             requestSetUpdateButton();
 
             if (Err.NoErr == result) {
@@ -377,6 +394,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
+            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            if (isActivityFinishing())
+                return;
+
             dataSetChanged(id);
         }
 
@@ -391,10 +412,13 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             logI("+++ Item Activity DownloadData PostRun");
+            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            if (isActivityFinishing())
+                return;
+
             dataSetChanged(id);
         }
     }
-
 
     private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
         @Override
@@ -408,6 +432,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void onBGTaskUnregister(long id, BGTask task, RTTask.Action act) { }
+    }
+
+    private boolean
+    isActivityFinishing() {
+        return isFinishing();
     }
 
     private ItemListAdapter
