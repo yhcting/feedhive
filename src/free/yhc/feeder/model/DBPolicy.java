@@ -487,12 +487,56 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(null != items);
         logI("UpdateChannel DB Section Start : cid[" + cid + "]");
 
+        if (0 == items.length)
+            return Err.NoErr;
+
+        boolean pubDateAvail = Utils.isValidValue(items[0].pubDate);
+        HashMap<String, HashMap<String, Feed.Item.ParD>> mainMap
+            = new HashMap<String, HashMap<String, Feed.Item.ParD>>();
+        HashMap<String, Feed.Item.ParD> subMap;
+        String mainKey;
+        String subKey;
+        Feed.Item.ParD pard;
+
         try {
             for (Feed.Item.ParD item : items) {
                 boolean dup = false;
                 // ignore not-verified item
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
+
+                // -----------------------------------------------------------------------
+                // check whether newly parsed feed itself includes duplicated item or not.
+                //
+                // NOTE
+                // main/sub key SHOULD MATCH DB query's where clause, below!
+                // -----------------------------------------------------------------------
+                if (pubDateAvail) {
+                    mainKey = item.title;
+                    subKey = item.pubDate;
+                } else {
+                    mainKey = item.enclosureUrl;
+                    subKey = item.link;
+                }
+
+                subMap = mainMap.get(mainKey);
+                if (null == subMap) {
+                    subMap = new HashMap<String, Feed.Item.ParD>();
+                    mainMap.put(mainKey, subMap);
+                }
+
+                pard = subMap.get(subKey);
+                if (null == pard)
+                    subMap.put(subKey, item);
+                else
+                    // This is duplicated item.
+                    // So, let's move to next item
+                    continue;
+
+                // -----------------------------------------------------------------------
+                // check whether there is duplicated item in DB or not.
+                // (DB access is expensive operation)
+                // -----------------------------------------------------------------------
 
                 // TODO
                 //   Correct algorithm to check duplicated item.
@@ -523,7 +567,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 //   At this case, Feeder regarded this updated item as new one.
                 //   So, to avoid this, algorithm is changed to less-strict-way to tell whether
                 //     this item is new or not.
-                //   New algorithm is, (Note that 'pubdata' is optional element of RSS.)
+                //   New algorithm is, (Note that 'pubdate' is optional element of RSS.)
                 //     if [ 'pubdate' is available ]
                 //         if [ 'pubdate' and 'title' is same ]
                 //             this is same item
