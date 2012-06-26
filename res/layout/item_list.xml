@@ -21,7 +21,7 @@
         android:gravity="center"
         android:scaleType="fitCenter"
         android:src="@drawable/search"
-        android:alpha="0.5"
+        android:alpha="0.7"
         android:background="#000000"
         />
 </RelativeLayout>

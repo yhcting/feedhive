@@ -1313,6 +1313,11 @@ UnexpectedExceptionHandler.TrackedModule {
     // DB Watcher (Just delegation)
     //
     // ===============================================
+    /**
+     * watcher is updated if channel information is updated in DB.
+     * So, to check whether  DB is updated
+     * @param key
+     */
     public void
     registerChannelWatcher(Object key) {
         db.registerChannelWatcher(key);

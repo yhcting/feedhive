@@ -50,32 +50,6 @@
             android:background="#000000"
             android:src="@drawable/download_anim0"
             />
-        <view
-            class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
-            android:id="@+id/imgup"
-            android:layout_width="35dip"
-            android:layout_height="35dip"
-            android:layout_alignParentTop="true"
-            android:layout_alignParentRight="true"
-            android:paddingBottom="15dip"
-            android:gravity="center"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_up"
-            android:clickable="true"
-            />
-        <view
-            class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
-            android:id="@+id/imgdown"
-            android:layout_width="35dip"
-            android:layout_height="35dip"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentRight="true"
-            android:paddingTop="15dip"
-            android:gravity="center"
-            android:scaleType="fitCenter"
-            android:src="@drawable/ic_down"
-            android:clickable="true"
-            />
         <LinearLayout
             android:id="@+id/update_pannel"
             android:layout_width="35dip"
@@ -105,6 +79,32 @@
                 android:src="@drawable/ic_new_msg"
                 />
         </LinearLayout>
+        <view
+            class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
+            android:id="@+id/imgup"
+            android:layout_width="35dip"
+            android:layout_height="35dip"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:paddingBottom="15dip"
+            android:gravity="center"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_up"
+            android:clickable="true"
+            />
+        <view
+            class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
+            android:id="@+id/imgdown"
+            android:layout_width="35dip"
+            android:layout_height="35dip"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:paddingTop="15dip"
+            android:gravity="center"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_down"
+            android:clickable="true"
+            />
         <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="match_parent"

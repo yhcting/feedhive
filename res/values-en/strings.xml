@@ -42,7 +42,7 @@
     <string name="word_search">Keyword</string>
     <string name="feed_search">Feed search</string>
     <string name="empty_list_help">Adding my first channel.</string>
-    <string name="empty_list_add_channel_desc">Enter channel URL directly by touching this icon.</string>
+    <string name="empty_list_add_channel_desc">Enter channel URL by touching this icon.</string>
     <string name="empty_list_predefined_desc">Select channel from recommended predefined channel list by touching this icon.</string>
     <string name="empty_list_btn_desc">About other buttons</string>
     <string name="empty_list_items_favorite">List favorite items.</string>
