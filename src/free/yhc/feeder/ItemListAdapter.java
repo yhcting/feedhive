@@ -21,7 +21,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.StaleDataException;
@@ -227,7 +226,7 @@ AsyncCursorAdapter.ItemBuilder {
     @Override
     public Object
     buildItem(AsyncCursorAdapter adapter, Cursor c) {
-        logI("ChannelListAdapter : buildItem - START");
+        //logI("ChannelListAdapter : buildItem - START");
         ItemInfo i = new ItemInfo();
         try {
             i.id = getCursorLong(c, DB.ColumnItem.ID);
@@ -249,7 +248,7 @@ AsyncCursorAdapter.ItemBuilder {
         } catch (StaleDataException e) {
             eAssert(false);
         }
-        logI("ChannelListAdapter : buildItem - END");
+        //logI("ChannelListAdapter : buildItem - END");
         return i;
     }
 

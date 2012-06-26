@@ -89,6 +89,8 @@ UnexpectedExceptionHandler.TrackedModule {
             // At some devices, time is set whenever device back to active from sleep.
             // So, this receiver is called too often.
             // To avoid this, just ignore this intent until any better solution is found.
+            // => Back to active this code again. Rescheduling often is no harmful and
+            //      sometimes it keep App. safe from unexpected-not-scheduled-bug.
             //
             // FIXME
             // Because Feeder ignores this intent, when system time is changed,
@@ -98,14 +100,12 @@ UnexpectedExceptionHandler.TrackedModule {
             //
             // TODO
             // Any better way??
-            /*
             Intent svc = new Intent(context, ScheduledUpdater.class);
             svc.putExtra("cmd", CMD_RESCHED);
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
             getWakeLock(context.getApplicationContext());
-            */
         }
     }
 
@@ -303,7 +303,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
         if (nearestNext != invalidNearestNext) {
             // There is valid update
-
             { // just for variable scope
                 long h = nearestNext / hourInMs;
                 long m = (nearestNext - h * hourInMs) / (60 * 1000);
