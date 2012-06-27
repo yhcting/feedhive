@@ -92,6 +92,7 @@ AsyncCursorAdapter.ItemBuilder {
 
     public int
     findPosition(long cid) {
+        eAssert(isUiThread());
         for (int i = 0; i < getCount(); i++) {
             if (getItemInfo_cid(i) == cid)
                     return i;
@@ -155,6 +156,19 @@ AsyncCursorAdapter.ItemBuilder {
         }
         //logI("ChannelListAdapter : buildItem - END");
         return i;
+    }
+
+    @Override
+    public void
+    destroyItem(AsyncCursorAdapter adapter, Object item) {
+        ItemInfo ii = (ItemInfo)item;
+        // NOTE
+        // bm will be destroyed by GC
+        // But, we cannot control when GC is triggered.
+        // Actually, sometimes I experienced OutOfMeory error.
+        // To avoid OOM, bm.recycle() is needed to be called in manual whenever item is no-longer used.
+        if (null != ii.bm)
+            ii.bm.recycle();
     }
 
     @Override

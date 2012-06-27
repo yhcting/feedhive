@@ -82,6 +82,15 @@ UnexpectedExceptionHandler.TrackedModule {
          *   return value is not used yet. it is just reserved.
          */
         int requestData(AsyncAdapter adapter, Object priv, long nrseq, int from, int sz);
+
+        /**
+         * Let data provider know that item will not be used anymore.
+         * Data provider may do some operation to prevent resource leak for the item
+         * This callback will be called at main UI thread context.
+         * @param adapter
+         * @param items
+         */
+        void destroyData(AsyncAdapter adapter, Object data);
     }
 
     interface OnRequestData {
@@ -117,6 +126,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param rowLayout
      * @param lv
      * @param dummyItem
+     *   {@link DataProvider#destroyData(AsyncAdapter, Object)} will not be called for dummyItem.
      * @param dataReqSz
      * @param maxArrSz
      */
@@ -150,10 +160,27 @@ UnexpectedExceptionHandler.TrackedModule {
         return Thread.currentThread() == uiThread;
     }
 
+    protected boolean
+    initalLoaded() {
+        eAssert(isUiThread());
+        return !(1 == items.length && items[0] == dummyItem);
+    }
+
     protected void
     setListeners(DataProvider dp, OnRequestData requestDataListener) {
         this.dp = dp;
         this.onRD = requestDataListener;
+    }
+
+    /**
+     * Should be run on main UI thread.
+     * @param item
+     */
+    protected void
+    destroyItem(Object item) {
+        eAssert(isUiThread());
+        if (dummyItem != item)
+            dp.destroyData(this, item);
     }
 
     protected int
@@ -164,8 +191,10 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     setItem(int pos, Object item) {
         eAssert(isUiThread());
-        if (pos >= 0 && pos < items.length)
+        if (pos >= 0 && pos < items.length) {
+            destroyItem(items[pos]);
             items[pos] = item;
+        }
     }
 
     /**
@@ -206,6 +235,7 @@ UnexpectedExceptionHandler.TrackedModule {
         System.arraycopy(items, pos + 1, newItems, pos, items.length - pos - 1);
         if (dataCnt > 0)
             dataCnt--;
+        destroyItem(items[pos]);
         items = newItems;
     }
 
@@ -224,17 +254,21 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(0 <= sz);
         Object[] newItems = null;
 
-        if (LDType.RELOAD == ldtype) {
+        if (LDType.INIT == ldtype || LDType.RELOAD == ldtype) {
             // new allocation.
             // Ignore all previous loading information.
             newItems = new Object[sz];
             posTop = from;
+            for (Object o : items)
+                destroyItem(o);
         } else if (LDType.NEXT == ldtype) {
             int sz2grow = sz;
             int sz2shrink = items.length + sz2grow - maxArrSz;
             sz2shrink = sz2shrink < 0? 0: sz2shrink;
             newItems = new Object[items.length + sz2grow - sz2shrink];
             System.arraycopy(items, sz2shrink, newItems, 0, items.length - sz2shrink);
+            for (int i = 0; i < sz2shrink; i++)
+                destroyItem(items[i]);
             posTop += sz2shrink;
         } else if (LDType.PREV == ldtype) {
             eAssert(0 < posTop && sz <= posTop);
@@ -247,6 +281,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
             newItems = new Object[items.length + sz2grow - sz2shrink];
             System.arraycopy(items, 0, newItems, sz2grow, items.length - sz2shrink);
+            for (int i = items.length - sz2shrink; i < items.length; i++)
+                destroyItem(items[i]);
             posTop -= sz2grow;
         } else
             eAssert(false);
@@ -341,7 +377,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 final Object[] newItems;
                 if (LDType.INIT == ldtype || LDType.RELOAD == ldtype) {
-                    newItems = buildNewItemsArray(LDType.RELOAD, from, aitems.length);
+                    newItems = buildNewItemsArray(ldtype, from, aitems.length);
                     System.arraycopy(aitems, 0, newItems, 0, aitems.length);
                 } else if (from == posTop + items.length) {
                     newItems = buildNewItemsArray(LDType.NEXT, from, aitems.length);
@@ -436,7 +472,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public View getView(int position, View convertView, ViewGroup parent) {
         //Log.i(TAG, ">>> getView : " + position);
 
-        if (1 == items.length && items[0] == dummyItem) {
+        if (!initalLoaded()) {
             // reload some of previous item too.
             int from = posTop + lv.getFirstVisiblePosition() - firstLDahead;
             from = from < 0? 0: from;
@@ -478,6 +514,10 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     finalize() throws Throwable {
         super.finalize();
+        if (null != items) {
+            for (Object o : items)
+                destroyItem(o);
+        }
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }
 }

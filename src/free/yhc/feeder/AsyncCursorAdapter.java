@@ -17,6 +17,7 @@ AsyncAdapter.OnRequestData {
 
     interface ItemBuilder {
         Object buildItem(AsyncCursorAdapter adapter, Cursor c);
+        void   destroyItem(AsyncCursorAdapter adapter, Object item);
     }
 
     AsyncCursorAdapter(Context        context,
@@ -156,6 +157,12 @@ AsyncAdapter.OnRequestData {
         adapter.provideItems(priv, nrseq, from, items, eod);
         logI("AsyncCursorAdapter : requestData - END");
         return 0;
+    }
+
+    @Override
+    public void
+    destroyData(AsyncAdapter adapter, Object data) {
+        ibldr.destroyItem(this, data);
     }
 
     @Override

@@ -253,6 +253,12 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     @Override
+    public void
+    destroyItem(AsyncCursorAdapter adapter, Object item) {
+        // Nothing to do
+    }
+
+    @Override
     public int
     requestData(final AsyncAdapter adapter, Object priv, long nrseq, final int from, final int sz) {
         // Override to use "delayed item update"
