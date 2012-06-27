@@ -20,7 +20,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.logI;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -98,7 +97,7 @@ DialogInterface.OnClickListener
     @Override
     protected Err
     doInBackground(Object... objs) {
-        logI("* Start background Job : SpinSyncTask\n");
+        //logI("* Start background Job : SpinSyncTask\n");
         Err ret = Err.NoErr;
         if (null != onEvent)
             ret = onEvent.onDoWork(this, objs);
@@ -143,7 +142,7 @@ DialogInterface.OnClickListener
     @Override
     protected void
     onPostExecute(Err result) {
-        logI("* postExecuted : SpinSyncTask\n");
+        //logI("* postExecuted : SpinSyncTask\n");
         dialog.dismiss();
 
         // In normal case, onPostExecute is not called in case of 'user-cancel'.

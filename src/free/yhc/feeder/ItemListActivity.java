@@ -21,7 +21,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
 import java.util.Calendar;
@@ -411,7 +410,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
-            logI("+++ Item Activity DownloadData PostRun");
+            //logI("+++ Item Activity DownloadData PostRun");
             // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
             if (isActivityFinishing())
                 return;
@@ -812,11 +811,11 @@ UnexpectedExceptionHandler.TrackedModule {
         long dbId = getListAdapter().getItemInfo_id(info.position);
         switch (mItem.getItemId()) {
         case R.id.delete_dnfile:
-            logI(" Delete Downloaded File : ID : " + dbId + " / " + info.position);
+            //logI(" Delete Downloaded File : ID : " + dbId + " / " + info.position);
             onContext_deleteDnFile(dbId, info.position);
             return true;
         case R.id.mark_unopened:
-            logI(" Mark As Unactioned : ID : " + dbId + " / " + info.position);
+            //logI(" Mark As Unactioned : ID : " + dbId + " / " + info.position);
             return true;
         }
         return false;
@@ -977,7 +976,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onCreate(Bundle savedInstanceState) {
         UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
-        logI("==> ItemListActivity : onCreate");
+        //logI("==> ItemListActivity : onCreate");
         getActionBar().show();
 
         int mode = getIntent().getIntExtra(IKeyMode, -1);
@@ -1033,14 +1032,14 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onStart() {
         super.onStart();
-        logI("==> ItemListActivity : onStart");
+        //logI("==> ItemListActivity : onStart");
     }
 
     @Override
     protected void
     onResume() {
         super.onResume();
-        logI("==> ItemListActivity : onResume");
+        //logI("==> ItemListActivity : onResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
         RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
@@ -1092,7 +1091,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onPause() {
-        logI("==> ItemListActivity : onPause");
+        //logI("==> ItemListActivity : onPause");
         DBPolicy.S().registerChannelWatcher(this);
         DBPolicy.S().registerItemTableWatcher(this);
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
@@ -1105,14 +1104,14 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onStop() {
-        logI("==> ItemListActivity : onStop");
+        //logI("==> ItemListActivity : onStop");
         super.onStop();
     }
 
     @Override
     protected void
     onDestroy() {
-        logI("==> ItemListActivity : onDestroy");
+        //logI("==> ItemListActivity : onDestroy");
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }

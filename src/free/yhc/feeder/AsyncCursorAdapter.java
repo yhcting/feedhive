@@ -1,7 +1,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 import android.content.Context;
 import android.database.Cursor;
 import android.widget.ListView;
@@ -46,7 +45,7 @@ AsyncAdapter.DataProvider {
      */
     public void
     changeCursor(Cursor newCur) {
-        logI("AsyncCursorAdapter : changeCursor");
+        //logI("AsyncCursorAdapter : changeCursor");
         synchronized (curlock) {
             if (null != cur)
                 cur.close();
@@ -117,7 +116,7 @@ AsyncAdapter.DataProvider {
     public int
     requestData(final AsyncAdapter adapter, Object priv, long nrseq, final int from, final int sz) {
         eAssert(null != cur && null != ibldr);
-        logI("AsyncCursorAdapter : requestData - START");
+        //logI("AsyncCursorAdapter : requestData - START");
         Object[] items;
         boolean eod = true;
         synchronized (curlock) {
@@ -144,7 +143,7 @@ AsyncAdapter.DataProvider {
                 eAssert(0 == cur.getCount() || 0 == szAvail);
         }
         adapter.provideItems(priv, nrseq, from, items, eod);
-        logI("AsyncCursorAdapter : requestData - END");
+        //logI("AsyncCursorAdapter : requestData - END");
         return 0;
     }
 

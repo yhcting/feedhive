@@ -319,10 +319,10 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
-                logI(">>> async request RUN - START: from " + from + ", # " + sz);
+                //logI(">>> async request RUN - START: from " + from + ", # " + sz);
                 dp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, sz);
                 waitDpDone(reqSeq, 50);
-                logI(">>> async request RUN - END: from " + from + ", # " + sz);
+                //logI(">>> async request RUN - END: from " + from + ", # " + sz);
                 return Err.NoErr;
             }
             @Override
@@ -358,7 +358,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     provideItems(final Object priv, final long reqSeq, final int from, final Object[] aitems, final boolean eod) {
-        logI("AsyncAdapter provideItems - START : from " + from + ", # " + aitems.length);
+        //logI("AsyncAdapter provideItems - START : from " + from + ", # " + aitems.length);
         eAssert(maxArrSz > aitems.length);
 
         final LDType ldtype = (LDType)priv;
@@ -371,7 +371,7 @@ UnexpectedExceptionHandler.TrackedModule {
         uiHandler.post(new Runnable() {
             @Override
             public void run() {
-                logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + nrseq + ") - START");
+                //logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + nrseq + ") - START");
 
                 // Check that there is already new request or not.
                 // This is run on UI thread. So, synchronization is not needed to be worried about.
@@ -424,10 +424,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 dpTask = null;
                 if (null != onRD)
                     onRD.onDataProvided(AsyncAdapter.this, reqSeq, from, aitems.length);
-                logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + nrseq + " - END");
+                //logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + nrseq + " - END");
             }
         });
-        logI("AsyncAdapter provideItems - END : from " + from + ", # " + aitems.length);
+        //logI("AsyncAdapter provideItems - END : from " + from + ", # " + aitems.length);
     }
 
     @Override
