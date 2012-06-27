@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">밥통</string>
+    <string name="app_name">Feeder</string>
     <string name="predef_ch_file">channels_kr.xml</string>
     <string name="ok">확인</string>
     <string name="yes">예</string>
