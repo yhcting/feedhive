@@ -21,8 +21,8 @@ UnexpectedExceptionHandler.TrackedModule {
     protected final Context       context;
     protected final Handler       uiHandler = new Handler();
     private   final ListView      lv;
-    private         DataProvider  dp;
-    private         OnRequestData onRD;
+    private         DataProvider  dp        = null;
+    private         OnRequestData onRD      = null;
     private   final int           dataReqSz;
     private   final int           maxArrSz; // max array size of items
     private   final int           rowLayout;
@@ -167,9 +167,13 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     protected void
-    setListeners(DataProvider dp, OnRequestData requestDataListener) {
+    setDataProvider(DataProvider dp) {
         this.dp = dp;
-        this.onRD = requestDataListener;
+    }
+
+    protected void
+    setRequestDataListener(OnRequestData listener) {
+        this.onRD = listener;
     }
 
     /**
@@ -326,10 +330,9 @@ UnexpectedExceptionHandler.TrackedModule {
         };
         dpTask = new SpinAsyncTask(context, bgRun, R.string.plz_wait, false);
         dpTask.setName("Asyn request : " + from + " #" + sz);
-        dpTask.execute(null, null);
-
         if (null != onRD)
             onRD.onRequestData(this, reqSeq, from, sz);
+        dpTask.execute(null, null);
     }
 
     /**
@@ -409,8 +412,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 // So, we don't need to worry about race-condition.
                 int posDelta = posTop - posTopSv;
 
-                if (null != onRD)
-                    onRD.onDataProvided(AsyncAdapter.this, reqSeq, from, aitems.length);
                 notifyDataSetChanged();
                 // Restore list view's previous location.
                 int pos = firstVisiblePos - posDelta;
@@ -421,6 +422,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 // check again at UI thread
                 dpDone = true;
                 dpTask = null;
+                if (null != onRD)
+                    onRD.onDataProvided(AsyncAdapter.this, reqSeq, from, aitems.length);
                 logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + nrseq + " - END");
             }
         });

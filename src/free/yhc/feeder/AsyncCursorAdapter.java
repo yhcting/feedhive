@@ -9,8 +9,7 @@ import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 public class AsyncCursorAdapter extends AsyncAdapter implements
-AsyncAdapter.DataProvider,
-AsyncAdapter.OnRequestData {
+AsyncAdapter.DataProvider {
     private Cursor          cur;
     private final Object    curlock = new Object();
     private ItemBuilder     ibldr;
@@ -31,7 +30,7 @@ AsyncAdapter.OnRequestData {
         super(context, rowLayout, lv, dummyItem, dataReqSz, maxArrSz);
         this.cur = cursor;
         this.ibldr = ibldr;
-        setListeners(this, this);
+        setDataProvider(this);
     }
 
     public void
@@ -75,16 +74,6 @@ AsyncAdapter.OnRequestData {
         return super.dump(lv)
                 + "[ AsyncCursorAdapter ]"
                 + "  curCount : " + ((null == cur)? "null": cur.getCount()) + "\n";
-    }
-
-    @Override
-    public void
-    onRequestData(AsyncAdapter adapter, long nrseq, int from, int sz) {
-    }
-
-    @Override
-    public void
-    onDataProvided(AsyncAdapter adapter, long nrseq, int from, int sz) {
     }
 
     /**
