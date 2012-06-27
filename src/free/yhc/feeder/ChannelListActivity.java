@@ -21,7 +21,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Calendar;
@@ -399,7 +398,7 @@ UnexpectedExceptionHandler.TrackedModule {
             String filePath = c.getString(columnIndex);
             c.close();
 
-            logI("Pick Icon : file [" + filePath + "]");
+            //logI("Pick Icon : file [" + filePath + "]");
 
             // Make url string from file path
             bm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
@@ -505,7 +504,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onUpdateClick(ImageView ibtn, long cid) {
-            logI("ChannelList : update cid : " + cid);
+            //logI("ChannelList : update cid : " + cid);
             onContextBtn_channelUpdate(ibtn, cid);
         }
 
@@ -1266,14 +1265,14 @@ UnexpectedExceptionHandler.TrackedModule {
         */
         RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
         if (RTTask.TaskState.Idle == state) {
-            logI("ChannelList : update : " + cid);
+            //logI("ChannelList : update : " + cid);
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
             RTTask.S().register(cid, RTTask.Action.Update, task);
             RTTask.S().start(cid, RTTask.Action.Update);
             dataSetChanged(getCurrentListView(), cid);
         } else if (RTTask.TaskState.Running == state
                    || RTTask.TaskState.Ready == state) {
-            logI("ChannelList : cancel : " + cid);
+            //logI("ChannelList : cancel : " + cid);
             RTTask.S().cancel(cid, RTTask.Action.Update, null);
             // to change icon into "canceling"
             dataSetChanged(getCurrentListView(), cid);
@@ -1481,7 +1480,7 @@ UnexpectedExceptionHandler.TrackedModule {
         UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
 
-        logI("==> ChannelListActivity : onCreate");
+        //logI("==> ChannelListActivity : onCreate");
 
         // TODO
         // Is this best place to put this line of code (sendReportMail())???
@@ -1519,14 +1518,14 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onStart() {
         super.onStart();
-        logI("==> ChannelListActivity : onStart");
+        //logI("==> ChannelListActivity : onStart");
     }
 
     @Override
     protected void
     onResume() {
         super.onResume();
-        logI("==> ChannelListActivity : onResume");
+        //logI("==> ChannelListActivity : onResume");
         // NOTE
         // Case to think about
         // - new update task is registered between 'registerManagerEventListener' and 'getUpdateState'
@@ -1618,7 +1617,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onPause() {
-        logI("==> ChannelListActivity : onPause");
+        //logI("==> ChannelListActivity : onPause");
         DBPolicy.S().registerChannelWatcher(this);
         DBPolicy.S().registerChannelTableWatcher(this);
         RTTask.S().unregisterManagerEventListener(this);
@@ -1639,7 +1638,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onStop() {
-        logI("==> ChannelListActivity : onStop");
+        //logI("==> ChannelListActivity : onStop");
         //uilc.onStop();
         super.onStop();
     }
@@ -1647,7 +1646,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onDestroy() {
-        logI("==> ChannelListActivity : onDestroy");
+        //logI("==> ChannelListActivity : onDestroy");
         super.onDestroy();
         UnexpectedExceptionHandler.S().unregisterModule(this);
     }

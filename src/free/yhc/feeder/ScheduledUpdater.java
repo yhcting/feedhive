@@ -21,7 +21,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Calendar;
@@ -120,7 +119,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //   broadcast receiver is run on main ui thread (same as service).
         @Override
         public void onReceive(Context context, Intent intent) {
-            logI("AlarmReceiver : onReceive");
+            //logI("AlarmReceiver : onReceive");
 
             long time = intent.getLongExtra("time", -1);
             if (time < 0) {
@@ -156,10 +155,10 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
-            logI("ScheduledUpdater(onCancel) : " + cid);
+            //logI("ScheduledUpdater(onCancel) : " + cid);
             synchronized (taskset) {
                 taskset.remove(cid);
-                logI("    taskset size : " + taskset.size());
+                //logI("    taskset size : " + taskset.size());
                 if (taskset.isEmpty())
                     stopSelf();
             }
@@ -173,7 +172,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
-            logI("ScheduledUpdater(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
+            //logI("ScheduledUpdater(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
             synchronized (taskset) {
                 taskset.remove(cid);
                 if (taskset.isEmpty())
@@ -213,19 +212,19 @@ UnexpectedExceptionHandler.TrackedModule {
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
             wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
                     .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTag);
-            logI("ScheduledUpdater : WakeLock created and aquired");
+            //logI("ScheduledUpdater : WakeLock created and aquired");
             wl.acquire();
             wfl.acquire();
         }
         wlcnt++;
-        logI("ScheduledUpdater(GET) : current WakeLock count: " + wlcnt);
+        //logI("ScheduledUpdater(GET) : current WakeLock count: " + wlcnt);
     }
 
     private static void
     putWakeLock() {
         eAssert(wlcnt > 0);
         wlcnt--;
-        logI("ScheduledUpdater(PUT) : current WakeLock count: " + wlcnt);
+        //logI("ScheduledUpdater(PUT) : current WakeLock count: " + wlcnt);
         if (0 == wlcnt) {
             wl.release();
             wfl.release();
@@ -238,7 +237,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Anyway, let's set 'wl' as 'null' here to re-create new WakeLock at next time.
             wl = null;
             wfl = null;
-            logI("ScheduledUpdater : WakeLock is released");
+            //logI("ScheduledUpdater : WakeLock is released");
         }
     }
 
@@ -306,7 +305,7 @@ UnexpectedExceptionHandler.TrackedModule {
             { // just for variable scope
                 long h = nearestNext / hourInMs;
                 long m = (nearestNext - h * hourInMs) / (60 * 1000);
-                logI("ScheduledUpdater : next wakeup after [ " + h + " hours, " + m + " miniutes ]");
+                //logI("ScheduledUpdater : next wakeup after [ " + h + " hours, " + m + " miniutes ]");
             }
 
             // convert into real time.
@@ -393,8 +392,8 @@ UnexpectedExceptionHandler.TrackedModule {
             if (RTTask.TaskState.Canceling == state
                 || RTTask.TaskState.Running == state
                 || RTTask.TaskState.Ready == state) {
-                logI("doCmdAlarm : Channel [" + cid + "] is already active.\n" +
-                     "             So scheduled update is skipped");
+                //logI("doCmdAlarm : Channel [" + cid + "] is already active.\n" +
+                //     "             So scheduled update is skipped");
             } else {
                 // unregister gracefully to start update.
                 // There is sanity check in BGTaskManager - see BGTaskManager
@@ -404,7 +403,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
                 RTTask.S().register(cid, RTTask.Action.Update, task);
                 RTTask.S().bind(cid, RTTask.Action.Update, null, task);
-                logI("doCmdAlarm : start update BGTask for [" + cid + "]");
+                //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
                 synchronized (taskset) {
                     if (!taskset.add(cid)) {
                         logW("doCmdAlarm : starts duplicated update! : " + cid);
@@ -469,7 +468,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onStartCommand(Intent intent, int flags, int startId) {
         String cmd = intent.getStringExtra("cmd");
 
-        logI("ScheduledUpdate : onStartCommand : " + cmd);
+        //logI("ScheduledUpdate : onStartCommand : " + cmd);
         try {
             // 'cmd' can be null.
             // So, DO NOT use "cmd.equals()"...
@@ -517,7 +516,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onDestroy() {
         nm.cancel(notificationId);
         UnexpectedExceptionHandler.S().unregisterModule(this);
-        logI("ScheduledUpdater : onDestroy");
+        //logI("ScheduledUpdater : onDestroy");
         super.onDestroy();
     }
 }
