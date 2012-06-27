@@ -127,6 +127,30 @@ public class Utils {
             "yyyy.MM.d HH:mm:ss",
         };
 
+    private enum LogLV{
+        V ("[V]", 6),
+        D ("[D]", 5),
+        I ("[I]", 4),
+        W ("[W]", 3),
+        E ("[E]", 2),
+        F ("[F]", 1);
+
+        private String pref; // prefix string
+        private int    pri;  // priority
+        LogLV(String pref, int pri) {
+            this.pref = pref;
+            this.pri = pri;
+        }
+
+        String pref() {
+            return pref;
+        }
+
+        int pri() {
+            return pri;
+        }
+    }
+
     // =======================
     // Private
     // =======================
@@ -165,54 +189,50 @@ public class Utils {
         return null;
     }
 
+    private static void
+    log(LogLV lv, String msg) {
+        if (!DBG || null == msg)
+            return;
+
+        if (ENABLE_LOGF) {
+            try {
+                logout.write(lv.pref + " " + msg + "\n");
+                logout.flush();
+            } catch (IOException e) {}
+        } else {
+            if (LogLV.V == lv)
+                Log.v(TAG, msg);
+            else if (LogLV.D == lv)
+                Log.d(TAG, msg);
+            else if (LogLV.I == lv)
+                Log.i(TAG, msg);
+            else if (LogLV.W == lv)
+                Log.w(TAG, msg);
+            else if (LogLV.E == lv)
+                Log.e(TAG, msg);
+            else if (LogLV.F == lv)
+                Log.wtf(TAG, msg);
+        }
+    }
 
     // =======================
     // Public
     // =======================
+
+    // Assert
     public static void
     eAssert(boolean cond) {
         if (!cond)
             throw new AssertionError();
     }
 
-    public static void
-    logI(String msg) {
-        if (!DBG || null == msg)
-            return;
-        if (ENABLE_LOGF) {
-            try {
-                logout.write("[I] " + msg + "\n");
-                logout.flush();
-            } catch (IOException e) {}
-        } else
-            Log.i(TAG, msg);
-    }
-
-    public static void
-    logW(String msg) {
-        if (!DBG || null == msg)
-            return;
-        if (ENABLE_LOGF) {
-            try {
-                logout.write("[W] " + msg + "\n");
-                logout.flush();
-            } catch (IOException e) {}
-        }else
-            Log.w(TAG, msg);
-    }
-
-    public static void
-    logE(String msg) {
-        if (!DBG || null == msg)
-            return;
-        if (ENABLE_LOGF) {
-            try {
-                logout.write("[E] " + msg + "\n");
-                logout.flush();
-            } catch (IOException e) {}
-        } else
-            Log.e(TAG, msg);
-    }
+    // For logging
+    public static void logV(String msg) { log(LogLV.V, msg); }
+    public static void logD(String msg) { log(LogLV.D, msg); }
+    public static void logI(String msg) { log(LogLV.I, msg); }
+    public static void logW(String msg) { log(LogLV.W, msg); }
+    public static void logE(String msg) { log(LogLV.E, msg); }
+    public static void logF(String msg) { log(LogLV.F, msg); }
 
     // Bit mask handling
     public static long
