@@ -40,11 +40,16 @@ import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class ChannelListAdapter extends AsyncCursorAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    private static Date dummyDate = new Date();
-    private OnAction  onAction = null;
+    private static final Date dummyDate = new Date();
+    private final OnAction    onAction;
+
+    private final View.OnClickListener chIconOnClick;
+    private final View.OnClickListener posUpOnClick;
+    private final View.OnClickListener posDnOnClick;
 
     interface OnAction {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -88,11 +93,41 @@ AsyncCursorAdapter.ItemBuilder {
         setItemBuilder(this);
         UnexpectedExceptionHandler.S().registerModule(this);
         onAction = actionListener;
+
+        chIconOnClick = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null == onAction)
+                    return;
+                ImageViewEx iv = (ImageViewEx)v;
+                onAction.onUpdateClick(iv, iv.cid);
+            }
+        };
+
+        posUpOnClick = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null == onAction)
+                    return;
+                ImageViewEx iv = (ImageViewEx)v;
+                onAction.onMoveUpClick(iv, iv.cid);
+            }
+        };
+
+        posDnOnClick = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null == onAction)
+                    return;
+                ImageViewEx iv = (ImageViewEx)v;
+                onAction.onMoveDownClick(iv, iv.cid);
+            }
+        };
     }
 
     public int
     findPosition(long cid) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         for (int i = 0; i < getCount(); i++) {
             if (getItemInfo_cid(i) == cid)
                     return i;
@@ -109,18 +144,30 @@ AsyncCursorAdapter.ItemBuilder {
             return (int)getItemId(pos);
     }
 
+    /**
+     * Data is NOT reloaded.
+     * Only item array is changed.
+     * @param pos0
+     * @param pos1
+     */
     public void
     switchPos(int pos0, int pos1) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         Object sv = getItem(pos0);
         setItem(pos0, getItem(pos1));
         setItem(pos1, sv);
         notifyDataSetChanged();
     }
 
+    /**
+     * Data is NOT reloaded.
+     * Only item array is changed.
+     * @param pos0
+     * @param pos1
+     */
     public void
     setChannelIcon(long cid, Bitmap bm) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         ItemInfo ii = (ItemInfo)getItem(findItemId(cid));
         if (null != ii) {
             if (null != ii.bm)
@@ -194,39 +241,15 @@ AsyncCursorAdapter.ItemBuilder {
 
         ImageViewEx chIcon = (ImageViewEx)v.findViewById(R.id.image);
         chIcon.cid = ii.cid;
-        chIcon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (null == onAction)
-                    return;
-                ImageViewEx iv = (ImageViewEx)v;
-                onAction.onUpdateClick(iv, iv.cid);
-            }
-        });
+        chIcon.setOnClickListener(chIconOnClick);
 
         ImageViewEx ibtn = (ImageViewEx)v.findViewById(R.id.imgup);
         ibtn.cid = ii.cid;
-        ibtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (null == onAction)
-                    return;
-                ImageViewEx iv = (ImageViewEx)v;
-                onAction.onMoveUpClick(iv, iv.cid);
-            }
-        });
+        ibtn.setOnClickListener(posUpOnClick);
 
         ibtn = (ImageViewEx)v.findViewById(R.id.imgdown);
         ibtn.cid = ii.cid;
-        ibtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (null == onAction)
-                    return;
-                ImageViewEx iv = (ImageViewEx)v;
-                onAction.onMoveDownClick(iv, iv.cid);
-            }
-        });
+        ibtn.setOnClickListener(posDnOnClick);
 
         if (null == ii.bm)
             // fail to decode.

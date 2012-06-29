@@ -36,7 +36,6 @@ import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
@@ -91,10 +90,9 @@ UnexpectedExceptionHandler.TrackedModule {
     public static final int FilterNone        = 0; // no filter
     public static final int FilterNew         = 1; // new items of each channel.
 
-    private OpMode              opMode  = null;
-    private Handler             handler = new Handler();
-    private final DBPolicy      db      = DBPolicy.S();
-    private ListView            list    = null;
+    private final DBPolicy  db      = DBPolicy.S();
+    private OpMode          opMode  = null;
+    private ListView        list    = null;
 
     private class OpMode {
         // 'State' of item may be changed often dynamically (ex. when open item)
@@ -373,7 +371,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 //   user starts to update in feed screen!.
                 // So, we can assume that user knows latest updates here.
                 DBPolicy.S().updateChannel_lastItemId(chid);
-                refreshList();
+                refreshListAsync();
             }
         }
     }
@@ -485,7 +483,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    refreshList() {
+    refreshListAsync() {
         if (null == list || null == getListAdapter())
             return;
 
@@ -744,7 +742,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     requestSetUpdateButton() {
-        handler.post(new Runnable() {
+        Utils.getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 setUpdateButton();
@@ -945,10 +943,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 diag.setTitle(R.string.plz_wait);
                 opMode.setFilter(search, from.getTimeInMillis(), to.getTimeInMillis());
-                handler.post(new Runnable() {
+                Utils.getUiHandler().post(new Runnable() {
                    @Override
                    public void run() {
-                       refreshList();
+                       refreshListAsync();
                        diag.dismiss();
                    }
                 });
@@ -1083,7 +1081,7 @@ UnexpectedExceptionHandler.TrackedModule {
             fullRefresh = true;
 
         if (fullRefresh)
-            refreshList();
+            refreshListAsync();
         else
             dataSetChanged();
     }

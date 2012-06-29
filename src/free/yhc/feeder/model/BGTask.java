@@ -147,6 +147,11 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
     public BGTask(Context context, RunParam arg, int option) {
         super();
+        // NOTE
+        // Even if, BGTask is designed considering multi-threaded environment,
+        //   to simplify synchronization issue, only UI Thread can create BG Task.
+        // (Actually, this is NOT constraints for BGTask, but for Feeder app.
+        eAssert(Utils.isUiThread());
         this.context = context;
         runParam = arg;
         opt = option;
@@ -261,6 +266,9 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      */
     public void
     registerEventListener(Object key, OnEvent onEvent) {
+        // See comments regarding 'eAssert' at BGTask constructor.
+        eAssert(Utils.isUiThread());
+
         if (ownerHandler.getLooper().getThread() != Thread.currentThread())
             logW("BGTask IMPORTANT : owner thread is different with event listener thread");
 
@@ -281,6 +289,9 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      */
     public void
     registerPriorEventListener(Object key, OnEvent onEvent) {
+        // See comments regarding 'eAssert' at BGTask constructor.
+        eAssert(Utils.isUiThread());
+
         if (ownerHandler.getLooper().getThread() != Thread.currentThread())
             logW("BGTask IMPORTANT : owner thread is different with event listener thread");
 

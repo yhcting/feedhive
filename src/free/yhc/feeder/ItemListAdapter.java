@@ -46,12 +46,14 @@ import free.yhc.feeder.model.Utils;
 
 public class ItemListAdapter extends AsyncCursorAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    private Handler   handler = new Handler();
-    private DBPolicy  dbp = DBPolicy.S();
-    private OnAction  onAction = null;
+    private final Handler   handler = new Handler();
+    private final DBPolicy  dbp = DBPolicy.S();
+    private final OnAction  onAction;
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
     // See "DownloadProgressOnEvent" for details
-    private TextView  dummyTextView;
+    private final TextView  dummyTextView;
+
+    private final View.OnClickListener favOnClick;
 
     public static class ProgressTextView extends TextView {
         private DownloadProgressOnEvent onEvent = null;
@@ -169,6 +171,15 @@ AsyncCursorAdapter.ItemBuilder {
         UnexpectedExceptionHandler.S().registerModule(this);
         dummyTextView = new TextView(context);
         onAction = actionListener;
+        favOnClick = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null == onAction)
+                    return;
+                ImageViewFavorite iv = (ImageViewFavorite)v;
+                onAction.onFavoriteClick(ItemListAdapter.this, iv, iv.position, iv.id, iv.state);
+            }
+        };
     }
 
     public long
@@ -305,15 +316,7 @@ AsyncCursorAdapter.ItemBuilder {
         favImgv.id = ii.id;
         favImgv.state = ii.state;
         favImgv.position = position;
-        favImgv.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (null == onAction)
-                    return;
-                ImageViewFavorite iv = (ImageViewFavorite)v;
-                onAction.onFavoriteClick(ItemListAdapter.this, iv, iv.position, iv.id, iv.state);
-            }
-        });
+        favImgv.setOnClickListener(favOnClick);
 
         if (favorite)
             favImgv.setImageResource(R.drawable.favorite_on);

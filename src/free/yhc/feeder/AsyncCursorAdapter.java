@@ -39,6 +39,7 @@ AsyncAdapter.DataProvider {
 
     /**
      * Change cursor of this adapter.
+     * Adapter items are NOT reloaded.
      * To loading from cursor, call {@link AsyncCursorAdapter#reloadItem(int)},
      *   {@link AsyncCursorAdapter#reloadItem(int[])} or {@link AsyncAdapter#reloadDataSetAsync()}
      * @param newCur
@@ -69,7 +70,8 @@ AsyncAdapter.DataProvider {
     }
 
     @Override
-    public String dump(UnexpectedExceptionHandler.DumpLevel lv) {
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
         return super.dump(lv)
                 + "[ AsyncCursorAdapter ]"
                 + "  curCount : " + ((null == cur)? "null": cur.getCount()) + "\n";

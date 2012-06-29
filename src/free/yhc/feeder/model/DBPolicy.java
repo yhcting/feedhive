@@ -58,13 +58,13 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Object dummyObject = new Object(); // static dummy object;
 
     private static DBPolicy instance = null;
-    private DB              db       = null;
+    private final DB        db;
 
     // Getting max item id of channel takes longer time than expected.
     // So, let's caching it.
     // It is used at very few places.
     // Therefore, it is easy to caching and easy to avoid cache-synchronization issue.
-    private HashMap<Long, Long> maxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
+    private final HashMap<Long, Long> maxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
 
     // NOTE
     // This is a kind of dirty-HACK!
@@ -72,7 +72,7 @@ UnexpectedExceptionHandler.TrackedModule {
     //   it may take too long time because DB is continuously accessed by channel updater.
     // This may let user annoying.
     // So, this HACK is used!
-    private AtomicInteger       delayedChannelUpdate = new AtomicInteger(0);
+    private final AtomicInteger       delayedChannelUpdate = new AtomicInteger(0);
 
     enum ItemDataType {
         RAW,

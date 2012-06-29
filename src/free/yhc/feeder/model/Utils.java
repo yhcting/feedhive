@@ -42,6 +42,7 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Handler;
 import android.text.Layout;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -50,6 +51,8 @@ import android.widget.TextView;
 public class Utils {
     public static final boolean DBG = true;
     private static final String TAG = "[Feeder]";
+
+    private static Handler  uiHandler = null;
 
     // To enable logging to file - NOT LOGCAT
     private static final boolean ENABLE_LOGF = false;
@@ -218,6 +221,10 @@ public class Utils {
     // =======================
     // Public
     // =======================
+    public static void
+    init() {
+        uiHandler = new Handler();
+    }
 
     // Assert
     public static void
@@ -233,6 +240,16 @@ public class Utils {
     public static void logW(String msg) { log(LogLV.W, msg); }
     public static void logE(String msg) { log(LogLV.E, msg); }
     public static void logF(String msg) { log(LogLV.F, msg); }
+
+    public static boolean
+    isUiThread() {
+        return Thread.currentThread() == uiHandler.getLooper().getThread();
+    }
+
+    public static Handler
+    getUiHandler() {
+        return uiHandler;
+    }
 
     // Bit mask handling
     public static long

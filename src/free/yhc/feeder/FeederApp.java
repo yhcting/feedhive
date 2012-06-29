@@ -27,6 +27,7 @@ import free.yhc.feeder.model.DBThread;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class FeederApp extends Application {
     // NOTE 1
@@ -42,6 +43,8 @@ public class FeederApp extends Application {
     //   this function should be called with 'Activity' context.
     private void
     initialize(Context context) {
+        Utils.init();
+
         // Create singleton instances
         DBThread.createSingleton(context);
         DBThread.S().start();

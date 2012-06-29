@@ -39,11 +39,11 @@ import android.preference.PreferenceManager;
 public class RTTask implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
-    private static RTTask           instance = null;
+    private static RTTask               instance = null;
 
-    private BGTaskManager           bgtm = null;
-    private LinkedList<BGTask>      readyQ = new LinkedList<BGTask>();
-    private LinkedList<BGTask>      runQ = new LinkedList<BGTask>();
+    private final BGTaskManager         bgtm;
+    private final LinkedList<BGTask>    readyQ = new LinkedList<BGTask>();
+    private final LinkedList<BGTask>    runQ = new LinkedList<BGTask>();
 
     // NOTE
     // Why taskQSync is used instead of using 'readyQ' and 'runQ' object directly as an sync object for each list?
@@ -59,10 +59,10 @@ OnSharedPreferenceChangeListener {
     //   synchronized (runQ) {
     //       runQ.addLast(t);
     //   }
-    private Object             taskQSync = new Object();
+    private final Object       taskQSync = new Object();
     private volatile int       max_concurrent = 2; // temporally hard coding.
 
-    private LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
+    private final LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
 
     public interface OnRTTaskManagerEvent {
         void onBGTaskRegister(long id, BGTask task, Action act);
@@ -490,6 +490,10 @@ OnSharedPreferenceChangeListener {
         // DO NOT change ORDER of code line.
         boolean bStartImmediate = false;
         synchronized (taskQSync) {
+            // Why remove 't' at this moment?
+            // This means, "if task is already in ready state,
+            //   it will move to last of the list."
+            // In summary, "start request cancels previous one and newly added".
             readyQ.remove(t);
 
             // NOTE
