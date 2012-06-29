@@ -265,7 +265,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private static String
     buildSQLWhere(Column[] cols, Object[] vals, String operator, String join) {
-        String clause = null;
+        String clause = "";
         if (null != cols && null != vals) {
             eAssert(cols.length == vals.length);
             clause = "";
@@ -279,7 +279,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         }
 
-        if (null != clause && !clause.isEmpty())
+        if (!clause.isEmpty())
             clause = "(" + clause + ")";
 
         return clause;
@@ -902,9 +902,11 @@ UnexpectedExceptionHandler.TrackedModule {
         String order = (null == orderColumn)?
                         channelQueryDefaultOrder:
                         orderColumn.getName() + (bAsc? " ASC": " DESC");
+        String whereClause = buildSQLWhere(wheres, values, "=", "AND");
+
         return db.query(TABLE_CHANNEL,
                         getColumnNames(columns),
-                        buildSQLWhere(wheres, values, "=", "AND"),
+                        whereClause.isEmpty()? null: whereClause,
                         null, null, null,
                         order,
                         (limit > 0)? "" + limit: null);
@@ -961,7 +963,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // getting channels to delete.
         Cursor c = db.query(TABLE_CHANNEL,
                             new String[] { ColumnChannel.ID.getName() },
-                            chWhereStr,
+                            chWhereStr.isEmpty()? null: chWhereStr,
                             null, null, null, null);
 
         if (!c.moveToFirst()) {
@@ -980,9 +982,10 @@ UnexpectedExceptionHandler.TrackedModule {
             i++;
         } while (c.moveToNext());
 
+        String wh = buildSQLWhere(cols, cids, "=", "OR");
         // delete items first
         long nrItems = db.delete(TABLE_ITEM,
-                                 buildSQLWhere(cols, cids, "=", "OR"),
+                                 wh.isEmpty()? null: wh,
                                  null);
         markItemTableChanged();
         // then delete channel.
@@ -1055,7 +1058,10 @@ UnexpectedExceptionHandler.TrackedModule {
     Cursor
     queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit) {
         eAssert(null != where && null != value);
-        return queryItemAND(columns, new ColumnItem[] { where }, new Object[] { value }, limit);
+        return queryItemAND(columns,
+                            null != where? new ColumnItem[] { where }: null,
+                            null != value? new Object[] { value }: null,
+                            limit);
     }
 
     /**
@@ -1073,9 +1079,10 @@ UnexpectedExceptionHandler.TrackedModule {
     Cursor
     queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
         // recently inserted item is located at top of rows.
+        String wh = buildSQLWhere(wheres, values, "=", "AND");
         return db.query(TABLE_ITEM,
                         getColumnNames(columns),
-                        buildSQLWhere(wheres, values, "=", "AND"),
+                        wh.isEmpty()? null: wh,
                         null, null, null,
                         itemQueryDefaultOrder,
                         (limit > 0)? "" + limit: null);
@@ -1153,7 +1160,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // recently inserted item is located at top of rows.
         return db.query(TABLE_ITEM,
                         getColumnNames(columns),
-                        wh,
+                        wh.isEmpty()? null: wh,
                         null, null, null,
                         itemQueryDefaultOrder,
                         (limit > 0)? "" + limit: null);
@@ -1183,8 +1190,9 @@ UnexpectedExceptionHandler.TrackedModule {
     long
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
         markItemTableChanged();
+        String wh = buildSQLWhere(wheres, values, "=", "OR");
         return db.delete(TABLE_ITEM,
-                         buildSQLWhere(wheres, values, "=", "OR"),
+                         wh.isEmpty()? null: wh,
                          null);
     }
 
@@ -1224,6 +1232,7 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      *
      * @param cids
+     *   'null' for all items.
      * @param column
      * @param bMax
      * @return
@@ -1232,14 +1241,19 @@ UnexpectedExceptionHandler.TrackedModule {
     queryItemMinMax(long[] cids, ColumnItem column, boolean bMax) {
         String where = "";
         int i = 0;
-        while (i < cids.length) {
-            where += ColumnItem.CHANNELID.getName() + " = " + cids[i];
-            if (++i < cids.length)
-                where += " OR ";
+        if (null != cids) {
+            while (i < cids.length) {
+                where += ColumnItem.CHANNELID.getName() + " = " + cids[i];
+                if (++i < cids.length)
+                    where += " OR ";
+            }
         }
+        if (!where.isEmpty())
+            where = " WHERE " + where;
+
         return db.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
                            + ") FROM " + TABLE_ITEM
-                           + " WHERE " + where, null);
+                           + where, null);
     }
 
     /**
