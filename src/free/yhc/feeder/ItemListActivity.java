@@ -35,6 +35,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -83,6 +84,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public static final int ModeChannel       = 0; // items of channel
     public static final int ModeCategory      = 1; // items of category
     public static final int ModeFavorite      = 2; // favorite items
+    public static final int ModeAll           = 3; // all items
 
     // bit[3:7] filter : select items
     // others are reserved (ex. filtering items with time (specific period of time) etc)
@@ -114,10 +116,19 @@ UnexpectedExceptionHandler.TrackedModule {
         protected String search = "";
         protected long   fromPubtime = -1;
         protected long   toPubtime = -1;
+        protected volatile boolean bgtaskRunning = false;
 
-        void    onCreate() {}
+        void    onCreate() {
+            getActionBar().setDisplayShowHomeEnabled(false);
+        }
+
         void    onResume() {}
         Cursor  query()    { return null; }
+
+        boolean doesRunningBGTaskExists() {
+            return bgtaskRunning;
+        }
+
         long    minPubtime() { return -1; }
         void    setFilter(String search, long fromPubtime, long toPubtime) {
             this.search = search;
@@ -159,13 +170,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         void onCreate() {
+            super.onCreate();
             setTitle(db.getChannelInfoString(cid, DB.ColumnChannel.TITLE));
             // TODO
             //   How to use custom view + default option menu ???
             //
             // Set custom action bar
             ActionBar bar = getActionBar();
-            bar.setDisplayShowHomeEnabled(false);
             LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
             bar.setCustomView(abView, new ActionBar.LayoutParams(
                     LayoutParams.WRAP_CONTENT,
@@ -180,6 +191,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         void onResume() {
+            super.onResume();
             // See comments in 'ChannelListActivity.onPause()'
             // Bind update task if needed
             RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
@@ -225,24 +237,31 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         void onCreate() {
+            super.onCreate();
             setTitle(getResources().getString(R.string.category) + ":" + db.getCategoryName(categoryid));
-            getActionBar().setDisplayShowHomeEnabled(false);
-
-            Long[] whereValues = Utils.convertArraylongToLong(cids);
-            Long[] targetValues = new Long[whereValues.length];
-            DBPolicy.S().getDelayedChannelUpdate();
-            try {
-                for (int i = 0; i < whereValues.length; i++)
-                    targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
-                DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
-                                              DB.ColumnChannel.ID, whereValues);
-            } finally {
-                DBPolicy.S().putDelayedChannelUpdate();
-            }
+            bgtaskRunning = true;
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                    Long[] whereValues = Utils.convertArraylongToLong(cids);
+                    Long[] targetValues = new Long[whereValues.length];
+                    DBPolicy.S().getDelayedChannelUpdate();
+                    try {
+                        for (int i = 0; i < whereValues.length; i++)
+                            targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
+                        DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
+                                                      DB.ColumnChannel.ID, whereValues);
+                    } finally {
+                        DBPolicy.S().putDelayedChannelUpdate();
+                        bgtaskRunning = false;
+                    }
+                }
+            });
         }
 
         @Override
         void onResume() {
+            super.onResume();
             // Bind update task if needed
             for (long cid : cids) {
                 RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
@@ -272,12 +291,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         void onCreate() {
-            setTitle(getResources().getString(R.string.favorite_item));
-            getActionBar().setDisplayShowHomeEnabled(false);
+            super.onCreate();
+            setTitle(getResources().getString(R.string.favorite_items));
         }
 
         @Override
         void onResume() {
+            super.onResume();
             long[] ids = RTTask.S().getItemsDownloading();
             DBPolicy.S().getDelayedChannelUpdate();
             try {
@@ -317,6 +337,64 @@ UnexpectedExceptionHandler.TrackedModule {
             return db.getItemMinPubtime(DB.ColumnItem.STATE,
                                         Feed.Item.MStatFav,
                                         Feed.Item.FStatFavOn);
+        }
+    }
+
+    private class OpModeAll extends OpMode {
+        private long[] cids = null;
+
+        OpModeAll(Intent intent) {
+            cids = DBPolicy.S().getChannelIds();
+        }
+
+        long[] getCids() {
+            return cids;
+        }
+
+        @Override
+        void onCreate() {
+            super.onCreate();
+            setTitle(getResources().getString(R.string.all_items));
+
+            bgtaskRunning = true;
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+                    DBPolicy.S().getDelayedChannelUpdate();
+                    try {
+                        Long[] whereValues = Utils.convertArraylongToLong(cids);
+                        Long[] targetValues = new Long[whereValues.length];
+                        DBPolicy.S().getDelayedChannelUpdate();
+                        for (int i = 0; i < whereValues.length; i++)
+                            targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
+                        DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
+                                                      DB.ColumnChannel.ID, whereValues);
+                    } finally {
+                        DBPolicy.S().putDelayedChannelUpdate();
+                        bgtaskRunning = false;
+                    }
+                }
+            });
+
+        }
+
+        @Override
+        void onResume() {
+            super.onResume();
+            // Bind downloading tasks
+            long[] ids = RTTask.S().getItemsDownloading();
+            for (long id : ids)
+                RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+        }
+
+        @Override
+        Cursor query() {
+            return db.queryItem(queryProjection, search, fromPubtime, toPubtime);
+        }
+
+        @Override
+        long minPubtime() {
+            return db.getItemMinPubtime();
         }
     }
 
@@ -701,7 +779,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     setUpdateButton() {
         // Update is supported only at channel item list.
-        if (opMode instanceof OpModeCategory)
+        if (!(opMode instanceof OpModeChannel))
             return;
 
         ActionBar bar = getActionBar();
@@ -989,6 +1067,9 @@ UnexpectedExceptionHandler.TrackedModule {
         case ModeFavorite:
             opMode = new OpModeFavorite(getIntent());
             break;
+        case ModeAll:
+            opMode = new OpModeAll(getIntent());
+            break;
         default:
             eAssert(false);
         }
@@ -1065,6 +1146,8 @@ UnexpectedExceptionHandler.TrackedModule {
             cids = new long[] { ((OpModeChannel)opMode).getChannelId() };
         else if (opMode instanceof OpModeCategory)
             cids = ((OpModeCategory)opMode).getCids();
+        else if (opMode instanceof OpModeAll)
+            cids = ((OpModeAll)opMode).getCids();
 
         // Simple algorithm : nested loop because # of channel is small enough in most cases.
         boolean channelChanged = false;
@@ -1124,17 +1207,12 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public boolean
     onKeyDown(int keyCode, KeyEvent event)  {
-        /* Backing to original list takes too much time
-         * Without any notification to user, this functionality would better not to be used.
         if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
-            if (null != opMode && opMode.isFilterEnabled()) {
-                // Disable filter.
-                opMode.setFilter("", -1, -1);
-                refreshList();
-                return true;
-            }
+            try {
+                while (opMode.doesRunningBGTaskExists())
+                    Thread.sleep(50);
+            } catch (InterruptedException e) {}
         }
-         */
         return super.onKeyDown(keyCode, event);
     }
 }

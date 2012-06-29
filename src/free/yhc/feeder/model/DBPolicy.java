@@ -933,6 +933,27 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
+     * get all channel ids.
+     * @return
+     */
+    public long[]
+    getChannelIds() {
+        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
+                                   new ColumnChannel[] { ColumnChannel.STATE },
+                                   new Object[] { Feed.Channel.FStatUsed },
+                                   null, false, 0);
+        long[] cids = new long[c.getCount()];
+        if (c.moveToFirst()) {
+            int i = 0;
+            do {
+                cids[i++] = c.getLong(0);
+            } while (c.moveToNext());
+        }
+        c.close();
+        return cids;
+    }
+
+    /**
      * Get all channel ids belonging to given category.
      * @param categoryid
      * @return
@@ -1086,6 +1107,15 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
+     * @return
+     */
+    public long
+    getItemMinPubtime() {
+        return getItemMinPubtime(null);
+    }
+
+    /**
+     *
      * @param cid
      * @return
      *   -1 if there is no item otherwise time in millis.
@@ -1179,6 +1209,17 @@ UnexpectedExceptionHandler.TrackedModule {
         return v;
     }
 
+    public Cursor
+    queryItem(ColumnItem[] columns) {
+        return queryItem(null, columns);
+    }
+
+    public Cursor
+    queryItem(ColumnItem[] columns,
+              String search, long fromPubtime, long toPubtime) {
+        return queryItem(null, columns, search, fromPubtime, toPubtime);
+    }
+
     /**
      * Query item information belonging to given channel.
      * @param cid
@@ -1229,11 +1270,15 @@ UnexpectedExceptionHandler.TrackedModule {
     public Cursor
     queryItem(long[] cids, ColumnItem[] columns,
               String search, long fromPubtime, long toPubtime) {
-        ColumnItem[] cols = new ColumnItem[cids.length];
-        for (int i = 0; i < cols.length; i++)
-            cols[i] = ColumnItem.CHANNELID;
+        ColumnItem[] cols = null;
+        if (null != cids) {
+            cols = new ColumnItem[cids.length];
+            for (int i = 0; i < cols.length; i++)
+                cols[i] = ColumnItem.CHANNELID;
+        }
         return db.queryItemOR(columns,
-                              cols, Utils.convertArraylongToLong(cids),
+                              cols,
+                              null != cids? Utils.convertArraylongToLong(cids): null,
                               new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
                               new String[] { search, search },
                               fromPubtime, toPubtime,

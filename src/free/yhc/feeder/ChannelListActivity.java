@@ -965,6 +965,13 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    onOpt_addChannel_predefined() {
+        Intent intent = new Intent(this, PredefinedChannelActivity.class);
+        intent.putExtra("category", getCurrentCategoryId());
+        startActivityForResult(intent, reqCPickPredefinedChannel);
+    }
+
+    private void
     onOpt_addChannel() {
         if (0 == ab.getNavigationItemCount()) {
             eAssert(false);
@@ -982,21 +989,20 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        final int[] optStringIds = { R.string.enter_channel_address, R.string.youtube_channel };
-        final CharSequence[] items = new CharSequence[optStringIds.length];
-        for (int i = 0; i < optStringIds.length; i++)
-            items[i] = getResources().getText(optStringIds[i]);
-
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(getResources().getText(R.string.select_channel_type));
-        builder.setItems(items, new DialogInterface.OnClickListener() {
+        builder.setItems(R.array.strarr_addchannel_menus,
+                         new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int item) {
-                switch (optStringIds[item]) {
-                case R.string.enter_channel_address:
+                switch (item) {
+                case 0: /* R.string.select_predefined_channel */
+                    onOpt_addChannel_predefined();
+                    break;
+                case 1: /* R.string.enter_channel_address */
                     onOpt_addChannel_url();
                     break;
-                case R.string.youtube_channel:
+                case 2: /* R.string.youtube_channel */
                     onOpt_addChannel_youtube();
                     break;
                 default:
@@ -1008,9 +1014,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     }
 
-
     private void
-    onOpt_itemsCategory() {
+    onOpt_category_items() {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
         intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeCategory);
         intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
@@ -1019,15 +1024,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_itemsFavorite() {
-        Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeFavorite);
-        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
-        startActivity(intent);
-    }
-
-    private void
-    onOpt_addCategory() {
+    onOpt_category_add() {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -1054,7 +1051,29 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_deleteCategory() {
+    onOpt_category_rename() {
+        // Set action for dialog.
+        final EditTextDialogAction action = new EditTextDialogAction() {
+            @Override
+            public void prepare(Dialog dialog, EditText edit) {
+                edit.setHint(R.string.enter_name);
+            }
+            @Override
+            public void onOk(Dialog dialog, EditText edit) {
+                String name = edit.getText().toString();
+                if (DBPolicy.S().isDuplicatedCategoryName(name)) {
+                    LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                } else {
+                    ab.getSelectedTab().setText(name);
+                    DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
+                }
+            }
+        };
+        buildOneLineEditTextDialog(R.string.rename_category, action).show();
+    }
+
+    private void
+    onOpt_category_delete() {
         final long categoryid = getCategoryId(ab.getSelectedTab());
         if (DBPolicy.S().isDefaultCategoryId(categoryid)) {
             LookAndFeel.showTextToast(this, R.string.warn_delete_default_category);
@@ -1075,26 +1094,50 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_renameCategory() {
-        // Set action for dialog.
-        final EditTextDialogAction action = new EditTextDialogAction() {
+    onOpt_category() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(getResources().getText(R.string.category));
+        builder.setItems(R.array.strarr_category_menus,
+                         new DialogInterface.OnClickListener() {
             @Override
-            public void prepare(Dialog dialog, EditText edit) {
-                edit.setHint(R.string.enter_name);
-            }
-            @Override
-            public void onOk(Dialog dialog, EditText edit) {
-                String name = edit.getText().toString();
-                if (DBPolicy.S().isDuplicatedCategoryName(name)) {
-                    LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
-                } else {
-                    ab.getSelectedTab().setText(name);
-                    DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
+            public void onClick(DialogInterface dialog, int item) {
+                switch (item) {
+                case 0: /* R.string.list_category_items */
+                    onOpt_category_items();
+                    break;
+                case 1: /* R.string.add_category */
+                    onOpt_category_add();
+                    break;
+                case 2: /* R.string.rename_category */
+                    onOpt_category_rename();
+                    break;
+                case 3: /* R.string.delete_category */
+                    onOpt_category_delete();
+                    break;
+                default:
+                    eAssert(false);
                 }
             }
-        };
-        buildOneLineEditTextDialog(R.string.rename_category, action).show();
+        });
+        builder.create().show();
     }
+
+    private void
+    onOpt_itemsAll() {
+        Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeAll);
+        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+        startActivity(intent);
+    }
+
+    private void
+    onOpt_itemsFavorite() {
+        Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeFavorite);
+        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+        startActivity(intent);
+    }
+
 
     private void
     onOpt_deleteAllDnfiles() {
@@ -1122,13 +1165,6 @@ UnexpectedExceptionHandler.TrackedModule {
     onOpt_setting() {
         Intent intent = new Intent(this, FeederPreferenceActivity.class);
         startActivity(intent);
-    }
-
-    private void
-    onOpt_selectPredefinedChannel() {
-        Intent intent = new Intent(this, PredefinedChannelActivity.class);
-        intent.putExtra("category", getCurrentCategoryId());
-        startActivityForResult(intent, reqCPickPredefinedChannel);
     }
 
     private void
@@ -1298,20 +1334,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     setupToolButtons() {
-        findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onOpt_addChannel();
-            }
-        });
-
-        findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onOpt_itemsCategory();
-            }
-        });
-
         findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -1319,24 +1341,24 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        findViewById(R.id.btn_add_category).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_items_all).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_addCategory();
+                onOpt_itemsAll();
             }
         });
 
-        findViewById(R.id.btn_del_category).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_deleteCategory();
+                onOpt_addChannel();
             }
         });
 
-        findViewById(R.id.btn_rename_category).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_renameCategory();
+                onOpt_category();
             }
         });
 
@@ -1351,13 +1373,6 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onClick(View v) {
                 onOpt_setting();
-            }
-        });
-
-        findViewById(R.id.btn_predefined).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                onOpt_selectPredefinedChannel();
             }
         });
 
