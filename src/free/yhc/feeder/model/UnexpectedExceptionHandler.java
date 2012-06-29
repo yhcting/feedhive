@@ -234,6 +234,9 @@ OnSharedPreferenceChangeListener {
 
         File[] fs = UIPolicy.getLogFiles();
 
+        if (null == fs)
+            return;
+
         if (fs.length <= 0)
             return; // nothing to do.
 

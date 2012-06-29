@@ -1,7 +1,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 import android.content.Context;
 import android.os.Handler;
 import android.view.LayoutInflater;
@@ -11,12 +10,10 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class AsyncAdapter extends BaseAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
-
-    private   final Thread        uiThread = Thread.currentThread();
-
     // Variables to store information - not changed in dynamic
     protected final Context       context;
     protected final Handler       uiHandler = new Handler();
@@ -156,13 +153,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     protected boolean
-    isUiThread() {
-        return Thread.currentThread() == uiThread;
-    }
-
-    protected boolean
     initalLoaded() {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         return !(1 == items.length && items[0] == dummyItem);
     }
 
@@ -182,7 +174,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     protected void
     destroyItem(Object item) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         if (dummyItem != item)
             dp.destroyData(this, item);
     }
@@ -194,7 +186,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     protected void
     setItem(int pos, Object item) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         if (pos >= 0 && pos < items.length) {
             destroyItem(items[pos]);
             items[pos] = item;
@@ -212,7 +204,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     protected void
     insertItem(int pos, Object item) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         eAssert(pos >= 0 && pos <= items.length);
         Object[] newItems = new Object[items.length + 1];
         System.arraycopy(items, 0, newItems, 0, pos);
@@ -230,7 +222,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     protected void
     removeItem(int pos) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         if (pos < 0 || pos >= items.length)
             // nothing to do
             return;
@@ -254,7 +246,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private Object[]
     buildNewItemsArray(LDType ldtype, int from, int sz) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         eAssert(0 <= sz);
         Object[] newItems = null;
 
@@ -303,9 +295,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     requestDataAsync(final LDType ldtype, final int from, final int sz) {
-        logI("Data request UI : from " + from + ", # " + sz);
+        //logI("Data request UI : from " + from + ", # " + sz);
 
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
 
         final long reqSeq = ++nrseq;
         dpDone = false;
@@ -337,19 +329,24 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * This function would better to be called mainly when
-     *   - number of data is changed.
+     *   - number of data is changed (decreased / increased).
      *   - lots of change in item order (ex. one of item in the middle is deleted etc)
      */
     public void
     reloadDataSetAsync() {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         int from = posTop + lv.getFirstVisiblePosition() - firstLDahead;
         from = from < 0? 0: from;
         requestDataAsync(LDType.RELOAD, from, dataReqSz);
     }
 
     /**
-     *
+     * @param priv
+     *   Internal value passed by {@link AsyncAdapter}
+     *   This value should be passed as it is.
+     * @param reqSeq
+     *   sequence number. (Given by adapter)
+     *   This also should be passed as it is.
      * @param from
      * @param aitems
      * @param eod
@@ -445,7 +442,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     @Override
     public int getCount() {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         //Log.i(TAG, ">>> getCount");
         return items.length;
     }
@@ -453,7 +450,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public Object
     getItem(int pos) {
-        eAssert(isUiThread());
+        eAssert(Utils.isUiThread());
         //Log.i(TAG, ">>> getItem : " + position);
         if (pos < 0 || pos >= items.length)
             return null;
