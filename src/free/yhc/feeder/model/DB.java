@@ -1155,7 +1155,9 @@ UnexpectedExceptionHandler.TrackedModule {
         String wh = buildSQLWhere(wheres, values, "=", "OR");
         String search = buildSQLWhere(getColumnNames(searchFields), searchs,
                                       fromPubtime, toPubtime);
-        if (!search.isEmpty())
+        if (wh.isEmpty())
+            wh = search;
+        else if (!search.isEmpty())
             wh += " AND " + search;
         // recently inserted item is located at top of rows.
         return db.query(TABLE_ITEM,
