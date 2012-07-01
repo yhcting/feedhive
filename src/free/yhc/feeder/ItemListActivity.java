@@ -422,7 +422,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPreRun(BGTask task) {
-            ; // nothing to do
+            requestSetUpdateButton();
         }
 
         @Override
@@ -800,8 +800,10 @@ UnexpectedExceptionHandler.TrackedModule {
         if (RTTask.TaskState.Idle == state) {
             iv.setImageResource(R.drawable.ic_refresh);
             setOnClick_startUpdate(iv);
-        } else if (RTTask.TaskState.Running == state
-                   || RTTask.TaskState.Ready == state) {
+        } else if (RTTask.TaskState.Ready == state) {
+            iv.setImageResource(R.drawable.ic_pause);
+            setOnClick_cancelUpdate(iv);
+        }else if (RTTask.TaskState.Running == state) {
             iv.setImageResource(R.anim.download);
             ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
