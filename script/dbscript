@@ -2,7 +2,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 3;
+PRAGMA user_version = 4;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -171,7 +171,7 @@ INSERT INTO channels VALUES (213, "한겨레 - 한겨레온리", "", "http://www
 INSERT INTO channels VALUES (214, "한겨레 - 멀티하니(사진뉴스)", "", "http://www.hani.co.kr/rss/multihani/", "", "언론", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (215, "한겨레 - 주요기사", "", "http://www.hani.co.kr/rss/lead", "", "언론", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (216, "한겨레 - 인기기사", "", "http://www.hani.co.kr/rss/newsrank", "", "언론", "", "", "", "", "kor", 0);
-
+INSERT INTO channels VALUES (217, "무편집 친절한 기자들 (비디오)", "", "http://vod.hani.co.kr/kindreport/kindreport_vod.xml", "", "시사", "", "", "", "", "kor", 0);
 
 -- base offset for 경향신문 : 300
 INSERT INTO channels VALUES (300, "경향신문 - 전체", "", "http://www.khan.co.kr/rss/rssdata/total_news.xml", "", "언론", "", "", "", "", "kor", 0);
@@ -439,6 +439,7 @@ INSERT INTO channels VALUES (1500, "딴지일보", "", "http://feeds.feedburner.
 INSERT INTO channels VALUES (1550, "나는 꼼수다", "", "http://old.ddanzi.com/appstream/ddradio.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (1551, "나는 꼽사리다", "", "http://old.ddanzi.com/appstream/ggobsari.xml", "", "시사", "팟캐스트", "경제", "", "", "kor", 0);
 INSERT INTO channels VALUES (1552, "나는 딴따라다", "", "http://old.ddanzi.com/appstream/ddanddara.xml", "", "시사", "팟캐스트", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (1553, "주진우의 현대사", "", "http://old.ddanzi.com/appstream/drama.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 
 
 -- base offset for '외국어' : 1600
@@ -534,7 +535,7 @@ INSERT INTO channels VALUES (2110, "시사인 - 놀이터", "", "http://www.sisa
 INSERT INTO channels VALUES (2111, "시사인 - 광고페이지", "", "http://www.sisainlive.com/rss/S1N10.xml", "", "언론", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (2112, "시사인 - 공지", "", "http://www.sisainlive.com/rss/S1N11.xml", "", "언론", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (2113, "고재열의 독설닷컴", "", "http://poisontongue.sisain.co.kr/rss/xml", "", "시사", "", "", "", "", "kor", 0);
-
+INSERT INTO channels VALUES (2114, "시사인 편집국", "", "http://blog.daum.net/xml/rss/streetsisajournal", "", "시사", "", "", "", "", "kor", 0);
 
 -- base offset for 머니투데이 : 2200
 INSERT INTO channels VALUES (2200, "머니투데이 - 최신기사", "", "http://rss.mt.co.kr/mt_news.xml", "", "언론", "경제", "", "", "", "kor", 0);
@@ -788,7 +789,8 @@ INSERT INTO channels VALUES (3903, "이상호기자의 발뉴스", "", "http://w
 INSERT INTO channels VALUES (3904, "나는 친박이다", "", "http://www.iblug.com/xml/itunes/propark.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (3905, "허재현의 현장일기", "", "http://feeds.feedburner.com/iblug/OCnu?format=xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (3906, "노무현의 사람사는 세상", "", "http://www.iblug.com/xml/itunes/rohmoohyun.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
-
+INSERT INTO channels VALUES (3907, "Do it! 안드로이드 앱 프로그래밍", "", "http://www.iblug.com/podcastxml/easysandroidapp", "", "기술/과학", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (3908, "일빵빵 스토리가 있는 영어회화", "", "http://www.iblug.com/podcastxml/ilbangbang", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
 
 -- base offset for thinktv: 4000
 INSERT INTO channels VALUES (4000, "싱크TV", "", "http://thinktv.kr/rss/news.xml", "", "시사", "", "", "", "", "kor", 0);
@@ -828,6 +830,62 @@ INSERT INTO channels VALUES (4220, "뉴스와이어 - 유통", "", "http://api.n
 INSERT INTO channels VALUES (4221, "뉴스와이어 - 자동차", "", "http://api.newswire.co.kr/rss/industry/500", "", "인터넷 뉴스", "자동차", "생활", "", "", "kor", 0);
 INSERT INTO channels VALUES (4222, "뉴스와이어 - 정책/정부", "", "http://api.newswire.co.kr/rss/industry/1400", "", "인터넷 뉴스", "시사", "정치", "", "", "kor", 0);
 
+-- base offset for 프레시안: 4300
+INSERT INTO channels VALUES (4300, "프레시안 - 전체", "", "http://www.pressian.com/rss/rss.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4301, "프레시안 - 세계", "", "http://www.pressian.com/rss/international.xml", "", "언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4302, "프레시안 - 경제", "", "http://www.pressian.com/rss/economy.xml", "", "언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4303, "프레시안 - 정치", "", "http://www.pressian.com/rss/politics.xml", "", "언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4304, "프레시안 - 사회", "", "http://www.pressian.com/rss/society.xml", "", "언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4305, "프레시안 - 문화", "", "http://www.pressian.com/rss/culture.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4306, "프레시안 - 미디어", "", "http://www.pressian.com/rss/media.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4307, "프레시안 - 스포츠/연예", "", "http://www.pressian.com/rss/sports.xml", "", "언론", "스포츠", "연예", "", "", "kor", 0);
+INSERT INTO channels VALUES (4308, "프레시안 - 무비/스테이지", "", "http://www.pressian.com/rss/movie.xml", "", "언론", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4309, "프레시안 - 책", "", "http://www.pressian.com/rss/books.xml", "", "언론", "교양", "", "", "", "kor", 0);
+
+
+-- base offset for KBS 라디오: 4400
+INSERT INTO channels VALUES (4400, "유인나의 볼륨을 높여요", "", "http://tune.kbs.co.kr/rss/188.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4401, "신성원의 문화읽기", "", "http://tune.kbs.co.kr/rss/41.xml", "", "라디오", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4402, "라디오 독서실", "", "http://tune.kbs.co.kr/rss/159.xml", "", "라디오", "교양", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4403, "최강희의 야간비행", "", "http://tune.kbs.co.kr/rss/190.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4404, "슈퍼주니어의 키스더라디오", "", "http://tune.kbs.co.kr/rss/6.xm", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4405, "윤상의 팝스 팝스", "", "http://tune.kbs.co.kr/rss/131.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4406, "건강플러스 이충헌입니다", "", "http://tune.kbs.co.kr/rss/103.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4407, "대한민국 경제실록", "", "http://tune.kbs.co.kr/rss/67.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4408, "라디오 119", "", "http://tune.kbs.co.kr/rss/109.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4409, "라디오 시사고전", "", "http://tune.kbs.co.kr/rss/84.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4410, "라디오 정보센터 (2부 집중인터뷰)", "", "http://tune.kbs.co.kr/rss/231.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4411, "생방송 오늘 유애리입니다", "", "http://tune.kbs.co.kr/rss/108.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4412, "성공예감 김방희입니다", "", "http://tune.kbs.co.kr/rss/8.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4413, "성기영의 경제투데이", "", "http://tune.kbs.co.kr/rss/86.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4414, "안녕하십니까 홍지명입니다", "", "http://tune.kbs.co.kr/rss/102.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4415, "KBS 열린토론", "", "http://tune.kbs.co.kr/rss/40.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4416, "김광진의 경제포커스", "", "http://tune.kbs.co.kr/rss/34.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4417, "노래의 날개위에", "", "http://tune.kbs.co.kr/rss/33.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4418, "데니의 뮤직쇼", "", "http://tune.kbs.co.kr/rss/43.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4419, "사랑하기 좋은날 이금희입니다", "", "http://tune.kbs.co.kr/rss/107.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4420, "이근철의 굿모닝팝스", "", "http://tune.kbs.co.kr/rss/1.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4421, "이현우의 음악앨범", "", "http://tune.kbs.co.kr/rss/29.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4422, "전현무의 가요광장", "", "http://tune.kbs.co.kr/rss/189.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4423, "황정민의 FM대행진", "", "http://tune.kbs.co.kr/rss/105.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4424, "다큐멘터리 역사를 찾아서", "", "http://tune.kbs.co.kr/rss/230.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4425, "KBS무대", "", "http://tune.kbs.co.kr/rss/229.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4426, "재주소년 유상봉의 밤소풍", "", "http://tune.kbs.co.kr/rss/207.xml", "", "라디오", "", "", "", "", "kor", 0);
+
+-- base offset for TED Takls : 4500
+INSERT INTO channels VALUES (4500, "TED Talks", "", "http://feeds.feedburner.com/KoreanPodcastKidsAndFamily", "", "", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4501, "TED Talks - 아동과 가족", "", "http://feeds.feedburner.com/KoreanPodcastKidsAndFamily", "", "생활", "어린이", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4502, "TED Talks - 음악", "", "http://feeds.feedburner.com/KoreanPodcastMusic", "", "음악", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4503, "TED Talks - 건강", "", "http://feeds.feedburner.com/KoreanPodcastHealth", "", "생활", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4504, "TED Talks - 뉴스와 정치", "", "http://feeds.feedburner.com/KoreanPodcastNewsAndPolitics", "", "정치", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4505, "TED Talks - 예술", "", "http://feeds.feedburner.com/KoreanPodcastArt", "", "", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4506, "TED Talks - 과학과 의료", "", "http://feeds.feedburner.com/KoreanPodcastScienceAndMedicine", "", "기술/과학", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4507, "TED Talks - 교육", "", "http://feeds.feedburner.com/KoreanPodcastEducation", "", "교육", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4508, "TED Talks - 사회와 문화", "", "http://feeds.feedburner.com/KoreanPodcastSocietyAndCulture", "", "사회", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4509, "TED Talks - 기술", "", "http://feeds.feedburner.com/KoreanPodcastTechnology", "", "기술/과학", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4510, "TED Talks - 비지니스", "", "http://feeds.feedburner.com/KoreanPodcastBusiness", "", "경제", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4511, "TED Talks - Video", "", "http://feeds.feedburner.com/TEDTalks_video", "", "", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (4512, "TED Talks (HD)", "", "http://feeds.feedburner.com/TedtalksHD", "", "", "", "", "", "", "kor", 0);
 
 -- base offset for each single feed : 10000000
 -- iblug is better than youtube! (to avoid duplication)
@@ -843,7 +901,6 @@ INSERT INTO channels VALUES (10000014, "CNET", "", "http://feeds.feedburner.com/
 INSERT INTO channels VALUES (10000015, "김영하의 책 읽는 시간", "", "http://feeds.feedburner.com/KIMYoungha?format=xml", "", "교양", "도서", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (10000016, "스피킹맥스 영어공식", "", "http://www.speakingmax.com/podcast/maxpodcast.php", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (10000017, "법륜스님의 즉문즉설", "", "http://jungto.libsyn.com/rss", "", "교양", "팟캐스트", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (10000018, "TEDTalks", "", "http://feeds.feedburner.com/TedtalksHD", "", "팟캐스트", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (10000019, "티앤티앤 생활중국어 회화", "", "http://www.jrchina.com/jrchina/podcast/tiantian.xml", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (10000020, "정철의 영어가 터지는 비법", "", "http://m.jungchul.com/xml/jungchul_1_111227_re2.xml", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (10000021, "5분 패턴영어", "", "http://enjoyenglish.libsyn.com/rss", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
@@ -851,3 +908,11 @@ INSERT INTO channels VALUES (10000022, "라디오 독서실", "", "http://tune.k
 INSERT INTO channels VALUES (10000023, "’잡주는 없다’ 스타전문가들의 코믹 투자해법", "", "http://pod.ssenhosting.com/rss/sezntff.xml", "", "경제", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (10000024, "이근철의 굿모닝 팝스", "", "http://tune.kbs.co.kr/rss/1.xm", "", "라디오", "팟캐스트", "외국어", "", "", "kor", 0);
 INSERT INTO channels VALUES (10000025, "게임 개발자 랩소디", "", "http://www.iblug.com/podcastxml/agebreak", "", "게임", "팟캐스트", "기술/과학", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000026, "비쥬얼 미디어", "", "http://itviewpoint.com/blog/rss", "", "기술/과학", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000027, "미디어몽구", "", "http://mongu.net/rss", "", "정치", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000028, "박경철 공감플러스", "", "http://mbn.mk.co.kr/rss/vod/vod_rss_6.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000029, "나는 일반인이다", "", "http://iamnormal.co.kr/programs/iamnormal.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000030, "책, 즐겁게 듣자!!", "", "http://audien.libsyn.com/rss", "", "교양", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000031, "이동진의 빨간 책가방", "", "http://ec.libsyn.com/p/d/0/9/d0996a60a3c2ad2c/redbooks.xml?d13a76d516d9dec20c3d276ce028ed5089ab1ce3dae902ea1d01cb8e33d5cf58b943&c_id=4456658", "", "교양", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000032, "대한민국 직업이야기 잡수다", "", "http://feeds.feedburner.com/libsyn/jobsooda", "", "교양", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (10000033, "티엔티엔 생활중국어회화", "", "http://www.jrchina.com/jrchina/podcast/tiantian.xml", "", "외국어", "", "", "", "", "kor", 0);
