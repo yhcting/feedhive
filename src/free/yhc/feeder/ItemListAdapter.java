@@ -288,23 +288,15 @@ AsyncCursorAdapter.ItemBuilder {
     bindView(View v, final Context context, int position)  {
         ItemInfo ii = (ItemInfo)getItem(position);
 
-        // NOTE
-        //   Check performance drop for this DB access...
-        //   If this is critical, we need to find other solution for updating state.
-        //   It seems OK on OMAP4430.
-        //   But, definitely slower than before...
-        // TODO
-        //   Do performance check on low-end-device.
-        final boolean favorite = Feed.Item.isStatFavOn(ii.state);
-
-        final TextView channelv     = (TextView)v.findViewById(R.id.channel);
-        final TextView titlev       = (TextView)v.findViewById(R.id.title);
-        final TextView descv        = (TextView)v.findViewById(R.id.description);
-        final ProgressTextView progressv = (ProgressTextView)v.findViewById(R.id.progress);
-        final TextView datev        = (TextView)v.findViewById(R.id.date);
-        final TextView infov        = (TextView)v.findViewById(R.id.info);
-        final ImageView imgv        = (ImageView)v.findViewById(R.id.image);
-        final ImageViewFavorite favImgv   = (ImageViewFavorite)v.findViewById(R.id.favorite);
+        final boolean           favorite    = Feed.Item.isStatFavOn(ii.state);
+        final TextView          channelv    = (TextView)v.findViewById(R.id.channel);
+        final TextView          titlev      = (TextView)v.findViewById(R.id.title);
+        final TextView          descv       = (TextView)v.findViewById(R.id.description);
+        final ProgressTextView  progressv   = (ProgressTextView)v.findViewById(R.id.progress);
+        final TextView          datev       = (TextView)v.findViewById(R.id.date);
+        final TextView          infov       = (TextView)v.findViewById(R.id.info);
+        final ImageView         imgv        = (ImageView)v.findViewById(R.id.image);
+        final ImageViewFavorite favImgv     = (ImageViewFavorite)v.findViewById(R.id.favorite);
 
         if (ii.bChannel) {
             channelv.setVisibility(View.VISIBLE);
