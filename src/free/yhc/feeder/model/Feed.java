@@ -101,17 +101,20 @@ public class Feed {
         public static final long MActTgt          = 0x01;
         public static final long FActTgtDefault   = 0x00;
 
-        // bit[1] : Action type is 'open / download' - default - open
-        public static final long FActOpOpen       = 0x00;
-        public static final long FActOpDn         = 0x02;
-        public static final long MActOp           = 0x02;
-        public static final long FActOpDefault    = 0x00;
+        // bit[1] : Action type is 'open / download / extern open' - default - open
+        // This value is not changed by user action.
+        // It's internal value.
+        public static final long FActOpOpen         = 0x00;
+        public static final long FActOpDn           = 0x02;
+        public static final long MActOp             = 0x02;
+        public static final long FActOpDefault      = 0x00;
 
-        // bit[2] : Action program is 'internal program / external - default - internal
+        // bit[3] : Action program is 'internal program / external - default - internal
         // Ex. in case of view web link, internal program means 'ItemViewActivity' and
         //   external program means 'other browsers'.
         // Internal program is very simple version so, it's fast.
         // External program is usually very powerful.
+        // This value can be changed by user setting.
         public static final long FActProgIn       = 0x00;
         public static final long FActProgEx       = 0x04;
         public static final long MActProg         = 0x04;
@@ -132,8 +135,12 @@ public class Feed {
         // ==================
         // Feed Type
         // ==================
-        public static final long ChannTypeNormal = 0; // for news/article etc
-        public static final long ChannTypeMedia  = 1; // for link and description for media data (etc. podcast)
+        // for news/article etc
+        public static final long ChannTypeArticle       = 0;
+        // for link and description for media data (ex. podcast)
+        public static final long ChannTypeMedia         = 1;
+        // link is page that embedding media data (ex. youtube)
+        public static final long ChannTypeEmbeddedMedia = 2;
 
         // 100 x 100 is enough size for channel icon.
         public static final int ICON_MAX_WIDTH  = 100;
@@ -149,7 +156,7 @@ public class Feed {
             // Type is usually determined by which namespace is used at XML.
             // For example.
             //   xmlns:itunes -> Media
-            long     type         = ChannTypeNormal;
+            long     type         = ChannTypeArticle;
             String   title        = "";
             String   description  = "";
             String   imageref     = "";

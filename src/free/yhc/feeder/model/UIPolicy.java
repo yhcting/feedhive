@@ -56,15 +56,14 @@ public class UIPolicy {
     static long
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
         if (null != iParD) {
-            if (isValidValue(iParD.enclosureUrl)) {
-                if (iParD.enclosureUrl.startsWith("rtsp://") || iParD.enclosureType.contains("shockwave"))
-                    return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpOpen;
-                else
-                    return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpDn;
-            } else
+            if (isValidValue(iParD.enclosureUrl))
+                return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpOpen | Feed.Channel.FActProgEx;
+            else
                 return Feed.Channel.FActTgtLink | Feed.Channel.FActOpOpen;
         } else if (Feed.Channel.ChannTypeMedia == cParD.type)
             return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpDn;
+        else if (Feed.Channel.ChannTypeEmbeddedMedia == cParD.type)
+            return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpOpen | Feed.Channel.FActProgEx;
         else
             // default is "open link"
             return Feed.Channel.FActTgtLink | Feed.Channel.FActOpOpen;

@@ -94,6 +94,10 @@ UnexpectedExceptionHandler.TrackedModule {
     //        Media
     // ========================================
     private class NSMediaParser extends NSParser {
+        private static final long extend_youtube = 0x1;
+        private static final long extend_mask    = 0x1;
+        private long extend = 0;
+
         NSMediaParser() {
             super(PRI_MEDIA);
         }
@@ -102,25 +106,27 @@ UnexpectedExceptionHandler.TrackedModule {
         setContent(ItemValues iv, Node n) {
             NamedNodeMap nnm = n.getAttributes();
             short nodepri = 0;
-
-            // NOTE
+            Node attrN = null;
+            // NOTE YOUTUBE hack
             // YOUTUBE SPECIFIC PARSING - START
             // handle attribute for youtube "yt" namespace in "media:content"
-            Node attrN = nnm.getNamedItem("yt:format");
-            short  ytformat = 1;
-            if (null != attrN)
-                ytformat = Short.parseShort(attrN.getNodeValue());
+            // larger yt:format value is preferred
+            // use yt:format value as node priority.
+            if (Utils.bitIsSet(extend, extend_youtube, extend_mask)) {
+                attrN = nnm.getNamedItem("yt:format");
+                short  ytformat = 1;
+                if (null != attrN)
+                    ytformat = Short.parseShort(attrN.getNodeValue());
 
-            // only ytformat 5 has highest priority
-            if (5 == ytformat)
-                nodepri += 100;
-            else
-                nodepri += ytformat;
+                // yt:format 5 has highest priority
+                if (5 == ytformat)
+                    nodepri += 100;
+                else
+                    nodepri += ytformat;
+            }
             // YOUTUBE SPECIFIC PARSING - END
 
 
-            // larger yt:format value is preferred
-            // use yt:format value as node priority.
             attrN = nnm.getNamedItem("url");
             if (null != attrN)
                 setValue(iv.enclosure_url, attrN.getNodeValue(), nodepri);
@@ -129,6 +135,17 @@ UnexpectedExceptionHandler.TrackedModule {
                 setValue(iv.enclosure_type, attrN.getNodeValue(), nodepri);
         }
 
+        // NOTE YOUTUBE hack
+        void
+        enableYoutube() {
+            extend |= extend_youtube;
+        }
+
+        // NOTE YOUTUBE hack
+        boolean
+        isYoutubeEnabled() {
+            return (Utils.bitIsSet(extend, extend_youtube, extend_mask));
+        }
 
         @Override
         boolean
@@ -168,8 +185,16 @@ UnexpectedExceptionHandler.TrackedModule {
         pl.add(new NSDefaultParser());
 
         // To support 'media' name space.
-        if (null != nnm.getNamedItem("xmlns:media"))
-            pl.add(new NSMediaParser());
+        if (null != nnm.getNamedItem("xmlns:media")) {
+            NSMediaParser nsmp = new NSMediaParser();
+
+            // NOTE YOUTUBE hack
+            if (null != nnm.getNamedItem("xmlns:yt"))
+                nsmp.enableYoutube();
+
+            pl.add(nsmp);
+        }
+
     }
 
     private String
@@ -251,7 +276,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ RSSParser ]";
+        return "[ AtomParser ]";
     }
 
     @Override
@@ -268,6 +293,12 @@ UnexpectedExceptionHandler.TrackedModule {
             LinkedList<NSParser> pl = new LinkedList<NSParser>();
             constructNSParser(pl, root);
             res = new Result();
+
+            // NOTE YOUTUBE hack
+            for (NSParser p : pl.toArray(new NSParser[0]))
+                if ((p instanceof NSMediaParser) && ((NSMediaParser)p).isYoutubeEnabled())
+                    res.channel.type = Feed.Channel.ChannTypeEmbeddedMedia;
+
             nodeFeed(res, pl.toArray(new NSParser[0]), root);
         } finally {
             UnexpectedExceptionHandler.S().unregisterModule(this);
