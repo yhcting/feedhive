@@ -168,7 +168,7 @@ AsyncCursorAdapter.ItemBuilder {
     public void
     setChannelIcon(long cid, Bitmap bm) {
         eAssert(Utils.isUiThread());
-        ItemInfo ii = (ItemInfo)getItem(findItemId(cid));
+        ItemInfo ii = (ItemInfo)getItem(findPosition(cid));
         if (null != ii) {
             if (null != ii.bm)
                 ii.bm.recycle();
