@@ -1526,6 +1526,9 @@ UnexpectedExceptionHandler.TrackedModule {
         // Select default category as current category.
         selectDefaultAsSelected();
 
+        // To avoid duplicated refreshing list at onResume().
+        DBPolicy.S().registerChannelWatcher(this);
+        DBPolicy.S().registerChannelTableWatcher(this);
     }
 
 

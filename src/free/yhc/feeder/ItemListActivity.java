@@ -1143,6 +1143,15 @@ UnexpectedExceptionHandler.TrackedModule {
         if (DBPolicy.S().isChannelWatcherRegistered(this))
             watchCids = DBPolicy.S().getChannelWatcherUpdated(this);
 
+        // default is 'full-refreshing'
+        boolean itemTableWatcherUpdated = true;
+
+        if (DBPolicy.S().isItemTableWatcherRegistered(this))
+            itemTableWatcherUpdated = DBPolicy.S().isItemTableWatcherUpdated(this);
+
+        DBPolicy.S().unregisterChannelWatcher(this);
+        DBPolicy.S().unregisterItemTableWatcher(this);
+
         long[] cids = new long[0];
         if (opMode instanceof OpModeChannel)
             cids = new long[] { ((OpModeChannel)opMode).getChannelId() };
@@ -1161,8 +1170,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
         }
 
-        if (channelChanged
-            && DBPolicy.S().isItemTableWatcherUpdated(this))
+        if (channelChanged && itemTableWatcherUpdated)
             fullRefresh = true;
 
         if (fullRefresh)
