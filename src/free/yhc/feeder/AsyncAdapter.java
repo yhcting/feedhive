@@ -337,7 +337,15 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(Utils.isUiThread());
         int from = posTop + lv.getFirstVisiblePosition() - firstLDahead;
         from = from < 0? 0: from;
+        // dataset may be changed. So, reset dataCnt to 'unknown'
+        dataCnt = -1;
         requestDataAsync(LDType.RELOAD, from, dataReqSz);
+    }
+
+    public void
+    moveToFirstDataSet() {
+        eAssert(Utils.isUiThread());
+        posTop = 0;
     }
 
     /**

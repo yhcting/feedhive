@@ -1023,6 +1023,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 diag.setTitle(R.string.plz_wait);
                 opMode.setFilter(search, from.getTimeInMillis(), to.getTimeInMillis());
+                list.setSelection(0);
+                getListAdapter().moveToFirstDataSet();
                 Utils.getUiHandler().post(new Runnable() {
                    @Override
                    public void run() {
