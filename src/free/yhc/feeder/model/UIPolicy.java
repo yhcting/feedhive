@@ -35,6 +35,8 @@ import android.preference.PreferenceManager;
  *     - initial setting of values.
  */
 public class UIPolicy {
+    public static final String prefKeyAppRoot = "app_root";
+
     private static String appRootDir;
     private static File   appTempDirFile;
     private static File   appLogDirFile;
@@ -108,9 +110,7 @@ public class UIPolicy {
     public static void
     init(Context context)  {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        String appRoot = prefs.getString("app_root", null);
-        if (null == appRoot)
-            appRoot="/sdcard/yhcFeeder";
+        String appRoot = prefs.getString(prefKeyAppRoot, "/sdcard/yhcFeeder");
         setAppDirectories(appRoot);
         cleanTempFiles();
     }
