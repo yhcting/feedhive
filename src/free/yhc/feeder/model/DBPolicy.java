@@ -714,7 +714,9 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
                     throw new FeederException(Err.DBUnknown);
                 // Invalidate cached value.
-                maxIdCache.remove(cid);
+                synchronized (maxIdCache) {
+                    maxIdCache.put(cid, itemDbD.id);
+                }
 
                 if (null != idop && null != f) {
                     // NOTE
@@ -1089,9 +1091,11 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long
     getItemInfoMaxId(long cid) {
-        Long v = maxIdCache.get(cid);
-        if (null != v)
-            return v;
+        synchronized (maxIdCache) {
+            Long v = maxIdCache.get(cid);
+            if (null != v)
+                return v;
+        }
 
         Cursor c = db.queryItemIds(cid, 1);
         if (!c.moveToFirst())
@@ -1101,7 +1105,10 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, this one is last item id.
         long lastId = c.getLong(0);
         c.close();
-        maxIdCache.put(cid, lastId);
+
+        synchronized (maxIdCache) {
+            maxIdCache.put(cid, lastId);
+        }
         return lastId;
     }
 
