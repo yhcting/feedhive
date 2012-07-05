@@ -107,6 +107,7 @@
     <string name="warn_no_predefined_channel">저장된 채널 정보가 없습니다.</string>
     <string name="warn_no_downloaded_page">내려받은 페이지 정보가 없습니다.</string>
     <string name="warn_no_item_before_now">현재시간 이전에 저장된 피드가 없습니다.</string>
+    <string name="warn_file_access_denied">접근할 수 없는 파일/디렉토리 입니다.</string>
     <string name="default_category_name">미분류</string>
     <string name="change_category">카테고리 변경</string>
     <string name="select_category">카테고리 선택</string>
@@ -128,4 +129,6 @@
     <string name="pref_bgtask_prio_desc">값이 높으면 업데이트나 다운로드의 시간은 빨라질 수 있으나 반응속도가 떨어지고, 낮으면 그 반대가 됩니다.</string>
     <string name="pref_send_err_report">에러 레보트 보내기</string>
     <string name="pref_send_err_report_desc">어플리케이션에 문제가 발생했을때, 에러 레포트를 보냅니다.</string>
+    <string name="pref_download_root">앱 디렉토리</string>
+    <string name="pref_download_root_desc">다운로드 받은 파일들이 저장될 디렉토리를 설정합니다. 기존 디렉토리는 그대로 보존됩니다.</string>
 </resources>

@@ -35,16 +35,14 @@ import android.preference.PreferenceManager;
  *     - initial setting of values.
  */
 public class UIPolicy {
-    private static final String appRootDir = "/sdcard/yhcFeeder/";
-    private static final String appTempDir = appRootDir + "temp/";
-    private static final String appLogDir  = appRootDir + "log/";
+    private static String appRootDir;
+    private static File   appTempDirFile;
+    private static File   appLogDirFile;
+
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
     private static final int    maxFileNameLength = 127;
-
-    private static final File   appTempDirFile = new File(appTempDir);
-    private static final File   appLogDirFile  = new File(appLogDir);
 
     /**
      * Guessing default action type from Feed data.
@@ -109,10 +107,29 @@ public class UIPolicy {
      */
     public static void
     init(Context context)  {
-        new File(appRootDir).mkdirs();
-        appTempDirFile.mkdir();
-        appLogDirFile.mkdir();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String appRoot = prefs.getString("app_root", null);
+        if (null == appRoot)
+            appRoot="/sdcard/yhcFeeder";
+        setAppDirectories(appRoot);
         cleanTempFiles();
+    }
+
+    /**
+     * SHOULD be called only by FeederPreferenceActivity.
+     * @param root
+     */
+    public static void
+    setAppDirectories(String root) {
+        appRootDir = root;
+        new File(appRootDir).mkdirs();
+        if (!root.endsWith("/"))
+            appRootDir += "/";
+
+        appTempDirFile = new File(root + "temp/");
+        appTempDirFile.mkdirs();
+        appLogDirFile = new File(root + "log/");
+        appLogDirFile.mkdirs();
     }
 
     public static String

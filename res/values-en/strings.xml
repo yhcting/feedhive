@@ -107,6 +107,7 @@
     <string name="warn_no_predefined_channel">There is no predefined channel.</string>
     <string name="warn_no_downloaded_page">There is no downloaded page data</string>
     <string name="warn_no_item_before_now">There is no item that is stored before now.</string>
+    <string name="warn_file_access_denied">Cannot access to given file.</string>
     <string name="default_category_name">Default</string>
     <string name="change_category">Change category</string>
     <string name="select_category">Select category</string>
@@ -128,4 +129,6 @@
     <string name="pref_bgtask_prio_desc">Update or download performance will be increased with higher value, but responsibility will be worse.</string>
     <string name="pref_send_err_report">Sending error report</string>
     <string name="pref_send_err_report_desc">Error report is sent when application is crashed.</string>
+    <string name="pref_download_root">Application directory.</string>
+    <string name="pref_download_root_desc">Root directory where downloaded files are stored.</string>
 </resources>

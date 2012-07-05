@@ -22,5 +22,12 @@
             android:defaultValue="yes"
             android:entries="@array/pref_yes_no_entry"
             android:entryValues="@array/pref_yes_no_value" />
+        <EditTextPreference
+            android:title="@string/pref_download_root"
+            android:summary="@string/pref_download_root_desc"
+            android:key="app_root"
+            android:defaultValue="/sdcard/yhcFeeder"
+            android:dialogTitle="@string/pref_download_root"
+            />
     </PreferenceCategory>
 </PreferenceScreen>

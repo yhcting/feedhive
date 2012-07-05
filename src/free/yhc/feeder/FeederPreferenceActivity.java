@@ -20,22 +20,57 @@
 
 package free.yhc.feeder;
 
+import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.io.File;
+
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
+import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 public class FeederPreferenceActivity extends PreferenceActivity implements
+SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
+    private static final String keyAppRoot = "app_root";
+
+    private String appRootOld = null;
+
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ ChannelSettingActivity ]";
+        return "[ FeederPreferenceActivity ]";
+    }
+
+    @Override
+    public void
+    onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(keyAppRoot)) {
+            String appRoot = sharedPreferences.getString(keyAppRoot, null);
+            File appRootFile = new File(appRoot);
+            if (!appRootFile.canWrite()) {
+                LookAndFeel.showTextToast(this, R.string.warn_file_access_denied);
+                SharedPreferences.Editor prefEd = sharedPreferences.edit();
+                prefEd.putString(keyAppRoot, appRootOld);
+                prefEd.apply();
+            } else {
+                UIPolicy.setAppDirectories(appRoot);
+                appRootOld = appRoot;
+            }
+        }
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         UnexpectedExceptionHandler.S().registerModule(this);
         super.onCreate(savedInstanceState);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        appRootOld = prefs.getString(keyAppRoot, null);
+        prefs.registerOnSharedPreferenceChangeListener(this);
+        eAssert(null != appRootOld);
         addPreferencesFromResource(R.xml.preference);
     }
 
