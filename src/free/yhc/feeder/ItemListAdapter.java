@@ -74,6 +74,7 @@ AsyncCursorAdapter.ItemBuilder {
         long        id              = -1;
         long        state           = 0;
         long        cid             = -1;
+        boolean     hasDnFile       = false;
         boolean     bChannel        = false;
         String      cTitle          = "";
         String      title           = "";
@@ -226,12 +227,17 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     public void
+    updateItemHasDnFile(int position, boolean v) {
+        ItemInfo ii = (ItemInfo)getItem(position);
+        if (null != ii)
+            ii.hasDnFile = v;
+    }
+
+    public void
     updateItemState(int position, long v) {
         ItemInfo ii = (ItemInfo)getItem(position);
-        if (null != ii) {
+        if (null != ii)
             ii.state = v;
-            setItem(position, ii);
-        }
     }
 
     @Override
@@ -248,6 +254,7 @@ AsyncCursorAdapter.ItemBuilder {
             i.enclosureLen = getCursorString(c, DB.ColumnItem.ENCLOSURE_LENGTH);
             i.enclosureUrl = getCursorString(c, DB.ColumnItem.ENCLOSURE_URL);
             i.link = getCursorString(c, DB.ColumnItem.LINK);
+            i.hasDnFile = UIPolicy.getItemDataFile(i.id).exists();
 
             int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
             i.bChannel = (0 <= cidx);
@@ -335,7 +342,7 @@ AsyncCursorAdapter.ItemBuilder {
         imgv.setAlpha(1.0f);
         progressv.setVisibility(View.GONE);
 
-        if (UIPolicy.getItemDataFile(ii.id).exists()) {
+        if (ii.hasDnFile) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
             RTTask.TaskState dnState = RTTask.S().getState(ii.id, RTTask.Action.Download);

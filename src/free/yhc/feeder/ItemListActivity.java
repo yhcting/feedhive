@@ -491,6 +491,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (isActivityFinishing())
                 return;
 
+            getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
             dataSetChanged(id);
         }
     }
@@ -844,9 +845,10 @@ UnexpectedExceptionHandler.TrackedModule {
             onClick (DialogInterface dialog, int which) {
                 if (!UIPolicy.getItemDataFile(id).delete())
                     LookAndFeel.showTextToast(ItemListActivity.this, Err.IOFile.getMsgId());
-                else
+                else {
+                    getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), false);
                     dataSetChanged(id);
-
+                }
                 dialog.dismiss();
             }
         });
