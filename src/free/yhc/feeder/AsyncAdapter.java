@@ -175,7 +175,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     destroyItem(Object item) {
         eAssert(Utils.isUiThread());
-        if (dummyItem != item)
+        if (dummyItem != item && null != item)
             dp.destroyData(this, item);
     }
 
@@ -184,13 +184,18 @@ UnexpectedExceptionHandler.TrackedModule {
         return posTop;
     }
 
-    protected void
+    /**
+     * return previous object
+     */
+    protected Object
     setItem(int pos, Object item) {
         eAssert(Utils.isUiThread());
         if (pos >= 0 && pos < items.length) {
-            destroyItem(items[pos]);
+            Object prev = items[pos];
             items[pos] = item;
+            return prev;
         }
+        return null;
     }
 
     /**

@@ -153,8 +153,8 @@ AsyncCursorAdapter.ItemBuilder {
     public void
     switchPos(int pos0, int pos1) {
         eAssert(Utils.isUiThread());
-        Object sv = getItem(pos0);
-        setItem(pos0, getItem(pos1));
+        Object sv = setItem(pos0, getItem(pos1));
+        eAssert(null != sv);
         setItem(pos1, sv);
         notifyDataSetChanged();
     }

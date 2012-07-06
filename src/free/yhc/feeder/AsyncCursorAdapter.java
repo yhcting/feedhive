@@ -96,7 +96,7 @@ AsyncAdapter.DataProvider {
             int pos = id - getPosTop();
             synchronized (curlock) {
                 if (cur.moveToPosition(id))
-                    setItem(pos ,ibldr.buildItem(this, cur));
+                    destroyItem(setItem(pos ,ibldr.buildItem(this, cur)));
                 else
                     ;// ignore
             }
