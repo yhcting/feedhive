@@ -32,9 +32,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Calendar;
-
-import org.apache.http.impl.cookie.DateParseException;
-import org.apache.http.impl.cookie.DateUtils;
+import java.util.Date;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -117,8 +115,12 @@ public class Utils {
      *  (How many format will be supported?)
      */
     private static final String[] dateFormats = new String[] {
-            DateUtils.PATTERN_RFC1036,
-            DateUtils.PATTERN_RFC1123,
+            org.apache.http.impl.cookie.DateUtils.PATTERN_RFC1036,
+            org.apache.http.impl.cookie.DateUtils.PATTERN_RFC1123,
+            // Variation of RFC1036
+            "EEEE, dd-MMM-yy HH:mm zzz",
+            // Variation of RFC1123
+            "EEE, dd MMM yyyy HH:mm zzz",
             // To support W3CDTF
             "yyyy-MM-d'T'HH:mm:ssZ",
             "yyyy-MM-d'T'HH:mm:ss'Z'",
@@ -360,16 +362,13 @@ public class Utils {
      */
     public static long
     dateStringToTime(String dateString) {
-        // try to parse with http dates format
-        String date = removeLeadingTrailingWhiteSpace(dateString);
+        dateString = removeLeadingTrailingWhiteSpace(dateString);
+        Date date = null;
         try {
-            return DateUtils.parseDate(date).getTime();
-        } catch (DateParseException e) { }
-        try {
-            return DateUtils.parseDate(date, dateFormats).getTime();
-        } catch (DateParseException e) {
-            return -1;
-        }
+            // instead of using android's DateUtils, apache's DateUtils is used because it is faster.
+            date = org.apache.commons.lang.time.DateUtils.parseDateStrictly(dateString, dateFormats);
+        } catch (java.text.ParseException e) { }
+        return (null == date)? -1: date.getTime();
     }
 
     /**

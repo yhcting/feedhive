@@ -25,7 +25,6 @@ import static free.yhc.feeder.model.Utils.logI;
 import static free.yhc.feeder.model.Utils.logW;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -163,7 +162,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // If success to parse pubdate than pubdate is used, if not, current time is used.
         long time = Utils.dateStringToTime(parD.pubDate);
         if (time < 0)
-            time = Calendar.getInstance().getTimeInMillis();
+            time = new Date().getTime();
         values.put(ColumnItem.PUBTIME.getName(),             time);
 
         return values;
