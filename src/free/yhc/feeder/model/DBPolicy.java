@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.os.Handler;
+import android.os.HandlerThread;
 import free.yhc.feeder.model.DB.ColumnCategory;
 import free.yhc.feeder.model.DB.ColumnChannel;
 import free.yhc.feeder.model.DB.ColumnItem;
@@ -58,7 +60,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Object dummyObject = new Object(); // static dummy object;
 
     private static DBPolicy instance = null;
+
     private final DB        db;
+    private final Handler   asyncHandler;
 
     // Getting max item id of channel takes longer time than expected.
     // So, let's caching it.
@@ -83,11 +87,19 @@ UnexpectedExceptionHandler.TrackedModule {
         File   getFile(Feed.Item.ParD parD) throws FeederException;
     }
 
+    private class DBAsyncThread extends HandlerThread {
+        DBAsyncThread() {
+            super("DBAsyncThread");
+        }
+    }
     // ======================================================
     //
     // ======================================================
     private DBPolicy() {
         db = DB.db();
+        DBAsyncThread async = new DBAsyncThread();
+        async.start();
+        asyncHandler = new Handler(async.getLooper());
     }
 
     /**
@@ -1331,9 +1343,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * Update state value of item.
      * @param id
      * @param state
-     *   can be one of below
-     *     Feed.Channel.FStatUsed
-     *     Feed.Channel.FStatUnused
+     *   see Feed.Item.FStatxxx values
      * @return
      */
     public long
@@ -1342,6 +1352,23 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.updateItem(id, ColumnItem.STATE, state);
     }
 
+    /**
+     * See {@link DBPolicy#updateItem_state(long, long)}
+     * @param id
+     * @param state
+     * @return
+     */
+    public void
+    updateItemAsync_state(final long id, final long state) {
+        asyncHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                long old = getItemInfoLong(id, ColumnItem.STATE);
+                if (old != state)
+                    updateItem_state(id, state);
+            }
+        });
+    }
 
     /**
      * delete items.

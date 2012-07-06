@@ -148,7 +148,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MStatFav;
-                    DBPolicy.S().updateItem_state(id, state);
+                    DBPolicy.S().updateItemAsync_state(id, state);
                     adapter.updateItemState(position, state);
                     dataSetChanged();
                 }
@@ -317,7 +317,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MStatFav;
-                    DBPolicy.S().updateItem_state(id, state);
+                    DBPolicy.S().updateItemAsync_state(id, state);
                     eAssert(!Feed.Item.isStatFavOn(state));
                     adapter.removeItem(position);
                     dataSetChanged();
@@ -627,7 +627,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long state = db.getItemInfoLong(id, DB.ColumnItem.STATE);
         if (Feed.Item.isStateOpenNew(state)) {
             state = Utils.bitSet(state, Feed.Item.FStatOpenOpened, Feed.Item.MStatOpen);
-            db.updateItem_state(id, state);
+            db.updateItemAsync_state(id, state);
             getListAdapter().updateItemState(position, state);
             dataSetChanged(id);
             return true;
