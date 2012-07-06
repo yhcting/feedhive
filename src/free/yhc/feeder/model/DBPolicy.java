@@ -57,7 +57,20 @@ import free.yhc.feeder.model.DB.ColumnItem;
 // Singleton
 public class DBPolicy implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final Object dummyObject = new Object(); // static dummy object;
+    // Checking duplication inside whole DB is very very inefficient.
+    // It requires extremely frequent and heavy DB access.
+    // So, instead of comparing with whole DB, just compare with enough large number of
+    //   previous items of the channel is better.
+    // Then how many items should be used to check duplication?
+    // To do that, below factor is used.
+    // At most, recent items by amount of "<current # items> * DUP_CHECK_SCOPE_FACTOR" is used
+    //   for comparison to check duplication.
+    private static int   DUP_SCOPE_FACTOR       = 2;
+    // At least, <DUP_SCOPE_MIN> items SHOULD be used to compare duplication.
+    private static int   DUP_SCOPE_MIN          = 200;
+    // unexpectedly large number of scope.
+    // Warning log will be shown.
+    private static int   DUP_SCOPE_WARNING      = 3000;
 
     private static DBPolicy instance = null;
 
@@ -92,6 +105,18 @@ UnexpectedExceptionHandler.TrackedModule {
             super("DBAsyncThread");
         }
     }
+
+    private class ItemUrls {
+        long    id;
+        String  link;
+        String  enclosure;
+        ItemUrls(long aid, String alink, String aenclosure) {
+            id = aid;
+            link = alink;
+            enclosure = aenclosure;
+        }
+    }
+
     // ======================================================
     //
     // ======================================================
@@ -504,146 +529,192 @@ UnexpectedExceptionHandler.TrackedModule {
             return Err.NoErr;
 
         boolean pubDateAvail = Utils.isValidValue(items[0].pubDate);
-        HashMap<String, HashMap<String, Feed.Item.ParD>> mainMap
-            = new HashMap<String, HashMap<String, Feed.Item.ParD>>();
-        HashMap<String, Feed.Item.ParD> subMap;
-        String mainKey;
-        String subKey;
-        Feed.Item.ParD pard;
+        HashMap<String, HashMap<String, ItemUrls>> mainMap
+            = new HashMap<String, HashMap<String, ItemUrls>>();
+        HashMap<String, ItemUrls> subMap;
+
+        // -----------------------------------------------------------------------
+        // check whether there is duplicated item in DB or not.
+        // (DB access is expensive operation)
+        // -----------------------------------------------------------------------
+
+        // TODO
+        //   Correct algorithm to check duplicated item.
+        //     - store last item id(say LID) in last update to channel column.
+        //     - if (there is duplicated item 'A') then
+        //           if (A.id < LID)
+        //               then duplicated
+        //           else
+        //               then this is not duplicated.
+        //
+        //   What this means?
+        //   Even if title, description etc are same, this is newly updated item.
+        //   So, this newly updated item should be listed as 'new item'.
+        //
+        //   But at this moment, I think this is over-engineering.
+        //   So, below simple algorithm is used.
+
+        // TODO
+        //   Lots of items for WHERE clause may lead to...
+        //     Pros : increase correctness.
+        //     Cons : drop performance.
+        //   So, I need to tune it.
+        //   At this moment, correctness is more important than performance.
+
+        // NOTE
+        //   In case of some RSS sites(ex. iblug), link/enclosure url is continuously changed
+        //     without any modification.
+        //   At this case, Feeder regarded this updated item as new one.
+        //   So, to avoid this, algorithm is changed to less-strict-way to tell whether
+        //     this item is new or not.
+        //   New algorithm is, (Note that 'pubdate' is optional element of RSS.)
+        //     if [ 'pubdate' is available ]
+        //         if [ 'pubdate' and 'title' is same ]
+        //             this is same item
+        //             if [ 'link' or 'enclosure_url' is changed ]
+        //                 update to new one
+        //         else
+        //             this is new item.
+        //     else
+        //         if [ 'link' and 'enclosure_url' is same ]
+        //             this is same item
+        //         else
+        //             this is new item.
+
+        // -----------------------------------------------------------------------
+        // Build hash tree with items from DB to check duplication.
+        //
+        // NOTE
+        // main/sub key SHOULD MATCH DB query's where clause, below!
+        // -----------------------------------------------------------------------
+        Cursor c = null;
+        int    nrscope = items.length * DUP_SCOPE_FACTOR;
+        nrscope = (nrscope < DUP_SCOPE_MIN)? DUP_SCOPE_MIN: nrscope;
+
+        if (nrscope > DUP_SCOPE_WARNING)
+            logW("DB Update : Number of scope to check duplication is unexpectedly big! : " + nrscope + "\n" +
+                 "    OOM is concerned!!");
+
+        final int idI        = 0;
+        final int linkI      = 1;
+        final int enclosureI = 2;
+        int       mainKeyI;
+        int       subKeyI;
+        String    mainKey;
+        String    subKey;
+        ItemUrls  iurls;
+        if (pubDateAvail) {
+            c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID,           // SHOULD BE index 0
+                                                   ColumnItem.LINK,         // SHOULD BE index 1
+                                                   ColumnItem.ENCLOSURE_URL,// SHOULD BE index 2
+                                                   ColumnItem.TITLE,
+                                                   ColumnItem.PUBDATE },
+                                new ColumnItem[] { ColumnItem.CHANNELID },
+                                new String[] { "" + cid },
+                                0);
+            mainKeyI = 3; // title
+            subKeyI = 4;  // pubdate
+        } else {
+            c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID,           // SHOULD BE index 0
+                                                   ColumnItem.LINK,         // SHOULD BE index 1
+                                                   ColumnItem.ENCLOSURE_URL },// SHOULD BE index 2
+                                new ColumnItem[] { ColumnItem.CHANNELID },
+                                new String[] { "" + cid },
+                                0);
+            mainKeyI = 1; // link
+            subKeyI = 2;  // enclosure url
+        }
+
+        // Create hash map of candidates items to check duplication.
+        try {
+            if (c.moveToFirst() && nrscope > 0) {
+                do {
+                    mainKey = c.getString(mainKeyI);
+                    subKey = c.getString(subKeyI);
+                    subMap = mainMap.get(mainKey);
+                    if (null == subMap) {
+                        subMap = new HashMap<String, ItemUrls>();
+                        mainMap.put(mainKey, subMap);
+                    }
+                    iurls = subMap.get(subKey);
+                    if (null == iurls) {
+                        subMap.put(subKey,
+                                   new ItemUrls(c.getLong(idI),
+                                                c.getString(linkI),
+                                                c.getString(enclosureI)));
+                    } else {
+                        logW("Duplicated Item in DB - This is unexpected but not harmful.\n" +
+                             "    main key : " + mainKey + "\n" +
+                             "    sub key  : " + subKey + "\n");
+                    }
+                    checkDelayedChannelUpdate();
+                    checkInterrupted();
+                } while(--nrscope > 0 && c.moveToNext());
+            }
+        } catch (FeederException e) {
+            return e.getError();
+        } finally {
+            c.close();
+        }
 
         try {
             for (Feed.Item.ParD item : items) {
-                boolean dup = false;
                 // ignore not-verified item
                 if (!UIPolicy.verifyConstraints(item))
                     continue;
 
                 // -----------------------------------------------------------------------
-                // check whether newly parsed feed itself includes duplicated item or not.
-                //
                 // NOTE
                 // main/sub key SHOULD MATCH DB query's where clause, below!
                 // -----------------------------------------------------------------------
                 if (pubDateAvail) {
-                    mainKey = item.title;
-                    subKey = item.pubDate;
+                    mainKey = item.title;  // should match mainKeyI
+                    subKey = item.pubDate; // should match subKeyI
                 } else {
-                    mainKey = item.enclosureUrl;
-                    subKey = item.link;
+                    mainKey = item.link;        // should match mainKeyI
+                    subKey = item.enclosureUrl; // should match subKeyI
                 }
 
                 subMap = mainMap.get(mainKey);
                 if (null == subMap) {
-                    subMap = new HashMap<String, Feed.Item.ParD>();
+                    subMap = new HashMap<String, ItemUrls>();
                     mainMap.put(mainKey, subMap);
                 }
 
-                pard = subMap.get(subKey);
-                if (null == pard)
-                    subMap.put(subKey, item);
-                else
-                    // This is duplicated item.
-                    // So, let's move to next item
-                    continue;
-
-                // -----------------------------------------------------------------------
-                // check whether there is duplicated item in DB or not.
-                // (DB access is expensive operation)
-                // -----------------------------------------------------------------------
-
-                // TODO
-                //   Correct algorithm to check duplicated item.
-                //     - store last item id(say LID) in last update to channel column.
-                //     - if (there is duplicated item 'A') then
-                //           if (A.id < LID)
-                //               then duplicated
-                //           else
-                //               then this is not duplicated.
-                //
-                //   What this means?
-                //   Even if title, description etc are same, this is newly updated item.
-                //   So, this newly updated item should be listed as 'new item'.
-                //
-                //   But at this moment, I think this is over-engineering.
-                //   So, below simple algorithm is used.
-
-                // TODO
-                //   Lots of items for WHERE clause may lead to...
-                //     Pros : increase correctness.
-                //     Cons : drop performance.
-                //   So, I need to tune it.
-                //   At this moment, correctness is more important than performance.
-
-                // NOTE
-                //   In case of some RSS sites(ex. iblug), link/enclosure url is continuously changed
-                //     without any modification.
-                //   At this case, Feeder regarded this updated item as new one.
-                //   So, to avoid this, algorithm is changed to less-strict-way to tell whether
-                //     this item is new or not.
-                //   New algorithm is, (Note that 'pubdate' is optional element of RSS.)
-                //     if [ 'pubdate' is available ]
-                //         if [ 'pubdate' and 'title' is same ]
-                //             this is same item
-                //             if [ 'link' or 'enclosure_url' is changed ]
-                //                 update to new one
-                //         else
-                //             this is new item.
-                //     else
-                //         if [ 'link' and 'enclosure_url' is same ]
-                //             this is same item
-                //         else
-                //             this is new item.
-                Cursor c = null;
-                if (item.pubDate.isEmpty()) {
-                    c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID },
-                                        new ColumnItem[] { ColumnItem.CHANNELID,
-                                                           ColumnItem.LINK,
-                                                           ColumnItem.ENCLOSURE_URL },
-                                        new String[] { "" + cid,
-                                                       item.link,
-                                                       item.enclosureUrl },
-                                     0);
-                    if (c.getCount() > 0)
-                        dup = true;
-
-                } else {
-                    c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID,
-                                                           ColumnItem.LINK,
-                                                           ColumnItem.ENCLOSURE_URL},
-                                        new ColumnItem[] { ColumnItem.CHANNELID,
-                                                           ColumnItem.PUBDATE,
-                                                           ColumnItem.TITLE },
-                                        new String[] { "" + cid,
-                                                       item.pubDate,
-                                                       item.title },
-                                        0);
-                    if (c.moveToFirst()) {
-                        if (c.getCount() > 1)
-                            logW("There are more than one candidate item for duplication!\n" +
-                                 "    title   : " + item.title +
-                                 "    pubdate : " + item.pubDate);
-                        // duplicated one.
-                        // check that link url is changed.
-                        if (!(item.link.equals(c.getString(1))
-                            && item.enclosureUrl.equals(c.getString(2)))) {
-                            // pubdate and title is same but link is updated
-                            // So, let's update DB for this item.
-                            ContentValues cvs = new ContentValues();
-                            cvs.put(ColumnItem.LINK.getName(), item.link);
-                            cvs.put(ColumnItem.ENCLOSURE_URL.getName(), item.enclosureUrl);
-                            db.updateItem(c.getLong(0), cvs);
-                        }
-                        dup = true;
-                    }
-                }
-
-                c.close();
-                if (!dup) {
+                iurls = subMap.get(subKey);
+                if (null == iurls) {
+                    // New Item.
                     // NOTE
                     //   Why add to First?
                     //   Usually, recent item is located at top of item list in the feed.
                     //   So, to make bottom item have smaller ID, 'addFirst' is used.
                     newItems.addFirst(item);
+                    // This is new item.
+                    subMap.put(subKey, new ItemUrls(-1, mainKey, subKey));
+                } else {
+                    // This is duplicated item.
+                    // But, it is still needed to be checked whether item information is updated or not.
+                    // Normally, news or magazine doesn't update the link.
+                    // But, in case of multimedia RSS like podcast, this happens a lot.
+                    // And usually, multimedia RSS includes all items in the RSS syndication.
+                    // So, I don't need to check whole database.
+                    // Checking hashed item in memory is enough.
+                    if (pubDateAvail &&
+                        !(item.link.equals(iurls.link)
+                            && item.enclosureUrl.equals(iurls.enclosure))) {
+                        if (iurls.id < 0) {
+                            logW("Channel includes same title/pubDate but different link or enclosure url!\n" +
+                                 "    title " + mainKey + "\n" +
+                                 "    pubDate" + subKey + "\n");
+                        } else {
+                            // Item information is updated with different value.
+                            // Let's update DB!
+                            ContentValues cvs = new ContentValues();
+                            cvs.put(ColumnItem.LINK.getName(), item.link);
+                            cvs.put(ColumnItem.ENCLOSURE_URL.getName(), item.enclosureUrl);
+                            db.updateItem(iurls.id, cvs);
+                        }
+                    }
                 }
                 checkDelayedChannelUpdate();
                 checkInterrupted();
@@ -651,6 +722,7 @@ UnexpectedExceptionHandler.TrackedModule {
         } catch (FeederException e) {
             return e.getError();
         }
+
         return Err.NoErr;
     }
 
