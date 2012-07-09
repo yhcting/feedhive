@@ -36,10 +36,13 @@ import android.preference.PreferenceManager;
  */
 public class UIPolicy {
     public static final String prefKeyAppRoot = "app_root";
+    public static final long   usageInfoUpdatePeriod = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
 
     private static String appRootDir;
     private static File   appTempDirFile;
     private static File   appLogDirFile;
+    private static File   appErrLogFile;
+    private static File   appUsageLogFile;
 
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
@@ -126,10 +129,12 @@ public class UIPolicy {
         if (!root.endsWith("/"))
             appRootDir += "/";
 
-        appTempDirFile = new File(root + "temp/");
+        appTempDirFile = new File(appRootDir + "temp/");
         appTempDirFile.mkdirs();
-        appLogDirFile = new File(root + "log/");
+        appLogDirFile = new File(appRootDir + "log/");
         appLogDirFile.mkdirs();
+        appErrLogFile = new File(appLogDirFile.getAbsoluteFile() + "/last_error");
+        appUsageLogFile = new File(appLogDirFile.getAbsoluteFile() + "/usage_file");
     }
 
     public static String
@@ -186,26 +191,14 @@ public class UIPolicy {
         Utils.removeFileRecursive(appTempDirFile, false);
     }
 
-    public static File[]
-    getLogFiles() {
-        return appLogDirFile.listFiles();
+    public static File
+    getErrLogFile() {
+        return appErrLogFile;
     }
 
     public static File
-    getNewLogFile() {
-        File ret = null;
-        try {
-            ret = File.createTempFile("exception", null, appLogDirFile);
-        } catch (IOException e){}
-        return ret;
-    }
-
-    /**
-     * Remove all log files.
-     */
-    public static void
-    cleanLogFiles() {
-        Utils.removeFileRecursive(appLogDirFile, false);
+    getUsageLogFile() {
+        return appUsageLogFile;
     }
 
     /**

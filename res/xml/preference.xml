@@ -22,6 +22,13 @@
             android:defaultValue="yes"
             android:entries="@array/pref_yes_no_entry"
             android:entryValues="@array/pref_yes_no_value" />
+        <ListPreference
+            android:title="@string/pref_send_usage_report"
+            android:summary="@string/pref_send_usage_report_desc"
+            android:key="usage_report"
+            android:defaultValue="yes"
+            android:entries="@array/pref_yes_no_entry"
+            android:entryValues="@array/pref_yes_no_value" />
         <EditTextPreference
             android:title="@string/pref_download_root"
             android:summary="@string/pref_download_root_desc"

@@ -32,6 +32,7 @@
     <string name="list_items">List feed items</string>
     <string name="full_update">Full update</string>
     <string name="send_err_report">Send error report</string>
+    <string name="send_usage_report">Send usage report</string>
     <string name="enter_url">Enter URL</string>
     <string name="enter_name">Enter name</string>
     <string name="channel_url">Channel URL</string>
@@ -129,6 +130,8 @@
     <string name="pref_bgtask_prio_desc">Update or download performance will be increased with higher value, but responsibility will be worse.</string>
     <string name="pref_send_err_report">Sending error report</string>
     <string name="pref_send_err_report_desc">Error report is sent when application is crashed.</string>
+    <string name="pref_send_usage_report">Sending usage report</string>
+    <string name="pref_send_usage_report_desc">Sends usage information to improve application (ex. channel urls those are not included at predefined channel.)</string>
     <string name="pref_download_root">Application directory.</string>
     <string name="pref_download_root_desc">Root directory where downloaded files are stored.</string>
 </resources>

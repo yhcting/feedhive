@@ -32,6 +32,7 @@
     <string name="list_items">피드 보기</string>
     <string name="full_update">전체 업데이트</string>
     <string name="send_err_report">에러 레포트 보내기</string>
+    <string name="send_usage_report">개선 레포트 보내기</string>
     <string name="enter_url">URL 입력</string>
     <string name="enter_name">이름 입력</string>
     <string name="channel_url">채널 URL</string>
@@ -129,6 +130,8 @@
     <string name="pref_bgtask_prio_desc">값이 높으면 업데이트나 다운로드의 시간은 빨라질 수 있으나 반응속도가 떨어지고, 낮으면 그 반대가 됩니다.</string>
     <string name="pref_send_err_report">에러 레보트 보내기</string>
     <string name="pref_send_err_report_desc">어플리케이션에 문제가 발생했을때, 에러 레포트를 보냅니다.</string>
+    <string name="pref_send_usage_report">개선정보 보내기</string>
+    <string name="pref_send_usage_report_desc">어플리케이션 기능을 향상시킬 수 있는 정보를 보냅니다. (예. 추천채널에는 없으나, 현재 사용중인 채널들 등)</string>
     <string name="pref_download_root">앱 디렉토리</string>
     <string name="pref_download_root_desc">다운로드 받은 파일들이 저장될 디렉토리를 설정합니다. 기존 디렉토리는 그대로 보존됩니다.</string>
 </resources>

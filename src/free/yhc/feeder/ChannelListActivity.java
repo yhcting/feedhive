@@ -78,6 +78,7 @@ import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.UsageReport;
 import free.yhc.feeder.model.Utils;
 
 public class ChannelListActivity extends Activity implements
@@ -941,8 +942,10 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String url = edit.getText().toString();
-                if (!url.matches("http\\:\\/\\/\\s*"))
+                if (!url.matches("http\\:\\/\\/\\s*")) {
                     addChannel(url, null);
+                    UsageReport.S().storeUsageReport("URL : " + url + "\n");
+                }
             }
         };
         buildOneLineEditTextDialog(R.string.channel_url, action).show();
@@ -1512,8 +1515,12 @@ UnexpectedExceptionHandler.TrackedModule {
         // TODO
         // Is this best place to put this line of code (sendReportMail())???
         // More consideration is required.
+
         // Send error report if exists.
-        UnexpectedExceptionHandler.S().sendReportMail(this);
+        UsageReport.S().sendErrReportMail(this);
+        // Send usage report if exists and time is passed enough.
+        UsageReport.S().sendUsageReportMail(this);
+
 
         setContentView(R.layout.channel_list);
 

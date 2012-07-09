@@ -27,6 +27,7 @@ import free.yhc.feeder.model.DBThread;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.UsageReport;
 import free.yhc.feeder.model.Utils;
 
 public class FeederApp extends Application {
@@ -55,6 +56,8 @@ public class FeederApp extends Application {
         // Initialize modules
         UIPolicy.init(context);
         RTTask.S().init(context);
+
+        UsageReport.S().init(context);
     }
 
     @Override

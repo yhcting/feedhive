@@ -32,7 +32,6 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
@@ -50,6 +49,7 @@ import free.yhc.feeder.model.AssetSQLiteHelper;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 
 public class PredefinedChannelActivity extends Activity implements
@@ -95,7 +95,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // Members
     // ========================================================================
     private long                categoryid = -1;
-    private Handler             handler = new Handler();
     private AssetSQLiteHelper   db = null;
 
     // Runtime variable
@@ -216,7 +215,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     requestRefreshList() {
-        handler.post(new Runnable() {
+        Utils.getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 boolean needRefresh = false;

@@ -20,40 +20,25 @@
 
 package free.yhc.feeder.model;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import android.content.ActivityNotFoundException;
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.preference.PreferenceManager;
-import free.yhc.feeder.R;
 
 public class UnexpectedExceptionHandler implements
-UncaughtExceptionHandler,
-OnSharedPreferenceChangeListener {
-    private static final String REPORT_RCVR = "yhcting77@gmail.com";
-    private static final String REPORT_SUBJECT = "[Feeder] Exception Report.";
-
+UncaughtExceptionHandler {
     private static final String UNKNOWN = "unknown";
 
     private static UnexpectedExceptionHandler instance = null;
 
     private Thread.UncaughtExceptionHandler   oldHandler;
     private LinkedList<TrackedModule>         mods = new LinkedList<TrackedModule>();
-    private boolean                           reportEnabled = true;
 
     private PackageReport pr = new PackageReport();
     private BuildReport   br = new BuildReport();
@@ -147,25 +132,6 @@ OnSharedPreferenceChangeListener {
               .append("\n\n");
     }
 
-    /**
-     * Store report as log file.
-     * @param report
-     */
-    private void
-    storeReport(String report) {
-        FileOutputStream fo;
-        try {
-            fo = new FileOutputStream(UIPolicy.getNewLogFile());
-        } catch (FileNotFoundException e) {
-            return; // nothing to do
-        }
-        // file is NOT writable here!!! why?????
-        PrintStream ps = new PrintStream(fo);
-        ps.print(report);
-        ps.flush();
-        ps.close();
-    }
-
     private UnexpectedExceptionHandler() {}
     private UnexpectedExceptionHandler(UncaughtExceptionHandler old) {
         oldHandler = old;
@@ -185,19 +151,6 @@ OnSharedPreferenceChangeListener {
     public void
     init(Context context) {
         setEnvironmentInfo(context);
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        prefs.registerOnSharedPreferenceChangeListener(this);
-        onSharedPreferenceChanged(prefs, "err_report");
-    }
-
-    @Override
-    public void
-    onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-        if ("err_report".equals(key)) {
-            String v = prefs.getString("err_report", "yes");
-            reportEnabled = v.equals("yes")? true: false;
-        }
     }
 
     /**
@@ -223,50 +176,8 @@ OnSharedPreferenceChangeListener {
         }
     }
 
-    /**
-     * Send stored report - crash, improvement etc - to developer as E-mail.
-     * @param context
-     */
-    public void
-    sendReportMail(Context context) {
-        if (!reportEnabled || !Utils.isNetworkAvailable(context))
-            return;
-
-        File[] fs = UIPolicy.getLogFiles();
-
-        if (null == fs)
-            return;
-
-        if (fs.length <= 0)
-            return; // nothing to do.
-
-        StringBuilder sbr = new StringBuilder();
-        for (File f : fs) {
-            sbr.append(Utils.readTextFile(f)).append("\n\n");
-        }
-        // we successfully read all log files.
-        // let's clean it.
-        UIPolicy.cleanLogFiles();
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.putExtra(Intent.EXTRA_EMAIL, new String[] { REPORT_RCVR });
-        intent.putExtra(Intent.EXTRA_TEXT, sbr.toString());
-        intent.putExtra(Intent.EXTRA_SUBJECT, REPORT_SUBJECT);
-        intent.setType("message/rfc822");
-        try {
-            context.startActivity(Intent.createChooser(intent,
-                                                       context.getResources().getText(R.string.send_err_report)));
-        } catch (ActivityNotFoundException e) {
-            ; // ignore this report
-        }
-    }
-
     @Override
     public void uncaughtException(Thread thread, Throwable ex) {
-        if (!reportEnabled) {
-            oldHandler.uncaughtException(thread, ex);
-            return;
-        }
-
         StringBuilder report = new StringBuilder();
         appendCommonReport(report);
 
@@ -282,10 +193,7 @@ OnSharedPreferenceChangeListener {
         report.append(sw.toString());
         pw.close();
 
-        storeReport(report.toString());
-        // TODO
-        //sendReportMail("Test error report", report.toString());
+        UsageReport.S().storeErrReport(report.toString());
         oldHandler.uncaughtException(thread, ex);
     }
-
 }
