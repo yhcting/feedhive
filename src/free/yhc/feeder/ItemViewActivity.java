@@ -26,6 +26,7 @@ import static free.yhc.feeder.model.Utils.logI;
 import java.io.File;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
@@ -50,6 +51,8 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 public class ItemViewActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    public static final int resultDownload = 1;
+
     private long    id  = -1;
     private String  netUrl = "";
     private String  fileUrl = "";
@@ -126,6 +129,9 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             logI("ItemViewActivity : DownloadToDBBGTaskOnEvent : onPostRun");
+            Intent i = new Intent();
+            i.putExtra("id", id);
+            setResult(resultDownload, i);
             postSetupLayout();
         }
     }

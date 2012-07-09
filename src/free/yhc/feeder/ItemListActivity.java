@@ -72,6 +72,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final int DataReqSz  = 20;
     private static final int DataArrMax = 500;
 
+    private static final int reqCodeItemView    = 0;
+
     // Keys for extra value of intent : IKey (Intent Key)
     public static final String IKeyMode    = "mode";  // mode
     public static final String IKeyFilter  = "filter";// filter
@@ -660,7 +662,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (Feed.Channel.isActProgIn(action)) {
             Intent intent = new Intent(this, ItemViewActivity.class);
             intent.putExtra("id", id);
-            startActivity(intent);
+            startActivityForResult(intent, reqCodeItemView);
         } else if (Feed.Channel.isActProgEx(action)) {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             try {
@@ -1066,6 +1068,25 @@ UnexpectedExceptionHandler.TrackedModule {
         });
 
         diag.show();
+    }
+
+    @Override
+    protected void
+    onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch(requestCode) {
+        case reqCodeItemView:
+            if (resultCode == ItemViewActivity.resultDownload) {
+                long id = data.getLongExtra("id", -1);
+                if (id > 0) {
+                    getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
+                    dataSetChanged(id);
+                }
+            }
+            break;
+
+        default:
+            eAssert(false);
+        }
     }
 
     @Override
