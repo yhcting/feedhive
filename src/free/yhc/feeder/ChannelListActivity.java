@@ -1578,8 +1578,8 @@ UnexpectedExceptionHandler.TrackedModule {
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
         // See comments in 'onPause()'
-        DBPolicy.S().getDelayedChannelUpdate();
         try {
+            DBPolicy.S().getDelayedChannelUpdate();
             Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
             if (c.moveToFirst()) {
                 do {
