@@ -77,6 +77,11 @@ AsyncAdapter.DataProvider {
                 + "  curCount : " + ((null == cur)? "null": cur.getCount()) + "\n";
     }
 
+    public Cursor
+    getCursor() {
+        return cur;
+    }
+
     /**
      * reload only 1 item synchronously!
      * @param itemId
@@ -147,6 +152,13 @@ AsyncAdapter.DataProvider {
         adapter.provideItems(priv, nrseq, from, items, eod);
         //logI("AsyncCursorAdapter : requestData - END");
         return 0;
+    }
+
+    @Override
+    public int
+    requestDataCnt(AsyncAdapter adapter) {
+        // cur.getCount() is very slow at first call.
+        return cur.getCount();
     }
 
     @Override

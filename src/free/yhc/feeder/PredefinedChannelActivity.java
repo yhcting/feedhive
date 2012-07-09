@@ -22,12 +22,12 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
-import java.util.Calendar;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
@@ -47,13 +47,9 @@ import android.widget.ResourceCursorAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import free.yhc.feeder.model.AssetSQLiteHelper;
-import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
-import free.yhc.feeder.model.FeederException;
-import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
 
 
 public class PredefinedChannelActivity extends Activity implements
@@ -154,31 +150,6 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         }
     }
-
-    private void
-    addChannel(String url, String imageref) {
-        eAssert(Utils.isValidValue(url));
-
-        long cid = -1;
-        try {
-            cid = DBPolicy.S().insertNewChannel(categoryid, url);
-        } catch (FeederException e) {
-            LookAndFeel.showTextToast(this, e.getError().getMsgId());
-            return;
-        }
-
-        // full update for this newly inserted channel
-        BGTaskUpdateChannel task;
-        if (imageref.isEmpty())
-            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
-        else
-            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid, imageref));
-        RTTask.S().register(cid, RTTask.Action.Update, task);
-        RTTask.S().start(cid, RTTask.Action.Update);
-        ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
-        getAdapter().notifyDataSetChanged();
-    }
-
 
     // ========================================================================
     // DB Operations
@@ -330,8 +301,10 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 ListRow row = (ListRow)view;
-                addChannel(row.url, row.iconurl);
-                setResult(RESULT_OK, null);
+                Intent i = new Intent();
+                i.putExtra("url", row.url);
+                i.putExtra("iconurl", row.iconurl);
+                setResult(RESULT_OK, i);
                 finish();
             }
         });

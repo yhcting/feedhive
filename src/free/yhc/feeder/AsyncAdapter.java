@@ -80,6 +80,7 @@ UnexpectedExceptionHandler.TrackedModule {
          */
         int requestData(AsyncAdapter adapter, Object priv, long nrseq, int from, int sz);
 
+        int requestDataCnt(AsyncAdapter adapter);
         /**
          * Let data provider know that item will not be used anymore.
          * Data provider may do some operation to prevent resource leak for the item
@@ -347,11 +348,34 @@ UnexpectedExceptionHandler.TrackedModule {
         requestDataAsync(LDType.RELOAD, from, dataReqSz);
     }
 
+    /**
+     * This means "visible data range is changed."
+     * So, after calling this function, reload should be called to apply.
+     */
     public void
     moveToFirstDataSet() {
         eAssert(Utils.isUiThread());
         posTop = 0;
     }
+
+    /**
+     * This means "visible data range is changed."
+     * So, after calling this function, reload should be called to apply.
+     * And if new posTop is near data count - that is, there is too few items left to be shown
+     *   at list, newly set top may be adjusted to smaller value. And it will be returned.
+     * @param adataCnt
+     *   number of real-data-count. This is larger than getCount() value which returns loaded data count.
+     * @return
+     *   changed posTop. This may different with given value.
+     */
+    public void
+    moveToLastDataSet() {
+        eAssert(Utils.isUiThread());
+        dataCnt = dp.requestDataCnt(this);
+        int newtop = dataCnt - dataReqSz + firstLDahead;
+        posTop = (newtop < 0)? 0: newtop;
+    }
+
 
     /**
      * @param priv

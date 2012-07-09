@@ -43,7 +43,6 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.MediaStore.MediaColumns;
 import android.util.AttributeSet;
 import android.view.ContextMenu;
@@ -93,14 +92,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static final int channelRefreshThreshold = 2;
 
-    private Handler     handler = new Handler();
     private ActionBar   ab      = null;
     private Flipper     flipper = null;
 
     // Saved cid for Async execution.
     private long      cid_pickImage = -1;
-    // To move list to bottom when resume.
-    private boolean   setCurrentListToBottom = false;
 
     private interface EditTextDialogAction {
         void prepare(Dialog dialog, EditText edit);
@@ -603,18 +599,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return -1;
     }
 
-    private void
-    moveToBottomOfList() {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                ListView lv = getTag(ab.getSelectedTab()).listView;
-                // Select the last row so it will scroll into view...
-                lv.setSelection(lv.getCount() - 1);
-            }
-        }, 100);
-    }
-
     private long
     getCategoryId(Tab tab) {
         return getTag(tab).categoryid;
@@ -781,7 +765,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param url
      */
     private void
-    addChannel(String url) {
+    addChannel(String url, String iconurl) {
         eAssert(url != null);
         url = Utils.removeTrailingSlash(url);
 
@@ -794,18 +778,18 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // full update for this newly inserted channel
-        BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+        BGTaskUpdateChannel task;
+        if (Utils.isValidValue(iconurl))
+            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid, iconurl));
+        else
+            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+
         RTTask.S().register(cid, RTTask.Action.Update, task);
         RTTask.S().start(cid, RTTask.Action.Update);
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
         refreshListAsync(ab.getSelectedTab());
-        // Move to bottom of the list where newly inserted channel is located on.
-        // (This is for feedback to user saying "new channel is now adding").
-        // TODO
-        // How can I implement to move end of list.
-        // moveToBottomOfList();
     }
 
     /**
@@ -910,10 +894,10 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onOk(Dialog dialog, EditText edit) {
                 switch (optStringId) {
                 case R.string.uploader:
-                    addChannel(Utils.buildYoutubeFeedUrl_uploader(edit.getText().toString()));
+                    addChannel(Utils.buildYoutubeFeedUrl_uploader(edit.getText().toString()), null);
                     break;
                 case R.string.word_search:
-                    addChannel(Utils.buildYoutubeFeedUrl_search(edit.getText().toString()));
+                    addChannel(Utils.buildYoutubeFeedUrl_search(edit.getText().toString()), null);
                     break;
                 default:
                     eAssert(false);
@@ -958,7 +942,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onOk(Dialog dialog, EditText edit) {
                 String url = edit.getText().toString();
                 if (!url.matches("http\\:\\/\\/\\s*"))
-                    addChannel(url);
+                    addChannel(url, null);
             }
         };
         buildOneLineEditTextDialog(R.string.channel_url, action).show();
@@ -1333,6 +1317,24 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    onResult_pickPredefinedChannel(int resultCode, Intent data) {
+        if (RESULT_OK != resultCode)
+            return;
+
+        final String url = data.getStringExtra("url");
+        eAssert(Utils.isValidValue(url));
+        final String iconurl = data.getStringExtra("iconurl");
+        // NOTE
+        // Without using 'post', user may feel bad ui response.
+        Utils.getUiHandler().post(new Runnable() {
+            @Override
+            public void run() {
+                addChannel(url, iconurl);
+            }
+        });
+    }
+
+    private void
     setupToolButtons() {
         findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1478,7 +1480,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onResult_pickImage(resultCode, data);
             break;
         case reqCPickPredefinedChannel:
-            setCurrentListToBottom = true;
+            onResult_pickPredefinedChannel(resultCode, data);
             break;
         }
     }
