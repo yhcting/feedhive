@@ -205,18 +205,14 @@ public class Utils {
                 logout.flush();
             } catch (IOException e) {}
         } else {
-            if (LogLV.V == lv)
-                Log.v(TAG, msg);
-            else if (LogLV.D == lv)
-                Log.d(TAG, msg);
-            else if (LogLV.I == lv)
-                Log.i(TAG, msg);
-            else if (LogLV.W == lv)
-                Log.w(TAG, msg);
-            else if (LogLV.E == lv)
-                Log.e(TAG, msg);
-            else if (LogLV.F == lv)
-                Log.wtf(TAG, msg);
+            switch(lv) {
+            case V: Log.v(TAG, msg); break;
+            case D: Log.d(TAG, msg); break;
+            case I: Log.i(TAG, msg); break;
+            case W: Log.w(TAG, msg); break;
+            case E: Log.e(TAG, msg); break;
+            case F: Log.wtf(TAG, msg); break;
+            }
         }
     }
 

@@ -262,18 +262,30 @@ AsyncCursorAdapter.ItemBuilder {
 
         RTTask.TaskState state = RTTask.S().getState(ii.cid, RTTask.Action.Update);
         noti_up.setVisibility(View.VISIBLE);
-        if (RTTask.TaskState.Idle == state)
+        switch(state) {
+        case Idle:
             noti_up.setVisibility(View.GONE);
-        else if (RTTask.TaskState.Ready == state)
+            break;
+
+        case Ready:
             noti_up.setImageResource(R.drawable.ic_pause);
-        else if (RTTask.TaskState.Running == state)
+            break;
+
+        case Running:
             noti_up.setImageResource(R.drawable.ic_refresh);
-        else if (RTTask.TaskState.Canceling == state)
+            break;
+
+        case Canceling:
             noti_up.setImageResource(R.drawable.ic_block);
-        else if (RTTask.TaskState.Failed == state)
+            break;
+
+        case Failed:
             noti_up.setImageResource(R.drawable.ic_info);
-        else
+            break;
+
+        default:
             eAssert(false);
+        }
 
         if (0 == RTTask.S().getItemsDownloading(ii.cid).length)
             noti_dn.setVisibility(View.GONE);

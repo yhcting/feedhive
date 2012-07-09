@@ -707,7 +707,7 @@ UnexpectedExceptionHandler.TrackedModule {
     refreshListAsync(Tab tab) {
         Cursor newCursor = adapterCursorQuery(getTag(tab).categoryid);
         getListAdapter(tab).changeCursor(newCursor);
-        getListAdapter(tab).reloadDataSetAsync();
+        getListAdapter(tab).reloadDataSetAsync(null);
     }
 
     private Tab
@@ -1284,27 +1284,37 @@ UnexpectedExceptionHandler.TrackedModule {
         return;
         */
         RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
-        if (RTTask.TaskState.Idle == state) {
+        switch (state) {
+        case Idle: {
             //logI("ChannelList : update : " + cid);
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
             RTTask.S().register(cid, RTTask.Action.Update, task);
             RTTask.S().start(cid, RTTask.Action.Update);
             dataSetChanged(getCurrentListView(), cid);
-        } else if (RTTask.TaskState.Running == state
-                   || RTTask.TaskState.Ready == state) {
+        } break;
+
+        case Running:
+        case Ready:
             //logI("ChannelList : cancel : " + cid);
             RTTask.S().cancel(cid, RTTask.Action.Update, null);
             // to change icon into "canceling"
             dataSetChanged(getCurrentListView(), cid);
-        } else if (RTTask.TaskState.Failed == state) {
+            break;
+
+        case Failed: {
             Err result = RTTask.S().getErr(cid, RTTask.Action.Update);
             LookAndFeel.showTextToast(this, result.getMsgId());
             RTTask.S().consumeResult(cid, RTTask.Action.Update);
             dataSetChanged(getCurrentListView(), cid);
-        } else if (RTTask.TaskState.Canceling == state) {
+        } break;
+
+        case Canceling:
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
-        } else
+            break;
+
+        default:
             eAssert(false);
+        }
     }
 
     private void
@@ -1618,13 +1628,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 else
                     refreshListItem(ab.getTabAt(i), cids);
         }
-
-        /*
-        if (setCurrentListToBottom) {
-            moveToBottomOfList();
-            setCurrentListToBottom = false;
-        }
-        */
     }
 
    @Override

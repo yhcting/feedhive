@@ -346,11 +346,16 @@ AsyncCursorAdapter.ItemBuilder {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
             RTTask.TaskState dnState = RTTask.S().getState(ii.id, RTTask.Action.Download);
-            if (RTTask.TaskState.Idle == dnState) {
+            switch(dnState) {
+            case Idle:
                 imgv.setImageResource(R.drawable.download_anim0);
-            } else if (RTTask.TaskState.Ready == dnState) {
+                break;
+
+            case Ready:
                 imgv.setImageResource(R.drawable.ic_pause);
-            } else if (RTTask.TaskState.Running == dnState) {
+                break;
+
+            case Running:
                 imgv.setImageResource(R.anim.download);
                 // Why "post runnable and start animation?"
                 // In Android 4.0.3 (ICS)
@@ -385,13 +390,20 @@ AsyncCursorAdapter.ItemBuilder {
                 RTTask.S().unbind(progressv);
                 RTTask.S().bind(ii.id, RTTask.Action.Download, progressv, onEvent);
                 progressv.setVisibility(View.VISIBLE);
-            } else if (RTTask.TaskState.Failed == dnState) {
+                break;
+
+            case Failed:
                 imgv.setImageResource(R.drawable.ic_info);
-            } else if (RTTask.TaskState.Canceling == dnState) {
+                break;
+
+            case Canceling:
                 imgv.setImageResource(R.drawable.ic_block);
                 imgv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
-            } else
+                break;
+
+            default:
                 eAssert(false);
+            }
         }
 
         titlev.setTextColor(context.getResources().getColor(getTitleColor(ii.state)));

@@ -571,7 +571,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, we don't need to think about async. loading.
         Cursor newCursor = opMode.query();
         getListAdapter().changeCursor(newCursor);
-        getListAdapter().reloadDataSetAsync();
+        getListAdapter().reloadDataSetAsync(null);
     }
 
     private void
@@ -733,27 +733,36 @@ UnexpectedExceptionHandler.TrackedModule {
             changeItemState_opened(id, position);
         } else {
             RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
-            if (RTTask.TaskState.Idle == state) {
-                BGTaskDownloadToFile dnTask
-                    = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(url,
-                                                                                  f,
-                                                                                  UIPolicy.getNewTempFile()));
+            switch(state) {
+            case Idle: {
+                BGTaskDownloadToFile.Arg arg
+                    = new BGTaskDownloadToFile.Arg(url, f, UIPolicy.getNewTempFile());
+                BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this, arg);
                 RTTask.S().register(id, RTTask.Action.Download, dnTask);
                 RTTask.S().start(id, RTTask.Action.Download);
                 dataSetChanged(id);
-            } else if (RTTask.TaskState.Running == state
-                       || RTTask.TaskState.Ready == state) {
+            } break;
+
+            case Running:
+            case Ready:
                 RTTask.S().cancel(id, RTTask.Action.Download, null);
                 dataSetChanged(id);
-            } else if (RTTask.TaskState.Canceling == state) {
+                break;
+
+            case Canceling:
                 LookAndFeel.showTextToast(this, R.string.wait_cancel);
-            } else if (RTTask.TaskState.Failed == state) {
+                break;
+
+            case Failed: {
                 Err result = RTTask.S().getErr(id, RTTask.Action.Download);
                 LookAndFeel.showTextToast(this, result.getMsgId());
                 RTTask.S().consumeResult(id, RTTask.Action.Download);
                 dataSetChanged(id);
-            } else
+            } break;
+
+            default:
                 eAssert(false);
+            }
         }
     }
 
@@ -798,27 +807,39 @@ UnexpectedExceptionHandler.TrackedModule {
         iv.setAlpha(1.0f);
         iv.setClickable(true);
         RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
-        if (RTTask.TaskState.Idle == state) {
+        switch(state) {
+        case Idle:
             iv.setImageResource(R.drawable.ic_refresh);
             setOnClick_startUpdate(iv);
-        } else if (RTTask.TaskState.Ready == state) {
+            break;
+
+        case Ready:
             iv.setImageResource(R.drawable.ic_pause);
             setOnClick_cancelUpdate(iv);
-        }else if (RTTask.TaskState.Running == state) {
+            break;
+
+        case Running:
             iv.setImageResource(R.anim.download);
             ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
-        } else if (RTTask.TaskState.Canceling == state) {
+            break;
+
+        case Canceling:
             iv.setImageResource(R.drawable.ic_block);
             iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
             iv.setClickable(false);
             setOnClick_notification(iv, R.string.wait_cancel);
-        } else if (RTTask.TaskState.Failed == state) {
+            break;
+
+        case Failed: {
             iv.setImageResource(R.drawable.ic_info);
             Err result = RTTask.S().getErr(cid, RTTask.Action.Update);
             setOnClick_errResult(iv, result);
-        } else
+        } break;
+
+        default:
             eAssert(false);
+        }
     }
 
     private void

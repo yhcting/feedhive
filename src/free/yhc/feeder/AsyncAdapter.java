@@ -19,7 +19,6 @@ UnexpectedExceptionHandler.TrackedModule {
     protected final Handler       uiHandler = new Handler();
     private   final ListView      lv;
     private         DataProvider  dp        = null;
-    private         OnRequestData onRD      = null;
     private   final int           dataReqSz;
     private   final int           maxArrSz; // max array size of items
     private   final int           rowLayout;
@@ -91,15 +90,7 @@ UnexpectedExceptionHandler.TrackedModule {
         void destroyData(AsyncAdapter adapter, Object data);
     }
 
-    interface OnRequestData {
-        /**
-         * called when requesting data on UI Thread context
-         * @param adapter
-         * @param nrseq
-         * @param from
-         * @param sz
-         */
-        void onRequestData(AsyncAdapter adapter, long nrseq, int from, int sz);
+    interface OnDataProvided{
         /**
          * called after data is provided and before notifying dataSetChanged on UI Thread context
          * @param adapter
@@ -107,7 +98,7 @@ UnexpectedExceptionHandler.TrackedModule {
          * @param from
          * @param sz
          */
-        void onDataProvided(AsyncAdapter adapter, long nrseq, int from, int sz);
+        void onDataProvided(AsyncAdapter adapter);
 
     }
 
@@ -162,11 +153,6 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     setDataProvider(DataProvider dp) {
         this.dp = dp;
-    }
-
-    protected void
-    setRequestDataListener(OnRequestData listener) {
-        this.onRD = listener;
     }
 
     /**
@@ -300,7 +286,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    requestDataAsync(final LDType ldtype, final int from, final int sz) {
+    requestDataAsync(final LDType ldtype, final int from, final int sz,
+                     final OnDataProvided onProvided) {
         //logI("Data request UI : from " + from + ", # " + sz);
 
         eAssert(Utils.isUiThread());
@@ -313,7 +300,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
         SpinAsyncTask.OnEvent bgRun = new SpinAsyncTask.OnEvent() {
             @Override
-            public void onPostExecute(SpinAsyncTask task, Err result) {}
+            public void onPostExecute(SpinAsyncTask task, Err result) {
+                if (null != onProvided)
+                    onProvided.onDataProvided(AsyncAdapter.this);
+            }
             @Override
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
@@ -328,8 +318,6 @@ UnexpectedExceptionHandler.TrackedModule {
         };
         dpTask = new SpinAsyncTask(context, bgRun, R.string.plz_wait, false);
         dpTask.setName("Asyn request : " + from + " #" + sz);
-        if (null != onRD)
-            onRD.onRequestData(this, reqSeq, from, sz);
         dpTask.execute(null, null);
     }
 
@@ -339,13 +327,13 @@ UnexpectedExceptionHandler.TrackedModule {
      *   - lots of change in item order (ex. one of item in the middle is deleted etc)
      */
     public void
-    reloadDataSetAsync() {
+    reloadDataSetAsync(OnDataProvided onProvided) {
         eAssert(Utils.isUiThread());
         int from = posTop + lv.getFirstVisiblePosition() - firstLDahead;
         from = from < 0? 0: from;
         // dataset may be changed. So, reset dataCnt to 'unknown'
         dataCnt = -1;
-        requestDataAsync(LDType.RELOAD, from, dataReqSz);
+        requestDataAsync(LDType.RELOAD, from, dataReqSz, onProvided);
     }
 
     /**
@@ -456,9 +444,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 // check again at UI thread
                 dpDone = true;
                 dpTask = null;
-                if (null != onRD)
-                    onRD.onDataProvided(AsyncAdapter.this, reqSeq, from, aitems.length);
-                //logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + nrseq + " - END");
             }
         });
         //logI("AsyncAdapter provideItems - END : from " + from + ", # " + aitems.length);
@@ -513,7 +498,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // reload some of previous item too.
             int from = posTop + lv.getFirstVisiblePosition() - firstLDahead;
             from = from < 0? 0: from;
-            requestDataAsync(LDType.INIT, from, dataReqSz);
+            requestDataAsync(LDType.INIT, from, dataReqSz, null);
             return firstDummyView;
         }
 
@@ -531,11 +516,11 @@ UnexpectedExceptionHandler.TrackedModule {
         if (position == 0 && posTop > 0) {
             int szReq = (posTop > dataReqSz)? dataReqSz: posTop;
             // This is first item
-            requestDataAsync(LDType.PREV, posTop - szReq, szReq);
+            requestDataAsync(LDType.PREV, posTop - szReq, szReq, null);
         } else if (items.length - 1 == position
                    && (dataCnt < 0 || posTop + items.length < dataCnt)) {
             // This is last item
-            requestDataAsync(LDType.NEXT, posTop + position + 1, dataReqSz);
+            requestDataAsync(LDType.NEXT, posTop + position + 1, dataReqSz, null);
         }
         return v;
     }

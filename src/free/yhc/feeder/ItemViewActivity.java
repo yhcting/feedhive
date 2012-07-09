@@ -176,8 +176,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
         logI("ItemViewActivity : setupLayout : state : " + state.name());
-        if (RTTask.TaskState.Idle == state) {
-
+        switch(state) {
+        case Idle:
             if (currUrl.equals(fileUrl)) {
                 imgbtn.setImageResource(R.drawable.ic_goto);
                 imgbtn.setOnClickListener(new View.OnClickListener() {
@@ -204,10 +204,10 @@ UnexpectedExceptionHandler.TrackedModule {
                     });
                 }
             }
+            break;
 
-        } else if (RTTask.TaskState.Running == state
-                   || RTTask.TaskState.Ready == state) {
-
+        case Running:
+        case Ready:
             imgbtn.setImageResource(R.anim.download);
             ((AnimationDrawable)imgbtn.getDrawable()).start();
             imgbtn.setOnClickListener(new View.OnClickListener() {
@@ -217,9 +217,9 @@ UnexpectedExceptionHandler.TrackedModule {
                     postSetupLayout();
                 }
             });
+            break;
 
-        } else if (RTTask.TaskState.Canceling == state) {
-
+        case Canceling:
             imgbtn.setImageResource(R.drawable.ic_block);
             imgbtn.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
             imgbtn.setOnClickListener(new View.OnClickListener() {
@@ -228,9 +228,9 @@ UnexpectedExceptionHandler.TrackedModule {
                     LookAndFeel.showTextToast(ItemViewActivity.this, R.string.wait_cancel);
                 }
             });
+            break;
 
-        } else if (RTTask.TaskState.Failed == state) {
-
+        case Failed:
             imgbtn.setImageResource(R.drawable.ic_info);
             imgbtn.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -238,9 +238,11 @@ UnexpectedExceptionHandler.TrackedModule {
                     notifyResult();
                 }
             });
+            break;
 
-        } else
+        default:
             eAssert(false);
+        }
     }
 
     private void
