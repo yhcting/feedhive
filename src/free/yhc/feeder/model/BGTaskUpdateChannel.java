@@ -24,8 +24,6 @@ import static free.yhc.feeder.model.Utils.logI;
 import android.content.Context;
 
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
-    private static final String WLTag = "free.yhc.feeder.BGTaskUpdateChannel";
-
     private Context            context;
     private volatile NetLoader loader = null;
     private Arg                arg    = null;
@@ -65,7 +63,7 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
             logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
             return e.getError();
         }
-        return Err.NoErr;
+        return Err.NO_ERR;
     }
 
     @Override

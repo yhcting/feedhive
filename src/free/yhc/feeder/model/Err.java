@@ -25,21 +25,21 @@ import free.yhc.feeder.R;
 // Err codes.
 // TODO : set correct string resource id
 public enum Err {
-    NoErr                       (R.string.ok),
-    Interrupted                 (R.string.err_interrupted),
-    UserCancelled               (R.string.err_user_cancelled),
-    InvalidURL                  (R.string.err_url),
-    IONet                       (R.string.err_ionet),
-    IOFile                      (R.string.err_iofile),
-    MediaGet                    (R.string.err_media_get),
-    CodecDecode                 (R.string.err_codec_decode),
-    ParserUnsupportedFormat     (R.string.err_parse_unsupported_format),
-    ParserUnsupportedVersion    (R.string.err_parse_unsupported_version),
-    DBDuplicatedChannel         (R.string.err_duplicated_channel),
-    DBUnknown                   (R.string.err_dbunknown),
-    Unknown                     (R.string.err_unknwon);
+    NO_ERR                      (R.string.ok),
+    INTERRUPTED                 (R.string.err_interrupted),
+    USER_CANCELLED              (R.string.err_user_cancelled),
+    INVALID_URL                 (R.string.err_url),
+    IO_NET                      (R.string.err_ionet),
+    IO_FILE                     (R.string.err_iofile),
+    GET_MEDIA                   (R.string.err_get_media),
+    CODEC_DECODE                (R.string.err_codec_decode),
+    PARSER_UNSUPPORTED_FORMAT   (R.string.err_parse_unsupported_format),
+    PARSER_UNSUPPORTED_VERSION  (R.string.err_parse_unsupported_version),
+    DB_DUPLICATED_CHANNEL       (R.string.err_duplicated_channel),
+    DB_UNKNOWN                  (R.string.err_dbunknown),
+    UNKNOWN                     (R.string.err_unknwon);
 
-    int msgId; // matching message id
+    private int msgId; // matching message id
 
     Err(int msgId) {
         this.msgId = msgId;

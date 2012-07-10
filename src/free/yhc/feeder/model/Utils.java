@@ -48,6 +48,13 @@ import android.widget.TextView;
 
 public class Utils {
     public static final boolean DBG = true;
+
+    public static final long   HOUR_IN_MS   = 60 * 60 * 1000;
+    public static final long   DAY_IN_MS    = 24 * HOUR_IN_MS;
+    public static final int    HOUR_IN_SEC  = 60 * 60;
+    public static final int    DAY_IN_SEC   = 24 * HOUR_IN_SEC;
+
+
     private static final String TAG = "[Feeder]";
 
     private static Handler  uiHandler = null;
@@ -60,8 +67,7 @@ public class Utils {
 
     // Format of nString (Number String)
     // <number>/<number>/ ... '/' is delimiter between number.
-    private static final String nStringDelimiter = "/";
-    private static final long   dayInMs = 24 * 60 * 60 * 1000;
+    private static final String NSTRING_DELIMITER = "/";
     // Characters that is not allowed as filename in Android.
     private static final char[] noFileNameChars = new char[] {
         '/', '?', '"', '\'', '`', ':', ';', '*', '|', '\\', '<', '>'
@@ -319,7 +325,7 @@ public class Utils {
         if (!isValidValue(timeString))
             return new long[0];
 
-        String[] timestrs = timeString.split(nStringDelimiter);
+        String[] timestrs = timeString.split(NSTRING_DELIMITER);
         long[] times = new long[timestrs.length];
         try {
             for (int i = 0; i < times.length; i++)
@@ -345,7 +351,7 @@ public class Utils {
             return "";
 
         for (int i = 0; i < nrs.length - 1; i ++)
-            nrstr += nrs[i] + nStringDelimiter;
+            nrstr += nrs[i] + NSTRING_DELIMITER;
         nrstr += nrs[nrs.length - 1];
         return nrstr;
     }
@@ -530,16 +536,16 @@ public class Utils {
             fos = new FileOutputStream(file);
             fos.write(data);
         } catch(FileNotFoundException e) {
-            return Err.IOFile;
+            return Err.IO_FILE;
         } catch(IOException e) {
-            return Err.IOFile;
+            return Err.IO_FILE;
         } finally {
             try {
                 if (null != fos)
                     fos.close();
             } catch (IOException e) {}
         }
-        return Err.NoErr;
+        return Err.NO_ERR;
     }
 
     /**
@@ -774,7 +780,7 @@ public class Utils {
         }
         // All scheduled time is passed for day.
         // smallest of tomorrow is nearest one.
-        return dayBase + dayInMs + secs[0] * 1000;
+        return dayBase + DAY_IN_MS + secs[0] * 1000;
     }
 
     /**

@@ -27,7 +27,7 @@ import android.text.Html;
 // Private implementation is NOT used.
 // Now this is just wrapper of predefined Html class of Android.
 class HtmlParser {
-    private static String[] tagsRegex = new String[] {
+    private static final String[] tagsRegex = new String[] {
         "\\!\\-\\-",
         "\\!DOCTYPE",
         "a",

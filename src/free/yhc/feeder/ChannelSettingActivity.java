@@ -49,8 +49,6 @@ public class ChannelSettingActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
     private long   cid = -1;
 
-    private static final int hourInSec = 60 * 60;
-
     // match string-array 'strarr_updatemode_setting'
     private static final int SPPOS_UPDATEMODE_NORMAL    = 0;
     private static final int SPPOS_UPDATEMODE_DOWNLOAD  = 1;
@@ -91,10 +89,10 @@ UnexpectedExceptionHandler.TrackedModule {
         long updmode = old_updmode;
         switch (sp.getSelectedItemPosition()) {
         case SPPOS_UPDATEMODE_NORMAL:
-            updmode = Utils.bitSet(updmode, Feed.Channel.FUpdLink, Feed.Channel.MUpd);
+            updmode = Utils.bitSet(updmode, Feed.Channel.FUPD_LINK, Feed.Channel.MUPD);
             break;
         case SPPOS_UPDATEMODE_DOWNLOAD:
-            updmode = Utils.bitSet(updmode, Feed.Channel.FUpdDn, Feed.Channel.MUpd);
+            updmode = Utils.bitSet(updmode, Feed.Channel.FUPD_DN, Feed.Channel.MUPD);
             break;
         default:
             eAssert(false);
@@ -116,10 +114,10 @@ UnexpectedExceptionHandler.TrackedModule {
         // clear bit for action program.
         switch (sp.getSelectedItemPosition()) {
         case SPPOS_BROWSER_IN:
-            action = Utils.bitSet(action, Feed.Channel.FActProgIn, Feed.Channel.MActProg);
+            action = Utils.bitSet(action, Feed.Channel.FACT_PROG_IN, Feed.Channel.MACT_PROG);
             break;
         case SPPOS_BROWSER_EX:
-            action = Utils.bitSet(action, Feed.Channel.FActProgEx, Feed.Channel.MActProg);
+            action = Utils.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
             break;
         default:
             eAssert(false);
@@ -194,8 +192,8 @@ UnexpectedExceptionHandler.TrackedModule {
         String schedtime = DBPolicy.S().getChannelInfoString(cid, DB.ColumnChannel.SCHEDUPDATETIME);
         long[] secs = Utils.nStringToNrs(schedtime);
         for (long s : secs) {
-            eAssert(0 <= s && s < 24 * hourInSec);
-            addSchedUpdateRow(schedlo, (int)(s / hourInSec));
+            eAssert(0 <= s && s < Utils.DAY_IN_SEC);
+            addSchedUpdateRow(schedlo, (int)(s / Utils.HOUR_IN_SEC));
         }
 
         // Setup "Update Type"

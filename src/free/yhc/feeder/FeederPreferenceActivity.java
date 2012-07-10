@@ -45,13 +45,13 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals(UIPolicy.prefKeyAppRoot)) {
-            String appRoot = sharedPreferences.getString(UIPolicy.prefKeyAppRoot, null);
+        if (key.equals(UIPolicy.PREF_KEY_APP_ROOT)) {
+            String appRoot = sharedPreferences.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
             File appRootFile = new File(appRoot);
             if (!appRootFile.canWrite()) {
                 LookAndFeel.showTextToast(this, R.string.warn_file_access_denied);
                 SharedPreferences.Editor prefEd = sharedPreferences.edit();
-                prefEd.putString(UIPolicy.prefKeyAppRoot, appRootOld);
+                prefEd.putString(UIPolicy.PREF_KEY_APP_ROOT, appRootOld);
                 prefEd.apply();
             } else {
                 UIPolicy.setAppDirectories(appRoot);
@@ -66,7 +66,7 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preference);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        appRootOld = prefs.getString(UIPolicy.prefKeyAppRoot, null);
+        appRootOld = prefs.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
         prefs.registerOnSharedPreferenceChangeListener(this);
         eAssert(null != appRootOld);
     }

@@ -81,7 +81,7 @@ DialogInterface.OnClickListener
         cid = ((Long)obj).longValue();
         try {
             new NetLoader().updateLoad(cid);
-            return Err.NoErr;
+            return Err.NO_ERR;
         } catch (FeederException e) {
             return e.getError();
         }
@@ -98,7 +98,7 @@ DialogInterface.OnClickListener
     protected Err
     doInBackground(Object... objs) {
         //logI("* Start background Job : SpinSyncTask\n");
-        Err ret = Err.NoErr;
+        Err ret = Err.NO_ERR;
         if (null != onEvent)
             ret = onEvent.onDoWork(this, objs);
         return ret;

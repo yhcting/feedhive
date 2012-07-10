@@ -69,7 +69,7 @@
     <string name="err_url">Invalid URL.</string>
     <string name="err_ionet">Fail to access resource through network.</string>
     <string name="err_iofile">Fail to operate on file.</string>
-    <string name="err_media_get">Fail to get media content.</string>
+    <string name="err_get_media">Fail to get media content.</string>
     <string name="err_codec_decode">Fail to decode media.</string>
     <string name="err_parse_unsupported_format">Fail to parse. Unsupported format.</string>
     <string name="err_parse_unsupported_version">Fail to parse. Unsupported version.</string>

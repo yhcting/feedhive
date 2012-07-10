@@ -134,7 +134,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     checkInterrupted() throws FeederException {
         if (Thread.currentThread().isInterrupted())
-            throw new FeederException(Err.Interrupted);
+            throw new FeederException(Err.INTERRUPTED);
     }
 
     // This is used only for new 'insertion'
@@ -157,7 +157,7 @@ UnexpectedExceptionHandler.TrackedModule {
         values.put(ColumnItem.ENCLOSURE_URL.getName(),       parD.enclosureUrl);
         values.put(ColumnItem.ENCLOSURE_LENGTH.getName(),    parD.enclosureLength);
         values.put(ColumnItem.ENCLOSURE_TYPE.getName(),      parD.enclosureType);
-        values.put(ColumnItem.STATE.getName(),               Feed.Item.FStatDefault);
+        values.put(ColumnItem.STATE.getName(),               Feed.Item.FSTAT_DEFAULT);
 
         // If success to parse pubdate than pubdate is used, if not, current time is used.
         long time = Utils.dateStringToTime(parD.pubDate);
@@ -181,9 +181,9 @@ UnexpectedExceptionHandler.TrackedModule {
         ContentValues values = new ContentValues();
         // application's internal information
         values.put(ColumnChannel.URL.getName(),              profD.url);
-        values.put(ColumnChannel.ACTION.getName(),           Feed.FInvalid);
-        values.put(ColumnChannel.UPDATEMODE.getName(),       Feed.Channel.FUpdDefault);
-        values.put(ColumnChannel.STATE.getName(),            Feed.Channel.FStatDefault);
+        values.put(ColumnChannel.ACTION.getName(),           Feed.FINVALID);
+        values.put(ColumnChannel.UPDATEMODE.getName(),       Feed.Channel.FUPD_DEFAULT);
+        values.put(ColumnChannel.STATE.getName(),            Feed.Channel.FSTAT_DEFAULT);
         values.put(ColumnChannel.CATEGORYID.getName(),       dbD.categoryid);
         values.put(ColumnChannel.LASTUPDATE.getName(),       dbD.lastupdate);
 
@@ -194,7 +194,7 @@ UnexpectedExceptionHandler.TrackedModule {
         values.put(ColumnChannel.IMAGEBLOB.getName(),        new byte[0]);
         // Fill reserved values as default
         // This need to match ChannelSettingActivity's setting value.
-        values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  Feed.Channel.defaultSchedUpdateTime); // default (03 o'clock)
+        values.put(ColumnChannel.SCHEDUPDATETIME.getName(),  Feed.Channel.DEFAULT_SCHEDUPDATE_TIME); // default (03 o'clock)
         values.put(ColumnChannel.OLDLAST_ITEMID.getName(),   0);
         values.put(ColumnChannel.NRITEMS_SOFTMAX.getName(),  999999);
         // add to last position in terms of UI.
@@ -469,20 +469,20 @@ UnexpectedExceptionHandler.TrackedModule {
         long cid = findChannel(chState, url);
 
         if (cid >= 0 && Feed.Channel.isStatUsed(chState[0]))
-            throw new FeederException(Err.DBDuplicatedChannel);
+            throw new FeederException(Err.DB_DUPLICATED_CHANNEL);
 
         if (cid >= 0 && !Feed.Channel.isStatUsed(chState[0])) {
             if (!UIPolicy.makeChannelDir(cid))
-                throw new FeederException(Err.IOFile);
+                throw new FeederException(Err.IO_FILE);
 
             // There is unused existing channel.
             // Let's reuse it.
             // Initialize some channel informations
             ContentValues cvs = new ContentValues();
-            cvs.put(ColumnChannel.STATE.getName(),      Feed.Channel.FStatUsed);
+            cvs.put(ColumnChannel.STATE.getName(),      Feed.Channel.FSTAT_USED);
             // We didn't verify 'categoryid' here.
             cvs.put(ColumnChannel.CATEGORYID.getName(), categoryid);
-            cvs.put(ColumnChannel.ACTION.getName(),     Feed.FInvalid);
+            cvs.put(ColumnChannel.ACTION.getName(),     Feed.FINVALID);
             cvs.put(ColumnChannel.POSITION.getName(),   getChannelInfoMaxLong(ColumnChannel.POSITION) + 1);
             cvs.put(ColumnChannel.IMAGEBLOB.getName(),  new byte[0]);
             db.updateChannel(cid, cvs);
@@ -506,7 +506,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // check duplication...
         if (!UIPolicy.makeChannelDir(cid)) {
             db.deleteChannel(cid);
-            throw new FeederException(Err.IOFile);
+            throw new FeederException(Err.IO_FILE);
         }
 
         return cid;
@@ -525,7 +525,7 @@ UnexpectedExceptionHandler.TrackedModule {
         logI("UpdateChannel DB Section Start : cid[" + cid + "]");
 
         if (0 == items.length)
-            return Err.NoErr;
+            return Err.NO_ERR;
 
         boolean pubDateAvail = Utils.isValidValue(items[0].pubDate);
         HashMap<String, HashMap<String, ItemUrls>> mainMap
@@ -722,7 +722,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return e.getError();
         }
 
-        return Err.NoErr;
+        return Err.NO_ERR;
     }
 
     /**
@@ -795,7 +795,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // At this moment, let's ignore this race-condition.
                 // If issued case is found, let's consider it at the moment.
                 if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
-                    throw new FeederException(Err.DBUnknown);
+                    throw new FeederException(Err.DB_UNKNOWN);
                 // Invalidate cached value.
                 synchronized (maxIdCache) {
                     maxIdCache.put(cid, itemDbD.id);
@@ -809,7 +809,7 @@ UnexpectedExceptionHandler.TrackedModule {
                         f.delete();
                 }
             } catch (FeederException e) {
-                if (Err.DBUnknown == e.getError())
+                if (Err.DB_UNKNOWN == e.getError())
                     throw e;
                 ; // if feeder fails to get item data, just ignore it!
             }
@@ -937,7 +937,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.queryChannel(columns,
                                new ColumnChannel[] { ColumnChannel.STATE,
                                                      ColumnChannel.CATEGORYID },
-                               new Object[] { Feed.Channel.FStatUsed,
+                               new Object[] { Feed.Channel.FSTAT_USED,
                                               categoryid },
                                null, false, 0);
     }
@@ -961,7 +961,7 @@ UnexpectedExceptionHandler.TrackedModule {
     queryChannel(ColumnChannel[] columns) {
         return db.queryChannel(columns,
                 ColumnChannel.STATE,
-                Feed.Channel.FStatUsed,
+                Feed.Channel.FSTAT_USED,
                 null, false, 0);
     }
 
@@ -980,7 +980,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public int
     unlistChannel(long cid) {
         // Just mark as 'unused' - for future
-        long n = db.updateChannel(cid, ColumnChannel.STATE, Feed.Channel.FStatUnused);
+        long n = db.updateChannel(cid, ColumnChannel.STATE, Feed.Channel.FSTAT_UNUSED);
         eAssert(0 == n || 1 == n);
         if (1 == n) {
             UIPolicy.removeChannelDir(cid);
@@ -1025,7 +1025,7 @@ UnexpectedExceptionHandler.TrackedModule {
     getChannelIds() {
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
                                    new ColumnChannel[] { ColumnChannel.STATE },
-                                   new Object[] { Feed.Channel.FStatUsed },
+                                   new Object[] { Feed.Channel.FSTAT_USED },
                                    null, false, 0);
         long[] cids = new long[c.getCount()];
         if (c.moveToFirst()) {
@@ -1048,7 +1048,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
                                    new ColumnChannel[] { ColumnChannel.STATE,
                                                          ColumnChannel.CATEGORYID },
-                                   new Object[] { Feed.Channel.FStatUsed,
+                                   new Object[] { Feed.Channel.FSTAT_USED,
                                                   categoryid },
                                    null, false, 0);
         long[] cids = new long[c.getCount()];
@@ -1074,7 +1074,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryChannel(new ColumnChannel[] { column },
                                    new ColumnChannel[] { ColumnChannel.STATE,
                                                          ColumnChannel.ID },
-                                   new Object[] { Feed.Channel.FStatUsed,
+                                   new Object[] { Feed.Channel.FSTAT_USED,
                                                   cid },
                                    null, false, 0);
         Object ret = null;
@@ -1108,7 +1108,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryChannel(columns,
                                     new ColumnChannel[] { ColumnChannel.STATE,
                                                           ColumnChannel.ID },
-                                    new Object[] { Feed.Channel.FStatUsed,
+                                    new Object[] { Feed.Channel.FSTAT_USED,
                                                    cid },
                                     null, false, 0);
         if (!c.moveToFirst()) {
@@ -1155,7 +1155,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
                                    new ColumnChannel[] { ColumnChannel.STATE,
                                                          ColumnChannel.ID },
-                                   new Object[] { Feed.Channel.FStatUsed,
+                                   new Object[] { Feed.Channel.FSTAT_USED,
                                                   cid },
                                    null, false, 0);
         if (c.moveToFirst())

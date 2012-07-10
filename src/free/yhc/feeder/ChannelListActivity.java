@@ -85,19 +85,19 @@ public class ChannelListActivity extends Activity implements
 ActionBar.TabListener,
 UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
-    private static final int reqCPickImage              = 0;
-    private static final int reqCPickPredefinedChannel  = 1;
+    private static final int REQC_PICK_IMAGE               = 0;
+    private static final int REQC_PICK_PREDEFINED_CHANNEL  = 1;
 
-    private static final int dataReqSz  = 20;
-    private static final int dataArrMax = 200;
+    private static final int DATA_REQ_SZ  = 20;
+    private static final int DATA_ARR_MAX = 200;
 
-    private static final int channelRefreshThreshold = 2;
+    private static final int CHANNEL_REFRESH_THRESHOLD = 2;
 
     private ActionBar   ab      = null;
     private Flipper     flipper = null;
 
     // Saved cid for Async execution.
-    private long      cid_pickImage = -1;
+    private long      cidPickImage = -1;
 
     private interface EditTextDialogAction {
         void prepare(Dialog dialog, EditText edit);
@@ -208,15 +208,15 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(null != list);
             list.setAdapter(new ChannelListAdapter(context, null,
                                                    R.layout.channel_row, list,
-                                                   dataReqSz, dataArrMax,
+                                                   DATA_REQ_SZ, DATA_ARR_MAX,
                                                    new OnAdapterActionHandler()));
             list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void
                 onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
                     Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-                    intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeChannel);
-                    intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+                    intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_CHANNEL);
+                    intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
                     intent.putExtra("cid", ((ChannelListAdapter)parent.getAdapter()).getItemInfo_cid(position));
                     startActivity(intent);
                 }
@@ -318,14 +318,14 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
-            eAssert(Err.UserCancelled != result);
+            eAssert(Err.USER_CANCELLED != result);
             // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
             if (isActivityFinishing())
                 return;
 
             // In normal case, onPostExecute is not called in case of 'user-cancel'.
             // below code is for safety.
-            if (Err.UserCancelled == result)
+            if (Err.USER_CANCELLED == result)
                 return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
             // NOTE : refresh??? just 'notifying' is enough?
@@ -383,12 +383,12 @@ UnexpectedExceptionHandler.TrackedModule {
             Uri selectedImage = data.getData();
             String[] filePathColumn = {MediaColumns.DATA};
 
-            cid = cid_pickImage;
+            cid = cidPickImage;
 
             Cursor c = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
             if (!c.moveToFirst()) {
                 c.close();
-                return Err.MediaGet;
+                return Err.GET_MEDIA;
             }
 
             int columnIndex = c.getColumnIndex(filePathColumn[0]);
@@ -402,22 +402,22 @@ UnexpectedExceptionHandler.TrackedModule {
             byte[] imageData = Utils.compressBitmap(bm);
 
             if (null == imageData)
-                return Err.CodecDecode;
+                return Err.CODEC_DECODE;
 
-            if (cid_pickImage < 0) {
+            if (cidPickImage < 0) {
                 eAssert(false);
-                return Err.Unknown; // something evil!!!
+                return Err.UNKNOWN; // something evil!!!
             } else {
-                DBPolicy.S().updateChannel(cid_pickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
-                cid_pickImage = -1;
+                DBPolicy.S().updateChannel(cidPickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
+                cidPickImage = -1;
             }
-            return Err.NoErr;
+            return Err.NO_ERR;
         }
 
         @Override
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
-            if (Err.NoErr == result)
+            if (Err.NO_ERR == result)
                 getCurrentListAdapter().setChannelIcon(cid, bm);
             else
                 LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
@@ -435,7 +435,7 @@ UnexpectedExceptionHandler.TrackedModule {
             Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
             if (!c.moveToFirst()) {
                 c.close();
-                return Err.NoErr;
+                return Err.NO_ERR;
             }
 
             boolean bOk = true;
@@ -443,13 +443,13 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (!UIPolicy.cleanChannelDir(c.getLong(0)))
                     bOk = false;
             } while (c.moveToNext());
-            return bOk? Err.NoErr: Err.IOFile;
+            return bOk? Err.NO_ERR: Err.IO_FILE;
         }
 
         @Override
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
-            if (Err.NoErr != result)
+            if (Err.NO_ERR != result)
                 LookAndFeel.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
         }
 
@@ -468,7 +468,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 cids[i] = (Long)objs[i];
 
             nrDelItems = DBPolicy.S().deleteChannel(cids);
-            return Err.NoErr;
+            return Err.NO_ERR;
         }
 
         @Override
@@ -490,8 +490,8 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
-            if (RTTask.Action.Update == act)
-                RTTask.S().bind(cid, RTTask.Action.Update, ChannelListActivity.this, new UpdateBGTaskOnEvent(cid));
+            if (RTTask.Action.UPDATE == act)
+                RTTask.S().bind(cid, RTTask.Action.UPDATE, ChannelListActivity.this, new UpdateBGTaskOnEvent(cid));
         }
         @Override
         public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
@@ -785,8 +785,8 @@ UnexpectedExceptionHandler.TrackedModule {
         else
             task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
 
-        RTTask.S().register(cid, RTTask.Action.Update, task);
-        RTTask.S().start(cid, RTTask.Action.Update);
+        RTTask.S().register(cid, RTTask.Action.UPDATE, task);
+        RTTask.S().start(cid, RTTask.Action.UPDATE);
         ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
 
         // refresh current category.
@@ -955,7 +955,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onOpt_addChannel_predefined() {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
         intent.putExtra("category", getCurrentCategoryId());
-        startActivityForResult(intent, reqCPickPredefinedChannel);
+        startActivityForResult(intent, REQC_PICK_PREDEFINED_CHANNEL);
     }
 
     private void
@@ -1004,8 +1004,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_category_items() {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeCategory);
-        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+        intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_CATEGORY);
+        intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
         intent.putExtra("categoryid", getCurrentCategoryId());
         startActivity(intent);
     }
@@ -1112,16 +1112,16 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_itemsAll() {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeAll);
-        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+        intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_ALL);
+        intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
         startActivity(intent);
     }
 
     private void
     onOpt_itemsFavorite() {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-        intent.putExtra(ItemListActivity.IKeyMode, ItemListActivity.ModeFavorite);
-        intent.putExtra(ItemListActivity.IKeyFilter, ItemListActivity.FilterNone);
+        intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_FAVORITE);
+        intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
         startActivity(intent);
     }
 
@@ -1269,11 +1269,11 @@ UnexpectedExceptionHandler.TrackedModule {
     onContext_pickIcon(final long cid) {
         Intent i = new Intent(Intent.ACTION_PICK,
                               android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        cid_pickImage = cid;
+        cidPickImage = cid;
         try {
             startActivityForResult(Intent.createChooser(i,
                                                         getResources().getText(R.string.pick_icon)),
-                                   reqCPickImage);
+                                   REQC_PICK_IMAGE);
         } catch (ActivityNotFoundException e) {
             LookAndFeel.showTextToast(this, R.string.warn_find_gallery_app);
             return;
@@ -1286,32 +1286,32 @@ UnexpectedExceptionHandler.TrackedModule {
         ScheduledUpdater.setNextScheduledUpdate(this, cid);
         return;
         */
-        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
         switch (state) {
-        case Idle: {
+        case IDLE: {
             //logI("ChannelList : update : " + cid);
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
-            RTTask.S().register(cid, RTTask.Action.Update, task);
-            RTTask.S().start(cid, RTTask.Action.Update);
+            RTTask.S().register(cid, RTTask.Action.UPDATE, task);
+            RTTask.S().start(cid, RTTask.Action.UPDATE);
             dataSetChanged(getCurrentListView(), cid);
         } break;
 
-        case Running:
-        case Ready:
+        case RUNNING:
+        case READY:
             //logI("ChannelList : cancel : " + cid);
-            RTTask.S().cancel(cid, RTTask.Action.Update, null);
+            RTTask.S().cancel(cid, RTTask.Action.UPDATE, null);
             // to change icon into "canceling"
             dataSetChanged(getCurrentListView(), cid);
             break;
 
-        case Failed: {
-            Err result = RTTask.S().getErr(cid, RTTask.Action.Update);
+        case FAILED: {
+            Err result = RTTask.S().getErr(cid, RTTask.Action.UPDATE);
             LookAndFeel.showTextToast(this, result.getMsgId());
-            RTTask.S().consumeResult(cid, RTTask.Action.Update);
+            RTTask.S().consumeResult(cid, RTTask.Action.UPDATE);
             dataSetChanged(getCurrentListView(), cid);
         } break;
 
-        case Canceling:
+        case CANCELING:
             LookAndFeel.showTextToast(this, R.string.wait_cancel);
             break;
 
@@ -1429,11 +1429,11 @@ UnexpectedExceptionHandler.TrackedModule {
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
         long dbId = getCurrentListAdapter().getItemInfo_cid(mInfo.position);
-        RTTask.TaskState updateState = RTTask.S().getState(dbId, RTTask.Action.Update);
+        RTTask.TaskState updateState = RTTask.S().getState(dbId, RTTask.Action.UPDATE);
 
-        if (RTTask.TaskState.Running == updateState
-            || RTTask.TaskState.Ready == updateState
-            || RTTask.TaskState.Canceling == updateState) {
+        if (RTTask.TaskState.RUNNING == updateState
+            || RTTask.TaskState.READY == updateState
+            || RTTask.TaskState.CANCELING == updateState) {
             menu.findItem(R.id.unlist).setEnabled(false);
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
@@ -1489,10 +1489,10 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onActivityResult(requestCode, resultCode, data);
 
         switch (requestCode) {
-        case reqCPickImage:
+        case REQC_PICK_IMAGE:
             onResult_pickImage(resultCode, data);
             break;
-        case reqCPickPredefinedChannel:
+        case REQC_PICK_PREDEFINED_CHANNEL:
             onResult_pickPredefinedChannel(resultCode, data);
             break;
         }
@@ -1584,11 +1584,11 @@ UnexpectedExceptionHandler.TrackedModule {
             if (c.moveToFirst()) {
                 do {
                     long cid = c.getLong(0);
-                    if (RTTask.TaskState.Idle != RTTask.S().getState(cid, RTTask.Action.Update))
-                        RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
+                    if (RTTask.TaskState.IDLE != RTTask.S().getState(cid, RTTask.Action.UPDATE))
+                        RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
                     long[] ids = RTTask.S().getItemsDownloading(cid);
                     for (long id : ids)
-                        RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadBGTaskOnEvent(cid));
+                        RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent(cid));
                 } while (c.moveToNext());
             }
             c.close();
@@ -1607,7 +1607,7 @@ UnexpectedExceptionHandler.TrackedModule {
         boolean fullRefreshCurrent = false;
         if (DBPolicy.S().isChannelWatcherRegistered(this))
             cids = DBPolicy.S().getChannelWatcherUpdated(this);
-        fullRefresh = cids.length > channelRefreshThreshold? true: false;
+        fullRefresh = cids.length > CHANNEL_REFRESH_THRESHOLD? true: false;
 
         // NOTE
         // Channel may be added or deleted.

@@ -74,8 +74,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String TABLE_CHANNEL   = "channel";
     private static final String TABLE_ITEM      = "item";
 
-    private static final String itemQueryDefaultOrder = ColumnItem.PUBTIME.getName() + " DESC";
-    private static final String channelQueryDefaultOrder = ColumnChannel.POSITION.getName() + " ASC";
+    private static final String ITEM_QUERY_DEFAULT_ORDER = ColumnItem.PUBTIME.getName() + " DESC";
+    private static final String CHANNEL_QUERY_DEFAULT_ORDER = ColumnChannel.POSITION.getName() + " ASC";
 
     public interface Column {
         String getName();
@@ -900,7 +900,7 @@ UnexpectedExceptionHandler.TrackedModule {
                  ColumnChannel orderColumn, boolean bAsc,
                  long limit) {
         String order = (null == orderColumn)?
-                        channelQueryDefaultOrder:
+                        CHANNEL_QUERY_DEFAULT_ORDER:
                         orderColumn.getName() + (bAsc? " ASC": " DESC");
         String whereClause = buildSQLWhere(wheres, values, "=", "AND");
 
@@ -1084,7 +1084,7 @@ UnexpectedExceptionHandler.TrackedModule {
                         getColumnNames(columns),
                         wh.isEmpty()? null: wh,
                         null, null, null,
-                        itemQueryDefaultOrder,
+                        ITEM_QUERY_DEFAULT_ORDER,
                         (limit > 0)? "" + limit: null);
     }
 
@@ -1121,7 +1121,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 getColumnNames(columns),
                 wh,
                 null, null, null,
-                itemQueryDefaultOrder);
+                ITEM_QUERY_DEFAULT_ORDER);
     }
 
     /**
@@ -1164,7 +1164,7 @@ UnexpectedExceptionHandler.TrackedModule {
                         getColumnNames(columns),
                         wh.isEmpty()? null: wh,
                         null, null, null,
-                        itemQueryDefaultOrder,
+                        ITEM_QUERY_DEFAULT_ORDER,
                         (limit > 0)? "" + limit: null);
     }
 

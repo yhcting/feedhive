@@ -25,7 +25,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.StaleDataException;
 import android.graphics.drawable.AnimationDrawable;
-import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.Animation;
@@ -46,7 +45,6 @@ import free.yhc.feeder.model.Utils;
 
 public class ItemListAdapter extends AsyncCursorAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    private final Handler   handler = new Handler();
     private final DBPolicy  dbp = DBPolicy.S();
     private final OnAction  onAction;
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
@@ -345,17 +343,17 @@ AsyncCursorAdapter.ItemBuilder {
         if (ii.hasDnFile) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
-            RTTask.TaskState dnState = RTTask.S().getState(ii.id, RTTask.Action.Download);
+            RTTask.TaskState dnState = RTTask.S().getState(ii.id, RTTask.Action.DOWNLOAD);
             switch(dnState) {
-            case Idle:
+            case IDLE:
                 imgv.setImageResource(R.drawable.download_anim0);
                 break;
 
-            case Ready:
+            case READY:
                 imgv.setImageResource(R.drawable.ic_pause);
                 break;
 
-            case Running:
+            case RUNNING:
                 imgv.setImageResource(R.anim.download);
                 // Why "post runnable and start animation?"
                 // In Android 4.0.3 (ICS)
@@ -377,7 +375,7 @@ AsyncCursorAdapter.ItemBuilder {
                 // But, in case of using handler, it works.
                 // I think it's definitely Android platform's BUG!
                 // So, below code is just workaround of platform BUG!
-                handler.post(new Runnable() {
+                Utils.getUiHandler().post(new Runnable() {
                     @Override
                     public void run() {
                         ((AnimationDrawable)imgv.getDrawable()).start();
@@ -388,15 +386,15 @@ AsyncCursorAdapter.ItemBuilder {
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
                 progressv.switchOnEvent(onEvent);
                 RTTask.S().unbind(progressv);
-                RTTask.S().bind(ii.id, RTTask.Action.Download, progressv, onEvent);
+                RTTask.S().bind(ii.id, RTTask.Action.DOWNLOAD, progressv, onEvent);
                 progressv.setVisibility(View.VISIBLE);
                 break;
 
-            case Failed:
+            case FAILED:
                 imgv.setImageResource(R.drawable.ic_info);
                 break;
 
-            case Canceling:
+            case CANCELING:
                 imgv.setImageResource(R.drawable.ic_block);
                 imgv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
                 break;

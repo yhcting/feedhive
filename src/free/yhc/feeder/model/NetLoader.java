@@ -71,7 +71,7 @@ public class NetLoader {
             if (null != istream)
                 istream.close();
         } catch (IOException e) {
-            throw new FeederException (Err.IONet);
+            throw new FeederException (Err.IO_NET);
         }
     }
 
@@ -86,7 +86,7 @@ public class NetLoader {
             if (null != ostream)
                 ostream.close();
         } catch (IOException e) {
-            throw new FeederException (Err.IOFile);
+            throw new FeederException (Err.IO_FILE);
         }
     }
 
@@ -125,9 +125,9 @@ public class NetLoader {
     private void
     checkInterrupted() throws FeederException {
         if (cancelled)
-            throw new FeederException(Err.UserCancelled);
+            throw new FeederException(Err.USER_CANCELLED);
         if (Thread.currentThread().isInterrupted())
-            throw new FeederException(Err.Interrupted);
+            throw new FeederException(Err.INTERRUPTED);
     }
 
     /**
@@ -150,7 +150,7 @@ public class NetLoader {
            try {
                url = new URL(urlStr);
            } catch (MalformedURLException e) {
-               throw new FeederException(Err.InvalidURL);
+               throw new FeederException(Err.INVALID_URL);
            }
 
            while (0 < retry--) {
@@ -163,18 +163,18 @@ public class NetLoader {
                    // SocketTimeoutException
                    // IOException
                    if (cancelled)
-                       throw new FeederException(Err.UserCancelled);
+                       throw new FeederException(Err.USER_CANCELLED);
 
                    if (0 >= retry)
-                       throw new FeederException(Err.IONet);
+                       throw new FeederException(Err.IO_NET);
 
                    try {
                        Thread.sleep(500);
                    } catch (InterruptedException ie) {
                        if (cancelled)
-                           throw new FeederException(Err.UserCancelled);
+                           throw new FeederException(Err.USER_CANCELLED);
                        else
-                           throw new FeederException(Err.Interrupted);
+                           throw new FeederException(Err.INTERRUPTED);
                    }
                }
            }
@@ -191,7 +191,7 @@ public class NetLoader {
 
                if (Thread.currentThread().isInterrupted()) {
                    cancel();
-                   throw new FeederException(Err.Interrupted);
+                   throw new FeederException(Err.INTERRUPTED);
                }
 
                byte data[] = new byte[256*1024];
@@ -221,11 +221,11 @@ public class NetLoader {
                // And this leads to IOException here.
                // So, we should check that this Exception is caused by user's cancel or real IOException.
                if (cancelled)
-                   throw new FeederException(Err.UserCancelled);
+                   throw new FeederException(Err.USER_CANCELLED);
                else {
                    e.printStackTrace();
                    logW(e.getMessage());
-                   throw new FeederException(Err.IONet);
+                   throw new FeederException(Err.IO_NET);
                }
            } finally {
                closeIstream();
@@ -262,32 +262,32 @@ public class NetLoader {
                     logI("TIME: RSSParsing : " + (System.currentTimeMillis() - time));
                     break; // done
                 } catch (MalformedURLException e) {
-                    throw new FeederException(Err.InvalidURL);
+                    throw new FeederException(Err.INVALID_URL);
                 } catch (IOException e) {
                     if (cancelled)
-                        throw new FeederException(Err.UserCancelled);
+                        throw new FeederException(Err.USER_CANCELLED);
 
                     if (0 >= retry)
-                        throw new FeederException(Err.IONet);
+                        throw new FeederException(Err.IO_NET);
 
                     ; // continue next retry after some time.
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException ie) {
                         if (cancelled)
-                            throw new FeederException(Err.UserCancelled);
+                            throw new FeederException(Err.USER_CANCELLED);
                         else
-                            throw new FeederException(Err.Interrupted);
+                            throw new FeederException(Err.INTERRUPTED);
                     }
                 }
             }
         } catch (DOMException e) {
-            throw new FeederException(Err.ParserUnsupportedFormat);
+            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
         } catch (SAXException e) {
             e.printStackTrace();
-            throw new FeederException(Err.ParserUnsupportedFormat);
+            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
         } catch (ParserConfigurationException e) {
-            throw new FeederException(Err.ParserUnsupportedFormat);
+            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
         } catch (FeederException e) {
             throw e;
         } finally {
@@ -324,7 +324,7 @@ public class NetLoader {
         // This is definitely overhead. But, it's not big overhead.
         // Instead of that, we can get simplified code.
         long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-        if (Feed.FInvalid == action) {
+        if (Feed.FINVALID == action) {
             if (parD.items.length > 0)
                 action = UIPolicy.decideDefaultActionType(parD.channel, parD.items[0]);
             else
@@ -472,9 +472,9 @@ public class NetLoader {
             ostream = new FileOutputStream(tmpFile);
             download(ostream, url, progressListener);
             if (!tmpFile.renameTo(toFile))
-                throw new FeederException(Err.IOFile);
+                throw new FeederException(Err.IO_FILE);
         } catch (FileNotFoundException e) {
-            throw new FeederException(Err.IOFile);
+            throw new FeederException(Err.IO_FILE);
         } finally {
             closeIstream();
             closeOstream();

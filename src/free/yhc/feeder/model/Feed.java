@@ -26,34 +26,34 @@ import static free.yhc.feeder.model.Utils.bitIsSet;
 //   F[flag name][value name] : 'F' => Flag
 //   M[flag_name][value name] : 'M' => Mask
 public class Feed {
-    public static final long FInvalid = ~0;
+    public static final long FINVALID = ~0;
 
     public static class Item {
         // ==================
         // Flag State
         // ==================
         // bit[0] : new / opened
-        public static final long FStatOpenNew      = 0x00;
-        public static final long FStatOpenOpened   = 0x01;
-        public static final long MStatOpen         = 0x01;
-        public static final long FStatOpenDefault  = FStatOpenNew;
+        public static final long FSTAT_OPEN_NEW      = 0x00;
+        public static final long FSTAT_OPEN_OPENED   = 0x01;
+        public static final long MSTAT_OPEN          = 0x01;
+        public static final long FSTAT_OPEN_DEFAULT  = FSTAT_OPEN_NEW;
 
         // bit[1] : Fav off / on
-        public static final long FStatFavOff       = 0x00;
-        public static final long FStatFavOn        = 0x02;
-        public static final long MStatFav          = 0x02;
-        public static final long FStatFavDefault   = FStatFavOff;
+        public static final long FSTAT_FAV_OFF       = 0x00;
+        public static final long FSTAT_FAV_ON        = 0x02;
+        public static final long MSTAT_FAV           = 0x02;
+        public static final long FSTAT_FAV_DEFAULT   = FSTAT_FAV_OFF;
 
-        public static final long FStatDefault = FStatOpenDefault | FStatFavDefault;
+        public static final long FSTAT_DEFAULT = FSTAT_OPEN_DEFAULT | FSTAT_FAV_DEFAULT;
 
         public static final boolean
         isStateOpenNew(long flag) {
-            return bitIsSet(flag, FStatOpenNew, MStatOpen);
+            return bitIsSet(flag, FSTAT_OPEN_NEW, MSTAT_OPEN);
         }
 
         public static final boolean
         isStatFavOn(long flag) {
-            return bitIsSet(flag, FStatFavOn, MStatFav);
+            return bitIsSet(flag, FSTAT_FAV_ON, MSTAT_FAV);
         }
 
          // Information from parsing.
@@ -75,7 +75,7 @@ public class Feed {
     }
 
     public static class Channel {
-        public static final String defaultSchedUpdateTime = "" + (3 * 3600); // 3 o'clock
+        public static final String DEFAULT_SCHEDUPDATE_TIME = "" + (3 * 3600); // 3 o'clock
 
         // ==================
         // Flag State
@@ -86,28 +86,28 @@ public class Feed {
         //   used   : This channel is cared.
         //            When user newly inserts this.
         //            Or, it is inserted again after removing.
-        public static final long FStatUsed    = 0x00;
-        public static final long FStatUnused  = 0x01;
-        public static final long MStat        = 0x01;
-        public static final long FStatDefault = FStatUsed;
+        public static final long FSTAT_USED    = 0x00;
+        public static final long FSTAT_UNUSED  = 0x01;
+        public static final long MSTAT         = 0x01;
+        public static final long FSTAT_DEFAULT = FSTAT_USED;
 
 
         // ==================
         // Flag Action
         // ==================
         // bit[0] : Action target is 'link / enclosure' - default : link
-        public static final long FActTgtLink      = 0x00;
-        public static final long FActTgtEnclosure = 0x01;
-        public static final long MActTgt          = 0x01;
-        public static final long FActTgtDefault   = 0x00;
+        public static final long FACT_TGT_LINK      = 0x00;
+        public static final long FACT_TGT_ENCLOSURE = 0x01;
+        public static final long MACT_TGT           = 0x01;
+        public static final long FACT_TGT_DEFAULT   = FACT_TGT_LINK;
 
         // bit[1] : Action type is 'open / download / extern open' - default - open
         // This value is not changed by user action.
         // It's internal value.
-        public static final long FActOpOpen         = 0x00;
-        public static final long FActOpDn           = 0x02;
-        public static final long MActOp             = 0x02;
-        public static final long FActOpDefault      = 0x00;
+        public static final long FACT_OP_OPEN        = 0x00;
+        public static final long FACT_OP_DN          = 0x02;
+        public static final long MACT_OP             = 0x02;
+        public static final long FACT_OP_DEFAULT     = FACT_OP_OPEN;
 
         // bit[3] : Action program is 'internal program / external - default - internal
         // Ex. in case of view web link, internal program means 'ItemViewActivity' and
@@ -115,32 +115,32 @@ public class Feed {
         // Internal program is very simple version so, it's fast.
         // External program is usually very powerful.
         // This value can be changed by user setting.
-        public static final long FActProgIn       = 0x00;
-        public static final long FActProgEx       = 0x04;
-        public static final long MActProg         = 0x04;
-        public static final long FActProgDefault  = 0x00;
+        public static final long FACT_PROG_IN       = 0x00;
+        public static final long FACT_PROG_EX       = 0x04;
+        public static final long MACT_PROG          = 0x04;
+        public static final long FACT_PROG_DEFAULT  = FACT_PROG_IN;
 
-        public static final long FActDefault      = FActTgtDefault | FActOpDefault | FActProgDefault;
+        public static final long FACT_DEFAULT      = FACT_TGT_DEFAULT | FACT_OP_DEFAULT | FACT_PROG_DEFAULT;
 
         // ==================
         // Flag UpdateMode
         // ==================
         // bit[0] : update type 'normal / download'
-        public static final long FUpdLink       = 0x00; // update only feed link
-        public static final long FUpdDn         = 0x01; // download link during update.
-        public static final long MUpd           = 0x01;
+        public static final long FUPD_LINK       = 0x00; // update only feed link
+        public static final long FUPD_DN         = 0x01; // download link during update.
+        public static final long MUPD            = 0x01;
 
-        public static final long FUpdDefault    = FUpdLink;
+        public static final long FUPD_DEFAULT    = FUPD_LINK;
 
         // ==================
         // Feed Type
         // ==================
         // for news/article etc
-        public static final long ChannTypeArticle       = 0;
+        public static final long CHANN_TYPE_ARTICLE        = 0;
         // for link and description for media data (ex. podcast)
-        public static final long ChannTypeMedia         = 1;
+        public static final long CHANN_TYPE_MEDIA          = 1;
         // link is page that embedding media data (ex. youtube)
-        public static final long ChannTypeEmbeddedMedia = 2;
+        public static final long CHANN_TYPE_EMBEDDED_MEDIA = 2;
 
         // 100 x 100 is enough size for channel icon.
         public static final int ICON_MAX_WIDTH  = 100;
@@ -156,7 +156,7 @@ public class Feed {
             // Type is usually determined by which namespace is used at XML.
             // For example.
             //   xmlns:itunes -> Media
-            long     type         = ChannTypeArticle;
+            long     type         = CHANN_TYPE_ARTICLE;
             String   title        = "";
             String   description  = "";
             String   imageref     = "";
@@ -174,47 +174,47 @@ public class Feed {
         // ==================
         public static final boolean
         isStatUsed(long flag) {
-            return bitIsSet(flag, FStatUsed, MStat);
+            return bitIsSet(flag, FSTAT_USED, MSTAT);
         }
 
         public static final boolean
         isActOpOpen(long flag) {
-            return bitIsSet(flag, FActOpOpen, MActOp);
+            return bitIsSet(flag, FACT_OP_OPEN, MACT_OP);
         }
 
         public static final boolean
         isActOpDn(long flag) {
-            return bitIsSet(flag, FActOpDn, MActOp);
+            return bitIsSet(flag, FACT_OP_DN, MACT_OP);
         }
 
         public static final boolean
         isActTgtLink(long flag) {
-            return bitIsSet(flag, FActTgtLink, MActTgt);
+            return bitIsSet(flag, FACT_TGT_LINK, MACT_TGT);
         }
 
         public static final boolean
         isActTgtEnclosure(long flag) {
-            return bitIsSet(flag, FActTgtEnclosure, MActTgt);
+            return bitIsSet(flag, FACT_TGT_ENCLOSURE, MACT_TGT);
         }
 
         public static final boolean
         isActProgIn(long flag) {
-            return bitIsSet(flag, FActProgIn, MActProg);
+            return bitIsSet(flag, FACT_PROG_IN, MACT_PROG);
         }
 
         public static final boolean
         isActProgEx(long flag) {
-            return bitIsSet(flag, FActProgEx, MActProg);
+            return bitIsSet(flag, FACT_PROG_EX, MACT_PROG);
         }
 
         public static final boolean
         isUpdLink(long flag) {
-            return bitIsSet(flag, FUpdLink, MUpd);
+            return bitIsSet(flag, FUPD_LINK, MUPD);
         }
 
         public static final boolean
         isUpdDn(long flag) {
-            return bitIsSet(flag, FUpdDn, MUpd);
+            return bitIsSet(flag, FUPD_DN, MUPD);
         }
     }
 

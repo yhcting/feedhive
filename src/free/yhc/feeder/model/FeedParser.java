@@ -211,7 +211,7 @@ public abstract class FeedParser {
     verifyFormat(boolean cond)
             throws FeederException {
         if (!cond)
-            throw new FeederException(Err.ParserUnsupportedFormat);
+            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
     }
 
     protected final Node
@@ -229,7 +229,7 @@ public abstract class FeedParser {
             throws FeederException {
 
         if (Thread.interrupted())
-            throw new FeederException(Err.Interrupted);
+            throw new FeederException(Err.INTERRUPTED);
 
         String text = "";
         Node t = findNodeByNameFromSiblings(n.getFirstChild(), "#text");
@@ -322,14 +322,14 @@ public abstract class FeedParser {
         eAssert(null != dom);
         Element root = dom.getDocumentElement();
         if (null == root)
-            throw new FeederException(Err.ParserUnsupportedFormat);
+            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
 
         if ("rss".equalsIgnoreCase(root.getNodeName()))
             return new RSSParser();
         else if ("feed".equalsIgnoreCase(root.getNodeName()))
             return new AtomParser();
         else
-            throw new FeederException(Err.ParserUnsupportedFormat);
+            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
     }
 
     // real parser should implement 'parse' function.

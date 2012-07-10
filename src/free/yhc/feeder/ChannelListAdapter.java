@@ -260,26 +260,26 @@ AsyncCursorAdapter.ItemBuilder {
         ImageView noti_up = (ImageView)v.findViewById(R.id.noti_update);
         ImageView noti_dn = (ImageView)v.findViewById(R.id.noti_download);
 
-        RTTask.TaskState state = RTTask.S().getState(ii.cid, RTTask.Action.Update);
+        RTTask.TaskState state = RTTask.S().getState(ii.cid, RTTask.Action.UPDATE);
         noti_up.setVisibility(View.VISIBLE);
         switch(state) {
-        case Idle:
+        case IDLE:
             noti_up.setVisibility(View.GONE);
             break;
 
-        case Ready:
+        case READY:
             noti_up.setImageResource(R.drawable.ic_pause);
             break;
 
-        case Running:
+        case RUNNING:
             noti_up.setImageResource(R.drawable.ic_refresh);
             break;
 
-        case Canceling:
+        case CANCELING:
             noti_up.setImageResource(R.drawable.ic_block);
             break;
 
-        case Failed:
+        case FAILED:
             noti_up.setImageResource(R.drawable.ic_info);
             break;
 

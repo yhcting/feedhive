@@ -60,7 +60,7 @@ OnSharedPreferenceChangeListener {
     //       runQ.addLast(t);
     //   }
     private final Object       taskQSync = new Object();
-    private volatile int       max_concurrent = 2; // temporally hard coding.
+    private volatile int       maxConcurrent = 2; // temporally hard coding.
 
     private final LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
 
@@ -70,16 +70,16 @@ OnSharedPreferenceChangeListener {
     }
 
     public static enum TaskState {
-        Idle,
-        Ready, // ready to run. waiting turn!
-        Running,
-        Canceling,
-        Failed
+        IDLE,
+        READY, // ready to run. waiting turn!
+        RUNNING,
+        CANCELING,
+        FAILED
     }
 
     public enum Action {
-        Update,
-        Download;
+        UPDATE,
+        DOWNLOAD;
 
         static Action convert(String act) {
             for (Action a : Action.values()) {
@@ -179,7 +179,7 @@ OnSharedPreferenceChangeListener {
      */
     private void
     setMaxConcurrent(int v) {
-        max_concurrent = v;
+        maxConcurrent = v;
     }
 
     private String
@@ -225,7 +225,7 @@ OnSharedPreferenceChangeListener {
         synchronized (bgtm) {
             tids = bgtm.getTaskIds();
             for (String tid : tids) {
-                if (Action.Download == actionFromId(tid)) {
+                if (Action.DOWNLOAD == actionFromId(tid)) {
                     BGTask task = bgtm.peek(tid);
                     long id = idFromId(tid);
                     if (null != task && isTaskInAction(task)) {
@@ -432,23 +432,23 @@ OnSharedPreferenceChangeListener {
         }
 
         if (null == task)
-            return TaskState.Idle;
+            return TaskState.IDLE;
 
         synchronized (taskQSync) {
             if (runQ.contains(task))
-                return task.isCancelled()? TaskState.Canceling: TaskState.Running;
+                return task.isCancelled()? TaskState.CANCELING: TaskState.RUNNING;
 
             if (readyQ.contains(task))
-                return TaskState.Ready;
+                return TaskState.READY;
         }
 
-        if (Err.NoErr == task.getResult()
-                   || Err.UserCancelled == task.getResult()) {
+        if (Err.NO_ERR == task.getResult()
+                   || Err.USER_CANCELLED == task.getResult()) {
             unregister(id, act);
-            return TaskState.Idle;
+            return TaskState.IDLE;
         }
 
-        return TaskState.Failed;
+        return TaskState.FAILED;
     }
 
     /**
@@ -504,7 +504,7 @@ OnSharedPreferenceChangeListener {
                 bgtm.bindPrior(Id(act, id), null, new RunningBGTaskOnEvent());
             }
             // If there is no running task then start NOW!
-            if (runQ.size() < max_concurrent) {
+            if (runQ.size() < maxConcurrent) {
                 bStartImmediate = true;
                 runQ.addLast(t);
             } else
@@ -626,7 +626,7 @@ OnSharedPreferenceChangeListener {
         // Nick is task id.
         // See BGTM for details
         String id = task.getNick();
-        eAssert(Action.Download == actionFromId(id));
+        eAssert(Action.DOWNLOAD == actionFromId(id));
         return idFromId(id);
     }
 }

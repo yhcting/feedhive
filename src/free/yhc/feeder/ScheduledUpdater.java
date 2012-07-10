@@ -57,14 +57,11 @@ import free.yhc.feeder.model.Utils;
 public class ScheduledUpdater extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
     // Should match manifest's intent filter
-    private static final String schedUpdateIntentAction = "feeder.intent.action.SCHEDULED_UPDATE";
+    private static final String SCHEDUPDATE_INTENT_ACTION = "feeder.intent.action.SCHEDULED_UPDATE";
     // Wakelock
-    private static final String WLTag = "free.yhc.feeder.ScheduledUpdater";
+    private static final String WLTAG = "free.yhc.feeder.ScheduledUpdater";
 
-    private static final int    ReqCUpdate = 0;
-
-    private static final long   hourInMs = 60 * 60 * 1000;
-    private static final long   dayInMs = 24 * hourInMs;
+    private static final int    REQC_UPDATE = 0;
 
     private static final String CMD_ALARM   = "alarm";
     private static final String CMD_RESCHED = "resched";
@@ -209,9 +206,9 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(wlcnt >= 0);
         if (null == wl) {
             wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
-                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag);
+                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
             wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
-                    .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTag);
+                    .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG);
             //logI("ScheduledUpdater : WakeLock created and aquired");
             wl.acquire();
             wfl.acquire();
@@ -245,13 +242,13 @@ UnexpectedExceptionHandler.TrackedModule {
     // out[1] : time to go from dayTime1 to dayTime0
     private static void
     dayBasedDistanceMs(long[] out, long dayms0, long dayms1) {
-        eAssert(dayms0 <= dayInMs && dayms1 <= dayInMs);
+        eAssert(dayms0 <= Utils.DAY_IN_MS && dayms1 <= Utils.DAY_IN_MS);
         if (dayms0 > dayms1) {
             out[1] = dayms0 - dayms1;
-            out[0] = dayInMs - out[1];
+            out[0] = Utils.DAY_IN_MS - out[1];
         } else if (dayms0 < dayms1) {
             out[0] = dayms1 - dayms0;
-            out[1] = dayInMs - out[0];
+            out[1] = Utils.DAY_IN_MS - out[0];
         }
     }
 
@@ -267,7 +264,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long dayms = calNow.getTimeInMillis() - daybase;
         if (dayms < 0)
             dayms = 0; // To compensate 1 sec error from '/' operation.
-        eAssert(dayms <= dayInMs);
+        eAssert(dayms <= Utils.DAY_IN_MS);
 
         // If we get killed, after returning from here, restart
         Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.SCHEDUPDATETIME);
@@ -276,7 +273,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return; // There is no channel.
         }
 
-        final long invalidNearestNext = dayInMs * 2;
+        final long invalidNearestNext = Utils.DAY_IN_MS * 2;
         long nearestNext = invalidNearestNext; // large enough value.
         do {
             String sStr = c.getString(0);
@@ -301,19 +298,12 @@ UnexpectedExceptionHandler.TrackedModule {
         c.close();
 
         if (nearestNext != invalidNearestNext) {
-            // There is valid update
-            { // just for variable scope
-                long h = nearestNext / hourInMs;
-                long m = (nearestNext - h * hourInMs) / (60 * 1000);
-                //logI("ScheduledUpdater : next wakeup after [ " + h + " hours, " + m + " miniutes ]");
-            }
-
             // convert into real time.
             nearestNext += calNow.getTimeInMillis();
             Intent intent = new Intent(context, AlarmReceiver.class);
-            intent.setAction(schedUpdateIntentAction);
+            intent.setAction(SCHEDUPDATE_INTENT_ACTION);
             intent.putExtra("time", nearestNext);
-            PendingIntent pIntent = PendingIntent.getBroadcast(context, ReqCUpdate, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent pIntent = PendingIntent.getBroadcast(context, REQC_UPDATE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
 
             // Get the AlarmManager service
             AlarmManager am = (AlarmManager)context.getSystemService(ALARM_SERVICE);
@@ -335,7 +325,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         if (schedTime < 0 // something wrong!!
             || calNow.getTimeInMillis() < schedTime // scheduled too early
-            || calNow.getTimeInMillis() > schedTime + hourInMs) { // scheduled too late
+            || calNow.getTimeInMillis() > schedTime + Utils.HOUR_IN_MS) { // scheduled too late
             logW("WARN : ScheduledUpdater : weired scheduling!!!\n" +
                  "    scheduled time(ms) : " + schedTime + "\n" +
                  "    current time(ms)   : " + calNow.getTimeInMillis());
@@ -388,28 +378,28 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand() is run on UIThread.
             // So, I don't need to worry about race-condition caused from re-entrance of this function
             // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
-            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
-            if (RTTask.TaskState.Canceling == state
-                || RTTask.TaskState.Running == state
-                || RTTask.TaskState.Ready == state) {
+            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+            if (RTTask.TaskState.CANCELING == state
+                || RTTask.TaskState.RUNNING == state
+                || RTTask.TaskState.READY == state) {
                 //logI("doCmdAlarm : Channel [" + cid + "] is already active.\n" +
                 //     "             So scheduled update is skipped");
             } else {
                 // unregister gracefully to start update.
                 // There is sanity check in BGTaskManager - see BGTaskManager
                 //   to know why this 'unregister' is required.
-                RTTask.S().unregister(cid, RTTask.Action.Update);
+                RTTask.S().unregister(cid, RTTask.Action.UPDATE);
 
                 UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
-                RTTask.S().register(cid, RTTask.Action.Update, task);
-                RTTask.S().bind(cid, RTTask.Action.Update, null, task);
+                RTTask.S().register(cid, RTTask.Action.UPDATE, task);
+                RTTask.S().bind(cid, RTTask.Action.UPDATE, null, task);
                 //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
                 synchronized (taskset) {
                     if (!taskset.add(cid)) {
                         logW("doCmdAlarm : starts duplicated update! : " + cid);
                     }
                 }
-                RTTask.S().start(cid, RTTask.Action.Update);
+                RTTask.S().start(cid, RTTask.Action.UPDATE);
             }
         }
 

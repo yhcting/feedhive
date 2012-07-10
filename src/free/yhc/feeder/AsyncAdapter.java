@@ -311,7 +311,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 dp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, sz);
                 waitDpDone(reqSeq, 50);
                 //logI(">>> async request RUN - END: from " + from + ", # " + sz);
-                return Err.NoErr;
+                return Err.NO_ERR;
             }
             @Override
             public void onCancel(SpinAsyncTask task) {}

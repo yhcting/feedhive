@@ -69,30 +69,30 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final int DataReqSz  = 20;
-    private static final int DataArrMax = 500;
+    private static final int DATA_REQ_SZ  = 20;
+    private static final int DATA_ARR_MAX = 500;
 
-    private static final int reqCodeItemView    = 0;
+    private static final int REQC_ITEM_VIEW    = 0;
 
     // Keys for extra value of intent : IKey (Intent Key)
-    public static final String IKeyMode    = "mode";  // mode
-    public static final String IKeyFilter  = "filter";// filter
+    public static final String IKEY_MODE    = "mode";  // mode
+    public static final String IKEY_FILTER  = "filter";// filter
 
     // Option flags
 
     // bit[0:2] mode : scope of items to list
     // others are reserved (ex. ALL or ALL_LINK or ALL_ENCLOSURE)
     // Base query outline to create cursor, depends on this Mode value.
-    public static final int ModeChannel       = 0; // items of channel
-    public static final int ModeCategory      = 1; // items of category
-    public static final int ModeFavorite      = 2; // favorite items
-    public static final int ModeAll           = 3; // all items
+    public static final int MODE_CHANNEL       = 0; // items of channel
+    public static final int MODE_CATEGORY      = 1; // items of category
+    public static final int MODE_FAVORITE      = 2; // favorite items
+    public static final int MODE_ALL           = 3; // all items
 
     // bit[3:7] filter : select items
     // others are reserved (ex. filtering items with time (specific period of time) etc)
     // Filtering from cursor depends on this value.
-    public static final int FilterNone        = 0; // no filter
-    public static final int FilterNew         = 1; // new items of each channel.
+    public static final int FILTER_NONE        = 0; // no filter
+    public static final int FILTER_NEW         = 1; // new items of each channel.
 
     private final DBPolicy  db      = DBPolicy.S();
     private OpMode          opMode  = null;
@@ -149,7 +149,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 @Override
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
-                    state = state ^ Feed.Item.MStatFav;
+                    state = state ^ Feed.Item.MSTAT_FAV;
                     DBPolicy.S().updateItemAsync_state(id, state);
                     adapter.updateItemState(position, state);
                     dataSetChanged();
@@ -196,14 +196,14 @@ UnexpectedExceptionHandler.TrackedModule {
             super.onResume();
             // See comments in 'ChannelListActivity.onPause()'
             // Bind update task if needed
-            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
-            if (RTTask.TaskState.Idle != state)
-                RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
+            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+            if (RTTask.TaskState.IDLE != state)
+                RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
 
             // Bind downloading tasks
             long[] ids = RTTask.S().getItemsDownloading(cid);
             for (long id : ids)
-                RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+                RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
 
             setUpdateButton();
         }
@@ -266,14 +266,14 @@ UnexpectedExceptionHandler.TrackedModule {
             super.onResume();
             // Bind update task if needed
             for (long cid : cids) {
-                RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
-                if (RTTask.TaskState.Idle != state)
-                    RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
+                RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+                if (RTTask.TaskState.IDLE != state)
+                    RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
             }
 
             long[] ids = RTTask.S().getItemsDownloading(cids);
             for (long id : ids)
-                RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+                RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
         }
 
         @Override
@@ -305,7 +305,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 DBPolicy.S().getDelayedChannelUpdate();
                 for (long id : ids)
                     if (Feed.Item.isStatFavOn(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.STATE)))
-                        RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+                        RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
             } finally {
                 DBPolicy.S().putDelayedChannelUpdate();
             }
@@ -318,7 +318,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 @Override
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
-                    state = state ^ Feed.Item.MStatFav;
+                    state = state ^ Feed.Item.MSTAT_FAV;
                     DBPolicy.S().updateItemAsync_state(id, state);
                     eAssert(!Feed.Item.isStatFavOn(state));
                     adapter.removeItem(position);
@@ -330,15 +330,15 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         Cursor query() {
             return db.queryItemMask(queryProjection, DB.ColumnItem.STATE,
-                                    Feed.Item.MStatFav, Feed.Item.FStatFavOn,
+                                    Feed.Item.MSTAT_FAV, Feed.Item.FSTAT_FAV_ON,
                                     search, fromPubtime, toPubtime);
         }
 
         @Override
         long minPubtime() {
             return db.getItemMinPubtime(DB.ColumnItem.STATE,
-                                        Feed.Item.MStatFav,
-                                        Feed.Item.FStatFavOn);
+                                        Feed.Item.MSTAT_FAV,
+                                        Feed.Item.FSTAT_FAV_ON);
         }
     }
 
@@ -385,7 +385,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Bind downloading tasks
             long[] ids = RTTask.S().getItemsDownloading();
             for (long id : ids)
-                RTTask.S().bind(id, RTTask.Action.Download, this, new DownloadDataBGTaskOnEvent(id));
+                RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
         }
 
         @Override
@@ -444,7 +444,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             requestSetUpdateButton();
 
-            if (Err.NoErr == result) {
+            if (Err.NO_ERR == result) {
                 // Update "OLDLAST_ITEMID"
                 // User already know that there is new feed because
                 //   user starts to update in feed screen!.
@@ -501,9 +501,9 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onBGTaskRegister(long id, BGTask task, RTTask.Action act) {
-            if (RTTask.Action.Update == act)
+            if (RTTask.Action.UPDATE == act)
                 RTTask.S().bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent(id));
-            else if (RTTask.Action.Download == act)
+            else if (RTTask.Action.DOWNLOAD == act)
                 RTTask.S().bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent(id));
         }
 
@@ -593,7 +593,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onClick(View v) {
                 // Update is supported only at channel item list.
                 eAssert(opMode instanceof OpModeChannel);
-                RTTask.S().cancel(((OpModeChannel)opMode).getChannelId(), RTTask.Action.Update, null);
+                RTTask.S().cancel(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE, null);
                 requestSetUpdateButton();
             }
         });
@@ -617,7 +617,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // Update is supported only at channel item list.
                 eAssert(opMode instanceof OpModeChannel);
                 LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
-                RTTask.S().consumeResult(((OpModeChannel)opMode).getChannelId(), RTTask.Action.Update);
+                RTTask.S().consumeResult(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE);
                 requestSetUpdateButton();
             }
         });
@@ -628,7 +628,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // change state as 'opened' at this moment.
         long state = db.getItemInfoLong(id, DB.ColumnItem.STATE);
         if (Feed.Item.isStateOpenNew(state)) {
-            state = Utils.bitSet(state, Feed.Item.FStatOpenOpened, Feed.Item.MStatOpen);
+            state = Utils.bitSet(state, Feed.Item.FSTAT_OPEN_OPENED, Feed.Item.MSTAT_OPEN);
             db.updateItemAsync_state(id, state);
             getListAdapter().updateItemState(position, state);
             dataSetChanged(id);
@@ -643,17 +643,17 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(opMode instanceof OpModeChannel);
         long cid = ((OpModeChannel)opMode).getChannelId();
         BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
-        RTTask.S().register(cid, RTTask.Action.Update, updateTask);
-        RTTask.S().bind(cid, RTTask.Action.Update, this, new UpdateBGTaskOnEvent(cid));
-        RTTask.S().start(cid, RTTask.Action.Update);
+        RTTask.S().register(cid, RTTask.Action.UPDATE, updateTask);
+        RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+        RTTask.S().start(cid, RTTask.Action.UPDATE);
     }
 
     private void
     onActionOpen_http(long action, View view, long id, int position, String url, String protocol) {
-        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
-        if (RTTask.TaskState.Failed == state) {
-            LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.Download).getMsgId());
-            RTTask.S().consumeResult(id, RTTask.Action.Download);
+        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.DOWNLOAD);
+        if (RTTask.TaskState.FAILED == state) {
+            LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.DOWNLOAD).getMsgId());
+            RTTask.S().consumeResult(id, RTTask.Action.DOWNLOAD);
             dataSetChanged(id);
             return;
         }
@@ -661,7 +661,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (Feed.Channel.isActProgIn(action)) {
             Intent intent = new Intent(this, ItemViewActivity.class);
             intent.putExtra("id", id);
-            startActivityForResult(intent, reqCodeItemView);
+            startActivityForResult(intent, REQC_ITEM_VIEW);
         } else if (Feed.Channel.isActProgEx(action)) {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             try {
@@ -733,31 +733,31 @@ UnexpectedExceptionHandler.TrackedModule {
             // change state as 'opened' at this moment.
             changeItemState_opened(id, position);
         } else {
-            RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.Download);
+            RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.DOWNLOAD);
             switch(state) {
-            case Idle: {
+            case IDLE: {
                 BGTaskDownloadToFile.Arg arg
                     = new BGTaskDownloadToFile.Arg(url, f, UIPolicy.getNewTempFile());
                 BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this, arg);
-                RTTask.S().register(id, RTTask.Action.Download, dnTask);
-                RTTask.S().start(id, RTTask.Action.Download);
+                RTTask.S().register(id, RTTask.Action.DOWNLOAD, dnTask);
+                RTTask.S().start(id, RTTask.Action.DOWNLOAD);
                 dataSetChanged(id);
             } break;
 
-            case Running:
-            case Ready:
-                RTTask.S().cancel(id, RTTask.Action.Download, null);
+            case RUNNING:
+            case READY:
+                RTTask.S().cancel(id, RTTask.Action.DOWNLOAD, null);
                 dataSetChanged(id);
                 break;
 
-            case Canceling:
+            case CANCELING:
                 LookAndFeel.showTextToast(this, R.string.wait_cancel);
                 break;
 
-            case Failed: {
-                Err result = RTTask.S().getErr(id, RTTask.Action.Download);
+            case FAILED: {
+                Err result = RTTask.S().getErr(id, RTTask.Action.DOWNLOAD);
                 LookAndFeel.showTextToast(this, result.getMsgId());
-                RTTask.S().consumeResult(id, RTTask.Action.Download);
+                RTTask.S().consumeResult(id, RTTask.Action.DOWNLOAD);
                 dataSetChanged(id);
             } break;
 
@@ -807,34 +807,34 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         iv.setAlpha(1.0f);
         iv.setClickable(true);
-        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.Update);
+        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
         switch(state) {
-        case Idle:
+        case IDLE:
             iv.setImageResource(R.drawable.ic_refresh);
             setOnClick_startUpdate(iv);
             break;
 
-        case Ready:
+        case READY:
             iv.setImageResource(R.drawable.ic_pause);
             setOnClick_cancelUpdate(iv);
             break;
 
-        case Running:
+        case RUNNING:
             iv.setImageResource(R.anim.download);
             ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
             break;
 
-        case Canceling:
+        case CANCELING:
             iv.setImageResource(R.drawable.ic_block);
             iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
             iv.setClickable(false);
             setOnClick_notification(iv, R.string.wait_cancel);
             break;
 
-        case Failed: {
+        case FAILED: {
             iv.setImageResource(R.drawable.ic_info);
-            Err result = RTTask.S().getErr(cid, RTTask.Action.Update);
+            Err result = RTTask.S().getErr(cid, RTTask.Action.UPDATE);
             setOnClick_errResult(iv, result);
         } break;
 
@@ -866,7 +866,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onClick (DialogInterface dialog, int which) {
                 if (!UIPolicy.getItemDataFile(id).delete())
-                    LookAndFeel.showTextToast(ItemListActivity.this, Err.IOFile.getMsgId());
+                    LookAndFeel.showTextToast(ItemListActivity.this, Err.IO_FILE.getMsgId());
                 else {
                     getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), false);
                     dataSetChanged(id);
@@ -1073,8 +1073,8 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onActivityResult(int requestCode, int resultCode, Intent data) {
         switch(requestCode) {
-        case reqCodeItemView:
-            if (resultCode == ItemViewActivity.resultDownload) {
+        case REQC_ITEM_VIEW:
+            if (resultCode == ItemViewActivity.RESULT_DOWNLOAD) {
                 long id = data.getLongExtra("id", -1);
                 if (id > 0) {
                     getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
@@ -1102,19 +1102,19 @@ UnexpectedExceptionHandler.TrackedModule {
         //logI("==> ItemListActivity : onCreate");
         getActionBar().show();
 
-        int mode = getIntent().getIntExtra(IKeyMode, -1);
+        int mode = getIntent().getIntExtra(IKEY_MODE, -1);
         eAssert(-1 != mode);
         switch (mode) {
-        case ModeChannel:
+        case MODE_CHANNEL:
             opMode = new OpModeChannel(getIntent());
             break;
-        case ModeCategory:
+        case MODE_CATEGORY:
             opMode = new OpModeCategory(getIntent());
             break;
-        case ModeFavorite:
+        case MODE_FAVORITE:
             opMode = new OpModeFavorite(getIntent());
             break;
-        case ModeAll:
+        case MODE_ALL:
             opMode = new OpModeAll(getIntent());
             break;
         default:
@@ -1149,8 +1149,8 @@ UnexpectedExceptionHandler.TrackedModule {
                                             opMode.query(),
                                             R.layout.item_row,
                                             list,
-                                            DataReqSz,
-                                            DataArrMax,
+                                            DATA_REQ_SZ,
+                                            DATA_ARR_MAX,
                                             opMode.getAdapterActionHandler()));
     }
 

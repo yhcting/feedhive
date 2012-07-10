@@ -41,7 +41,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     private String           nick = null; // can be used several purpose.
     private Handler          ownerHandler = new Handler();
     private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
-    private volatile Err     result  = Err.NoErr;
+    private volatile Err     result  = Err.NO_ERR;
 
     // Flags
     private volatile boolean cancelled = false;
@@ -50,7 +50,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     private RunParam         runParam    = null;
     private CancelParam      cancelParam = null;
 
-    private static final String     WLTag = "BGTask";
+    private static final String     WLTAG = "BGTask";
     private Object                  wlmx = new Object(); // Wakelock mutex
     private PowerManager.WakeLock   wl = null;
     private WifiManager.WifiLock    wfl = null;
@@ -96,19 +96,19 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         @Override
         public void run() {
             if (BGTask.this.isAlive()) {
-                logI("BGTask : REPOST : wait for task is Done");
+                //logI("BGTask : REPOST : wait for task is Done");
                 // post message continuously may drop responsibility for user, in case that ownerHandler is attached to UI thread.
                 // To increase responsibility, post message with some delay.
                 ownerHandler.postDelayed(new BGTaskPost(bCancelled), 10);
                 return;
             }
 
-            logI("BGTask : REAL POST!!! cancelled: " + bCancelled + ", NR Listener: " + getListeners().length);
+            //logI("BGTask : REAL POST!!! cancelled: " + bCancelled + ", NR Listener: " + getListeners().length);
             if (bCancelled) {
                 onEarlyCancel(cancelParam);
                 for (EventListener listener : getListeners()) {
                     final OnEvent onEvent = listener.getOnEvent();
-                    logI("BGTask : Post(Cancel) to onEvent : " + onEvent.toString());
+                    //logI("BGTask : Post(Cancel) to onEvent : " + onEvent.toString());
                     listener.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
@@ -126,11 +126,11 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 onEarlyPostRun(result);
                 for (EventListener listener : getListeners()) {
                     final OnEvent onEvent = listener.getOnEvent();
-                    logI("BGTask : Post(Post) to onEvent : " + onEvent.toString());
+                    //logI("BGTask : Post(Post) to onEvent : " + onEvent.toString());
                     listener.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
-                            logI("+++ BGTask : postRun : " + onEvent.toString());
+                            //logI("+++ BGTask : postRun : " + onEvent.toString());
                             onEvent.onPostRun(BGTask.this, result);
                         }
                     });
@@ -164,7 +164,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     releaseWLock() {
         synchronized (wlmx) {
             if (null != wl) {
-                logI("< WakeLock >" + WLTag + nick + " >>>>>> release");
+                //logI("< WakeLock >" + WLTAG + nick + " >>>>>> release");
                 wl.release();
                 wl = null;
             }
@@ -181,15 +181,15 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         synchronized (wlmx) {
             // acquire wakelock/wifilock if needed
             if (0 != (OPT_WAKELOCK & opt)) {
-                logI("< WakeLock >" + WLTag + nick + " <<<<<< acquire");
+                //logI("< WakeLock >" + WLTAG + nick + " <<<<<< acquire");
                 wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
-                        .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTag + nick);
+                        .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG + nick);
                 wl.acquire();
             }
 
             if (0 != (OPT_WIFILOCK & opt)) {
                 wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
-                        .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTag + nick);
+                        .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG + nick);
                 wfl.acquire();
             }
         }
@@ -214,7 +214,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     void
     resetResult() {
         eAssert(!isAlive());
-        result = Err.NoErr;
+        result = Err.NO_ERR;
     }
 
     void
@@ -274,7 +274,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
         // This is atomic expression
         synchronized (listenerList) {
-            logI("BGTask : registerEventListener : key(" + key + ") onEvent(" + onEvent + ")");
+            //logI("BGTask : registerEventListener : key(" + key + ") onEvent(" + onEvent + ")");
             EventListener listener = new EventListener(key, new Handler(), onEvent);
             listenerList.addLast(listener);
         }
@@ -312,7 +312,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             while (iter.hasNext()) {
                 EventListener listener = iter.next();
                 if (listener.getHandler().getLooper().getThread() == owner) {
-                    logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
+                    //logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
                     iter.remove();
                 }
             }
@@ -332,7 +332,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 EventListener listener = iter.next();
                 if (listener.getHandler().getLooper().getThread() == owner
                     && listener.getKey() == onEventKey) {
-                    logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
+                    //logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
                     iter.remove();
                 }
             }
@@ -346,7 +346,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     public void
     clearEventListener() {
         synchronized (listenerList) {
-            logI("BGTask : clearEventListener");
+            //logI("BGTask : clearEventListener");
             listenerList.clear();
         }
     }
@@ -355,7 +355,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     protected Err
     doBGTask(RunParam runParam)
         throws FeederException {
-        return Err.NoErr;
+        return Err.NO_ERR;
     }
 
     /**
@@ -491,21 +491,21 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             result =  doBGTask(runParam);
             eAssert(null != result);
         } catch (FeederException e) {
-            if (Err.Interrupted == e.getError())
+            if (Err.INTERRUPTED == e.getError())
                 bInterrupted = true;
         }
 
         if (!bInterrupted)
             bInterrupted = Thread.currentThread().isInterrupted();
 
-        if (cancelled && Err.NoErr != result)
-            result = Err.UserCancelled;
+        if (cancelled && Err.NO_ERR != result)
+            result = Err.USER_CANCELLED;
 
-        logI("BGTask : BGJobs done - try to post! : " + result.name() + " interrupted(" + bInterrupted + ")");
+        //logI("BGTask : BGJobs done - try to post! : " + result.name() + " interrupted(" + bInterrupted + ")");
 
         if (bInterrupted
-            || Err.Interrupted == result
-            || Err.UserCancelled == result)
+            || Err.INTERRUPTED == result
+            || Err.USER_CANCELLED == result)
             ownerHandler.post(new BGTaskPost(true));
         else
             ownerHandler.post(new BGTaskPost(false));
@@ -524,9 +524,9 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             return true; // nothing to do.
 
         cancelled = true;
-        result = Err.UserCancelled;
+        result = Err.USER_CANCELLED;
         cancelParam = param;
-        logI("BGTask : cancel()");
+        //logI("BGTask : cancel()");
 
         if (Thread.State.NEW == getState()) {
             // Task is not even started.

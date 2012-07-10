@@ -16,10 +16,10 @@ import free.yhc.feeder.R;
 public class UsageReport implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
-    private static final String reportReceiver = "yhcting77@gmail.com";
-    private static final String errReportSubject = "[Feeder] Exception Report.";
-    private static final String usageReportSubject = "[Feeder] Usage Report.";
-    private static final String timeStampFileSuffix = "____tmstamp___";
+    private static final String REPORT_RECEIVER = "yhcting77@gmail.com";
+    private static final String ERR_REPORT_SUBJECT = "[Feeder] Exception Report.";
+    private static final String USAGE_REPORT_SUBJECT = "[Feeder] Usage Report.";
+    private static final String TIME_STAMP_FILE_SUFFIX = "____tmstamp___";
 
     private static UsageReport instance;
 
@@ -31,7 +31,7 @@ OnSharedPreferenceChangeListener {
 
     private File
     getTimeStampFile(File f) {
-        return new File(f.getAbsoluteFile() + timeStampFileSuffix);
+        return new File(f.getAbsoluteFile() + TIME_STAMP_FILE_SUFFIX);
     }
 
     private void
@@ -74,7 +74,7 @@ OnSharedPreferenceChangeListener {
         cleanReportFile(reportf);
 
         Intent intent = new Intent(Intent.ACTION_SEND);
-        intent.putExtra(Intent.EXTRA_EMAIL, new String[] { reportReceiver });
+        intent.putExtra(Intent.EXTRA_EMAIL, new String[] { REPORT_RECEIVER });
         intent.putExtra(Intent.EXTRA_TEXT, sbr.toString());
         intent.putExtra(Intent.EXTRA_SUBJECT, subject);
         intent.setType("message/rfc822");
@@ -141,7 +141,7 @@ OnSharedPreferenceChangeListener {
     sendErrReportMail(Context context) {
         if (!errReportEnabled)
             return;
-        sendReportMail(context, UIPolicy.getErrLogFile(), R.string.send_err_report, errReportSubject);
+        sendReportMail(context, UIPolicy.getErrLogFile(), R.string.send_err_report, ERR_REPORT_SUBJECT);
     }
 
     public void
@@ -160,9 +160,9 @@ OnSharedPreferenceChangeListener {
         long tmPassed = 0;
         if (tmstamp.exists())
             tmPassed = System.currentTimeMillis() - tmstamp.lastModified();
-        if (UIPolicy.usageInfoUpdatePeriod > tmPassed)
+        if (UIPolicy.USAGE_INFO_UPDATE_PERIOD > tmPassed)
             return; // time is not passed enough
 
-        sendReportMail(context, UIPolicy.getUsageLogFile(), R.string.send_usage_report, usageReportSubject);
+        sendReportMail(context, UIPolicy.getUsageLogFile(), R.string.send_usage_report, USAGE_REPORT_SUBJECT);
     }
 }

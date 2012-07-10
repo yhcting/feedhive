@@ -69,7 +69,7 @@
     <string name="err_url">잘못된 URL입니다.</string>
     <string name="err_ionet">네트웤을 통한 접근에 실패했습니다.</string>
     <string name="err_iofile">파일 접근 혹은 처리에 실패했습니다.</string>
-    <string name="err_media_get">미디어 데이터를 가져오는데 실패했습니다.</string>
+    <string name="err_get_media">미디어 데이터를 가져오는데 실패했습니다.</string>
     <string name="err_codec_decode">디코딩에 실패했습니다.</string>
     <string name="err_parse_unsupported_format">분석에 실패했습니다. 지원하지 않는 포멧입니다.</string>
     <string name="err_parse_unsupported_version">분석에 실패했습니다. 지원하지 않는 버젼입니다.</string>

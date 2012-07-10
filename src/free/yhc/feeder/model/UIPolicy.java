@@ -35,19 +35,20 @@ import android.preference.PreferenceManager;
  *     - initial setting of values.
  */
 public class UIPolicy {
-    public static final String prefKeyAppRoot = "app_root";
-    public static final long   usageInfoUpdatePeriod = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
+
+    public static final String PREF_KEY_APP_ROOT = "app_root";
+    public static final long   USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
+
+    // ext2, ext3, ext4 allows 255 bytes for filename.
+    // but 'char' type in java is 2byte (16-bit unicode).
+    // So, maximum character for filename in java on extN is 127.
+    private static final int    MAX_FILENAME_LENGTH = 127;
 
     private static String appRootDir;
     private static File   appTempDirFile;
     private static File   appLogDirFile;
     private static File   appErrLogFile;
     private static File   appUsageLogFile;
-
-    // ext2, ext3, ext4 allows 255 bytes for filename.
-    // but 'char' type in java is 2byte (16-bit unicode).
-    // So, maximum character for filename in java on extN is 127.
-    private static final int    maxFileNameLength = 127;
 
     /**
      * Guessing default action type from Feed data.
@@ -60,16 +61,16 @@ public class UIPolicy {
     decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
         if (null != iParD) {
             if (isValidValue(iParD.enclosureUrl))
-                return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpOpen | Feed.Channel.FActProgEx;
+                return Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_EX;
             else
-                return Feed.Channel.FActTgtLink | Feed.Channel.FActOpOpen;
-        } else if (Feed.Channel.ChannTypeMedia == cParD.type)
-            return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpDn;
-        else if (Feed.Channel.ChannTypeEmbeddedMedia == cParD.type)
-            return Feed.Channel.FActTgtEnclosure | Feed.Channel.FActOpOpen | Feed.Channel.FActProgEx;
+                return Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN;
+        } else if (Feed.Channel.CHANN_TYPE_MEDIA == cParD.type)
+            return Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_DN;
+        else if (Feed.Channel.CHANN_TYPE_EMBEDDED_MEDIA == cParD.type)
+            return Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_EX;
         else
             // default is "open link"
-            return Feed.Channel.FActTgtLink | Feed.Channel.FActOpOpen;
+            return Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN;
     }
 
     /**
@@ -113,7 +114,7 @@ public class UIPolicy {
     public static void
     init(Context context)  {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        String appRoot = prefs.getString(prefKeyAppRoot, "/sdcard/yhcFeeder");
+        String appRoot = prefs.getString(PREF_KEY_APP_ROOT, "/sdcard/yhcFeeder");
         setAppDirectories(appRoot);
         cleanTempFiles();
     }
@@ -261,7 +262,7 @@ public class UIPolicy {
         // Item is id is preserved even after update.
         // So, item ID can be used as file name to match item and file.
         String fname = Utils.convertToFilename(title) + "_" + id;
-        int endIndex = maxFileNameLength - ext.length() - 1; // '- 1' for '.'
+        int endIndex = MAX_FILENAME_LENGTH - ext.length() - 1; // '- 1' for '.'
         if (endIndex > fname.length())
             endIndex = fname.length();
 

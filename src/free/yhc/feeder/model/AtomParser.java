@@ -297,7 +297,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // NOTE YOUTUBE hack
             for (NSParser p : pl.toArray(new NSParser[0]))
                 if ((p instanceof NSMediaParser) && ((NSMediaParser)p).isYoutubeEnabled())
-                    res.channel.type = Feed.Channel.ChannTypeEmbeddedMedia;
+                    res.channel.type = Feed.Channel.CHANN_TYPE_EMBEDDED_MEDIA;
 
             nodeFeed(res, pl.toArray(new NSParser[0]), root);
         } finally {

@@ -28,11 +28,9 @@ import java.io.OutputStream;
 import android.content.Context;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
-    private static final String WLTag = "free.yhc.feeder.BGTaskDownloadToFile";
-
     private Context                 context;
     private volatile OutputStream   ostream  = null;
-    private volatile NetLoader      loader = null;
+    private volatile NetLoader      loader   = null;
     private Arg                     arg      = null;
     private volatile long           progress = 0;
 
@@ -76,7 +74,7 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
 
         loader = new NetLoader();
 
-        Err result = Err.NoErr;
+        Err result = Err.NO_ERR;
         try {
             loader.downloadToFile(arg.url,
                     arg.tempFile,

@@ -1,0 +1,11 @@
+Naming Convention
+-----------------
+Follows Java naming convention by default.
+
+Only constant number and 'static final' variables whose type can be used as
+  'switch' Statements, are represented as captialized name - naming convention
+  for constant value(ex. HASH_NUM).
+    * Number type
+        float, double, byte, char, short, int, long
+    * Others
+        String(Java 7 or later), Enum.

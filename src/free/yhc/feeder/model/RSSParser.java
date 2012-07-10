@@ -290,7 +290,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Channel type which uses itunes namespace is needed to be set as 'Media type'.
             for (NSParser p : pl.toArray(new NSParser[0]))
                 if (p instanceof NSItunesParser)
-                    res.channel.type = Feed.Channel.ChannTypeMedia;
+                    res.channel.type = Feed.Channel.CHANN_TYPE_MEDIA;
 
             // For Channel node
             Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
@@ -298,7 +298,7 @@ UnexpectedExceptionHandler.TrackedModule {
             nodeChannel(res, pl.toArray(new NSParser[0]), n);
 
             if (!verifyNotNullPolicy(res))
-                throw new FeederException(Err.ParserUnsupportedFormat);
+                throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
             //logI(feed.channel.dump());
         } finally {
             UnexpectedExceptionHandler.S().unregisterModule(this);
