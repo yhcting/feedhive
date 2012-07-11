@@ -697,6 +697,22 @@ UnexpectedExceptionHandler.TrackedModule {
     reloadDatabase() {
         db.close();
         open();
+
+        // All DB information is changed now!.
+        markChannelTableChanged();
+        markItemTableChanged();
+
+        // Mark as all channel is changed
+        Cursor c = db.query(TABLE_CHANNEL,
+                            getColumnNames(new ColumnChannel[] { ColumnChannel.ID }),
+                            null, null, null, null, null);
+        if (c.moveToFirst()) {
+            do {
+                markChannelChanged(c.getLong(0));
+            } while (c.moveToNext());
+        }
+        c.close();
+
     }
 
     // ====================
