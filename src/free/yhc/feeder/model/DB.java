@@ -206,6 +206,52 @@ UnexpectedExceptionHandler.TrackedModule {
     // Helper function for generating query
     // =====================================================
     public static String
+    getDBName() {
+        return NAME;
+    }
+
+    /**
+     * Verify that given DB is compatible with this application?
+     * @param db
+     * @return
+     */
+    public static boolean
+    verifyDB(SQLiteDatabase db) {
+        final int iTblName = 0;
+        final int iTblSql  = 1;
+        String[][] tbls = new String[][] {
+                new String[] { "android_metadata",  "CREATE TABLE android_metadata (locale TEXT);" },
+                new String[] { TABLE_CATEGORY,      buildTableSQL(TABLE_CATEGORY, ColumnCategory.values())},
+                new String[] { TABLE_CHANNEL,       buildTableSQL(TABLE_CHANNEL,  ColumnChannel.values())},
+                new String[] { TABLE_ITEM,          buildTableSQL(TABLE_ITEM,     ColumnItem.values())},
+        };
+
+        Cursor c = db.query("sqlite_master",
+                            new String[] {"name", "sql"},
+                            "type = 'table'",
+                            null, null, null, null);
+
+        HashMap<String, String> map = new HashMap<String, String>();
+        if (c.moveToFirst()) {
+            do {
+                // Key : table name, Value : sql text
+                map.put(c.getString(0), c.getString(1));
+            } while (c.moveToNext());
+        }
+        c.close();
+
+        // Verify
+        for (String[] ts : tbls) {
+            // Remove tailing ';' of sql statement.
+            String tssql = ts[iTblSql].substring(0, ts[iTblSql].length() - 1);
+            String sql = map.get(ts[iTblName]);
+            if (null == sql || !sql.equalsIgnoreCase(tssql))
+                return false;
+        }
+        return true;
+    }
+
+    public static String
     buildSQLWhere(String column, String search) {
         String[] toks = search.split("\\s+");
         String where = "";
@@ -434,7 +480,7 @@ UnexpectedExceptionHandler.TrackedModule {
         super(context, NAME, null, getVersion());
     }
 
-    public static DB
+    static DB
     newSession(Context context) {
         eAssert(null == instance);
         instance = new DB(context);
@@ -442,13 +488,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return instance;
     }
 
-    public static DB
+    static DB
     db() {
         eAssert(null != instance);
         return instance;
     }
 
-    public void
+    void
     open() {
         db = getWritableDatabase();
     }
@@ -642,6 +688,17 @@ UnexpectedExceptionHandler.TrackedModule {
     /**************************************
      * DB operation
      **************************************/
+    /**
+     * In case that DB file is changed, database should be reloaded.
+     *   by using this function.
+     * This function may takes lots of time.
+     */
+    void
+    reloadDatabase() {
+        db.close();
+        open();
+    }
+
     // ====================
     //
     // Common

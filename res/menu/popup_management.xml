@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <group android:id="@+id/media_mgmt">
-        <item android:id="@+id/media_delete_all"
-            android:title="@string/delete_all_downloaded_file" />
-    </group>        
+    <item android:id="@+id/media_delete_all"
+        android:title="@string/delete_all_downloaded_file" />
+    <item android:id="@+id/db_manage"
+        android:title="@string/manage_db" />
+    <item android:id="@+id/feedback_opinion"
+        android:title="@string/send_opinion" />
 </menu>

@@ -33,7 +33,6 @@ import android.app.Dialog;
 import android.app.FragmentTransaction;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -49,7 +48,6 @@ import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -69,6 +67,8 @@ import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
+import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
+import free.yhc.feeder.LookAndFeel.EditTextDialogAction;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.DB;
@@ -88,6 +88,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int REQC_PICK_IMAGE               = 0;
     private static final int REQC_PICK_PREDEFINED_CHANNEL  = 1;
+    private static final int REQC_DB_MANAGEMENT            = 2;
 
     private static final int DATA_REQ_SZ  = 20;
     private static final int DATA_ARR_MAX = 200;
@@ -99,15 +100,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // Saved cid for Async execution.
     private long      cidPickImage = -1;
-
-    private interface EditTextDialogAction {
-        void prepare(Dialog dialog, EditText edit);
-        void onOk(Dialog dialog, EditText edit);
-    }
-
-    private interface ConfirmDialogAction {
-        void onOk(Dialog dialog);
-    }
 
     private static class FlipperScrollView extends ScrollView {
         private View.OnTouchListener touchInterceptor = null;
@@ -712,6 +704,15 @@ UnexpectedExceptionHandler.TrackedModule {
         getListAdapter(tab).reloadDataSetAsync(null);
     }
 
+    /**
+     * Refresh full list.
+     */
+    private void
+    refreshListAsync() {
+        for (int i = 0; i < ab.getTabCount(); i++)
+            refreshListAsync(ab.getTabAt(i));
+    }
+
     private Tab
     addCategory(Feed.Category cat) {
         String text;
@@ -823,74 +824,6 @@ UnexpectedExceptionHandler.TrackedModule {
         task.execute(new Long(cid));
     }
 
-    private AlertDialog
-    buildOneLineEditTextDialog(CharSequence title, final EditTextDialogAction action) {
-        // Create "Enter Url" dialog
-        View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
-        final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
-                                                                    layout,
-                                                                    title);
-        // Set action for dialog.
-        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
-        edit.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                // If the event is a key-down event on the "enter" button
-                if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
-                    dialog.dismiss();
-                    if (!edit.getText().toString().isEmpty())
-                        action.onOk(dialog, ((EditText)v));
-                    return true;
-                }
-                return false;
-            }
-        });
-        action.prepare(dialog, edit);
-
-        dialog.setButton(getResources().getText(R.string.ok), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dia, int which) {
-                dialog.dismiss();
-                if (!edit.getText().toString().isEmpty())
-                    action.onOk(dialog, edit);
-            }
-        });
-
-        dialog.setButton2(getResources().getText(R.string.cancel), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-        return dialog;
-    }
-
-    private AlertDialog
-    buildOneLineEditTextDialog(final int title, final EditTextDialogAction action) {
-        return buildOneLineEditTextDialog(getResources().getText(title), action);
-    }
-
-    private AlertDialog
-    buildConfirmDialog(final int title, final int description,
-                       final ConfirmDialogAction action) {
-        final AlertDialog dialog = LookAndFeel.createWarningDialog(this, title, description);
-        dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface diag, int which) {
-                dialog.dismiss();
-                action.onOk(dialog);
-            }
-        });
-
-        dialog.setButton2(getResources().getText(R.string.no), new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-            }
-        });
-        return dialog;
-    }
-
     private void
     onOpt_addChannel_youtubeEditDiag(final MenuItem item) {
         // Set action for dialog.
@@ -911,7 +844,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        buildOneLineEditTextDialog(item.getTitle(), action).show();
+        LookAndFeel.buildOneLineEditTextDialog(this, item.getTitle(), action).show();
     }
 
     private void
@@ -950,7 +883,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        buildOneLineEditTextDialog(R.string.channel_url, action).show();
+        LookAndFeel.buildOneLineEditTextDialog(this, R.string.channel_url, action).show();
     }
 
     private void
@@ -1026,7 +959,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        buildOneLineEditTextDialog(R.string.add_category, action).show();
+        LookAndFeel.buildOneLineEditTextDialog(this, R.string.add_category, action).show();
     }
 
     private void
@@ -1048,7 +981,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        buildOneLineEditTextDialog(R.string.rename_category, action).show();
+        LookAndFeel.buildOneLineEditTextDialog(this, R.string.rename_category, action).show();
     }
 
     private void
@@ -1068,8 +1001,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 deleteCategory(categoryid);
             }
         };
-        buildConfirmDialog(R.string.delete_category, R.string.delete_category_msg, action)
-            .show();
+        LookAndFeel.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
     }
 
     private void
@@ -1142,8 +1074,28 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        buildConfirmDialog(R.string.delete_all_downloaded_file, R.string.delete_all_downloaded_file_msg, action)
+        LookAndFeel.buildConfirmDialog(this,
+                                       R.string.delete_all_downloaded_file,
+                                       R.string.delete_all_downloaded_file_msg,
+                                       action)
             .show();
+    }
+
+    private void
+    onOpt_management_feedbackOpinion(final View anchor) {
+        if (!Utils.isNetworkAvailable(this)) {
+            LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
+            return;
+        }
+
+        if (!UsageReport.S().sendFeedbackReportMain(this))
+            LookAndFeel.showTextToast(this, R.string.warn_find_email_app);
+    }
+
+    private void
+    onOpt_management_dbManage(final View anchor) {
+        Intent intent = new Intent(this, DBManagerActivity.class);
+        startActivityForResult(intent, REQC_DB_MANAGEMENT);
     }
 
     private void
@@ -1156,6 +1108,12 @@ UnexpectedExceptionHandler.TrackedModule {
                 switch (item.getItemId()) {
                 case R.id.media_delete_all:
                     onOpt_management_deleteAllDnFiles(anchor);
+                    break;
+                case R.id.feedback_opinion:
+                    onOpt_management_feedbackOpinion(anchor);
+                    break;
+                case R.id.db_manage:
+                    onOpt_management_dbManage(anchor);
                     break;
                 default:
                     eAssert(false);
@@ -1202,7 +1160,10 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        buildConfirmDialog(R.string.unlist_channel, R.string.unlist_channel_msg, action)
+        LookAndFeel.buildConfirmDialog(this,
+                                       R.string.unlist_channel,
+                                       R.string.unlist_channel_msg,
+                                       action)
             .show();
     }
 
@@ -1215,7 +1176,10 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        buildConfirmDialog(R.string.delete_channel, R.string.delete_channel_msg, action)
+        LookAndFeel.buildConfirmDialog(this,
+                                       R.string.delete_channel,
+                                       R.string.delete_channel_msg,
+                                       action)
             .show();
     }
 
@@ -1363,6 +1327,23 @@ UnexpectedExceptionHandler.TrackedModule {
                 addChannel(url, iconurl);
             }
         });
+    }
+
+    private void
+    onResult_dbManagement(int resultCode, Intent data) {
+        if (RESULT_OK != resultCode || null == data)
+            return;
+
+        if (data.getBooleanExtra(DBManagerActivity.KEY_DB_UPDATED, false)) {
+            // Post runnable instead of calling "refreshListAsync()" directly
+            //   for fast user response when exit from DBManagerActivity.
+            Utils.getUiHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    refreshListAsync();
+                }
+            });
+        }
     }
 
     private void
@@ -1520,6 +1501,9 @@ UnexpectedExceptionHandler.TrackedModule {
         case REQC_PICK_PREDEFINED_CHANNEL:
             onResult_pickPredefinedChannel(resultCode, data);
             break;
+        case REQC_DB_MANAGEMENT:
+            onResult_dbManagement(resultCode, data);
+            break;
         }
     }
 
@@ -1649,10 +1633,9 @@ UnexpectedExceptionHandler.TrackedModule {
         DBPolicy.S().unregisterChannelWatcher(this);
         DBPolicy.S().unregisterChannelTableWatcher(this);
 
-        if (fullRefresh) {
-            for (int i = 0; i < ab.getTabCount(); i++)
-                refreshListAsync(ab.getTabAt(i));
-        } else {
+        if (fullRefresh)
+            refreshListAsync();
+        else {
             // only small amount of channel is updated. do synchronous update.
             for (int i = 0; i < ab.getTabCount(); i++)
                 if (fullRefreshCurrent && ab.getTabAt(i) == ab.getSelectedTab())

@@ -9,6 +9,7 @@
     <string name="high">High</string>
     <string name="medium">Medium</string>
     <string name="low">Low</string>
+    <string name="database">Database</string>
     <string name="about_app">About</string>
     <string name="about_app_email">Email : yhcting77@gmail.com</string>
     <string name="about_app_blog">Blog : http://yhcting.tistory.com</string>
@@ -33,6 +34,7 @@
     <string name="full_update">Full update</string>
     <string name="send_err_report">Send error report</string>
     <string name="send_usage_report">Send usage report</string>
+    <string name="send_feedback_report">Send feedback report</string>
     <string name="enter_url">Enter URL</string>
     <string name="enter_name">Enter name</string>
     <string name="channel_url">Channel URL</string>
@@ -45,7 +47,15 @@
 	<string name="way_youtube_subscribe">Way for subscribing</string>
     <string name="uploader">Uploader</string>
     <string name="word_search">Keyword</string>
+    <string name="send_opinion">E-mail opinion</string>
+    <string name="manage_db">Management DB</string>
     <string name="feed_search">Feed search</string>
+    <string name="exportdb">Export DB</string>
+    <string name="exporting">Exporting</string>
+    <string name="importdb">Import DB</string>
+    <string name="importing">Importing</string>
+    <string name="select_directory">Select directory</string>
+    <string name="select_file">Select file</string>
     <string name="empty_list_help">Adding my first channel.</string>
     <string name="empty_list_add_channel_desc">Enter channel URL or selecting from recommended channel by touching this icon.</string>
     <string name="empty_list_btn_desc">About other buttons</string>
@@ -76,6 +86,7 @@
     <string name="err_parse_unsupported_version">Fail to parse. Unsupported version.</string>
     <string name="err_duplicated_channel">It is duplicated one. The channel already registered.</string>
     <string name="err_dbunknown">Unknown DB error. Something wicked issued on DB.</string>
+    <string name="err_dbcrash">Database is crashed. All application data SHOULD be cleaned by using application manager.</string>
     <string name="err_unknwon">Unknown error! Something wicked issued on application.</string>
     <string name="err_user_cancelled">Operation is cancelled by user.</string>
     <string name="del_dnfiles_not_allowed_msg">Deleting files is not allowed. There may be files under downloading.</string>
@@ -106,10 +117,14 @@
     <string name="warn_add_channel">Fail to add new channel</string>
     <string name="warn_find_app_to_open">Fail to find application to open file.</string>
     <string name="warn_find_gallery_app">Fail to find media gallery application to select image.</string>
+    <string name="warn_find_email_app">Fail to find email application.</string>
     <string name="warn_no_predefined_channel">There is no predefined channel.</string>
     <string name="warn_no_downloaded_page">There is no downloaded page data</string>
     <string name="warn_no_item_before_now">There is no item that is stored before now.</string>
     <string name="warn_file_access_denied">Cannot access to given file.</string>
+    <string name="warn_exdb_access_denied">Cannot access to exported database file.</string>
+    <string name="warn_exdb_not_compatible">Unavailable external database file.</string>
+    <string name="warn_db_in_use">Database is in use now.</string>
     <string name="default_category_name">Default</string>
     <string name="change_category">Change category</string>
     <string name="select_category">Select category</string>
@@ -135,4 +150,5 @@
     <string name="pref_send_usage_report_desc">Sends usage information to improve application (ex. channel urls those are not included at predefined channel.)</string>
     <string name="pref_download_root">Application directory.</string>
     <string name="pref_download_root_desc">Root directory where downloaded files are stored.</string>
+    <string name="mgmt_db_export_import">Export current database to App. root directory ,or import database from App. root directory.</string>
 </resources>

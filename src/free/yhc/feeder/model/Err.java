@@ -37,6 +37,7 @@ public enum Err {
     PARSER_UNSUPPORTED_VERSION  (R.string.err_parse_unsupported_version),
     DB_DUPLICATED_CHANNEL       (R.string.err_duplicated_channel),
     DB_UNKNOWN                  (R.string.err_dbunknown),
+    DB_CRASH                    (R.string.err_dbcrash),
     UNKNOWN                     (R.string.err_unknwon);
 
     private int msgId; // matching message id

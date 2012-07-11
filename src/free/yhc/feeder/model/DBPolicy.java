@@ -292,6 +292,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return instance;
     }
 
+    public void
+    reloadDatabase() {
+        db.reloadDatabase();
+    }
+
     /**
      * Delay channel DB update (inserting items) until all 'get' request is put by calling
      *   {@link DBPolicy#putDelayedChannelUpdate()}.

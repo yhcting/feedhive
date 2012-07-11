@@ -183,18 +183,18 @@ OnSharedPreferenceChangeListener {
     }
 
     private String
-    Id(Action act, long id) {
+    tid(Action act, long id) {
         return act.name() + "/" + id;
     }
 
     private Action
-    actionFromId(String id) {
+    actionFromTid(String id) {
         int i = id.indexOf('/');
         return Action.convert(id.substring(0, i));
     }
 
     private long
-    idFromId(String id) {
+    idFromTid(String id) {
         int i = id.indexOf('/');
         return Long.parseLong(id.substring(i + 1));
     }
@@ -215,19 +215,19 @@ OnSharedPreferenceChangeListener {
     }
 
     /**
-     * Get items that are under downloading.
+     * Get DB ids that are under given action.
      * @return
      */
     private long[]
-    itemsDownloading() {
+    getIdsInAction(Action action) {
         String[] tids;
         LinkedList<Long> l = new LinkedList<Long>();
         synchronized (bgtm) {
             tids = bgtm.getTaskIds();
             for (String tid : tids) {
-                if (Action.DOWNLOAD == actionFromId(tid)) {
+                if (action == actionFromTid(tid)) {
                     BGTask task = bgtm.peek(tid);
-                    long id = idFromId(tid);
+                    long id = idFromTid(tid);
                     if (null != task && isTaskInAction(task)) {
                         l.add(id); // all items
                     }
@@ -304,7 +304,7 @@ OnSharedPreferenceChangeListener {
     public boolean
     register(long id, Action act, BGTask task) {
         synchronized (bgtm) {
-            boolean r = bgtm.register(Id(act, id), task);
+            boolean r = bgtm.register(tid(act, id), task);
             if (r) {
                 for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
                     el.listener.onBGTaskRegister(id, task, act);
@@ -325,7 +325,7 @@ OnSharedPreferenceChangeListener {
      */
     public boolean
     unregister(long id, Action act) {
-        String taskId = Id(act, id);
+        String taskId = tid(act, id);
 
         boolean r = false;
         BGTask task;
@@ -359,7 +359,7 @@ OnSharedPreferenceChangeListener {
     public int
     unbind(long id, Action act) {
         synchronized (bgtm) {
-            return bgtm.unbind(Thread.currentThread(), Id(act, id));
+            return bgtm.unbind(Thread.currentThread(), tid(act, id));
         }
     }
 
@@ -387,7 +387,7 @@ OnSharedPreferenceChangeListener {
     public BGTask
     bind(long id, Action act, Object onEventKey, BGTask.OnEvent onEvent) {
         synchronized (bgtm) {
-            return bgtm.bind(Id(act, id), onEventKey, onEvent);
+            return bgtm.bind(tid(act, id), onEventKey, onEvent);
         }
     }
 
@@ -413,7 +413,7 @@ OnSharedPreferenceChangeListener {
     public BGTask
     getTask(long id, Action act) {
         synchronized (bgtm) {
-            return bgtm.peek(Id(act, id));
+            return bgtm.peek(tid(act, id));
         }
     }
 
@@ -428,7 +428,7 @@ OnSharedPreferenceChangeListener {
         // channel is updating???
         BGTask task;
         synchronized (bgtm) {
-            task = bgtm.peek(Id(act, id));
+            task = bgtm.peek(tid(act, id));
         }
 
         if (null == task)
@@ -461,7 +461,7 @@ OnSharedPreferenceChangeListener {
     consumeResult(long id, Action act) {
         BGTask task;
         synchronized (bgtm) {
-            task = bgtm.peek(Id(act, id));
+            task = bgtm.peek(tid(act, id));
         }
         if (null == task)
             return;
@@ -478,7 +478,7 @@ OnSharedPreferenceChangeListener {
      */
     public boolean
     start(long id, Action act) {
-        String taskId = Id(act, id);
+        String taskId = tid(act, id);
         BGTask t = null;
         synchronized (bgtm) {
             t = bgtm.peek(taskId);
@@ -501,7 +501,7 @@ OnSharedPreferenceChangeListener {
             // operation related with 'runQ' and 'readyQ' SHOULD BE DONE
             //   before normal event listener is called!
             synchronized (bgtm) {
-                bgtm.bindPrior(Id(act, id), null, new RunningBGTaskOnEvent());
+                bgtm.bindPrior(tid(act, id), null, new RunningBGTaskOnEvent());
             }
             // If there is no running task then start NOW!
             if (runQ.size() < maxConcurrent) {
@@ -531,7 +531,7 @@ OnSharedPreferenceChangeListener {
     cancel(long id, Action act, Object arg) {
         BGTask t = null;
         synchronized (bgtm) {
-            t = bgtm.peek(Id(act, id));
+            t = bgtm.peek(tid(act, id));
             if (null == t)
                 return true;
         }
@@ -541,7 +541,7 @@ OnSharedPreferenceChangeListener {
         }
 
         synchronized (bgtm) {
-            return bgtm.cancel(Id(act, id), arg);
+            return bgtm.cancel(tid(act, id), arg);
         }
     }
 
@@ -554,7 +554,7 @@ OnSharedPreferenceChangeListener {
     public Err
     getErr(long id, Action act) {
         synchronized (bgtm) {
-            return bgtm.peek(Id(act, id)).getResult();
+            return bgtm.peek(tid(act, id)).getResult();
         }
     }
 
@@ -575,7 +575,7 @@ OnSharedPreferenceChangeListener {
      */
     public long[]
     getItemsDownloading() {
-        return itemsDownloading();
+        return getIdsInAction(Action.DOWNLOAD);
     }
 
     /**
@@ -626,7 +626,12 @@ OnSharedPreferenceChangeListener {
         // Nick is task id.
         // See BGTM for details
         String id = task.getNick();
-        eAssert(Action.DOWNLOAD == actionFromId(id));
-        return idFromId(id);
+        eAssert(Action.DOWNLOAD == actionFromTid(id));
+        return idFromTid(id);
+    }
+
+    public long[]
+    getChannelsUpdating() {
+        return getIdsInAction(Action.UPDATE);
     }
 }

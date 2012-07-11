@@ -9,6 +9,7 @@
     <string name="high">높음</string>
     <string name="medium">중간</string>
     <string name="low">낮음</string>
+    <string name="database">데이타베이스</string>
     <string name="about_app">어플 정보</string>
     <string name="about_app_email">이메일 : yhcting77@gmail.com</string>
     <string name="about_app_blog">블로그 : http://yhcting.tistory.com</string>
@@ -33,6 +34,7 @@
     <string name="full_update">전체 업데이트</string>
     <string name="send_err_report">에러 레포트 보내기</string>
     <string name="send_usage_report">개선 레포트 보내기</string>
+    <string name="send_feedback_report">의견 보내기</string>
     <string name="enter_url">URL 입력</string>
     <string name="enter_name">이름 입력</string>
     <string name="channel_url">채널 URL</string>
@@ -45,7 +47,15 @@
     <string name="way_youtube_subscribe">채널 구독 방법</string>
     <string name="uploader">작성자</string>
     <string name="word_search">검색어</string>
+    <string name="send_opinion">의견 보내기</string>
+    <string name="manage_db">데이타베이스 관리</string>
     <string name="feed_search">피드 검색</string>
+    <string name="exportdb">DB 내보내기</string>
+    <string name="exporting">내보내는 중....</string>
+    <string name="importdb">DB 가져오기</string>
+    <string name="importing">가져오는 중....</string>
+    <string name="select_directory">디렉토리 선택</string>
+    <string name="select_file">파일 선택</string>
     <string name="empty_list_help">채널 추가 시작하기.</string>
     <string name="empty_list_add_channel_desc">를 터치해서 원하는 채널을 추가할 수 있습니다. 직접 입력하거나, 추천 채널에서 고를 수도 있습니다.</string>
     <string name="empty_list_btn_desc">기타 버튼 설명</string>
@@ -76,6 +86,7 @@
     <string name="err_parse_unsupported_version">분석에 실패했습니다. 지원하지 않는 버젼입니다.</string>
     <string name="err_duplicated_channel">이미 등록된 채널입니다.</string>
     <string name="err_dbunknown">데이터베이스에 알수 없는 에러가 발생했습니다.</string>
+    <string name="err_dbcrash">데이터베이스가 완전히 깨어졌습니다. 어플리케이션 매니져를 이용해서 어플리케이션의 모든 데이타를 지워야 합니다.</string>
     <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_user_cancelled">동작이 취소되었습니다.</string>
     <string name="del_dnfiles_not_allowed_msg">다운로드 파일을 삭제할 수 없습니다. 현재 다운로드 중인 파일이 있습니다.</string>
@@ -106,10 +117,14 @@
     <string name="warn_add_channel">채널 추가에 실패했습니다.</string>
     <string name="warn_find_app_to_open">파일을 열기 위한 프로그램을 찾을 수 없습니다.</string>
     <string name="warn_find_gallery_app">이미지 갤러리 프로그램을 찾을 수 없습니다.</string>
+    <string name="warn_find_email_app">이메일 프로그램을 찾을 수 없습니다.</string>
     <string name="warn_no_predefined_channel">저장된 채널 정보가 없습니다.</string>
     <string name="warn_no_downloaded_page">내려받은 페이지 정보가 없습니다.</string>
     <string name="warn_no_item_before_now">현재시간 이전에 저장된 피드가 없습니다.</string>
     <string name="warn_file_access_denied">접근할 수 없는 파일/디렉토리 입니다.</string>
+    <string name="warn_exdb_access_denied">외부 데이타베이스 파일에 접근할 수 없습니다.</string>
+    <string name="warn_exdb_not_compatible">사용할 수 없는 외부 데이타베이스 파일입니다.</string>
+    <string name="warn_db_in_use">데이타베이스가 현재 사용 중입니다.</string>
     <string name="default_category_name">미분류</string>
     <string name="change_category">카테고리 변경</string>
     <string name="select_category">카테고리 선택</string>
@@ -135,4 +150,5 @@
     <string name="pref_send_usage_report_desc">어플리케이션 기능을 향상시킬 수 있는 정보를 보냅니다. (예. 추천채널에는 없으나, 현재 사용중인 채널들 등)</string>
     <string name="pref_download_root">앱 디렉토리</string>
     <string name="pref_download_root_desc">다운로드 받은 파일들이 저장될 디렉토리를 설정합니다. 기존 디렉토리는 그대로 보존됩니다.</string>
+    <string name="mgmt_db_export_import">현재 데이타베이스를 앱 디렉토리로 내보내거나, 혹은 앱 디렉토리에서 데이타베이스를 가져와서 사용합니다.</string>
 </resources>

@@ -22,15 +22,28 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
 public class LookAndFeel {
+    public interface EditTextDialogAction {
+        void prepare(Dialog dialog, EditText edit);
+        void onOk(Dialog dialog, EditText edit);
+    }
+
+    public interface ConfirmDialogAction {
+        void onOk(Dialog dialog);
+    }
+
     private static void
     showToast(Context context, ViewGroup root) {
         Toast t = Toast.makeText(context, "", Toast.LENGTH_SHORT);
@@ -97,8 +110,15 @@ public class LookAndFeel {
     }
 
     public static AlertDialog
-    createWarningDialog(Context context, int title, int message) {
+    createWarningDialog(Context context, CharSequence title, CharSequence message) {
         return createAlertDialog(context, R.drawable.ic_alert, title, message);
+    }
+
+    public static AlertDialog
+    createWarningDialog(Context context, int title, int message) {
+        return createWarningDialog(context,
+                                   context.getResources().getText(title),
+                                   context.getResources().getText(message));
     }
 
     public static AlertDialog
@@ -116,5 +136,88 @@ public class LookAndFeel {
     public static AlertDialog
     createEditTextDialog(Context context, View layout, int title) {
         return createEditTextDialog(context, layout, context.getResources().getText(title));
+    }
+
+    public static AlertDialog
+    buildOneLineEditTextDialog(final Context context, final CharSequence title, final EditTextDialogAction action) {
+        // Create "Enter Url" dialog
+        View layout = inflateLayout(context, R.layout.oneline_editbox_dialog);
+        final AlertDialog dialog = createEditTextDialog(context, layout, title);
+        // Set action for dialog.
+        final EditText edit = (EditText)layout.findViewById(R.id.editbox);
+        edit.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // If the event is a key-down event on the "enter" button
+                if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
+                    dialog.dismiss();
+                    if (!edit.getText().toString().isEmpty())
+                        action.onOk(dialog, ((EditText)v));
+                    return true;
+                }
+                return false;
+            }
+        });
+        action.prepare(dialog, edit);
+
+        dialog.setButton(context.getResources().getText(R.string.ok),
+                         new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dia, int which) {
+                dialog.dismiss();
+                if (!edit.getText().toString().isEmpty())
+                    action.onOk(dialog, edit);
+            }
+        });
+
+        dialog.setButton2(context.getResources().getText(R.string.cancel),
+                          new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        return dialog;
+    }
+
+    public static AlertDialog
+    buildOneLineEditTextDialog(final Context context, final int title, final EditTextDialogAction action) {
+        return buildOneLineEditTextDialog(context, context.getResources().getText(title), action);
+    }
+
+    public static AlertDialog
+    buildConfirmDialog(final Context context,
+                       final CharSequence title,
+                       final CharSequence description,
+                       final ConfirmDialogAction action) {
+        final AlertDialog dialog = LookAndFeel.createAlertDialog(context, R.drawable.ic_info, title, description);
+        dialog.setButton(context.getResources().getText(R.string.yes),
+                         new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface diag, int which) {
+                dialog.dismiss();
+                action.onOk(dialog);
+            }
+        });
+
+        dialog.setButton2(context.getResources().getText(R.string.no),
+                          new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        return dialog;
+    }
+
+    public static AlertDialog
+    buildConfirmDialog(final Context context,
+                       final int title,
+                       final int description,
+                       final ConfirmDialogAction action) {
+        return buildConfirmDialog(context,
+                                  context.getResources().getText(title),
+                                  context.getResources().getText(description),
+                                  action);
     }
 }

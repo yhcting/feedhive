@@ -41,6 +41,10 @@
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   android:theme="@android:style/Theme.NoTitleBar"
                   />
+        <activity android:name=".DBManagerActivity"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  android:theme="@android:style/Theme.NoTitleBar"
+                  />
         <service android:name=".ScheduledUpdater"
 				 />
         <receiver android:name=".ScheduledUpdater$AlarmReceiver">

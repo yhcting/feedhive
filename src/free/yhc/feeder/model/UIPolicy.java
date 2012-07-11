@@ -139,6 +139,11 @@ public class UIPolicy {
     }
 
     public static String
+    getAppRootDirectoryPath() {
+        return appRootDir;
+    }
+
+    public static String
     getPredefinedChannelsAssetPath() {
         Locale lc = java.util.Locale.getDefault();
         String file;

@@ -16,10 +16,12 @@ import free.yhc.feeder.R;
 public class UsageReport implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
-    private static final String REPORT_RECEIVER = "yhcting77@gmail.com";
-    private static final String ERR_REPORT_SUBJECT = "[Feeder] Exception Report.";
-    private static final String USAGE_REPORT_SUBJECT = "[Feeder] Usage Report.";
-    private static final String TIME_STAMP_FILE_SUFFIX = "____tmstamp___";
+    public  static final String REPORT_RECEIVER         = "yhcting77@gmail.com";
+    public  static final String FEEDBACK_REPORT_SUBJECT = "[FeedHive] Feedback Report.";
+
+    private static final String ERR_REPORT_SUBJECT      = "[FeedHive] Exception Report.";
+    private static final String USAGE_REPORT_SUBJECT    = "[FeedHive] Usage Report.";
+    private static final String TIME_STAMP_FILE_SUFFIX  = "____tmstamp___";
 
     private static UsageReport instance;
 
@@ -78,9 +80,9 @@ OnSharedPreferenceChangeListener {
         intent.putExtra(Intent.EXTRA_TEXT, sbr.toString());
         intent.putExtra(Intent.EXTRA_SUBJECT, subject);
         intent.setType("message/rfc822");
+        intent = Intent.createChooser(intent, context.getResources().getText(diagTitle));
         try {
-            context.startActivity(Intent.createChooser(intent,
-                                                       context.getResources().getText(diagTitle)));
+            context.startActivity(intent);
         } catch (ActivityNotFoundException e) {
             ; // ignore this report
         }
@@ -164,5 +166,20 @@ OnSharedPreferenceChangeListener {
             return; // time is not passed enough
 
         sendReportMail(context, UIPolicy.getUsageLogFile(), R.string.send_usage_report, USAGE_REPORT_SUBJECT);
+    }
+
+    public boolean
+    sendFeedbackReportMain(Context context) {
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.putExtra(Intent.EXTRA_EMAIL, new String[] { REPORT_RECEIVER });
+        intent.putExtra(Intent.EXTRA_SUBJECT, FEEDBACK_REPORT_SUBJECT);
+        intent.setType("message/rfc822");
+        intent = Intent.createChooser(intent, context.getResources().getText(R.string.send_feedback_report));
+        try {
+            context.startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            return false;
+        }
+        return true;
     }
 }
