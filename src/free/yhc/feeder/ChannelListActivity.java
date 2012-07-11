@@ -65,6 +65,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
@@ -823,7 +824,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private AlertDialog
-    buildOneLineEditTextDialog(int title, final EditTextDialogAction action) {
+    buildOneLineEditTextDialog(CharSequence title, final EditTextDialogAction action) {
         // Create "Enter Url" dialog
         View layout = LookAndFeel.inflateLayout(this, R.layout.oneline_editbox_dialog);
         final AlertDialog dialog = LookAndFeel.createEditTextDialog(this,
@@ -865,7 +866,12 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private AlertDialog
-    buildConfirmDialog(int title, int description,
+    buildOneLineEditTextDialog(final int title, final EditTextDialogAction action) {
+        return buildOneLineEditTextDialog(getResources().getText(title), action);
+    }
+
+    private AlertDialog
+    buildConfirmDialog(final int title, final int description,
                        final ConfirmDialogAction action) {
         final AlertDialog dialog = LookAndFeel.createWarningDialog(this, title, description);
         dialog.setButton(getResources().getText(R.string.yes), new DialogInterface.OnClickListener() {
@@ -886,18 +892,18 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_addChannel_youtubeEditDiag(final int optStringId) {
+    onOpt_addChannel_youtubeEditDiag(final MenuItem item) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
             public void prepare(Dialog dialog, EditText edit) {}
             @Override
             public void onOk(Dialog dialog, EditText edit) {
-                switch (optStringId) {
-                case R.string.uploader:
+                switch (item.getItemId()) {
+                case R.id.uploader:
                     addChannel(Utils.buildYoutubeFeedUrl_uploader(edit.getText().toString()), null);
                     break;
-                case R.string.word_search:
+                case R.id.search:
                     addChannel(Utils.buildYoutubeFeedUrl_search(edit.getText().toString()), null);
                     break;
                 default:
@@ -905,30 +911,26 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        buildOneLineEditTextDialog(optStringId, action).show();
+        buildOneLineEditTextDialog(item.getTitle(), action).show();
     }
 
     private void
-    onOpt_addChannel_youtube() {
-        final int[] optStringIds = { R.string.uploader, R.string.word_search };
-        final CharSequence[] items = new CharSequence[optStringIds.length];
-        for (int i = 0; i < optStringIds.length; i++)
-            items[i] = getResources().getText(optStringIds[i]);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(getResources().getText(R.string.way_youtube_subscribe));
-        builder.setItems(items, new DialogInterface.OnClickListener() {
+    onOpt_addChannel_youtube(final View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenuInflater().inflate(R.menu.popup_addchannel_youtube, popup.getMenu());
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int item) {
-                onOpt_addChannel_youtubeEditDiag(optStringIds[item]);
+            public boolean onMenuItemClick(MenuItem item) {
+                onOpt_addChannel_youtubeEditDiag(item);
+                return true;
             }
         });
-        builder.create().show();
+        popup.show();
     }
 
 
     private void
-    onOpt_addChannel_url() {
+    onOpt_addChannel_url(final View anchor) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -952,14 +954,14 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_addChannel_predefined() {
+    onOpt_addChannel_predefined(View anchor) {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
         intent.putExtra("category", getCurrentCategoryId());
         startActivityForResult(intent, REQC_PICK_PREDEFINED_CHANNEL);
     }
 
     private void
-    onOpt_addChannel() {
+    onOpt_addChannel(final View anchor) {
         if (0 == ab.getNavigationItemCount()) {
             eAssert(false);
             return;
@@ -976,42 +978,32 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(getResources().getText(R.string.select_channel_type));
-        builder.setItems(R.array.strarr_addchannel_menus,
-                         new DialogInterface.OnClickListener() {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenuInflater().inflate(R.menu.popup_addchannel, popup.getMenu());
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int item) {
-                switch (item) {
-                case 0: /* R.string.select_predefined_channel */
-                    onOpt_addChannel_predefined();
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                case R.id.predefined:
+                    onOpt_addChannel_predefined(anchor);
                     break;
-                case 1: /* R.string.enter_channel_address */
-                    onOpt_addChannel_url();
+                case R.id.url:
+                    onOpt_addChannel_url(anchor);
                     break;
-                case 2: /* R.string.youtube_channel */
-                    onOpt_addChannel_youtube();
+                case R.id.youtube:
+                    onOpt_addChannel_youtube(anchor);
                     break;
                 default:
                     eAssert(false);
                 }
+                return true;
             }
         });
-        builder.create().show();
-
+        popup.show();
     }
 
     private void
-    onOpt_category_items() {
-        Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
-        intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_CATEGORY);
-        intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
-        intent.putExtra("categoryid", getCurrentCategoryId());
-        startActivity(intent);
-    }
-
-    private void
-    onOpt_category_add() {
+    onOpt_category_add(final View anchor) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -1038,7 +1030,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_category_rename() {
+    onOpt_category_rename(final View anchor) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -1060,7 +1052,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_category_delete() {
+    onOpt_category_delete(final View anchor) {
         final long categoryid = getCategoryId(ab.getSelectedTab());
         if (DBPolicy.S().isDefaultCategoryId(categoryid)) {
             LookAndFeel.showTextToast(this, R.string.warn_delete_default_category);
@@ -1081,36 +1073,33 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_category() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(getResources().getText(R.string.category));
-        builder.setItems(R.array.strarr_category_menus,
-                         new DialogInterface.OnClickListener() {
+    onOpt_category(final View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenuInflater().inflate(R.menu.popup_category, popup.getMenu());
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int item) {
-                switch (item) {
-                case 0: /* R.string.list_category_items */
-                    onOpt_category_items();
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                case R.id.add:
+                    onOpt_category_add(anchor);
                     break;
-                case 1: /* R.string.add_category */
-                    onOpt_category_add();
+                case R.id.rename:
+                    onOpt_category_rename(anchor);
                     break;
-                case 2: /* R.string.rename_category */
-                    onOpt_category_rename();
-                    break;
-                case 3: /* R.string.delete_category */
-                    onOpt_category_delete();
+                case R.id.delete:
+                    onOpt_category_delete(anchor);
                     break;
                 default:
                     eAssert(false);
                 }
+                return true;
             }
         });
-        builder.create().show();
+        popup.show();
     }
 
     private void
-    onOpt_itemsAll() {
+    onOpt_itemsAll(final View anchor) {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
         intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_ALL);
         intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
@@ -1118,7 +1107,16 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_itemsFavorite() {
+    onOpt_itemsCategory(final View anchor) {
+        Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
+        intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_CATEGORY);
+        intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
+        intent.putExtra("categoryid", getCurrentCategoryId());
+        startActivity(intent);
+    }
+
+    private void
+    onOpt_itemsFavorite(final View anchor) {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
         intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_FAVORITE);
         intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
@@ -1127,7 +1125,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
     private void
-    onOpt_deleteAllDnfiles() {
+    onOpt_management_deleteAllDnFiles(final View anchor) {
         // check constraints
         if (RTTask.S().getItemsDownloading().length > 0) {
             LookAndFeel.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
@@ -1149,13 +1147,33 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_setting() {
+    onOpt_management(final View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenuInflater().inflate(R.menu.popup_management, popup.getMenu());
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                case R.id.media_delete_all:
+                    onOpt_management_deleteAllDnFiles(anchor);
+                    break;
+                default:
+                    eAssert(false);
+                }
+                return true;
+            }
+        });
+        popup.show();
+    }
+
+    private void
+    onOpt_setting(final View anchor) {
         Intent intent = new Intent(this, FeederPreferenceActivity.class);
         startActivity(intent);
     }
 
     private void
-    onOpt_information() {
+    onOpt_information(final View anchor) {
         PackageManager pm = getPackageManager();
         PackageInfo pi = null;
         try {
@@ -1352,49 +1370,56 @@ UnexpectedExceptionHandler.TrackedModule {
         findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_itemsFavorite();
+                onOpt_itemsFavorite(v);
+            }
+        });
+
+        findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                onOpt_itemsAll(v);
             }
         });
 
         findViewById(R.id.btn_items_all).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_itemsAll();
+                onOpt_itemsCategory(v);
             }
         });
 
         findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_addChannel();
+                onOpt_addChannel(v);
             }
         });
 
         findViewById(R.id.btn_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_category();
+                onOpt_category(v);
             }
         });
 
-        findViewById(R.id.btn_del_dnfiles).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_management).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_deleteAllDnfiles();
+                onOpt_management(v);
             }
         });
 
         findViewById(R.id.btn_setting).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_setting();
+                onOpt_setting(v);
             }
         });
 
         findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_information();
+                onOpt_information(v);
             }
         });
     }

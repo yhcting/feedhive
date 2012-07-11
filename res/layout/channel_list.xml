@@ -28,6 +28,16 @@
                 android:clickable="true"
                 />
             <ImageView
+                android:id="@+id/btn_items_category"
+                android:layout_width="@dimen/chlist_bottom_btn_width"
+                android:layout_height="match_parent"
+                android:layout_weight="1.0"
+                android:gravity="center"
+                android:scaleType="fitCenter"
+                android:src="@drawable/items_category"
+                android:clickable="true"
+                />
+            <ImageView
                 android:id="@+id/btn_items_all"
                 android:layout_width="@dimen/chlist_bottom_btn_width"
                 android:layout_height="match_parent"
@@ -58,13 +68,13 @@
                 android:clickable="true"
                 />
             <ImageView
-                android:id="@+id/btn_del_dnfiles"
+                android:id="@+id/btn_management"
                 android:layout_width="@dimen/chlist_bottom_btn_width"
                 android:layout_height="match_parent"
                 android:layout_weight="1.0"
                 android:gravity="center"
                 android:scaleType="fitCenter"
-                android:src="@drawable/del_dnfiles"
+                android:src="@drawable/management"
                 android:clickable="true"
                 />
             <ImageView

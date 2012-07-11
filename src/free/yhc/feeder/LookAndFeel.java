@@ -102,7 +102,7 @@ public class LookAndFeel {
     }
 
     public static AlertDialog
-    createEditTextDialog(Context context, View layout, int title) {
+    createEditTextDialog(Context context, View layout, CharSequence title) {
         // Create "Enter Url" dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setView(layout);
@@ -111,5 +111,10 @@ public class LookAndFeel {
         dialog.setTitle(title);
         dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         return dialog;
+    }
+
+    public static AlertDialog
+    createEditTextDialog(Context context, View layout, int title) {
+        return createEditTextDialog(context, layout, context.getResources().getText(title));
     }
 }

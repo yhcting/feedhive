@@ -14,7 +14,6 @@
         <item>@string/youtube_channel</item>
         </string-array>
     <string-array name="strarr_category_menus">
-        <item>@string/list_items</item>
         <item>@string/add</item>
         <item>@string/rename</item>
         <item>@string/delete</item>

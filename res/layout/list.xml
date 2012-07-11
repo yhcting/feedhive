@@ -93,6 +93,27 @@
 	                android:layout_height="@dimen/chlist_bottom_btn_height"
 	                android:gravity="center"
 	                android:scaleType="fitCenter"
+	                android:src="@drawable/items_category"
+	                />
+	            <TextView
+	                android:layout_width="fill_parent"
+	                android:layout_height="wrap_content"
+	                android:textSize="@dimen/title_text_size"
+	                android:textColor="@color/text_color_new"
+	                android:text="@string/empty_list_items_category"
+	                />
+	        </LinearLayout>
+	        <LinearLayout
+	            android:layout_width="match_parent"
+	            android:layout_height="wrap_content"
+	            android:layout_marginTop="10dip"
+	            android:orientation="horizontal"
+	            >
+	            <ImageView
+	                android:layout_width="@dimen/chlist_bottom_btn_width"
+	                android:layout_height="@dimen/chlist_bottom_btn_height"
+	                android:gravity="center"
+	                android:scaleType="fitCenter"
 	                android:src="@drawable/items_all"
 	                />
 	            <TextView
@@ -135,14 +156,14 @@
 	                android:layout_height="@dimen/chlist_bottom_btn_height"
 	                android:gravity="center"
 	                android:scaleType="fitCenter"
-	                android:src="@drawable/del_dnfiles"
+	                android:src="@drawable/management"
 	                />
 	            <TextView
 	                android:layout_width="fill_parent"
 	                android:layout_height="wrap_content"
 	                android:textSize="@dimen/title_text_size"
 	                android:textColor="@color/text_color_new"
-	                android:text="@string/empty_list_del_dnfiles"
+	                android:text="@string/empty_list_management"
 	                />
 	        </LinearLayout>
 	        <LinearLayout

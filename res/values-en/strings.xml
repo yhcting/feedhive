@@ -50,9 +50,10 @@
     <string name="empty_list_add_channel_desc">Enter channel URL or selecting from recommended channel by touching this icon.</string>
     <string name="empty_list_btn_desc">About other buttons</string>
     <string name="empty_list_items_favorite">List favorite items.</string>
+    <string name="empty_list_items_category">List all category items.</string>
     <string name="empty_list_items_all">List all items.</string>
-    <string name="empty_list_category">Do jobs related with category - add/delete/rename or listing items in the category.</string>
-    <string name="empty_list_del_dnfiles">Delete all downloaded files.</string>
+    <string name="empty_list_category">To do jobs related with category - add/delete/rename.</string>
+    <string name="empty_list_management">Manage application with several useful functions.</string>
     <string name="empty_list_setting">Adjust application setting.</string>
     <string name="empty_list_information">Show misc information about this application.</string>
     <string name="wait_cancel">Please wait for canceling</string>
