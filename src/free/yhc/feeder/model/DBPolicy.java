@@ -487,7 +487,7 @@ UnexpectedExceptionHandler.TrackedModule {
         cid = db.insertChannel(buildNewChannelContentValues(profD, parD, dbD));
         // check duplication...
         if (!UIPolicy.makeChannelDir(cid)) {
-            db.deleteChannel(cid);
+            db.deleteChannel(ColumnChannel.ID, cid);
             throw new FeederException(Err.IO_FILE);
         }
 
@@ -592,7 +592,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                    ColumnItem.PUBDATE },
                                 new ColumnItem[] { ColumnItem.CHANNELID },
                                 new String[] { "" + cid },
-                                0);
+                                0, true);
             mainKeyI = 3; // title
             subKeyI = 4;  // pubdate
         } else {
@@ -601,7 +601,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                    ColumnItem.ENCLOSURE_URL },// SHOULD BE index 2
                                 new ColumnItem[] { ColumnItem.CHANNELID },
                                 new String[] { "" + cid },
-                                0);
+                                0, true);
             mainKeyI = 1; // link
             subKeyI = 2;  // enclosure url
         }
@@ -877,7 +877,7 @@ UnexpectedExceptionHandler.TrackedModule {
     updateChannel_schedUpdate(long cid, long[] secs) {
         // verify values SECONDS_OF_DAY
         for (long s : secs)
-            eAssert(0 <= s && s <= 60 * 60 * 24);
+            eAssert(0 <= s && s <= Utils.DAY_IN_SEC);
         return db.updateChannel(cid, ColumnChannel.SCHEDUPDATETIME, Utils.nrsToNString(secs));
     }
 
@@ -1099,6 +1099,21 @@ UnexpectedExceptionHandler.TrackedModule {
         return blob;
     }
 
+    /**
+     * Get number items belonging to the given channel.
+     * @param cid
+     * @return
+     */
+    public int
+    getChannelInfoNrItems(long cid) {
+        Cursor c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
+                                ColumnItem.CHANNELID, cid,
+                                0, false);
+        int ret = c.getCount();
+        c.close();
+        return ret;
+    }
+
     // NOTE
     // This function takes much longer time than expected.
     // So, cache should be used to improve it!
@@ -1189,7 +1204,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryItemAND(new ColumnItem[] { column },
                                    new ColumnItem[] { ColumnItem.ID },
                                    new Object[] { id },
-                                   0);
+                                   0, true);
         Object ret = null;
         if (c.moveToFirst())
             ret = getCursorValue(c, 0);
@@ -1220,7 +1235,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryItemAND(columns,
                                    new ColumnItem[] { ColumnItem.ID },
                                    new Object[] { id },
-                                   0);
+                                   0, true);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -1307,7 +1322,7 @@ UnexpectedExceptionHandler.TrackedModule {
                               new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
                               new String[] { search, search },
                               fromPubtime, toPubtime,
-                              0);
+                              0, true);
     }
 
     /**
@@ -1341,7 +1356,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.queryItemMask(columns, where, mask, value,
                                 new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
                                 new String[] { search, search },
-                                fromPubtime, toPubtime);
+                                fromPubtime, toPubtime, true);
     }
 
 

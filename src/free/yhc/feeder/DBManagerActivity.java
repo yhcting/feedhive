@@ -23,22 +23,33 @@ package free.yhc.feeder;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.PopupMenu;
+import android.widget.TextView;
 import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
@@ -51,36 +62,66 @@ UnexpectedExceptionHandler.TrackedModule {
     private String exDBFilePath = null;
     private String inDBFilePath = null;
     private Intent intent       = new Intent();
+    private DBInfo dbInfo       = new DBInfo();
 
-    private boolean
-    isDBInUse() {
-        // There is updating channel
-        // That means, DB is in use!
-        // This NOT "if and only if" condition.
-        // But, in most case, this is enough to know whether DB is in used or not,
-        //   because UI scenario covers most other exceptional areas.
-        return RTTask.S().getChannelsUpdating().length > 0;
+    private static class DBInfo {
+        int         sz;    // db file sz (KB)
+        ChannInfo[] channs = new ChannInfo[0];
+
+        static class ChannInfo implements Comparator<ChannInfo> {
+            long    id;
+            String  title;
+            int     nrItmes; // items of this channel.
+
+            @Override
+            public int compare(ChannInfo ci0, ChannInfo ci1) {
+                // Descending order
+                if (ci0.nrItmes < ci1.nrItmes)
+                    return 1;
+                else if (ci0.nrItmes > ci1.nrItmes)
+                    return -1;
+                else
+                    return 0;
+            }
+        }
     }
 
-    private boolean
+    private class ChannInfoAdapter extends ArrayAdapter<DBInfo.ChannInfo> {
+        private int resId;
+        ChannInfoAdapter(Context context, int aResId, DBInfo.ChannInfo[] data) {
+            super(context, aResId, data);
+            resId = aResId;
+        }
+
+        @Override
+        public View
+        getView(int position, View convertView, ViewGroup parent) {
+            View v = convertView;
+            if (null == v) {
+                LayoutInflater li = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                v = li.inflate(resId, null);
+            }
+            DBInfo.ChannInfo e = getItem(position);
+            ((TextView)v.findViewById(R.id.chann_name)).setText(e.title);
+            ((TextView)v.findViewById(R.id.nr_items)).setText("" + e.nrItmes);
+            return v;
+        }
+    }
+
+    private Err
     verifyCandidateDB(File dbf) {
         SQLiteDatabase db = null;
         try {
             db = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
         } catch (SQLiteException e0) {
-            return false;
+            return Err.DB_UNKNOWN;
         }
         return DB.verifyDB(db);
     }
 
     private void
-    exportDB() {
-        if (isDBInUse()) {
-            LookAndFeel.showTextToast(this, R.string.warn_db_in_use);
-            return;
-        }
-
-        SpinAsyncTask.OnEvent exportEvent = new SpinAsyncTask.OnEvent() {
+    exportDBAsync() {
+        SpinAsyncTask.OnEvent exportWork = new SpinAsyncTask.OnEvent() {
             @Override
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
@@ -107,8 +148,8 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onCancel(SpinAsyncTask task) {}
         };
 
-        SpinAsyncTask task = new SpinAsyncTask(this, exportEvent, R.string.exporting, false);
-        task.execute(new Object());
+        SpinAsyncTask task = new SpinAsyncTask(this, exportWork, R.string.exporting, false);
+        task.execute((Object)null);
     }
 
     private void
@@ -118,7 +159,7 @@ UnexpectedExceptionHandler.TrackedModule {
         LookAndFeel.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
-                exportDB();
+                exportDBAsync();
             }
         }).show();
     }
@@ -130,12 +171,7 @@ UnexpectedExceptionHandler.TrackedModule {
      *   all database is deleted.
      */
     private void
-    importDB() {
-        if (isDBInUse()) {
-            LookAndFeel.showTextToast(this, R.string.warn_db_in_use);
-            return;
-        }
-
+    importDBAsync() {
         final String inDBBackupSuffix = "______backup";
         final File exDbf = new File(exDBFilePath);
         if (!exDbf.exists()) {
@@ -143,7 +179,15 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        if (!verifyCandidateDB(exDbf)) {
+        switch(verifyCandidateDB(exDbf)) {
+        case VERSION_MISMATCH:
+            LookAndFeel.showTextToast(this, R.string.warn_db_version_mismatch);
+            return;
+
+        case NO_ERR:
+            break;
+
+        default:
             LookAndFeel.showTextToast(this, R.string.warn_exdb_not_compatible);
             return;
         }
@@ -155,7 +199,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        SpinAsyncTask.OnEvent importEvent = new SpinAsyncTask.OnEvent() {
+        SpinAsyncTask.OnEvent importWork = new SpinAsyncTask.OnEvent() {
             @Override
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
@@ -195,8 +239,8 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onCancel(SpinAsyncTask task) {}
         };
 
-        SpinAsyncTask task = new SpinAsyncTask(this, importEvent, R.string.importing, false);
-        task.execute(new Object());
+        SpinAsyncTask task = new SpinAsyncTask(this, importWork, R.string.importing, false);
+        task.execute((Object)null);
     }
 
     private void
@@ -206,9 +250,56 @@ UnexpectedExceptionHandler.TrackedModule {
         LookAndFeel.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
-                importDB();
+                importDBAsync();
             }
         }).show();
+    }
+
+    private void
+    shrinkChannelItemsAsync(final long cid, final int percent) {
+        SpinAsyncTask.OnEvent shrinkWork = new SpinAsyncTask.OnEvent() {
+            @Override
+            public Err
+            onDoWork(SpinAsyncTask task, Object... objs) {
+                return Err.NO_ERR;
+            }
+
+            @Override
+            public void
+            onPostExecute(SpinAsyncTask task, Err result) {
+            }
+
+            @Override
+            public void onCancel(SpinAsyncTask task) {}
+        };
+        SpinAsyncTask task = new SpinAsyncTask(this, shrinkWork, R.string.deleting, false);
+        task.execute((Object)null);
+    }
+
+    private void
+    onChannelItemClick(View view, final int position, long itemId) {
+        PopupMenu popup = new PopupMenu(this, view);
+        popup.getMenuInflater().inflate(R.menu.popup_dbmgmt_shrink, popup.getMenu());
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                int delPercent = 0;
+                switch (item.getItemId()) {
+                case R.id.all:
+                    delPercent = 100;
+                    break;
+                case R.id.half:
+                    delPercent = 50;
+                    break;
+                case R.id.per30:
+                    delPercent = 30;
+                    break;
+                }
+                shrinkChannelItemsAsync(dbInfo.channs[position].id, delPercent);
+                return true;
+            }
+        });
+        popup.show();
     }
 
     @Override
@@ -247,6 +338,56 @@ UnexpectedExceptionHandler.TrackedModule {
                 actionImportDB();
             }
         });
+
+        SpinAsyncTask.OnEvent loadDBInfoWork = new SpinAsyncTask.OnEvent() {
+            @Override
+            public Err
+            onDoWork(SpinAsyncTask task, Object... objs) {
+                dbInfo.sz = (int)(new File(inDBFilePath).length() / 1024);
+
+                long nrItems = 0;
+
+                // Load 'used channel information'
+                Cursor c = DBPolicy.S().queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
+                                                                              DB.ColumnChannel.TITLE });
+                dbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
+                c.moveToFirst();
+                for (int i = 0; i < dbInfo.channs.length; i++) {
+                    dbInfo.channs[i] = new DBInfo.ChannInfo();
+                    dbInfo.channs[i].id = c.getLong(0);
+                    dbInfo.channs[i].nrItmes = DBPolicy.S().getChannelInfoNrItems(c.getLong(0));
+                    dbInfo.channs[i].title = c.getString(1);
+                    nrItems += dbInfo.channs[i].nrItmes;
+                    c.moveToNext();
+                }
+
+                // sorting by number of items
+                Arrays.sort(dbInfo.channs, dbInfo.channs[0]);
+                return Err.NO_ERR;
+            }
+
+            @Override
+            public void
+            onPostExecute(SpinAsyncTask task, Err result) {
+                ListView lv = (ListView)DBManagerActivity.this.findViewById(R.id.list);
+                ChannInfoAdapter adapter = new ChannInfoAdapter(DBManagerActivity.this, R.layout.db_manager_channel_row, dbInfo.channs);
+                lv.setAdapter(adapter);
+                /*
+                lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void
+                    onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
+                        onChannelItemClick(view, position, itemId);
+                    }
+                });
+                */
+            }
+
+            @Override
+            public void onCancel(SpinAsyncTask task) {}
+        };
+        SpinAsyncTask task = new SpinAsyncTask(this, loadDBInfoWork, R.string.analyzing_db, false);
+        task.execute((Object)null);
     }
 
     @Override

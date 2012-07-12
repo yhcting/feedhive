@@ -8,16 +8,6 @@
         <item>@string/setting_browser_in</item>
         <item>@string/setting_browser_ex</item>
     </string-array>
-    <string-array name="strarr_addchannel_menus">
-        <item>@string/select_predefined_channel</item>
-        <item>@string/enter_channel_address</item>
-        <item>@string/youtube_channel</item>
-        </string-array>
-    <string-array name="strarr_category_menus">
-        <item>@string/add</item>
-        <item>@string/rename</item>
-        <item>@string/delete</item>
-	</string-array>
     <string-array name="pref_maxnr_concurrent_entry">
         <item>@string/infinite</item>
         <item>"1"</item>

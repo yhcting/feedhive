@@ -9,6 +9,7 @@
     <string name="high">High</string>
     <string name="medium">Medium</string>
     <string name="low">Low</string>
+    <string name="channel_name">Channel name</string>
     <string name="database">Database</string>
     <string name="about_app">About</string>
     <string name="about_app_email">Email : yhcting77@gmail.com</string>
@@ -24,6 +25,7 @@
     <string name="unlist">Remove from list</string>
     <string name="add">add</string>
     <string name="delete">Delete</string>
+    <string name="deleting">Deleting</string>
     <string name="rename">rename</string>
     <string name="refresh">refresh</string>
     <string name="all">All</string>
@@ -54,6 +56,11 @@
     <string name="exporting">Exporting</string>
     <string name="importdb">Import DB</string>
     <string name="importing">Importing</string>
+    <string name="analyzing_db">analyzing DB</string>
+    <string name="nr_items">Feeds</string>
+    <string name="feedshrink_all">Delete all</string>
+    <string name="feedshrink_half">Delete half</string>
+    <string name="feedshrink_30">Delete 30%</string>
     <string name="select_directory">Select directory</string>
     <string name="select_file">Select file</string>
     <string name="empty_list_help">Adding my first channel.</string>
@@ -77,6 +84,7 @@
     <string name="update_cancelled">Update is cancelled or interrupted.</string>
     <string name="update_error">Error during update! This is critical! You may be have to delete this channel!</string>
     <string name="err_interrupted">Operation is interrupted or cancelled.</string>
+    <string name="err_version_mismatch">Version mismatch.</string>
     <string name="err_url">Invalid URL.</string>
     <string name="err_ionet">Fail to access resource through network.</string>
     <string name="err_iofile">Fail to operate on file.</string>
@@ -125,6 +133,7 @@
     <string name="warn_exdb_access_denied">Cannot access to exported database file.</string>
     <string name="warn_exdb_not_compatible">Unavailable external database file.</string>
     <string name="warn_db_in_use">Database is in use now.</string>
+    <string name="warn_db_version_mismatch">Version of imported DB mismatch DB version supported by this application version.</string>
     <string name="default_category_name">Default</string>
     <string name="change_category">Change category</string>
     <string name="select_category">Select category</string>

@@ -27,6 +27,7 @@ import free.yhc.feeder.R;
 public enum Err {
     NO_ERR                      (R.string.ok),
     INTERRUPTED                 (R.string.err_interrupted),
+    VERSION_MISMATCH            (R.string.err_version_mismatch),
     USER_CANCELLED              (R.string.err_user_cancelled),
     INVALID_URL                 (R.string.err_url),
     IO_NET                      (R.string.err_ionet),

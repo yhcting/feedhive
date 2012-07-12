@@ -215,8 +215,11 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param db
      * @return
      */
-    public static boolean
+    public static Err
     verifyDB(SQLiteDatabase db) {
+        if (VERSION != db.getVersion())
+            return Err.VERSION_MISMATCH;
+
         final int iTblName = 0;
         final int iTblSql  = 1;
         String[][] tbls = new String[][] {
@@ -246,9 +249,9 @@ UnexpectedExceptionHandler.TrackedModule {
             String tssql = ts[iTblSql].substring(0, ts[iTblSql].length() - 1);
             String sql = map.get(ts[iTblName]);
             if (null == sql || !sql.equalsIgnoreCase(tssql))
-                return false;
+                return Err.DB_UNKNOWN;
         }
-        return true;
+        return Err.NO_ERR;
     }
 
     public static String
@@ -832,15 +835,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return cid;
     }
 
-    long
-    deleteChannel(long cid) {
-        markChannelChanged(cid);
-        markChannelTableChanged();
-        return db.delete(TABLE_CHANNEL,
-                        ColumnChannel.ID.getName() + " = " + cid,
-                        null);
-    }
-
     /**
      * This function doesn't do any sanity check for passing arguments.
      * So, if there is invalid column name in ContentValues, this function issues exception.
@@ -1061,7 +1055,21 @@ UnexpectedExceptionHandler.TrackedModule {
         markItemTableChanged();
         // then delete channel.
         db.delete(TABLE_CHANNEL, chWhereStr, null);
+        markChannelTableChanged();
         return nrItems;
+    }
+
+    /**
+     * Delete some amount of old items
+     * @param cid
+     * @param percent
+     *   percent to delete (100 means delete all items)
+     * @return
+     *   number of items deleted.
+     */
+    long
+    shrinkChannel(long cid, int percent) {
+        return 0;
     }
 
     // ====================
@@ -1124,15 +1132,17 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param where
      * @param value
      * @param limit
+     * @param ordered
+     *   true for ordered by pubtime
      * @return
      */
     Cursor
-    queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit) {
+    queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit, boolean ordered) {
         eAssert(null != where && null != value);
         return queryItemAND(columns,
                             null != where? new ColumnItem[] { where }: null,
                             null != value? new Object[] { value }: null,
-                            limit);
+                            limit, ordered);
     }
 
     /**
@@ -1145,17 +1155,19 @@ UnexpectedExceptionHandler.TrackedModule {
      *   if (null == wheres) than this is ignored.
      * @param limit
      *   ( <= 0) means "All"
+     * @param ordered
+     *   true for ordered by pubtime
      * @return
      */
     Cursor
-    queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
+    queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit, boolean ordered) {
         // recently inserted item is located at top of rows.
         String wh = buildSQLWhere(wheres, values, "=", "AND");
         return db.query(TABLE_ITEM,
                         getColumnNames(columns),
                         wh.isEmpty()? null: wh,
                         null, null, null,
-                        ITEM_QUERY_DEFAULT_ORDER,
+                        ordered? ITEM_QUERY_DEFAULT_ORDER: null,
                         (limit > 0)? "" + limit: null);
     }
 
@@ -1172,27 +1184,30 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param searchs
      * @param fromPubtime
      * @param toPubtime
+     * @param ordered
+     *   true for ordered by pubtime
      * @return
      */
     Cursor
     queryItemMask(ColumnItem[] columns,
                   ColumnItem where, long mask, long value,
                   ColumnItem[] searchFields, String[] searchs,
-                  long fromPubtime, long toPubtime) {
+                  long fromPubtime, long toPubtime,
+                  boolean ordered) {
         // NOTE
         // To improve DB query performance, query for search would better to
         //   be located at later as possible.
         // (query for search is most expensive operation)
         String wh = where.getName() + " & " + mask + " = " + value;
         String search = buildSQLWhere(getColumnNames(searchFields), searchs,
-                                  fromPubtime, toPubtime);
+                                      fromPubtime, toPubtime);
         if (!search.isEmpty())
             wh = "(" + wh + ") AND " + search;
         return db.query(TABLE_ITEM,
                 getColumnNames(columns),
                 wh,
                 null, null, null,
-                ITEM_QUERY_DEFAULT_ORDER);
+                ordered? ITEM_QUERY_DEFAULT_ORDER: null);
     }
 
     /**
@@ -1211,6 +1226,8 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param toPubtime
      * @param limit
      *   ( <= 0) means "All"
+     * @param ordered
+     *   true for ordered by pubtime
      * @return
      */
     Cursor
@@ -1218,7 +1235,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 ColumnItem[] wheres, Object[] values,
                 ColumnItem[] searchFields, String[] searchs,
                 long fromPubtime, long toPubtime,
-                long limit) {
+                long limit, boolean ordered) {
         // NOTE
         // To improve DB query performance, query for search would better to
         //   be located at later as possible.
@@ -1235,7 +1252,7 @@ UnexpectedExceptionHandler.TrackedModule {
                         getColumnNames(columns),
                         wh.isEmpty()? null: wh,
                         null, null, null,
-                        ITEM_QUERY_DEFAULT_ORDER,
+                        ordered? ITEM_QUERY_DEFAULT_ORDER: null,
                         (limit > 0)? "" + limit: null);
     }
 
@@ -1289,6 +1306,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * NOTE
      * Why this function is NOT general form?
      * That is only for performance (Nothing else!).
+     *
      * @param cid
      * @param limit
      * @return

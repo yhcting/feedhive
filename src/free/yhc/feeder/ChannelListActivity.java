@@ -196,7 +196,7 @@ UnexpectedExceptionHandler.TrackedModule {
          */
         LinearLayout
         addListLayout() {
-            LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(context, R.layout.list);
+            LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(context, R.layout.channel_listview);
             ListView list = ((ListView)ll.findViewById(R.id.list));
             eAssert(null != list);
             list.setAdapter(new ChannelListAdapter(context, null,
@@ -1056,7 +1056,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 SpinAsyncTask task = new SpinAsyncTask(ChannelListActivity.this,
                                                        new DeleteAllDnfilesEventHandler(),
                                                        R.string.delete_all_downloaded_file);
-                task.execute(new Object()); // just pass dummy object;
+                task.execute((Object)null); // just pass dummy object;
             }
         };
 
@@ -1078,8 +1078,23 @@ UnexpectedExceptionHandler.TrackedModule {
             LookAndFeel.showTextToast(this, R.string.warn_find_email_app);
     }
 
+    private boolean
+    isDBInUse() {
+        // There is updating channel
+        // That means, DB is in use!
+        // This NOT "if and only if" condition.
+        // But, in most case, this is enough to know whether DB is in used or not,
+        //   because UI scenario covers most other exceptional areas.
+        return RTTask.S().getChannelsUpdating().length > 0;
+    }
+
     private void
     onOpt_management_dbManage(final View anchor) {
+        if (isDBInUse()) {
+            LookAndFeel.showTextToast(this, R.string.warn_db_in_use);
+            return;
+        }
+
         Intent intent = new Intent(this, DBManagerActivity.class);
         startActivityForResult(intent, REQC_DB_MANAGEMENT);
     }
