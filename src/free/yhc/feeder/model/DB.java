@@ -930,8 +930,6 @@ UnexpectedExceptionHandler.TrackedModule {
         db.execSQL(sbldr.toString());
     }
 
-
-
     /**
      * @param columns
      * @param where

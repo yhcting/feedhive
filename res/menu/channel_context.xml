@@ -4,6 +4,5 @@
     <item android:id="@+id/setting" android:title="@string/setting" android:visible="true"></item>
     <item android:id="@+id/delete_dnfile" android:title="@string/delete_downloaded_file" android:visible="true"></item>
     <item android:id="@+id/pick_icon" android:title="@string/pick_icon" android:visible="true"></item>
-    <item android:id="@+id/unlist" android:title="@string/unlist" android:visible="true"></item>
     <item android:id="@+id/delete" android:title="@string/delete" android:visible="true"></item>
 </menu>

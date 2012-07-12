@@ -353,18 +353,15 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * check channel url which is in use by 'USED' channel.
-     * ('USED' channel means "channel whose state is 'used'".)
+     * check channel url is already in the DB.
      * @param url
      * @return
      */
     public boolean
-    isChannelUrlUsed(String url) {
+    isDuplicatedChannelUrl(String url) {
         long[] state = new long[1];
         long cid = findChannel(state, url);
-        if (cid < 0 || !Feed.Channel.isStatUsed(state[0]))
-            return false;
-        return true;
+        return cid >= 0;
     }
 
     public long
@@ -473,30 +470,10 @@ UnexpectedExceptionHandler.TrackedModule {
         long[] chState = new long[1];
         long cid = findChannel(chState, url);
 
-        if (cid >= 0 && Feed.Channel.isStatUsed(chState[0]))
+        if (cid >= 0)
             throw new FeederException(Err.DB_DUPLICATED_CHANNEL);
 
-        if (cid >= 0 && !Feed.Channel.isStatUsed(chState[0])) {
-            if (!UIPolicy.makeChannelDir(cid))
-                throw new FeederException(Err.IO_FILE);
-
-            // There is unused existing channel.
-            // Let's reuse it.
-            // Initialize some channel informations
-            ContentValues cvs = new ContentValues();
-            cvs.put(ColumnChannel.STATE.getName(),      Feed.Channel.FSTAT_USED);
-            // We didn't verify 'categoryid' here.
-            cvs.put(ColumnChannel.CATEGORYID.getName(), categoryid);
-            cvs.put(ColumnChannel.ACTION.getName(),     Feed.FINVALID);
-            cvs.put(ColumnChannel.POSITION.getName(),   getChannelInfoMaxLong(ColumnChannel.POSITION) + 1);
-            cvs.put(ColumnChannel.IMAGEBLOB.getName(),  new byte[0]);
-            db.updateChannel(cid, cvs);
-            return cid;
-        }
-
-        // Real insertion!
-
-        logI("InsertNewChannel DB Section Start");
+        // logI("InsertNewChannel DB Section Start");
         // insert and update channel id.
 
         // Create empty channel information.
@@ -939,16 +916,11 @@ UnexpectedExceptionHandler.TrackedModule {
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
         eAssert(categoryid >= 0);
-        return db.queryChannel(columns,
-                               new ColumnChannel[] { ColumnChannel.STATE,
-                                                     ColumnChannel.CATEGORYID },
-                               new Object[] { Feed.Channel.FSTAT_USED,
-                                              categoryid },
-                               null, false, 0);
+        return db.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid, null, false, 0);
     }
 
     /**
-     * Query all USED channel column
+     * Query column of all channels
      * @param column
      * @return
      */
@@ -958,40 +930,13 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * Query all USED channel columns
+     * Query columns of all channels
      * @param column
      * @return
      */
     public Cursor
     queryChannel(ColumnChannel[] columns) {
-        return db.queryChannel(columns,
-                ColumnChannel.STATE,
-                Feed.Channel.FSTAT_USED,
-                null, false, 0);
-    }
-
-    /**
-     * This function mark given channel's state as 'UNUSED'
-     * This function doesn't really delete channel row from DB.
-     * If channel is deleted from DB than all items that is belonging to given channel
-     *   should be deleted too.
-     * Why? Deleting channel only breaks DB's constraints because channel id field of item is foreign key.
-     * But, deleting all items from DB takes quite long time and I'm not sure this is really what user want.
-     * So, just mark it.
-     * TODO : is it suitable for normal use case?
-     * @param cid
-     * @return
-     */
-    public int
-    unlistChannel(long cid) {
-        // Just mark as 'unused' - for future
-        long n = db.updateChannel(cid, ColumnChannel.STATE, Feed.Channel.FSTAT_UNUSED);
-        eAssert(0 == n || 1 == n);
-        if (1 == n) {
-            UIPolicy.removeChannelDir(cid);
-            return 0;
-        } else
-            return -1;
+        return db.queryChannel(columns, (ColumnChannel[])null, null, null, false, 0);
     }
 
     /**
@@ -1028,10 +973,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long[]
     getChannelIds() {
-        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
-                                   new ColumnChannel[] { ColumnChannel.STATE },
-                                   new Object[] { Feed.Channel.FSTAT_USED },
-                                   null, false, 0);
+        Cursor c = queryChannel(ColumnChannel.ID);
         long[] cids = new long[c.getCount()];
         if (c.moveToFirst()) {
             int i = 0;
@@ -1051,10 +993,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long[]
     getChannelIds(long categoryid) {
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
-                                   new ColumnChannel[] { ColumnChannel.STATE,
-                                                         ColumnChannel.CATEGORYID },
-                                   new Object[] { Feed.Channel.FSTAT_USED,
-                                                  categoryid },
+                                   ColumnChannel.CATEGORYID, categoryid,
                                    null, false, 0);
         long[] cids = new long[c.getCount()];
         if (c.moveToFirst()) {
@@ -1077,10 +1016,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private Object
     getChannelInfoObject(long cid, ColumnChannel column) {
         Cursor c = db.queryChannel(new ColumnChannel[] { column },
-                                   new ColumnChannel[] { ColumnChannel.STATE,
-                                                         ColumnChannel.ID },
-                                   new Object[] { Feed.Channel.FSTAT_USED,
-                                                  cid },
+                                   ColumnChannel.ID, cid,
                                    null, false, 0);
         Object ret = null;
         if (c.moveToFirst())
@@ -1111,11 +1047,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public String[]
     getChannelInfoStrings(long cid, ColumnChannel[] columns) {
         Cursor c = db.queryChannel(columns,
-                                    new ColumnChannel[] { ColumnChannel.STATE,
-                                                          ColumnChannel.ID },
-                                    new Object[] { Feed.Channel.FSTAT_USED,
-                                                   cid },
-                                    null, false, 0);
+                                   ColumnChannel.ID, cid,
+                                   null, false, 0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -1158,10 +1091,7 @@ UnexpectedExceptionHandler.TrackedModule {
     getChannelInfoImageblob(long cid) {
         byte[] blob = new byte[0];
         Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
-                                   new ColumnChannel[] { ColumnChannel.STATE,
-                                                         ColumnChannel.ID },
-                                   new Object[] { Feed.Channel.FSTAT_USED,
-                                                  cid },
+                                   ColumnChannel.ID, cid,
                                    null, false, 0);
         if (c.moveToFirst())
             blob = c.getBlob(0);

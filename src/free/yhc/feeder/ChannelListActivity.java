@@ -796,20 +796,6 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * Set channel's state to 'unused'.
-     * This doesn't delete items belonging to this channel.
-     * @param tab
-     * @param cid
-     */
-    private void
-    unlistChannel(Tab tab, long cid) {
-        eAssert(null != tab);
-        DBPolicy.S().unlistChannel(cid);
-        refreshListAsync(tab);
-        ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
-    }
-
-    /**
      * Delete channel and it's items from DB.
      * This completely deletes all channel and items.
      * @param tab
@@ -1152,22 +1138,6 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onContext_unlistChannel(final long cid) {
-        ConfirmDialogAction action = new ConfirmDialogAction() {
-            @Override
-            public void onOk(Dialog dialog) {
-                unlistChannel(ab.getSelectedTab(), cid);
-            }
-        };
-
-        LookAndFeel.buildConfirmDialog(this,
-                                       R.string.unlist_channel,
-                                       R.string.unlist_channel_msg,
-                                       action)
-            .show();
-    }
-
-    private void
     onContext_deleteChannel(final long cid) {
         ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
@@ -1440,7 +1410,6 @@ UnexpectedExceptionHandler.TrackedModule {
         if (RTTask.TaskState.RUNNING == updateState
             || RTTask.TaskState.READY == updateState
             || RTTask.TaskState.CANCELING == updateState) {
-            menu.findItem(R.id.unlist).setEnabled(false);
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
             /* full update is useless at this moment. Codes are left for history tracking
@@ -1449,7 +1418,6 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (RTTask.S().getItemsDownloading(dbId).length > 0) {
-            menu.findItem(R.id.unlist).setEnabled(false);
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
@@ -1462,10 +1430,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
         long dbId = getCurrentListAdapter().getItemInfo_cid(info.position);
         switch (mItem.getItemId()) {
-        case R.id.unlist:
-            onContext_unlistChannel(dbId);
-            return true;
-
         case R.id.delete:
             onContext_deleteChannel(dbId);
             return true;

@@ -78,18 +78,9 @@ public class Feed {
         public static final String DEFAULT_SCHEDUPDATE_TIME = "" + (3 * 3600); // 3 o'clock
 
         // ==================
-        // Flag State
+        // Flag State - reserved
         // ==================
-        // bit[0] : State 'used / unused'
-        //   unused : Feeder doens't care about this channel.
-        //            When user decide to delete it.
-        //   used   : This channel is cared.
-        //            When user newly inserts this.
-        //            Or, it is inserted again after removing.
-        public static final long FSTAT_USED    = 0x00;
-        public static final long FSTAT_UNUSED  = 0x01;
-        public static final long MSTAT         = 0x01;
-        public static final long FSTAT_DEFAULT = FSTAT_USED;
+        public static final long FSTAT_DEFAULT = 0;
 
 
         // ==================
@@ -172,11 +163,6 @@ public class Feed {
         // ==================
         // Flag Functions
         // ==================
-        public static final boolean
-        isStatUsed(long flag) {
-            return bitIsSet(flag, FSTAT_USED, MSTAT);
-        }
-
         public static final boolean
         isActOpOpen(long flag) {
             return bitIsSet(flag, FACT_OP_OPEN, MACT_OP);

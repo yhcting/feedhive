@@ -140,7 +140,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Need to check this!!!
             // (I think this is definitely BUG of ANDROID FRAMEWORK!)
             // => This case is same with below "else" case too.
-            if (DBPolicy.S().isChannelUrlUsed(row.url)) {
+            if (DBPolicy.S().isDuplicatedChannelUrl(row.url)) {
                 titlev.setTextColor(context.getResources().getColor(R.color.title_color_opened));
                 titlev.setFocusable(true);
             } else {
