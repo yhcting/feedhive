@@ -319,18 +319,13 @@ public class NetLoader {
         // set to given value forcely due to this is 'update' - Not new insertion.
 
         // decide action type.
-        // Actually deciding only once is enough.
-        // But, to simplify code structure this code is here.
-        // This is definitely overhead. But, it's not big overhead.
-        // Instead of that, we can get simplified code.
-        long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-        if (Feed.FINVALID == action) {
-            if (parD.items.length > 0)
-                action = UIPolicy.decideDefaultActionType(parD.channel, parD.items[0]);
-            else
-                action = UIPolicy.decideDefaultActionType(parD.channel, null);
+        // Actually deciding only once is enough in general case.
+        // But, rarely whole channel item type may be changed and requires different action.
+        // So, whenever update is executed try to adjust 'action' type.
+        long oldAction = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        long action = UIPolicy.decideActionType(oldAction, parD.channel, parD.items.length > 0? parD.items[0]: null);
+        if (action != oldAction)
             DBPolicy.S().updateChannel(cid, DB.ColumnChannel.ACTION, action);
-        }
 
         byte[] imageblob = DBPolicy.S().getChannelInfoImageblob(cid);
         if (imageblob.length <= 0) {

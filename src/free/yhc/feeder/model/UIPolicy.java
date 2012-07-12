@@ -58,19 +58,37 @@ public class UIPolicy {
      *   Feed.Channel.FActxxxx
      */
     static long
-    decideDefaultActionType(Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
-        if (null != iParD) {
-            if (isValidValue(iParD.enclosureUrl))
-                return Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_EX;
+    decideActionType(long action, Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
+        long    actFlag;
+
+        if (null == iParD) {
+            if (Feed.FINVALID == action)
+                return Feed.FINVALID; // do nothing if there is no items at first insertion.
+
+            // default value
+            actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
+        }
+
+        if (isValidValue(iParD.enclosureUrl)) {
+            if (Feed.Channel.CHANN_TYPE_EMBEDDED_MEDIA == cParD.type)
+                actFlag = Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_EX;
             else
-                return Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN;
-        } else if (Feed.Channel.CHANN_TYPE_MEDIA == cParD.type)
-            return Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_DN;
-        else if (Feed.Channel.CHANN_TYPE_EMBEDDED_MEDIA == cParD.type)
-            return Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_EX;
+                actFlag = Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_DN | Feed.Channel.FACT_PROG_DEFAULT;
+        } else
+            actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
+
+        // NOTE
+        // FACT_PROG_IN/EX can be configurable by user
+        // So, this flag should not be changed except for action is invalid value.
+        if (Feed.FINVALID == action)
+            // In case of newly inserted channel (first decision), FACT_PROG_XX should be set as recommended one.
+            return Utils.bitSet(action, actFlag,
+                                Feed.Channel.MACT_TGT | Feed.Channel.MACT_OP | Feed.Channel.MACT_PROG);
         else
-            // default is "open link"
-            return Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN;
+            // If this is NOT first decision, user may change FACT_PROG_XX setting (UX scenario support this.)
+            // So, in this case, FACT_PROG_XX SHOULD NOT be changed.
+            return Utils.bitSet(action, actFlag,
+                    Feed.Channel.MACT_TGT | Feed.Channel.MACT_OP);
     }
 
     /**
