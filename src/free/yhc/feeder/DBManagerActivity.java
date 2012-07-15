@@ -40,7 +40,6 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -67,12 +66,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static class DBInfo {
         int         sz;    // db file sz (KB)
         ChannInfo[] channs = new ChannInfo[0];
-
-        static class ChannInfo implements Comparator<ChannInfo> {
-            long    id;
-            String  title;
-            int     nrItmes; // items of this channel.
-
+        Comparator<ChannInfo> channInfoComparator = new Comparator<ChannInfo>() {
             @Override
             public int compare(ChannInfo ci0, ChannInfo ci1) {
                 // Descending order
@@ -83,6 +77,12 @@ UnexpectedExceptionHandler.TrackedModule {
                 else
                     return 0;
             }
+        };
+
+        static class ChannInfo {
+            long    id;
+            String  title;
+            int     nrItmes; // items of this channel.
         }
     }
 
@@ -345,11 +345,10 @@ UnexpectedExceptionHandler.TrackedModule {
             onDoWork(SpinAsyncTask task, Object... objs) {
                 dbInfo.sz = (int)(new File(inDBFilePath).length() / 1024);
 
-                long nrItems = 0;
-
                 // Load 'used channel information'
                 Cursor c = DBPolicy.S().queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
                                                                               DB.ColumnChannel.TITLE });
+
                 dbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
                 c.moveToFirst();
                 for (int i = 0; i < dbInfo.channs.length; i++) {
@@ -357,12 +356,12 @@ UnexpectedExceptionHandler.TrackedModule {
                     dbInfo.channs[i].id = c.getLong(0);
                     dbInfo.channs[i].nrItmes = DBPolicy.S().getChannelInfoNrItems(c.getLong(0));
                     dbInfo.channs[i].title = c.getString(1);
-                    nrItems += dbInfo.channs[i].nrItmes;
                     c.moveToNext();
                 }
+                c.close();
 
                 // sorting by number of items
-                Arrays.sort(dbInfo.channs, dbInfo.channs[0]);
+                Arrays.sort(dbInfo.channs, dbInfo.channInfoComparator);
                 return Err.NO_ERR;
             }
 
