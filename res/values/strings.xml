@@ -102,7 +102,7 @@
     <string name="warn_file_access_denied">접근할 수 없는 파일/디렉토리 입니다.</string>
     <string name="warn_exdb_access_denied">외부 데이타베이스 파일에 접근할 수 없습니다.</string>
     <string name="warn_exdb_not_compatible">사용할 수 없는 외부 데이타베이스 파일입니다.</string>
-    <string name="warn_db_in_use">데이타베이스가 현재 사용 중입니다.</string>
+    <string name="warn_db_in_use">데이타베이스가 현재 사용 중입니다. 진행중인 업데이트가 있거나 혹은 예약 업데이트가 동작하고 있을 수 있습니다. 나중에 다시 시도해 주십시요.</string>
     <string name="warn_db_version_mismatch">가져오려는 데이타베이스의 버젼이 현재 버젼의 어플리케이션에서 사용하는 데이타베이스 버젼과 다릅니다.</string>
     <string name="default_category_name">미분류</string>
     <string name="change_category">카테고리 변경</string>

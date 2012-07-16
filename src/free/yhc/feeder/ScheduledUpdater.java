@@ -67,6 +67,19 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String CMD_RESCHED = "resched";
     private static final String CMD_CANCEL  = "cancel";
 
+    private static final int    RETRY_DELAY = 1000; // ms
+
+    // Number of running service command
+    // This is used to check whether there is running scheduled update service instance or not.
+    // NOTE
+    // This variable only be accessed by main UI thread!
+    private static int                   srvcnt = 0;
+
+    // Scheduled update is enabled/disabled.
+    // If disabled, requested command is continuosly posted to message Q until
+    //   scheduled update is re-enabled again.
+    private static boolean               enabled = true;
+
     private static PowerManager.WakeLock wl = null;
     private static WifiManager.WifiLock  wfl = null;
     private static int                   wlcnt = 0;
@@ -178,6 +191,27 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    private class StartCmdPost implements Runnable {
+        private Intent intent;
+        private int    flags;
+        private int    startId;
+        StartCmdPost(Intent aIntent, int aFlags, int aStartId) {
+            intent = aIntent;
+            flags = aFlags;
+            startId = aStartId;
+        }
+
+        @Override
+        public void run() {
+            // try after 500 ms with same runnable instance.
+            if (!ScheduledUpdater.isEnabled()) {
+                //logI("runStartCommand --- POST!!!");
+                Utils.getUiHandler().postDelayed(this, RETRY_DELAY);
+            } else
+                runStartCommand(intent, flags, startId);
+        }
+    }
+
     private static class ChannelValue {
         long cid;
         long v;
@@ -199,6 +233,75 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    // =======================================================
+    //
+    // Function to handle race-condition regarding DB access!
+    //
+    // =======================================================
+
+    /**
+     * Should be called on main UI thread.
+     */
+    private static void
+    incInstanceCount() {
+        eAssert(Utils.isUiThread() && srvcnt >= 0);
+        srvcnt++;
+    }
+
+    /**
+     * Should be called on main UI thread.
+     */
+    private static void
+    decInstanceCount() {
+        eAssert(Utils.isUiThread() && srvcnt > 0);
+        srvcnt--;
+    }
+
+    /**
+     * Should be called on main UI thread.
+     */
+    public static boolean
+    doesInstanceExist() {
+        eAssert(Utils.isUiThread());
+        return srvcnt > 0;
+    }
+
+    /**
+     * This is very dangerous! (May lead to infinite loop!)
+     * So, DO NOT USER this function if you don't know what your are doing!
+     * Should be called on main UI thread.
+     */
+    public static void
+    enable() {
+        eAssert(Utils.isUiThread());
+        enabled = true;
+    }
+
+    /**
+     * This is very dangerous! (May lead to infinite loop!)
+     * So, DO NOT USER this function if you don't know what your are doing!
+     * Should be called on main UI thread.
+     */
+    public static void
+    disable() {
+        eAssert(Utils.isUiThread());
+        enabled = false;
+    }
+
+    /**
+     * Should be called on main UI thread.
+     */
+    private static boolean
+    isEnabled() {
+        eAssert(Utils.isUiThread());
+        return enabled;
+    }
+
+    // =======================================================
+    //
+    //
+    //
+    // =======================================================
     private static void
     getWakeLock(Context context) {
         // getWakeLock() and putWakeLock() are used only at main ui thread (broadcast receiver, onStartCommand).
@@ -414,51 +517,11 @@ UnexpectedExceptionHandler.TrackedModule {
         scheduleNextUpdate(this, calNow);
     }
 
-    @Override
-    public String
-    dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ ScheduledUpdater ]";
-    }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        UnexpectedExceptionHandler.S().registerModule(this);
-        nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
-
-        // In this sample, we'll use the same text for the ticker and the expanded notification
-        CharSequence title = getText(R.string.update_service_noti_title);
-        CharSequence desc = getText(R.string.update_service_noti_desc);
-
-        Intent intent = new Intent(this, ScheduledUpdater.class);
-        intent.putExtra("cmd", CMD_CANCEL);
-
-        PendingIntent pi = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        Notification.Builder nbldr = new Notification.Builder(this);
-        nbldr.setSmallIcon(R.drawable.icon_mini)
-             .setTicker(title)
-             .setWhen(System.currentTimeMillis())
-             .setContentTitle(title)
-             .setContentText(desc)
-             .setDeleteIntent(pi);
-        Notification noti = nbldr.getNotification();
-        nm.notify(notificationId, noti);
-        // NOTE
-        // ScheduledUpdate is NOT high priority service.
-        // So, this don't need to be foreground.
-        //startForeground(notificationId, noti);
-    }
-
-    // NOTE:
-    //   onStartCommand is run on main ui thread (same as onReceive).
-    //   So, we don't need to concern about race-condition between these two.
-    @Override
-    public int
-    onStartCommand(Intent intent, int flags, int startId) {
+    private void
+    runStartCommand(Intent intent, int flags, int startId) {
         String cmd = intent.getStringExtra("cmd");
 
-        //logI("ScheduledUpdate : onStartCommand : " + cmd);
+        //logI("ScheduledUpdate : runStartCommand : " + cmd);
         try {
             // 'cmd' can be null.
             // So, DO NOT use "cmd.equals()"...
@@ -491,6 +554,58 @@ UnexpectedExceptionHandler.TrackedModule {
             if (taskset.isEmpty())
                 stopSelf();
         }
+    }
+
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ ScheduledUpdater ]";
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        UnexpectedExceptionHandler.S().registerModule(this);
+
+        incInstanceCount();
+
+        nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
+
+        // In this sample, we'll use the same text for the ticker and the expanded notification
+        CharSequence title = getText(R.string.update_service_noti_title);
+        CharSequence desc = getText(R.string.update_service_noti_desc);
+
+        Intent intent = new Intent(this, ScheduledUpdater.class);
+        intent.putExtra("cmd", CMD_CANCEL);
+
+        PendingIntent pi = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Notification.Builder nbldr = new Notification.Builder(this);
+        nbldr.setSmallIcon(R.drawable.icon_mini)
+             .setTicker(title)
+             .setWhen(System.currentTimeMillis())
+             .setContentTitle(title)
+             .setContentText(desc)
+             .setDeleteIntent(pi);
+        Notification noti = nbldr.getNotification();
+        nm.notify(notificationId, noti);
+        // NOTE
+        // ScheduledUpdate is NOT high priority service.
+        // So, this don't need to be foreground.
+        //startForeground(notificationId, noti);
+    }
+
+    // NOTE:
+    //   onStartCommand is run on main ui thread (same as onReceive).
+    //   So, we don't need to concern about race-condition between these two.
+    @Override
+    public int
+    onStartCommand(Intent intent, int flags, int startId) {
+        // try after some time again.
+        if (!ScheduledUpdater.isEnabled())
+            Utils.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
+        else
+            runStartCommand(intent, flags, startId);
         return START_NOT_STICKY;
     }
 
@@ -504,6 +619,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDestroy() {
+        decInstanceCount();
         nm.cancel(notificationId);
         UnexpectedExceptionHandler.S().unregisterModule(this);
         //logI("ScheduledUpdater : onDestroy");

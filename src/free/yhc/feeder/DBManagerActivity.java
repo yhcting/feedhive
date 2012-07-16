@@ -49,6 +49,7 @@ import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
@@ -108,6 +109,42 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    /**
+     * IMPORTANT : This function should be run on main UI thread!
+     *
+     * @return
+     */
+    private boolean
+    getExclusiveDBAccess() {
+        // There is BGtask for updating channel or there is active scheduled update instance.
+        // That means, DB is in use!
+        // And there isn't any other use case that db is in use except for these two cases.
+        //
+        // NOTE
+        // Is there any other use case?
+        // I'm not sure, but these two are enough I think.
+        //
+        // To avoid race condition this function should be run on main UI thread!
+        if (ScheduledUpdater.doesInstanceExist()
+            || RTTask.S().getChannelsUpdating().length > 0)
+            return false;
+
+        // To get exclusive access right to DB, disabling scheduled updater service is enough
+        // NOTE
+        // Is there any other use case to consider???
+        ScheduledUpdater.disable();
+        return true;
+    }
+
+    /**
+     * Should be run on main UI thread!
+     * @return
+     */
+    private void
+    putExclusiveDBAccess() {
+        ScheduledUpdater.enable();
+    }
+
     private Err
     verifyCandidateDB(File dbf) {
         SQLiteDatabase db = null;
@@ -119,8 +156,19 @@ UnexpectedExceptionHandler.TrackedModule {
         return DB.verifyDB(db);
     }
 
+    /**
+     * Only 'export DB' and 'import DB' requires exclusive DB access.
+     * Because these two cases exceptionally uses 'File' operations (NOT SQLite DB operation),
+     *   Synchronization supported SQLiteDatabase module, isn't used.
+     * So, race-condition of file-system-level may be issued.
+     */
     private void
     exportDBAsync() {
+        if (!getExclusiveDBAccess()) {
+            LookAndFeel.showTextToast(this, R.string.warn_db_in_use);
+            return;
+        }
+
         SpinAsyncTask.OnEvent exportWork = new SpinAsyncTask.OnEvent() {
             @Override
             public Err
@@ -142,10 +190,14 @@ UnexpectedExceptionHandler.TrackedModule {
             onPostExecute(SpinAsyncTask task, Err result) {
                 if (result != Err.NO_ERR)
                     LookAndFeel.showTextToast(DBManagerActivity.this, result.getMsgId());
+
+                putExclusiveDBAccess();
             }
 
             @Override
-            public void onCancel(SpinAsyncTask task) {}
+            public void onCancel(SpinAsyncTask task) {
+                putExclusiveDBAccess();
+            }
         };
 
         SpinAsyncTask task = new SpinAsyncTask(this, exportWork, R.string.exporting, false);
@@ -169,6 +221,8 @@ UnexpectedExceptionHandler.TrackedModule {
      * This function should be implemented with great care.
      * Corrupting database file may make application be unavailable forever before
      *   all database is deleted.
+     *
+     * See {@link #exportDBAsync()} for more comments.
      */
     private void
     importDBAsync() {
@@ -192,10 +246,16 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
+        if (!getExclusiveDBAccess()) {
+            LookAndFeel.showTextToast(this, R.string.warn_db_in_use);
+            return;
+        }
+
         final File inDbf = new File(inDBFilePath);
         final File inDbfBackup = new File(inDbf.getAbsoluteFile() + inDBBackupSuffix);
         if (!inDbf.renameTo(inDbfBackup)) {
             LookAndFeel.showTextToast(this, Err.IO_FILE.getMsgId());
+            putExclusiveDBAccess();
             return;
         }
 
@@ -228,17 +288,19 @@ UnexpectedExceptionHandler.TrackedModule {
                     intent.putExtra(KEY_DB_UPDATED, true);
                     setResult(RESULT_OK, intent);
                     finish();
-                    return;
+                } else {
+                    if (inDbfBackup.renameTo(inDbf))
+                        LookAndFeel.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
+                    else
+                        LookAndFeel.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
                 }
-
-                if (inDbfBackup.renameTo(inDbf))
-                    LookAndFeel.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
-                else
-                    LookAndFeel.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
+                putExclusiveDBAccess();
             }
 
             @Override
-            public void onCancel(SpinAsyncTask task) {}
+            public void onCancel(SpinAsyncTask task) {
+                putExclusiveDBAccess();
+            }
         };
 
         SpinAsyncTask task = new SpinAsyncTask(this, importWork, R.string.importing, false);
