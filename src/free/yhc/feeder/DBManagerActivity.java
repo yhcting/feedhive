@@ -226,6 +226,8 @@ UnexpectedExceptionHandler.TrackedModule {
                     // Delete useless backup file!
                     inDbfBackup.delete();
                     intent.putExtra(KEY_DB_UPDATED, true);
+                    setResult(RESULT_OK, intent);
+                    finish();
                     return;
                 }
 
