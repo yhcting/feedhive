@@ -44,6 +44,11 @@ public class LookAndFeel {
         void onOk(Dialog dialog);
     }
 
+    /**
+     * This is for future use...
+     * @param context
+     * @param root
+     */
     private static void
     showToast(Context context, ViewGroup root) {
         Toast t = Toast.makeText(context, "", Toast.LENGTH_SHORT);
@@ -59,17 +64,6 @@ public class LookAndFeel {
     }
 
     public static void
-    showIconToast(Context context, int icon, int textid) {
-        showTextToast(context, textid);
-        /*
-        LinearLayout root = inflateLayout(context, R.layout.icon_toast);
-        ((TextView)root.findViewById(R.id.text)).setText(stringid);
-        ((ImageView)root.findViewById(R.id.icon)).setImageResource(R.drawable.icon);
-        showToast(context, root);
-        */
-    }
-
-    public static void
     showTextToast(Context context, String text) {
         Toast t = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
@@ -81,11 +75,6 @@ public class LookAndFeel {
         Toast t = Toast.makeText(context, textid, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.show();
-        /*
-        LinearLayout root = inflateLayout(context, R.layout.text_toast);
-        ((TextView)root.findViewById(R.id.text)).setText(textid);
-        showToast(context, root);
-        */
     }
 
     public static AlertDialog
