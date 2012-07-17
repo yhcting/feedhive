@@ -88,7 +88,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int REQC_PICK_IMAGE               = 0;
     private static final int REQC_PICK_PREDEFINED_CHANNEL  = 1;
-    private static final int REQC_DB_MANAGEMENT            = 2;
 
     private static final int DATA_REQ_SZ  = 20;
     private static final int DATA_ARR_MAX = 200;
@@ -1081,7 +1080,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_management_dbManage(final View anchor) {
         Intent intent = new Intent(this, DBManagerActivity.class);
-        startActivityForResult(intent, REQC_DB_MANAGEMENT);
+        startActivity(intent);
     }
 
     private void
@@ -1300,23 +1299,6 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onResult_dbManagement(int resultCode, Intent data) {
-        if (RESULT_OK != resultCode || null == data)
-            return;
-
-        if (data.getBooleanExtra(DBManagerActivity.KEY_DB_UPDATED, false)) {
-            // Post runnable instead of calling "refreshListAsync()" directly
-            //   for fast user response when exit from DBManagerActivity.
-            Utils.getUiHandler().post(new Runnable() {
-                @Override
-                public void run() {
-                    refreshListAsync();
-                }
-            });
-        }
-    }
-
-    private void
     setupToolButtons() {
         findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -1464,9 +1446,6 @@ UnexpectedExceptionHandler.TrackedModule {
             break;
         case REQC_PICK_PREDEFINED_CHANNEL:
             onResult_pickPredefinedChannel(resultCode, data);
-            break;
-        case REQC_DB_MANAGEMENT:
-            onResult_dbManagement(resultCode, data);
             break;
         }
     }

@@ -36,12 +36,17 @@
     <string name="send_opinion">E-mail opinion</string>
     <string name="manage_db">Management DB</string>
     <string name="feed_search">Feed search</string>
+    <string name="db_size">Total DB size</string>
     <string name="exportdb">Export DB</string>
     <string name="exporting">Exporting</string>
     <string name="importdb">Import DB</string>
     <string name="importing">Importing</string>
+    <string name="shrinkdb">Shrink DB</string>
+    <string name="nr_all_items">All feeds</string>
+    <string name="nr_deleted_items_noti">feeds are deleted.</string>
     <string name="analyzing_db">analyzing DB</string>
     <string name="nr_items">Feeds</string>
+    <string name="per_chann_mgmt">Manage each channel</string>
     <string name="feedshrink_all">Delete all</string>
     <string name="feedshrink_half">Delete half</string>
     <string name="feedshrink_30">Delete 30%</string>
@@ -127,5 +132,4 @@
     <string name="pref_send_usage_report_desc">Sends usage information to improve application (ex. channel urls those are not included at predefined channel.)</string>
     <string name="pref_download_root">Application directory.</string>
     <string name="pref_download_root_desc">Root directory where downloaded files are stored.</string>
-    <string name="mgmt_db_export_import">Export current database to App. root directory ,or import database from App. root directory.</string>
 </resources>

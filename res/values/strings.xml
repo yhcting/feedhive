@@ -36,12 +36,17 @@
     <string name="send_opinion">의견 보내기</string>
     <string name="manage_db">데이타베이스 관리</string>
     <string name="feed_search">피드 검색</string>
+    <string name="db_size">전체 DB 크기</string>
     <string name="exportdb">DB 내보내기</string>
     <string name="exporting">내보내는 중....</string>
     <string name="importdb">DB 가져오기</string>
     <string name="importing">가져오는 중....</string>
+    <string name="shrinkdb">DB 줄이기</string>
+    <string name="nr_all_items">전체 피드 개수</string>
+    <string name="nr_deleted_items_noti">개의 피드가 삭제되었습니다.</string>
     <string name="analyzing_db">DB 분석 중....</string>
     <string name="nr_items">피드 개수</string>
+    <string name="per_chann_mgmt">채널별 관리</string>
     <string name="feedshrink_all">전체 삭제</string>
     <string name="feedshrink_half">절반 삭제</string>
     <string name="feedshrink_30">30% 삭제</string>
@@ -127,5 +132,4 @@
     <string name="pref_send_usage_report_desc">어플리케이션 기능을 향상시킬 수 있는 정보를 보냅니다. (예. 추천채널에는 없으나, 현재 사용중인 채널들 등)</string>
     <string name="pref_download_root">앱 디렉토리</string>
     <string name="pref_download_root_desc">다운로드 받은 파일들이 저장될 디렉토리를 설정합니다. 기존 디렉토리는 그대로 보존됩니다.</string>
-    <string name="mgmt_db_export_import">현재 데이타베이스를 앱 디렉토리로 내보내거나, 혹은 앱 디렉토리에서 데이타베이스를 가져와서 사용합니다.</string>
 </resources>

@@ -40,7 +40,6 @@ import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -1260,14 +1259,12 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    public boolean
-    onKeyDown(int keyCode, KeyEvent event)  {
-        if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
-            try {
-                while (opMode.doesRunningBGTaskExists())
-                    Thread.sleep(50);
-            } catch (InterruptedException e) {}
-        }
-        return super.onKeyDown(keyCode, event);
+    public void
+    onBackPressed() {
+        try {
+            while (opMode.doesRunningBGTaskExists())
+                Thread.sleep(50);
+        } catch (InterruptedException e) {}
+        super.onBackPressed();
     }
 }

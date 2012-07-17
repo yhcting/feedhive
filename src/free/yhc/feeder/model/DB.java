@@ -1059,19 +1059,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return nrItems;
     }
 
-    /**
-     * Delete some amount of old items
-     * @param cid
-     * @param percent
-     *   percent to delete (100 means delete all items)
-     * @return
-     *   number of items deleted.
-     */
-    long
-    shrinkChannel(long cid, int percent) {
-        return 0;
-    }
-
     // ====================
     //
     // Item
@@ -1132,17 +1119,14 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param where
      * @param value
      * @param limit
-     * @param ordered
-     *   true for ordered by pubtime
      * @return
      */
     Cursor
-    queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit, boolean ordered) {
-        eAssert(null != where && null != value);
+    queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit) {
         return queryItemAND(columns,
                             null != where? new ColumnItem[] { where }: null,
                             null != value? new Object[] { value }: null,
-                            limit, ordered);
+                            limit);
     }
 
     /**
@@ -1160,14 +1144,14 @@ UnexpectedExceptionHandler.TrackedModule {
      * @return
      */
     Cursor
-    queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit, boolean ordered) {
+    queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
         // recently inserted item is located at top of rows.
         String wh = buildSQLWhere(wheres, values, "=", "AND");
         return db.query(TABLE_ITEM,
                         getColumnNames(columns),
                         wh.isEmpty()? null: wh,
                         null, null, null,
-                        ordered? ITEM_QUERY_DEFAULT_ORDER: null,
+                        ITEM_QUERY_DEFAULT_ORDER,
                         (limit > 0)? "" + limit: null);
     }
 
@@ -1256,6 +1240,21 @@ UnexpectedExceptionHandler.TrackedModule {
                         (limit > 0)? "" + limit: null);
     }
 
+    /**
+     *
+     * @param column
+     *   column to count.
+     * @param where
+     * @param value
+     * @return
+     */
+    Cursor
+    queryItemCount(ColumnItem column, ColumnItem where, long value) {
+        return db.query(TABLE_ITEM,
+                        new String[] { "COUNT(" + column.getName() + ")" },
+                        where.getName() + " = " + value,
+                        null, null, null, null);
+    }
 
     /**
      * Delete item from item table.
@@ -1362,5 +1361,67 @@ UnexpectedExceptionHandler.TrackedModule {
         return db.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
                            + ") FROM " + TABLE_ITEM
                            + " WHERE " + wh, null);
+    }
+
+    // -----------------------------------------------------------------------
+    // To support shrinking DB size
+    // -----------------------------------------------------------------------
+    /**
+     *
+     * @param cid
+     *   channel id to delete old items.
+     *   '-1' means 'for all channel'.
+     * @param percent
+     *   percent to delete.
+     * @return
+     *   number of items deleted
+     */
+    int
+    deleteOldItems(long cid, int percent) {
+        eAssert(0 <= percent && percent <= 100);
+
+        if (0 == percent)
+            return 0;
+
+        String wh = "";
+        if (100 == percent)
+            // Special where clause value to delete all rows in the table.
+            // See comment of "SQLiteDatabase.delete".
+            wh = "1";
+        else {
+            Cursor c = null;
+
+            // Default is sorted by ID in decrementing order.
+            if (cid >= 0)
+                c = queryItem(new ColumnItem[] { ColumnItem.PUBTIME },
+                              ColumnItem.CHANNELID, cid, 0);
+            else
+                c = queryItem(new ColumnItem[] { ColumnItem.PUBTIME },
+                        null, null, 0);
+
+            // cursor position to delete from.
+            long curCount = c.getCount();
+            int pos = (int)(curCount - curCount * percent / 100);
+            if (!c.moveToPosition(pos))
+                eAssert(false);
+            long putTimeFrom = c.getLong(0);
+            c.close();
+
+            if (cid >= 0)
+                wh = ColumnItem.CHANNELID.getName() + " = " + cid + " AND ";
+            wh += ColumnItem.PUBTIME.getName() + " < " + putTimeFrom;
+        }
+        int ret = db.delete(TABLE_ITEM, wh, null);
+
+        // NOTE
+        // Important fact that should be considered here is,
+        //   "Channel is NOT changed."
+        // Even if item is deleted, item ID is auto incrementing value.
+        // So, OLDLAST_ITEMID of channel doesn't affected by this deleting work.
+        // And any other channel value is not changed too.
+        // So, I don't need to mark that "channel is changed" by using 'markChannelChanged()'
+        markItemTableChanged();
+
+        return ret;
     }
 }

@@ -297,6 +297,11 @@ UnexpectedExceptionHandler.TrackedModule {
         db.reloadDatabase();
     }
 
+    // ======================================================
+    //
+    // FATAL FUNCTIONS
+    //
+    // ======================================================
     /**
      * Delay channel DB update (inserting items) until all 'get' request is put by calling
      *   {@link DBPolicy#putDelayedChannelUpdate()}.
@@ -318,6 +323,12 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(delayedChannelUpdate.get() > 0);
         delayedChannelUpdate.decrementAndGet();
     }
+
+    // ======================================================
+    //
+    //
+    //
+    // ======================================================
 
     public void
     beginTransaction() {
@@ -592,7 +603,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                    ColumnItem.PUBDATE },
                                 new ColumnItem[] { ColumnItem.CHANNELID },
                                 new String[] { "" + cid },
-                                0, true);
+                                0);
             mainKeyI = 3; // title
             subKeyI = 4;  // pubdate
         } else {
@@ -601,7 +612,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                    ColumnItem.ENCLOSURE_URL },// SHOULD BE index 2
                                 new ColumnItem[] { ColumnItem.CHANNELID },
                                 new String[] { "" + cid },
-                                0, true);
+                                0);
             mainKeyI = 1; // link
             subKeyI = 2;  // enclosure url
         }
@@ -1106,10 +1117,12 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public int
     getChannelInfoNrItems(long cid) {
-        Cursor c = db.queryItem(new ColumnItem[] { ColumnItem.ID },
-                                ColumnItem.CHANNELID, cid,
-                                0, false);
-        int ret = c.getCount();
+        Cursor c = db.queryItemCount(ColumnItem.ID,
+                                     ColumnItem.CHANNELID, cid);
+        if (!c.moveToFirst())
+            eAssert(false);
+
+        int ret = c.getInt(0);
         c.close();
         return ret;
     }
@@ -1204,7 +1217,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryItemAND(new ColumnItem[] { column },
                                    new ColumnItem[] { ColumnItem.ID },
                                    new Object[] { id },
-                                   0, true);
+                                   0);
         Object ret = null;
         if (c.moveToFirst())
             ret = getCursorValue(c, 0);
@@ -1235,7 +1248,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = db.queryItemAND(columns,
                                    new ColumnItem[] { ColumnItem.ID },
                                    new Object[] { id },
-                                   0, true);
+                                   0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -1406,6 +1419,26 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
         return db.deleteItemOR(wheres, values);
+    }
+
+    // ===============================================
+    //
+    // For DB Management
+    //
+    // ===============================================
+    /**
+     *
+     * @param cid
+     *   channel id to delete old items.
+     *   '-1' means 'for all channel'.
+     * @param percent
+     *   percent to delete.
+     * @return
+     *   number of items deleted
+     */
+    public int
+    deleteOldItems(long cid, int percent) {
+        return db.deleteOldItems(cid, percent);
     }
 
     // ===============================================

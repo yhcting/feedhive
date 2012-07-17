@@ -20,6 +20,8 @@
 
 package free.yhc.feeder;
 
+import static free.yhc.feeder.model.Utils.eAssert;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -29,17 +31,16 @@ import java.util.Comparator;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -58,10 +59,11 @@ public class DBManagerActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
     public static final String KEY_DB_UPDATED = "dbUpdated";
 
+    private static final long  ID_ALL_CHANNEL   = -1;
+    private static final int   POS_ALL_CHANNEL  = -1;
 
     private String exDBFilePath = null;
     private String inDBFilePath = null;
-    private Intent intent       = new Intent();
     private DBInfo dbInfo       = new DBInfo();
 
     private static class DBInfo {
@@ -285,9 +287,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     // All are done successfully!
                     // Delete useless backup file!
                     inDbfBackup.delete();
-                    intent.putExtra(KEY_DB_UPDATED, true);
-                    setResult(RESULT_OK, intent);
-                    finish();
+                    onDBChanged(ID_ALL_CHANNEL, 0);
                 } else {
                     if (inDbfBackup.renameTo(inDbf))
                         LookAndFeel.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
@@ -319,30 +319,48 @@ UnexpectedExceptionHandler.TrackedModule {
         }).show();
     }
 
+    /**
+     *
+     * @param cid
+     *   ID_ALL_CHANNEL means 'for all channel' - that is for whole DB.
+     * @param percent
+     */
     private void
-    shrinkChannelItemsAsync(final long cid, final int percent) {
+    shrinkItemsAsync(final long cid, final int percent) {
         SpinAsyncTask.OnEvent shrinkWork = new SpinAsyncTask.OnEvent() {
+            private int nr = 0;
             @Override
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
+                nr = DBPolicy.S().deleteOldItems(cid, percent);
                 return Err.NO_ERR;
             }
 
             @Override
             public void
             onPostExecute(SpinAsyncTask task, Err result) {
+                LookAndFeel.showTextToast(DBManagerActivity.this, nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
+                onDBChanged(cid, nr);
             }
 
             @Override
-            public void onCancel(SpinAsyncTask task) {}
+            public void
+            onCancel(SpinAsyncTask task) {
+                eAssert(false);
+            }
         };
         SpinAsyncTask task = new SpinAsyncTask(this, shrinkWork, R.string.deleting, false);
         task.execute((Object)null);
     }
 
+    /**
+    * @param position
+    *   '>= 0' for specific channel located at given position, ID_ALL_CHANNEL for shrinking entire item table.
+    * @param anchor
+    */
     private void
-    onChannelItemClick(View view, final int position, long itemId) {
-        PopupMenu popup = new PopupMenu(this, view);
+    actionShrinkDB(final int position, View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
         popup.getMenuInflater().inflate(R.menu.popup_dbmgmt_shrink, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
@@ -359,56 +377,22 @@ UnexpectedExceptionHandler.TrackedModule {
                     delPercent = 30;
                     break;
                 }
-                shrinkChannelItemsAsync(dbInfo.channs[position].id, delPercent);
+                if (POS_ALL_CHANNEL == position)
+                    shrinkItemsAsync(ID_ALL_CHANNEL, delPercent);
+                else
+                    shrinkItemsAsync(dbInfo.channs[position].id, delPercent);
                 return true;
             }
         });
         popup.show();
     }
 
-    @Override
-    protected void
-    onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-    }
-
-    @Override
-    public String
-    dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ DBManagerActivity ]";
-    }
-
-    @Override
-    public void
-    onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
-        super.onCreate(savedInstanceState);
-
-        setContentView(R.layout.db_manager);
-
-        exDBFilePath = UIPolicy.getAppRootDirectoryPath() + getResources().getText(R.string.app_name) + ".db";
-        inDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
-
-        ((Button)this.findViewById(R.id.exportdb)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                actionExportDB();
-            }
-        });
-
-        ((Button)this.findViewById(R.id.importdb)).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                actionImportDB();
-            }
-        });
-
+    private void
+    loadChannInfoListAsync() {
         SpinAsyncTask.OnEvent loadDBInfoWork = new SpinAsyncTask.OnEvent() {
             @Override
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
-                dbInfo.sz = (int)(new File(inDBFilePath).length() / 1024);
-
                 // Load 'used channel information'
                 Cursor c = DBPolicy.S().queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
                                                                               DB.ColumnChannel.TITLE });
@@ -432,18 +416,17 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onPostExecute(SpinAsyncTask task, Err result) {
+                activateChannelInfoListView(true);
                 ListView lv = (ListView)DBManagerActivity.this.findViewById(R.id.list);
                 ChannInfoAdapter adapter = new ChannInfoAdapter(DBManagerActivity.this, R.layout.db_manager_channel_row, dbInfo.channs);
                 lv.setAdapter(adapter);
-                /*
                 lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void
                     onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
-                        onChannelItemClick(view, position, itemId);
+                        actionShrinkDB(position, view);
                     }
                 });
-                */
             }
 
             @Override
@@ -451,6 +434,94 @@ UnexpectedExceptionHandler.TrackedModule {
         };
         SpinAsyncTask task = new SpinAsyncTask(this, loadDBInfoWork, R.string.analyzing_db, false);
         task.execute((Object)null);
+    }
+
+    /**
+     *
+     * @param cid
+     *   ID_ALL_CHANNEL for all channels - entire item table.
+     * @param nrDeleted
+     */
+    private void
+    onDBChanged(long cid, int nrDeleted) {
+        dbInfo.sz = (int)(new File(inDBFilePath).length() / 1024);
+        CharSequence text = getResources().getText(R.string.db_size) + " : " + dbInfo.sz + " KB";
+        ((TextView)findViewById(R.id.total_dbsz)).setText(text);
+        if (ID_ALL_CHANNEL == cid)
+            activateChannelInfoListView(false);
+        else {
+            for (DBInfo.ChannInfo ci : dbInfo.channs) {
+                if (ci.id == cid)
+                    ci.nrItmes -= nrDeleted;
+            }
+            Arrays.sort(dbInfo.channs, dbInfo.channInfoComparator);
+            ((ChannInfoAdapter)((ListView)findViewById(R.id.list)).getAdapter()).notifyDataSetChanged();
+        }
+    }
+
+    private void
+    activateChannelInfoListView(boolean activate) {
+        if (activate) {
+            findViewById(R.id.channinfo_list).setVisibility(View.VISIBLE);
+            findViewById(R.id.per_chann_mgmt).setVisibility(View.GONE);
+            int nrItems = 0;
+            for (DBInfo.ChannInfo ci : dbInfo.channs)
+                nrItems += ci.nrItmes;
+            ((TextView)findViewById(R.id.nr_all_items)).setText(
+                    getResources().getText(R.string.nr_all_items) + " : " + nrItems);
+
+        } else {
+            findViewById(R.id.channinfo_list).setVisibility(View.GONE);
+            findViewById(R.id.per_chann_mgmt).setVisibility(View.VISIBLE);
+        }
+    }
+
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ DBManagerActivity ]";
+    }
+
+    @Override
+    public void
+    onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.S().registerModule(this);
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.db_manager);
+
+        exDBFilePath = UIPolicy.getAppRootDirectoryPath() + getResources().getText(R.string.app_name) + ".db";
+        inDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
+
+        ((Button)findViewById(R.id.exportdb)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                actionExportDB();
+            }
+        });
+
+        ((Button)findViewById(R.id.importdb)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                actionImportDB();
+            }
+        });
+
+        ((Button)findViewById(R.id.shrinkdb)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                actionShrinkDB(POS_ALL_CHANNEL, v);
+            }
+        });
+
+        ((Button)findViewById(R.id.per_chann_mgmt)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                loadChannInfoListAsync();
+            }
+        });
+
+        onDBChanged(ID_ALL_CHANNEL, 0);
     }
 
     @Override
@@ -492,12 +563,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    public boolean
-    onKeyDown(int keyCode, KeyEvent event)  {
-        if (keyCode == KeyEvent.KEYCODE_BACK && event.getRepeatCount() == 0) {
-            setResult(RESULT_OK, intent);
-            finish();
-        }
-        return super.onKeyDown(keyCode, event);
+    public void
+    onBackPressed() {
+        super.onBackPressed();
     }
 }
