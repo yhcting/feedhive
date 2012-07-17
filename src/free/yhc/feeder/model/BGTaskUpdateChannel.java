@@ -21,12 +21,9 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.logI;
-import android.content.Context;
 
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
-    private Context            context;
     private volatile NetLoader loader = null;
-    private Arg                arg    = null;
 
     public static class Arg {
         long    cid        = -1;
@@ -43,16 +40,14 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     }
 
     public
-    BGTaskUpdateChannel(Context context, Arg arg) {
-        super(context.getApplicationContext(), arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
-        this.context = context;
-        setPriority(UIPolicy.getPrefBGTaskPriority(context));
+    BGTaskUpdateChannel(Arg arg) {
+        super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
+        setPriority(UIPolicy.getPrefBGTaskPriority());
     }
 
     @Override
     protected Err
     doBGTask(Arg arg) {
-        this.arg = arg;
         try {
             loader = new NetLoader();
             if (null == arg.customIconref)

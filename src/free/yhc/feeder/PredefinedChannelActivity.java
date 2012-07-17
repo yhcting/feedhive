@@ -322,7 +322,7 @@ UnexpectedExceptionHandler.TrackedModule {
         categoryid = this.getIntent().getLongExtra("category", -1);
         eAssert(categoryid >= 0);
 
-        db = new AssetSQLiteHelper(this, DB_NAME, DB_ASSET, DB_VERSION);
+        db = new AssetSQLiteHelper(DB_NAME, DB_ASSET, DB_VERSION);
         db.open();
 
         setContentView(R.layout.predefined_channel);

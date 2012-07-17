@@ -114,7 +114,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            getWakeLock(context.getApplicationContext());
+            getWakeLock();
         }
     }
 
@@ -142,7 +142,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            getWakeLock(context.getApplicationContext());
+            getWakeLock();
         }
     }
 
@@ -152,7 +152,7 @@ UnexpectedExceptionHandler.TrackedModule {
         private int     startId = -1;
 
         UpdateBGTask(long cid, int startId, BGTaskUpdateChannel.Arg arg) {
-            super(ScheduledUpdater.this, arg);
+            super(arg);
             this.cid = cid;
             this.startId = startId;
         }
@@ -303,14 +303,14 @@ UnexpectedExceptionHandler.TrackedModule {
     //
     // =======================================================
     private static void
-    getWakeLock(Context context) {
+    getWakeLock() {
         // getWakeLock() and putWakeLock() are used only at main ui thread (broadcast receiver, onStartCommand).
         // So, we don't need to synchronize it!
         eAssert(wlcnt >= 0);
         if (null == wl) {
-            wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
+            wl = ((PowerManager)Utils.getAppContext().getSystemService(Context.POWER_SERVICE))
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
-            wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
+            wfl = ((WifiManager)Utils.getAppContext().getSystemService(Context.WIFI_SERVICE))
                     .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG);
             //logI("ScheduledUpdater : WakeLock created and aquired");
             wl.acquire();
@@ -362,7 +362,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param calNow
      */
     static void
-    scheduleNextUpdate(Context context, Calendar calNow) {
+    scheduleNextUpdate(Calendar calNow) {
         long daybase = Utils.dayBaseMs(calNow);
         long dayms = calNow.getTimeInMillis() - daybase;
         if (dayms < 0)
@@ -403,13 +403,15 @@ UnexpectedExceptionHandler.TrackedModule {
         if (nearestNext != invalidNearestNext) {
             // convert into real time.
             nearestNext += calNow.getTimeInMillis();
-            Intent intent = new Intent(context, AlarmReceiver.class);
+            Intent intent = new Intent(Utils.getAppContext(), AlarmReceiver.class);
             intent.setAction(SCHEDUPDATE_INTENT_ACTION);
             intent.putExtra("time", nearestNext);
-            PendingIntent pIntent = PendingIntent.getBroadcast(context, REQC_UPDATE, intent, PendingIntent.FLAG_CANCEL_CURRENT);
-
+            PendingIntent pIntent = PendingIntent.getBroadcast(Utils.getAppContext(),
+                                                               REQC_UPDATE,
+                                                               intent,
+                                                               PendingIntent.FLAG_CANCEL_CURRENT);
             // Get the AlarmManager service
-            AlarmManager am = (AlarmManager)context.getSystemService(ALARM_SERVICE);
+            AlarmManager am = (AlarmManager)Utils.getAppContext().getSystemService(ALARM_SERVICE);
             am.set(AlarmManager.RTC_WAKEUP, nearestNext, pIntent);
         }
     }
@@ -417,7 +419,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     doCmdResched(int startId) {
         // Just reschedule and return.
-        scheduleNextUpdate(this, Calendar.getInstance());
+        scheduleNextUpdate(Calendar.getInstance());
     }
 
     private void
@@ -432,7 +434,7 @@ UnexpectedExceptionHandler.TrackedModule {
             logW("WARN : ScheduledUpdater : weired scheduling!!!\n" +
                  "    scheduled time(ms) : " + schedTime + "\n" +
                  "    current time(ms)   : " + calNow.getTimeInMillis());
-            scheduleNextUpdate(this, calNow);
+            scheduleNextUpdate(calNow);
             return;
         }
 
@@ -514,7 +516,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //   But, some channels may be scheduled between these two time - 'calNow' and Real-Now.
         //   If Real-Now is chosen as current calendar, tasks mentioned at above line, is missed from scheduled-update!
         //   So, 'calNow' should be used as current calendar!
-        scheduleNextUpdate(this, calNow);
+        scheduleNextUpdate(calNow);
     }
 
     private void
@@ -537,7 +539,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // This intent comes from notification.
                 // But, in this case wakelock isn't acquired (different from other cases.)
                 // So, acquire here to balance with 'putWakeLock()' below (in 'finally' scope).
-                getWakeLock(this.getApplicationContext());
+                getWakeLock();
                 // Stop this service.
                 // stopSelf();
             } else

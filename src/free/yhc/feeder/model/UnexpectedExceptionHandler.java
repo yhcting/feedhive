@@ -149,8 +149,8 @@ UncaughtExceptionHandler {
     }
 
     public void
-    init(Context context) {
-        setEnvironmentInfo(context);
+    init() {
+        setEnvironmentInfo(Utils.getAppContext());
     }
 
     /**

@@ -139,9 +139,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     startDownload() {
         BGTaskDownloadToFile dnTask
-            = new BGTaskDownloadToFile(this, new BGTaskDownloadToFile.Arg(netUrl,
-                                                                          UIPolicy.getItemDataFile(id),
-                                                                          UIPolicy.getNewTempFile()));
+            = new BGTaskDownloadToFile(new BGTaskDownloadToFile.Arg(netUrl,
+                                                                    UIPolicy.getItemDataFile(id),
+                                                                    UIPolicy.getNewTempFile()));
         RTTask.S().register(id, RTTask.Action.DOWNLOAD, dnTask);
         RTTask.S().start(id, RTTask.Action.DOWNLOAD);
     }

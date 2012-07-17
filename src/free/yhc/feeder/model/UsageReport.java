@@ -63,7 +63,7 @@ OnSharedPreferenceChangeListener {
      */
     private void
     sendReportMail(Context context, File reportf, int diagTitle, String subject) {
-        if (!Utils.isNetworkAvailable(context))
+        if (!Utils.isNetworkAvailable())
             return;
 
         if (!reportf.exists())
@@ -105,8 +105,8 @@ OnSharedPreferenceChangeListener {
     }
 
     public void
-    init(Context context) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+    init() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
         prefs.registerOnSharedPreferenceChangeListener(this);
         onSharedPreferenceChanged(prefs, "err_report");
         onSharedPreferenceChanged(prefs, "usage_report");

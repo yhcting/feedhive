@@ -78,7 +78,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Arrays.sort(sods);
         if (!Utils.nrsToNString(sods).equals(oldSchedUpdate)) {
             DBPolicy.S().updateChannel_schedUpdate(cid, sods);
-            ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
+            ScheduledUpdater.scheduleNextUpdate(Calendar.getInstance());
         }
     }
 

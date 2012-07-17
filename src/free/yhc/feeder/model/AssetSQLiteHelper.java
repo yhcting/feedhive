@@ -28,7 +28,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 
@@ -36,7 +35,6 @@ import android.database.sqlite.SQLiteException;
 // This module is NOT THREAD SAFE!
 public class AssetSQLiteHelper {
     // Constructing arguments
-    private Context context;
     private String  dbName;
     private String  assetDBFile;
     private int     version;
@@ -56,17 +54,16 @@ public class AssetSQLiteHelper {
      *     existing db is replaced with new db file by copying from asset db file.
      *   Starts from 1.
      */
-    public AssetSQLiteHelper(Context context, String dbName, String assetDBFile, int version) {
-        this.context    = context;
+    public AssetSQLiteHelper(String dbName, String assetDBFile, int version) {
         this.dbName     = dbName;
         this.assetDBFile= assetDBFile;
         this.version    = version;
     }
 
     public void open() {
-        File dbf = context.getDatabasePath(dbName);
+        File dbf = Utils.getAppContext().getDatabasePath(dbName);
         try {
-            InputStream is = context.getAssets().open(assetDBFile);
+            InputStream is = Utils.getAppContext().getAssets().open(assetDBFile);
             if (!dbf.exists()) {
                 FileOutputStream fos = new FileOutputStream(dbf);
                 // This is first time. Just copy it!

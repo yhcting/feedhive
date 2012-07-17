@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 /*
@@ -130,8 +129,8 @@ public class UIPolicy {
      * @param context
      */
     public static void
-    init(Context context)  {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+    init()  {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
         String appRoot = prefs.getString(PREF_KEY_APP_ROOT, "/sdcard/yhcFeeder");
         setAppDirectories(appRoot);
         cleanTempFiles();
@@ -305,8 +304,8 @@ public class UIPolicy {
      *   Value of Java Thread priority (between Thread.MIN_PRIORITY and Thread.MAX_PRIORITY)
      */
     public static int
-    getPrefBGTaskPriority(Context context) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+    getPrefBGTaskPriority() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
         String prio = prefs.getString("bgtask_prio", "low");
         if ("low".equals(prio))
             return Thread.MIN_PRIORITY;

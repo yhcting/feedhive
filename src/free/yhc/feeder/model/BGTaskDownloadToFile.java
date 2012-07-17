@@ -25,13 +25,9 @@ import static free.yhc.feeder.model.Utils.logI;
 import java.io.File;
 import java.io.OutputStream;
 
-import android.content.Context;
-
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
-    private Context                 context;
     private volatile OutputStream   ostream  = null;
     private volatile NetLoader      loader   = null;
-    private Arg                     arg      = null;
     private volatile long           progress = 0;
 
     public static class Arg {
@@ -52,10 +48,9 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     }
 
     public
-    BGTaskDownloadToFile(Context context, Arg arg) {
-        super(context.getApplicationContext(), arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
-        this.context = context;
-        setPriority(UIPolicy.getPrefBGTaskPriority(context));
+    BGTaskDownloadToFile(Arg arg) {
+        super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
+        setPriority(UIPolicy.getPrefBGTaskPriority());
     }
 
     @Override
@@ -70,8 +65,6 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     doBGTask(Arg arg) {
         logI("* Start background Job : DownloadToFileTask\n" +
              "    Url : " + arg.url);
-        this.arg = arg;
-
         loader = new NetLoader();
 
         Err result = Err.NO_ERR;

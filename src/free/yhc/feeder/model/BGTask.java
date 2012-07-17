@@ -37,7 +37,6 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     public static int OPT_WIFILOCK  = 0x02;
 
 
-    private Context          context;
     private String           nick = null; // can be used several purpose.
     private Handler          ownerHandler = new Handler();
     private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
@@ -145,14 +144,13 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         }
     }
 
-    public BGTask(Context context, RunParam arg, int option) {
+    public BGTask(RunParam arg, int option) {
         super();
         // NOTE
         // Even if, BGTask is designed considering multi-threaded environment,
         //   to simplify synchronization issue, only UI Thread can create BG Task.
         // (Actually, this is NOT constraints for BGTask, but for Feeder app.
         eAssert(Utils.isUiThread());
-        this.context = context;
         runParam = arg;
         opt = option;
     }
@@ -182,13 +180,13 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             // acquire wakelock/wifilock if needed
             if (0 != (OPT_WAKELOCK & opt)) {
                 //logI("< WakeLock >" + WLTAG + nick + " <<<<<< acquire");
-                wl = ((PowerManager)context.getSystemService(Context.POWER_SERVICE))
+                wl = ((PowerManager)Utils.getAppContext().getSystemService(Context.POWER_SERVICE))
                         .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG + nick);
                 wl.acquire();
             }
 
             if (0 != (OPT_WIFILOCK & opt)) {
-                wfl = ((WifiManager)context.getSystemService(Context.WIFI_SERVICE))
+                wfl = ((WifiManager)Utils.getAppContext().getSystemService(Context.WIFI_SERVICE))
                         .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG + nick);
                 wfl.acquire();
             }

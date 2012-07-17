@@ -57,6 +57,7 @@ public class Utils {
 
     private static final String TAG = "[Feeder]";
 
+    private static Context  appContext = null;
     private static Handler  uiHandler = null;
 
     // To enable logging to file - NOT LOGCAT
@@ -226,7 +227,8 @@ public class Utils {
     // Public
     // =======================
     public static void
-    init() {
+    init(Context aAppContext) {
+        appContext = aAppContext;
         uiHandler = new Handler();
     }
 
@@ -244,6 +246,11 @@ public class Utils {
     public static void logW(String msg) { log(LogLV.W, msg); }
     public static void logE(String msg) { log(LogLV.E, msg); }
     public static void logF(String msg) { log(LogLV.F, msg); }
+
+    public static Context
+    getAppContext() {
+        return appContext;
+    }
 
     public static boolean
     isUiThread() {
@@ -300,8 +307,8 @@ public class Utils {
     }
 
     public static int
-    dpToPx(Context context, int dp) {
-        return (int) (dp * context.getResources().getDisplayMetrics().density);
+    dpToPx(int dp) {
+        return (int) (dp * getAppContext().getResources().getDisplayMetrics().density);
     }
 
     public static long
@@ -695,12 +702,11 @@ public class Utils {
 
     /**
      * Is any available active network at this device?
-     * @param context
      * @return
      */
     public static boolean
-    isNetworkAvailable(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+    isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager)getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getActiveNetworkInfo();
         if (null != ni)
             return ni.isConnectedOrConnecting();

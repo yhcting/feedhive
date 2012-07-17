@@ -21,7 +21,6 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -58,9 +57,9 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private DBThread(Context context) {
+    private DBThread() {
         // Create singleton instances
-        DB.newSession(context).open();
+        DB.newSession().open();
     }
 
     // S : Singleton instance
@@ -71,9 +70,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     public static void
-    createSingleton(Context context) {
+    createSingleton() {
         eAssert(null == instance);
-        instance = new DBThread(context);
+        instance = new DBThread();
         UnexpectedExceptionHandler.S().registerModule(instance);
     }
 

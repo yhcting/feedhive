@@ -484,9 +484,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     static DB
-    newSession(Context context) {
+    newSession() {
         eAssert(null == instance);
-        instance = new DB(context);
+        instance = new DB(Utils.getAppContext());
         UnexpectedExceptionHandler.S().registerModule(instance);
         return instance;
     }

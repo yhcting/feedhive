@@ -474,7 +474,7 @@ UnexpectedExceptionHandler.TrackedModule {
             LookAndFeel.showTextToast(ChannelListActivity.this,
                                       nrDelItems + getResources().getString(R.string.channel_deleted_msg));
             refreshListAsync(ab.getSelectedTab());
-            ScheduledUpdater.scheduleNextUpdate(ChannelListActivity.this, Calendar.getInstance());
+            ScheduledUpdater.scheduleNextUpdate(Calendar.getInstance());
         }
     }
 
@@ -782,13 +782,13 @@ UnexpectedExceptionHandler.TrackedModule {
         // full update for this newly inserted channel
         BGTaskUpdateChannel task;
         if (Utils.isValidValue(iconurl))
-            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid, iconurl));
+            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid, iconurl));
         else
-            task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
 
         RTTask.S().register(cid, RTTask.Action.UPDATE, task);
         RTTask.S().start(cid, RTTask.Action.UPDATE);
-        ScheduledUpdater.scheduleNextUpdate(this, Calendar.getInstance());
+        ScheduledUpdater.scheduleNextUpdate(Calendar.getInstance());
 
         // refresh current category.
         refreshListAsync(ab.getSelectedTab());
@@ -890,7 +890,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        if (!Utils.isNetworkAvailable(this)) {
+        if (!Utils.isNetworkAvailable()) {
             // TODO Handling error
             LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
             return;
@@ -1068,7 +1068,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_management_feedbackOpinion(final View anchor) {
-        if (!Utils.isNetworkAvailable(this)) {
+        if (!Utils.isNetworkAvailable()) {
             LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
             return;
         }
@@ -1241,7 +1241,7 @@ UnexpectedExceptionHandler.TrackedModule {
         switch (state) {
         case IDLE: {
             //logI("ChannelList : update : " + cid);
-            BGTaskUpdateChannel task = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+            BGTaskUpdateChannel task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
             RTTask.S().register(cid, RTTask.Action.UPDATE, task);
             RTTask.S().start(cid, RTTask.Action.UPDATE);
             dataSetChanged(getCurrentListView(), cid);

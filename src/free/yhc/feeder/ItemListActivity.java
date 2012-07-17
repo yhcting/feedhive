@@ -641,7 +641,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Update is supported only at channel item list.
         eAssert(opMode instanceof OpModeChannel);
         long cid = ((OpModeChannel)opMode).getChannelId();
-        BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(this, new BGTaskUpdateChannel.Arg(cid));
+        BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
         RTTask.S().register(cid, RTTask.Action.UPDATE, updateTask);
         RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
         RTTask.S().start(cid, RTTask.Action.UPDATE);
@@ -737,7 +737,7 @@ UnexpectedExceptionHandler.TrackedModule {
             case IDLE: {
                 BGTaskDownloadToFile.Arg arg
                     = new BGTaskDownloadToFile.Arg(url, f, UIPolicy.getNewTempFile());
-                BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(this, arg);
+                BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(arg);
                 RTTask.S().register(id, RTTask.Action.DOWNLOAD, dnTask);
                 RTTask.S().start(id, RTTask.Action.DOWNLOAD);
                 dataSetChanged(id);

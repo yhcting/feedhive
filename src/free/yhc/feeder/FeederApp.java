@@ -21,7 +21,6 @@
 package free.yhc.feeder;
 
 import android.app.Application;
-import android.content.Context;
 import android.content.res.Configuration;
 import free.yhc.feeder.model.DBThread;
 import free.yhc.feeder.model.RTTask;
@@ -42,22 +41,25 @@ public class FeederApp extends Application {
     // Interesting point is, context from 'Activity' instance doens't have above issue.
     // So, even if this 'initialize' function is member of FeederApp,
     //   this function should be called with 'Activity' context.
+    /**
+     *
+     * @param context
+     *   SHOULD be applicatno context.
+     */
     private void
-    initialize(Context context) {
-        Utils.init();
-
+    initialize() {
         // Create singleton instances
-        DBThread.createSingleton(context);
+        DBThread.createSingleton();
         DBThread.S().start();
 
         RTTask.S();
 
-        UnexpectedExceptionHandler.S().init(context);
+        UnexpectedExceptionHandler.S().init();
         // Initialize modules
-        UIPolicy.init(context);
-        RTTask.S().init(context);
+        UIPolicy.init();
+        RTTask.S().init();
 
-        UsageReport.S().init(context);
+        UsageReport.S().init();
     }
 
     @Override
@@ -74,7 +76,9 @@ public class FeederApp extends Application {
         UnexpectedExceptionHandler.S();
         Thread.setDefaultUncaughtExceptionHandler(UnexpectedExceptionHandler.S());
 
-        initialize(getApplicationContext());
+        // Utils.init() SHOULD be called before calling other init() functions.
+        Utils.init(getApplicationContext());
+        initialize();
     }
 
     @Override
