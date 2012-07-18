@@ -62,6 +62,7 @@ public class FeederApp extends Application {
         RTTask.get();
         UsageReport.get();
         LookAndFeel.get();
+        NotiManager.get();
     }
 
     @Override

@@ -480,7 +480,7 @@ UnexpectedExceptionHandler.TrackedModule {
             lnf.showTextToast(ChannelListActivity.this,
                                       nrDelItems + getResources().getString(R.string.channel_deleted_msg));
             refreshListAsync(ab.getSelectedTab());
-            ScheduledUpdater.scheduleNextUpdate(Calendar.getInstance());
+            ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
         }
     }
 
@@ -794,7 +794,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         rtt.register(cid, RTTask.Action.UPDATE, task);
         rtt.start(cid, RTTask.Action.UPDATE);
-        ScheduledUpdater.scheduleNextUpdate(Calendar.getInstance());
+        ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
 
         // refresh current category.
         refreshListAsync(ab.getSelectedTab());
@@ -1239,10 +1239,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContextBtn_channelUpdate(ImageView ibtn, long cid) {
-        /* code for test...
-        ScheduledUpdater.setNextScheduledUpdate(this, cid);
-        return;
-        */
         RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
         switch (state) {
         case IDLE: {

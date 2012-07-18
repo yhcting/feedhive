@@ -54,12 +54,12 @@ import free.yhc.feeder.model.Utils;
 // So, even if scheduled update may fail, there is no explicit notification.
 // But user can know whether scheduled-update successes or fails by checking age since last successful update.
 // (See channelListAdapter for 'age' time)
-public class ScheduledUpdater extends Service implements
+public class ScheduledUpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
     // Should match manifest's intent filter
     private static final String SCHEDUPDATE_INTENT_ACTION = "feeder.intent.action.SCHEDULED_UPDATE";
     // Wakelock
-    private static final String WLTAG = "free.yhc.feeder.ScheduledUpdater";
+    private static final String WLTAG = "free.yhc.feeder.ScheduledUpdateService";
 
     private static final int    REQC_UPDATE = 0;
 
@@ -112,7 +112,7 @@ UnexpectedExceptionHandler.TrackedModule {
             //
             // TODO
             // Any better way??
-            Intent svc = new Intent(context, ScheduledUpdater.class);
+            Intent svc = new Intent(context, ScheduledUpdateService.class);
             svc.putExtra("cmd", CMD_RESCHED);
             // onStartCommand will be sent!
             context.startService(svc);
@@ -139,7 +139,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 eAssert(false);
                 return;
             }
-            Intent svc = new Intent(context, ScheduledUpdater.class);
+            Intent svc = new Intent(context, ScheduledUpdateService.class);
             svc.putExtra("cmd", CMD_ALARM);
             svc.putExtra("time", time);
             // onStartCommand will be sent!
@@ -168,7 +168,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
-            //logI("ScheduledUpdater(onCancel) : " + cid);
+            //logI("ScheduledUpdateService(onCancel) : " + cid);
             synchronized (taskset) {
                 taskset.remove(cid);
                 //logI("    taskset size : " + taskset.size());
@@ -185,7 +185,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
-            //logI("ScheduledUpdater(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
+            //logI("ScheduledUpdateService(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
             synchronized (taskset) {
                 taskset.remove(cid);
                 if (taskset.isEmpty())
@@ -207,7 +207,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void run() {
             // try after 500 ms with same runnable instance.
-            if (!ScheduledUpdater.isEnabled()) {
+            if (!ScheduledUpdateService.isEnabled()) {
                 //logI("runStartCommand --- POST!!!");
                 Utils.getUiHandler().postDelayed(this, RETRY_DELAY);
             } else
@@ -315,19 +315,19 @@ UnexpectedExceptionHandler.TrackedModule {
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
             wfl = ((WifiManager)Utils.getAppContext().getSystemService(Context.WIFI_SERVICE))
                     .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG);
-            //logI("ScheduledUpdater : WakeLock created and aquired");
+            //logI("ScheduledUpdateService : WakeLock created and aquired");
             wl.acquire();
             wfl.acquire();
         }
         wlcnt++;
-        //logI("ScheduledUpdater(GET) : current WakeLock count: " + wlcnt);
+        //logI("ScheduledUpdateService(GET) : current WakeLock count: " + wlcnt);
     }
 
     private static void
     putWakeLock() {
         eAssert(wlcnt > 0);
         wlcnt--;
-        //logI("ScheduledUpdater(PUT) : current WakeLock count: " + wlcnt);
+        //logI("ScheduledUpdateService(PUT) : current WakeLock count: " + wlcnt);
         if (0 == wlcnt) {
             wl.release();
             wfl.release();
@@ -340,7 +340,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Anyway, let's set 'wl' as 'null' here to re-create new WakeLock at next time.
             wl = null;
             wfl = null;
-            //logI("ScheduledUpdater : WakeLock is released");
+            //logI("ScheduledUpdateService : WakeLock is released");
         }
     }
 
@@ -434,7 +434,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (schedTime < 0 // something wrong!!
             || calNow.getTimeInMillis() < schedTime // scheduled too early
             || calNow.getTimeInMillis() > schedTime + Utils.HOUR_IN_MS) { // scheduled too late
-            logW("WARN : ScheduledUpdater : weired scheduling!!!\n" +
+            logW("WARN : ScheduledUpdateService : weired scheduling!!!\n" +
                  "    scheduled time(ms) : " + schedTime + "\n" +
                  "    current time(ms)   : " + calNow.getTimeInMillis());
             scheduleNextUpdate(calNow);
@@ -564,7 +564,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ ScheduledUpdater ]";
+        return "[ ScheduledUpdateService ]";
     }
 
     @Override
@@ -578,7 +578,7 @@ UnexpectedExceptionHandler.TrackedModule {
         CharSequence title = getText(R.string.update_service_noti_title);
         CharSequence desc = getText(R.string.update_service_noti_desc);
 
-        Intent intent = new Intent(this, ScheduledUpdater.class);
+        Intent intent = new Intent(this, ScheduledUpdateService.class);
         intent.putExtra("cmd", CMD_CANCEL);
 
         PendingIntent pi = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -605,7 +605,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public int
     onStartCommand(Intent intent, int flags, int startId) {
         // try after some time again.
-        if (!ScheduledUpdater.isEnabled())
+        if (!ScheduledUpdateService.isEnabled())
             Utils.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
         else
             runStartCommand(intent, flags, startId);
@@ -625,7 +625,7 @@ UnexpectedExceptionHandler.TrackedModule {
         decInstanceCount();
         nm.cancel(notificationId);
         UnexpectedExceptionHandler.get().unregisterModule(this);
-        //logI("ScheduledUpdater : onDestroy");
+        //logI("ScheduledUpdateService : onDestroy");
         super.onDestroy();
     }
 }

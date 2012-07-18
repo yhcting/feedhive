@@ -133,14 +133,14 @@ UnexpectedExceptionHandler.TrackedModule {
         // I'm not sure, but these two are enough I think.
         //
         // To avoid race condition this function should be run on main UI thread!
-        if (ScheduledUpdater.doesInstanceExist()
+        if (ScheduledUpdateService.doesInstanceExist()
             || rtt.getChannelsUpdating().length > 0)
             return false;
 
         // To get exclusive access right to DB, disabling scheduled updater service is enough
         // NOTE
         // Is there any other use case to consider???
-        ScheduledUpdater.disable();
+        ScheduledUpdateService.disable();
         return true;
     }
 
@@ -150,7 +150,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     putExclusiveDBAccess() {
-        ScheduledUpdater.enable();
+        ScheduledUpdateService.enable();
     }
 
     private Err
