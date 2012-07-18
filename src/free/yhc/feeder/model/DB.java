@@ -87,14 +87,14 @@ UnexpectedExceptionHandler.TrackedModule {
         NAME            ("name",            "text",     "not null"), // channel url of this rss.
         ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
 
-        private String name;
-        private String type;
-        private String constraint;
+        private final String name;
+        private final String type;
+        private final String constraint;
 
-        ColumnCategory(String name, String type, String constraint) {
-            this.name = name;
-            this.type = type;
-            this.constraint = constraint;
+        ColumnCategory(String aName, String aType, String aConstraint) {
+            name = aName;
+            type = aType;
+            constraint = aConstraint;
         }
         @Override
         public String getName() { return name; }
@@ -149,14 +149,14 @@ UnexpectedExceptionHandler.TrackedModule {
                 + "FOREIGN KEY(categoryid) REFERENCES " + TABLE_CATEGORY + "(" + ColumnCategory.ID.getName() + ")");
 
 
-        private String name;
-        private String type;
-        private String constraint;
+        private final String name;
+        private final String type;
+        private final String constraint;
 
-        ColumnChannel(String name, String type, String constraint) {
-            this.name = name;
-            this.type = type;
-            this.constraint = constraint;
+        ColumnChannel(String aName, String aType, String aConstraint) {
+            name = aName;
+            type = aType;
+            constraint = aConstraint;
         }
         @Override
         public String getName() { return name; }
@@ -184,14 +184,14 @@ UnexpectedExceptionHandler.TrackedModule {
                 // Add additional : foreign key
                 + "FOREIGN KEY(channelid) REFERENCES " + TABLE_CHANNEL + "(" + ColumnChannel.ID.getName() + ")");
 
-        private String name;
-        private String type;
-        private String constraint;
+        private final String name;
+        private final String type;
+        private final String constraint;
 
-        ColumnItem(String name, String type, String constraint) {
-            this.name = name;
-            this.type = type;
-            this.constraint = constraint;
+        ColumnItem(String aName, String aType, String aConstraint) {
+            name = aName;
+            type = aType;
+            constraint = aConstraint;
         }
         @Override
         public String getName() { return name; }
