@@ -62,6 +62,11 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final long  ID_ALL_CHANNEL   = -1;
     private static final int   POS_ALL_CHANNEL  = -1;
 
+    private final UIPolicy      uip = UIPolicy.get();
+    private final DBPolicy      dbp = DBPolicy.get();
+    private final RTTask        rtt = RTTask.get();
+    private final LookAndFeel   lnf = LookAndFeel.get();
+
     private String exDBFilePath = null;
     private String inDBFilePath = null;
     private DBInfo dbInfo       = new DBInfo();
@@ -89,7 +94,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class ChannInfoAdapter extends ArrayAdapter<DBInfo.ChannInfo> {
+    private static class ChannInfoAdapter extends ArrayAdapter<DBInfo.ChannInfo> {
         private int resId;
         ChannInfoAdapter(Context context, int aResId, DBInfo.ChannInfo[] data) {
             super(context, aResId, data);
@@ -101,7 +106,8 @@ UnexpectedExceptionHandler.TrackedModule {
         getView(int position, View convertView, ViewGroup parent) {
             View v = convertView;
             if (null == v) {
-                LayoutInflater li = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LayoutInflater li = (LayoutInflater)Utils.getAppContext()
+                                                         .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 v = li.inflate(resId, null);
             }
             DBInfo.ChannInfo e = getItem(position);
@@ -128,7 +134,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //
         // To avoid race condition this function should be run on main UI thread!
         if (ScheduledUpdater.doesInstanceExist()
-            || RTTask.S().getChannelsUpdating().length > 0)
+            || rtt.getChannelsUpdating().length > 0)
             return false;
 
         // To get exclusive access right to DB, disabling scheduled updater service is enough
@@ -167,7 +173,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     exportDBAsync() {
         if (!getExclusiveDBAccess()) {
-            LookAndFeel.showTextToast(this, R.string.warn_db_in_use);
+            lnf.showTextToast(this, R.string.warn_db_in_use);
             return;
         }
 
@@ -191,7 +197,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onPostExecute(SpinAsyncTask task, Err result) {
                 if (result != Err.NO_ERR)
-                    LookAndFeel.showTextToast(DBManagerActivity.this, result.getMsgId());
+                    lnf.showTextToast(DBManagerActivity.this, result.getMsgId());
 
                 putExclusiveDBAccess();
             }
@@ -210,7 +216,7 @@ UnexpectedExceptionHandler.TrackedModule {
     actionExportDB() {
         CharSequence title = getResources().getText(R.string.exportdb);
         CharSequence msg = getResources().getText(R.string.database) + " => " + exDBFilePath;
-        LookAndFeel.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        lnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 exportDBAsync();
@@ -231,32 +237,32 @@ UnexpectedExceptionHandler.TrackedModule {
         final String inDBBackupSuffix = "______backup";
         final File exDbf = new File(exDBFilePath);
         if (!exDbf.exists()) {
-            LookAndFeel.showTextToast(this, R.string.warn_exdb_access_denied);
+            lnf.showTextToast(this, R.string.warn_exdb_access_denied);
             return;
         }
 
         switch(verifyCandidateDB(exDbf)) {
         case VERSION_MISMATCH:
-            LookAndFeel.showTextToast(this, R.string.warn_db_version_mismatch);
+            lnf.showTextToast(this, R.string.warn_db_version_mismatch);
             return;
 
         case NO_ERR:
             break;
 
         default:
-            LookAndFeel.showTextToast(this, R.string.warn_exdb_not_compatible);
+            lnf.showTextToast(this, R.string.warn_exdb_not_compatible);
             return;
         }
 
         if (!getExclusiveDBAccess()) {
-            LookAndFeel.showTextToast(this, R.string.warn_db_in_use);
+            lnf.showTextToast(this, R.string.warn_db_in_use);
             return;
         }
 
         final File inDbf = new File(inDBFilePath);
         final File inDbfBackup = new File(inDbf.getAbsoluteFile() + inDBBackupSuffix);
         if (!inDbf.renameTo(inDbfBackup)) {
-            LookAndFeel.showTextToast(this, Err.IO_FILE.getMsgId());
+            lnf.showTextToast(this, Err.IO_FILE.getMsgId());
             putExclusiveDBAccess();
             return;
         }
@@ -275,7 +281,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     return Err.IO_FILE;
                 }
 
-                DBPolicy.S().reloadDatabase();
+                dbp.reloadDatabase();
 
                 return Err.NO_ERR;
             }
@@ -290,9 +296,9 @@ UnexpectedExceptionHandler.TrackedModule {
                     onDBChanged(ID_ALL_CHANNEL, 0);
                 } else {
                     if (inDbfBackup.renameTo(inDbf))
-                        LookAndFeel.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
+                        lnf.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
                     else
-                        LookAndFeel.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
+                        lnf.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
                 }
                 putExclusiveDBAccess();
             }
@@ -311,7 +317,7 @@ UnexpectedExceptionHandler.TrackedModule {
     actionImportDB() {
         CharSequence title = getResources().getText(R.string.importdb);
         CharSequence msg = getResources().getText(R.string.database) + " <= " + exDBFilePath;
-        LookAndFeel.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        lnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 importDBAsync();
@@ -332,14 +338,14 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
-                nr = DBPolicy.S().deleteOldItems(cid, percent);
+                nr = dbp.deleteOldItems(cid, percent);
                 return Err.NO_ERR;
             }
 
             @Override
             public void
             onPostExecute(SpinAsyncTask task, Err result) {
-                LookAndFeel.showTextToast(DBManagerActivity.this, nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
+                lnf.showTextToast(DBManagerActivity.this, nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
                 onDBChanged(cid, nr);
             }
 
@@ -394,7 +400,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public Err
             onDoWork(SpinAsyncTask task, Object... objs) {
                 // Load 'used channel information'
-                Cursor c = DBPolicy.S().queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
+                Cursor c = dbp.queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
                                                                               DB.ColumnChannel.TITLE });
 
                 dbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
@@ -402,7 +408,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 for (int i = 0; i < dbInfo.channs.length; i++) {
                     dbInfo.channs[i] = new DBInfo.ChannInfo();
                     dbInfo.channs[i].id = c.getLong(0);
-                    dbInfo.channs[i].nrItmes = DBPolicy.S().getChannelInfoNrItems(c.getLong(0));
+                    dbInfo.channs[i].nrItmes = dbp.getChannelInfoNrItems(c.getLong(0));
                     dbInfo.channs[i].title = c.getString(1);
                     c.moveToNext();
                 }
@@ -485,12 +491,13 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.db_manager);
 
-        exDBFilePath = UIPolicy.getAppRootDirectoryPath() + getResources().getText(R.string.app_name) + ".db";
+        exDBFilePath = uip.getAppRootDirectoryPath()
+                       + getResources().getText(R.string.app_name) + ".db";
         inDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
 
         ((Button)findViewById(R.id.exportdb)).setOnClickListener(new View.OnClickListener() {
@@ -552,7 +559,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onDestroy() {
         super.onDestroy();
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 
     @Override

@@ -23,22 +23,20 @@ package free.yhc.feeder.model;
 import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
-import java.io.OutputStream;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
-    private volatile OutputStream   ostream  = null;
     private volatile NetLoader      loader   = null;
     private volatile long           progress = 0;
 
     public static class Arg {
-        String url         = null;
-        File   toFile      = null;
-        File   tempFile    = null;
+        final String url;
+        final File   toFile;
+        final File   tempFile;
 
-        public Arg(String url, File toFile, File tempFile) {
-            this.url = url;
-            this.toFile = toFile;
-            this.tempFile = tempFile;
+        public Arg(String aUrl, File aToFile, File aTempFile) {
+            url = aUrl;
+            toFile = aToFile;
+            tempFile = aTempFile;
         }
     }
 
@@ -50,7 +48,7 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     public
     BGTaskDownloadToFile(Arg arg) {
         super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
-        setPriority(UIPolicy.getPrefBGTaskPriority());
+        setPriority(UIPolicy.get().getPrefBGTaskPriority());
     }
 
     @Override

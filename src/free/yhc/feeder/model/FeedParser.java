@@ -31,12 +31,12 @@ import android.text.Html;
 
 public abstract class FeedParser {
     // Result data format from parse.
-    class Result {
+    static class Result {
         Feed.Channel.ParD channel = new Feed.Channel.ParD();
         Feed.Item.ParD[]  items   = null;
     }
 
-    protected class NodeValue {
+    protected static class NodeValue {
         int    priority; // priority value of parsing modules which updates this value.
         String value;
 
@@ -51,7 +51,7 @@ public abstract class FeedParser {
         }
     }
 
-    protected class ChannelValues {
+    protected static class ChannelValues {
         NodeValue   title       = new NodeValue();
         NodeValue   description = new NodeValue();
         NodeValue   imageref    = new NodeValue();
@@ -71,7 +71,7 @@ public abstract class FeedParser {
         }
     }
 
-    protected class ItemValues {
+    protected static class ItemValues {
         NodeValue   title           = new NodeValue();
         NodeValue   description     = new NodeValue();
         NodeValue   link            = new NodeValue();
@@ -113,7 +113,7 @@ public abstract class FeedParser {
     //                    Name space parsor
     //
     // ===========================================================
-    protected abstract class NSParser {
+    protected abstract static class NSParser {
         private static final int    NS_PRI_SHIFT       = 16;
         private static final short  NODE_PRI_DEFAULT   = 0;
 

@@ -37,11 +37,17 @@ UncaughtExceptionHandler {
 
     private static UnexpectedExceptionHandler instance = null;
 
-    private Thread.UncaughtExceptionHandler   oldHandler;
-    private LinkedList<TrackedModule>         mods = new LinkedList<TrackedModule>();
-
-    private PackageReport pr = new PackageReport();
-    private BuildReport   br = new BuildReport();
+    // This module to capturing unexpected exception.
+    // So this SHOULD have minimum set of code in constructor,
+    //   because this module SHOULD be instancicate as early as possible
+    //   before any other module is instanciated
+    //
+    // Dependency on only following modules are allowed
+    // - Utils
+    private final Thread.UncaughtExceptionHandler   oldHandler = Thread.getDefaultUncaughtExceptionHandler();
+    private final LinkedList<TrackedModule>         mods = new LinkedList<TrackedModule>();
+    private final PackageReport pr = new PackageReport();
+    private final BuildReport   br = new BuildReport();
 
     private class PackageReport {
         String packageName          = UNKNOWN;
@@ -132,9 +138,8 @@ UncaughtExceptionHandler {
               .append("\n\n");
     }
 
-    private UnexpectedExceptionHandler() {}
-    private UnexpectedExceptionHandler(UncaughtExceptionHandler old) {
-        oldHandler = old;
+    private UnexpectedExceptionHandler() {
+        setEnvironmentInfo(Utils.getAppContext());
     }
     // ========================
     // Publics
@@ -142,15 +147,10 @@ UncaughtExceptionHandler {
 
     // Get singleton instance,.
     public static UnexpectedExceptionHandler
-    S() {
+    get() {
         if (null == instance)
-            instance = new UnexpectedExceptionHandler(Thread.getDefaultUncaughtExceptionHandler());
+            instance = new UnexpectedExceptionHandler();
         return instance;
-    }
-
-    public void
-    init() {
-        setEnvironmentInfo(Utils.getAppContext());
     }
 
     /**
@@ -177,7 +177,8 @@ UncaughtExceptionHandler {
     }
 
     @Override
-    public void uncaughtException(Thread thread, Throwable ex) {
+    public void
+    uncaughtException(Thread thread, Throwable ex) {
         StringBuilder report = new StringBuilder();
         appendCommonReport(report);
 
@@ -193,7 +194,7 @@ UncaughtExceptionHandler {
         report.append(sw.toString());
         pw.close();
 
-        UsageReport.S().storeErrReport(report.toString());
+        UsageReport.get().storeErrReport(report.toString());
         oldHandler.uncaughtException(thread, ex);
     }
 }

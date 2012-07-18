@@ -84,10 +84,13 @@ UnexpectedExceptionHandler.TrackedModule {
     private static WifiManager.WifiLock  wfl = null;
     private static int                   wlcnt = 0;
 
+    private final DBPolicy               dbp = DBPolicy.get();
+    private final RTTask                 rtt = RTTask.get();
     // Unique Identification Number for the Notification.
     // R.string.update doens't have any meaning except for random unique number.
     private final int                    notificationId = R.string.update_service_noti_title;
-    private NotificationManager          nm;
+    private final NotificationManager    nm = (NotificationManager)Utils.getAppContext()
+                                                                        .getSystemService(NOTIFICATION_SERVICE);
     private final HashSet<Long>          taskset = new HashSet<Long>();
 
     // If time is changed Feeder need to re-scheduling scheduled-update.
@@ -370,7 +373,7 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(dayms <= Utils.DAY_IN_MS);
 
         // If we get killed, after returning from here, restart
-        Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.SCHEDUPDATETIME);
+        Cursor c = DBPolicy.get().queryChannel(DB.ColumnChannel.SCHEDUPDATETIME);
         if (!c.moveToFirst()) {
             c.close();
             return; // There is no channel.
@@ -439,7 +442,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // If we get killed, after returning from here, restart
-        Cursor c = DBPolicy.S().queryChannel(new DB.ColumnChannel[] {
+        Cursor c = dbp.queryChannel(new DB.ColumnChannel[] {
                 DB.ColumnChannel.ID,
                 DB.ColumnChannel.SCHEDUPDATETIME });
         // below values are 'Column Index' for above query.
@@ -483,7 +486,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand() is run on UIThread.
             // So, I don't need to worry about race-condition caused from re-entrance of this function
             // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
-            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+            RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
             if (RTTask.TaskState.CANCELING == state
                 || RTTask.TaskState.RUNNING == state
                 || RTTask.TaskState.READY == state) {
@@ -493,18 +496,18 @@ UnexpectedExceptionHandler.TrackedModule {
                 // unregister gracefully to start update.
                 // There is sanity check in BGTaskManager - see BGTaskManager
                 //   to know why this 'unregister' is required.
-                RTTask.S().unregister(cid, RTTask.Action.UPDATE);
+                rtt.unregister(cid, RTTask.Action.UPDATE);
 
                 UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
-                RTTask.S().register(cid, RTTask.Action.UPDATE, task);
-                RTTask.S().bind(cid, RTTask.Action.UPDATE, null, task);
+                rtt.register(cid, RTTask.Action.UPDATE, task);
+                rtt.bind(cid, RTTask.Action.UPDATE, null, task);
                 //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
                 synchronized (taskset) {
                     if (!taskset.add(cid)) {
                         logW("doCmdAlarm : starts duplicated update! : " + cid);
                     }
                 }
-                RTTask.S().start(cid, RTTask.Action.UPDATE);
+                rtt.start(cid, RTTask.Action.UPDATE);
             }
         }
 
@@ -535,7 +538,7 @@ UnexpectedExceptionHandler.TrackedModule {
             } else if (CMD_CANCEL.equals(cmd)) {
                 ; // Do nothing at this moment.
                 // below code doesn't work expected... why?? Am I missing something???
-                // RTTask.S().cancelAll();
+                // rtt.cancelAll();
                 // This intent comes from notification.
                 // But, in this case wakelock isn't acquired (different from other cases.)
                 // So, acquire here to balance with 'putWakeLock()' below (in 'finally' scope).
@@ -567,11 +570,9 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void onCreate() {
         super.onCreate();
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
 
         incInstanceCount();
-
-        nm = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
         // In this sample, we'll use the same text for the ticker and the expanded notification
         CharSequence title = getText(R.string.update_service_noti_title);
@@ -623,7 +624,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onDestroy() {
         decInstanceCount();
         nm.cancel(notificationId);
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
         //logI("ScheduledUpdater : onDestroy");
         super.onDestroy();
     }

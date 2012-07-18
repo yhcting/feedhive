@@ -2,7 +2,6 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 import android.content.Context;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,9 +15,7 @@ public class AsyncAdapter extends BaseAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
     // Variables to store information - not changed in dynamic
     protected final Context       context;
-    protected final Handler       uiHandler = new Handler();
     private   final ListView      lv;
-    private         DataProvider  dp        = null;
     private   final int           dataReqSz;
     private   final int           maxArrSz; // max array size of items
     private   final int           rowLayout;
@@ -26,6 +23,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private   final View          firstDummyView;
     private   final int           firstLDahead;
 
+    private   DataProvider dp           = null;
 
     // Variables those are changed dynamically
     // NOTE!
@@ -120,26 +118,26 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param maxArrSz
      */
     protected
-    AsyncAdapter(Context        context,
-                 int            rowLayout,
-                 ListView       lv,
-                 Object         dummyItem, // dummy item for first load
-                 final int      dataReqSz,
-                 final int      maxArrSz) {
-        eAssert(dataReqSz < maxArrSz);
-        UnexpectedExceptionHandler.S().registerModule(this);
+    AsyncAdapter(Context        aContext,
+                 int            aRowLayout,
+                 ListView       aLv,
+                 Object         aDummyItem, // dummy item for first load
+                 final int      aDataReqSz,
+                 final int      aMaxArrSz) {
+        eAssert(aDataReqSz < aMaxArrSz);
+        UnexpectedExceptionHandler.get().registerModule(this);
 
-        this.context = context;
-        this.rowLayout = rowLayout;
-        this.lv = lv;
-        this.dummyItem = dummyItem;
-        this.dataReqSz = dataReqSz;
-        this.maxArrSz = maxArrSz;
+        context     = aContext;
+        rowLayout   = aRowLayout;
+        lv          = aLv;
+        dummyItem   = aDummyItem;
+        dataReqSz   = aDataReqSz;
+        maxArrSz    = aMaxArrSz;
         // NOTE
         // This is policy.
         // When reload data, some of previous data would better to be loaded.
         // 1/3 of dataReqSz is reloaded together.
-        this.firstLDahead = dataReqSz / 3;
+        firstLDahead = dataReqSz / 3;
         firstDummyView = new View(context);
         items = new Object[] { dummyItem };
     }
@@ -151,8 +149,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     protected void
-    setDataProvider(DataProvider dp) {
-        this.dp = dp;
+    setDataProvider(DataProvider aDp) {
+        dp = aDp;
     }
 
     /**
@@ -390,7 +388,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Why?
         // Most operations are accessing 'items' array on UI Thread Context.
         // So, to avoid race-condition!!
-        uiHandler.post(new Runnable() {
+        Utils.getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 //logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + nrseq + ") - START");
@@ -540,6 +538,6 @@ UnexpectedExceptionHandler.TrackedModule {
             for (Object o : items)
                 destroyItem(o);
         }
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 }

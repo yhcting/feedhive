@@ -44,7 +44,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     BGTaskManager() {
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
     }
 
     @Override

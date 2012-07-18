@@ -33,22 +33,53 @@ import android.preference.PreferenceManager;
  * Functions related with UIPolicy...
  *     - initial setting of values.
  */
-public class UIPolicy {
+public class UIPolicy implements
+UnexpectedExceptionHandler.TrackedModule {
 
     public static final String PREF_KEY_APP_ROOT = "app_root";
     public static final long   USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
 
-    // ext2, ext3, ext4 allows 255 bytes for filename.
-    // but 'char' type in java is 2byte (16-bit unicode).
-    // So, maximum character for filename in java on extN is 127.
-    private static final int    MAX_FILENAME_LENGTH = 127;
+    // NOTE
+    // UIPolicy shouldn't includes DBPolicy at it's constructor!
+    // And in terms of design, UI policy SHOULD NOT have dependency on DB policy
+    // See 'init' routine at FeederApp
+    private static UIPolicy instance = null;
 
-    private static String appRootDir;
-    private static File   appTempDirFile;
-    private static File   appLogDirFile;
-    private static File   appErrLogFile;
-    private static File   appUsageLogFile;
+    private String appRootDir;
+    private File   appTempDirFile;
+    private File   appLogDirFile;
+    private File   appErrLogFile;
+    private File   appUsageLogFile;
 
+    private UIPolicy() {
+        // Dependency on only following modules are allowed
+        // - Utils
+        // - UnexpectedExceptionHandler
+        // - DB / DBThread
+        UnexpectedExceptionHandler.get().registerModule(this);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
+        String appRoot = prefs.getString(PREF_KEY_APP_ROOT, "/sdcard/yhcFeeder");
+        setAppDirectories(appRoot);
+        cleanTempFiles();
+    }
+
+    public static UIPolicy
+    get() {
+        if (null == instance)
+            instance = new UIPolicy();
+        return instance;
+    }
+
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ UIPolicy ]"
+               + "App root dir  : " + appRootDir + "\n"
+               + "App temp dir  : " + appTempDirFile.getAbsolutePath() + "\n"
+               + "App log dir   : " + appLogDirFile.getAbsolutePath() + "\n"
+               + "App err file  : " + appErrLogFile.getAbsolutePath() + "\n"
+               + "App usage file: " + appUsageLogFile.getAbsolutePath() + "\n";
+    }
     /**
      * Guessing default action type from Feed data.
      * @param cParD
@@ -56,7 +87,7 @@ public class UIPolicy {
      * @return
      *   Feed.Channel.FActxxxx
      */
-    static long
+    long
     decideActionType(long action, Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
         long    actFlag;
 
@@ -96,7 +127,7 @@ public class UIPolicy {
      * @param item
      * @return
      */
-    static boolean
+    boolean
     verifyConstraints(Feed.Item.ParD item) {
         // 'title' is mandatory!!!
         if (!isValidValue(item.title))
@@ -116,7 +147,7 @@ public class UIPolicy {
      * @param ch
      * @return
      */
-    static boolean
+    boolean
     verifyConstraints(Feed.Channel.ParD ch) {
         if (!isValidValue(ch.title))
             return false;
@@ -125,22 +156,10 @@ public class UIPolicy {
     }
 
     /**
-     * Initialize
-     * @param context
-     */
-    public static void
-    init()  {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
-        String appRoot = prefs.getString(PREF_KEY_APP_ROOT, "/sdcard/yhcFeeder");
-        setAppDirectories(appRoot);
-        cleanTempFiles();
-    }
-
-    /**
      * SHOULD be called only by FeederPreferenceActivity.
      * @param root
      */
-    public static void
+    public void
     setAppDirectories(String root) {
         appRootDir = root;
         new File(appRootDir).mkdirs();
@@ -155,12 +174,12 @@ public class UIPolicy {
         appUsageLogFile = new File(appLogDirFile.getAbsoluteFile() + "/usage_file");
     }
 
-    public static String
+    public String
     getAppRootDirectoryPath() {
         return appRootDir;
     }
 
-    public static String
+    public String
     getPredefinedChannelsAssetPath() {
         Locale lc = java.util.Locale.getDefault();
         String file;
@@ -177,7 +196,7 @@ public class UIPolicy {
      * @param cid
      * @return
      */
-    public static boolean
+    public boolean
     makeChannelDir(long cid) {
         File f = new File(appRootDir + cid);
         if (f.exists())
@@ -190,17 +209,17 @@ public class UIPolicy {
      * @param cid
      * @return
      */
-    public static boolean
+    public boolean
     removeChannelDir(long cid) {
         return Utils.removeFileRecursive(new File(appRootDir + cid), true);
     }
 
-    public static boolean
+    public boolean
     cleanChannelDir(long cid) {
         return Utils.removeFileRecursive(new File(appRootDir + cid), false);
     }
 
-    public static File
+    public File
     getNewTempFile() {
         File ret = null;
         try {
@@ -209,92 +228,19 @@ public class UIPolicy {
         return ret;
     }
 
-    public static void
+    public void
     cleanTempFiles() {
         Utils.removeFileRecursive(appTempDirFile, false);
     }
 
-    public static File
+    public File
     getErrLogFile() {
         return appErrLogFile;
     }
 
-    public static File
+    public File
     getUsageLogFile() {
         return appUsageLogFile;
-    }
-
-    /**
-     * Get file which contains data for given feed item.
-     * Usually, this file is downloaded from internet.
-     * (Ex. downloaded web page / downloaded mp3 etc)
-     * @param id
-     * @return
-     */
-    public static File
-    getItemDataFile(long id) {
-        return getItemDataFile(id, -1, null, null);
-    }
-
-    // NOTE
-    // Why this parameter is given even if we can get from DB?
-    // This is only for performance reason!
-    // postfix : usually, extension;
-    /**
-     * NOTE
-     * Why these parameters - title, url - are given even if we can get from DB?
-     * This is only for performance reason!
-     * @param id
-     *   item id
-     * @param cid
-     *   channel id of this item. if '< 0', than value read from DB is used.
-     * @param title
-     *   title of this item. if '== null' or 'isEmpty()', than value read from DB is used.
-     * @param url
-     *   target url of this item. link or enclosure is possible.
-     *   if '== null' or is 'isEmpty()', then value read from DB is used.
-     * @return
-     */
-    public static File
-    getItemDataFile(long id, long cid, String title, String url) {
-        if (cid < 0)
-            cid = DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.CHANNELID);
-
-        if (!Utils.isValidValue(title))
-            title = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.TITLE);
-
-        if (!Utils.isValidValue(url)) {
-            long action = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-            if (Feed.Channel.isActTgtLink(action))
-                url = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.LINK);
-            else if (Feed.Channel.isActTgtEnclosure(action))
-                url = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.ENCLOSURE_URL);
-            else
-                url = "";
-        }
-
-        // we don't need to create valid filename with empty url value.
-        if (url.isEmpty())
-            return null;
-
-        String ext = Utils.getExtentionFromUrl(url);
-
-        // Title may include character that is not allowed as file name
-        // (ex. '/')
-        // Item is id is preserved even after update.
-        // So, item ID can be used as file name to match item and file.
-        String fname = Utils.convertToFilename(title) + "_" + id;
-        int endIndex = MAX_FILENAME_LENGTH - ext.length() - 1; // '- 1' for '.'
-        if (endIndex > fname.length())
-            endIndex = fname.length();
-
-        fname = fname.substring(0, endIndex);
-        fname = fname + '.' + ext;
-
-        // NOTE
-        //   In most UNIX file systems, only '/' and 'null' are reserved.
-        //   So, we don't worry about "converting string to valid file name".
-        return new File(appRootDir + cid + "/" + fname);
     }
 
     /**
@@ -303,7 +249,7 @@ public class UIPolicy {
      * @return
      *   Value of Java Thread priority (between Thread.MIN_PRIORITY and Thread.MAX_PRIORITY)
      */
-    public static int
+    public int
     getPrefBGTaskPriority() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
         String prio = prefs.getString("bgtask_prio", "low");

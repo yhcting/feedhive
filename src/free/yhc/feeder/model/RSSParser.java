@@ -277,7 +277,7 @@ UnexpectedExceptionHandler.TrackedModule {
     parse(Document dom)
             throws FeederException {
         Result res = null;
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         try {
             Element root = dom.getDocumentElement();
             verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
@@ -301,7 +301,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
             //logI(feed.channel.dump());
         } finally {
-            UnexpectedExceptionHandler.S().unregisterModule(this);
+            UnexpectedExceptionHandler.get().unregisterModule(this);
         }
         return res;
     }

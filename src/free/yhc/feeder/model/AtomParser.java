@@ -285,7 +285,7 @@ UnexpectedExceptionHandler.TrackedModule {
             throws FeederException {
         eAssert(null != dom);
         Result res = null;
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         try {
             Element root = dom.getDocumentElement();
             verifyFormat(root.getNodeName().equalsIgnoreCase("feed"));
@@ -301,7 +301,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             nodeFeed(res, pl.toArray(new NSParser[0]), root);
         } finally {
-            UnexpectedExceptionHandler.S().unregisterModule(this);
+            UnexpectedExceptionHandler.get().unregisterModule(this);
         }
         return res;
     }

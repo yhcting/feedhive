@@ -49,6 +49,12 @@ import android.widget.TextView;
 public class Utils {
     public static final boolean DBG = true;
 
+    // ext2, ext3, ext4 allows 255 bytes for filename.
+    // but 'char' type in java is 2byte (16-bit unicode).
+    // So, maximum character for filename in java on extN is 127.
+    public static final int    MAX_FILENAME_LENGTH = 127;
+
+
     public static final long   HOUR_IN_MS   = 60 * 60 * 1000;
     public static final long   DAY_IN_MS    = 24 * HOUR_IN_MS;
     public static final int    HOUR_IN_SEC  = 60 * 60;
@@ -57,14 +63,20 @@ public class Utils {
 
     private static final String TAG = "[Feeder]";
 
-    private static Context  appContext = null;
-    private static Handler  uiHandler = null;
+    // This is only for debugging.
+    private static boolean  initialized = false;
+
+    // Even if these two varaibles are not 'final', those should be handled like 'final'
+    //   because those are set only at init() function, and SHOULD NOT be changed.
+    private static Context  appContext  = null;
+    private static Handler  uiHandler   = null;
 
     // To enable logging to file - NOT LOGCAT
-    private static final boolean ENABLE_LOGF = false;
-    private static final String LOGF = "/sdcard/feeder.log";
-    private static final String LOGF_LAST = LOGF + "-last";
-    private static FileWriter logout = null;
+    // These are for debugging purpose
+    private static final boolean ENABLE_LOGF= false;
+    private static final String  LOGF       = "/sdcard/feeder.log";
+    private static final String  LOGF_LAST  = LOGF + "-last";
+    private static FileWriter    logout     = null;
 
     // Format of nString (Number String)
     // <number>/<number>/ ... '/' is delimiter between number.
@@ -139,7 +151,7 @@ public class Utils {
             "yyyy.MM.d HH:mm:ss",
         };
 
-    private enum LogLV{
+    private static enum LogLV{
         V ("[V]", 6),
         D ("[D]", 5),
         I ("[I]", 4),
@@ -228,6 +240,12 @@ public class Utils {
     // =======================
     public static void
     init(Context aAppContext) {
+        // This is called first for module initialization.
+        // So, ANY DEPENDENCY to other module is NOT allowed
+        eAssert(!initialized);
+        if (!initialized)
+            initialized = true;
+
         appContext = aAppContext;
         uiHandler = new Handler();
     }

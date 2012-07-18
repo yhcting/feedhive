@@ -26,15 +26,16 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     private volatile NetLoader loader = null;
 
     public static class Arg {
-        long    cid        = -1;
-        String  customIconref = null;
+        final long    cid;
+        final String  customIconref;
 
-        public Arg(long cid) {
-            this.cid = cid;
+        public Arg(long aCid) {
+            cid = aCid;
+            customIconref = null;
         }
-        public Arg(long cid, String customIconref) {
-            this.cid = cid;
-            this.customIconref = customIconref;
+        public Arg(long aCid, String aCustomIconref) {
+            cid = aCid;
+            customIconref = aCustomIconref;
         }
 
     }
@@ -42,7 +43,7 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     public
     BGTaskUpdateChannel(Arg arg) {
         super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
-        setPriority(UIPolicy.getPrefBGTaskPriority());
+        setPriority(UIPolicy.get().getPrefBGTaskPriority());
     }
 
     @Override

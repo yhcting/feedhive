@@ -54,13 +54,14 @@ public class AssetSQLiteHelper {
      *     existing db is replaced with new db file by copying from asset db file.
      *   Starts from 1.
      */
-    public AssetSQLiteHelper(String dbName, String assetDBFile, int version) {
-        this.dbName     = dbName;
-        this.assetDBFile= assetDBFile;
-        this.version    = version;
+    public AssetSQLiteHelper(String aDbName, String aAssetDBFile, int aVersion) {
+        dbName     = aDbName;
+        assetDBFile= aAssetDBFile;
+        version    = aVersion;
     }
 
-    public void open() {
+    public void
+    open() {
         File dbf = Utils.getAppContext().getDatabasePath(dbName);
         try {
             InputStream is = Utils.getAppContext().getAssets().open(assetDBFile);
@@ -94,7 +95,8 @@ public class AssetSQLiteHelper {
         return db;
     }
 
-    public void close() {
+    public void
+    close() {
         if (null != db)
             db.close();
     }

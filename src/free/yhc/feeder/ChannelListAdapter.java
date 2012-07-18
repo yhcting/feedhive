@@ -45,8 +45,11 @@ import free.yhc.feeder.model.Utils;
 public class ChannelListAdapter extends AsyncCursorAdapter implements
 AsyncCursorAdapter.ItemBuilder {
     private static final Date dummyDate = new Date();
-    private final OnAction    onAction;
 
+    private final DBPolicy dbp = DBPolicy.get();
+    private final RTTask   rtt = RTTask.get();
+
+    private final OnAction             onAction;
     private final View.OnClickListener chIconOnClick;
     private final View.OnClickListener posUpOnClick;
     private final View.OnClickListener posDnOnClick;
@@ -91,7 +94,7 @@ AsyncCursorAdapter.ItemBuilder {
                        OnAction       actionListener) {
         super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
         setItemBuilder(this);
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         onAction = actionListener;
 
         chIconOnClick = new View.OnClickListener() {
@@ -192,8 +195,8 @@ AsyncCursorAdapter.ItemBuilder {
             i.title = getCursorString(c, DB.ColumnChannel.TITLE);
             i.desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
             i.lastUpdate = new Date(getCursorLong(c, DB.ColumnChannel.LASTUPDATE));
-            i.maxItemId = DBPolicy.S().getItemInfoMaxId(i.cid);
-            i.oldLastItemId = DBPolicy.S().getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
+            i.maxItemId = dbp.getItemInfoMaxId(i.cid);
+            i.oldLastItemId = dbp.getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
             i.bm = null;
             byte[] imgRaw = getCursorBlob(c, DB.ColumnChannel.IMAGEBLOB);
             if (imgRaw.length > 0)
@@ -224,10 +227,10 @@ AsyncCursorAdapter.ItemBuilder {
         // Override to use "delayed item update"
         int ret;
         try {
-            DBPolicy.S().getDelayedChannelUpdate();
+            dbp.getDelayedChannelUpdate();
             ret = super.requestData(adapter, priv, nrseq, from, sz);
         } finally {
-            DBPolicy.S().putDelayedChannelUpdate();
+            dbp.putDelayedChannelUpdate();
         }
         return ret;
     }
@@ -260,7 +263,7 @@ AsyncCursorAdapter.ItemBuilder {
         ImageView noti_up = (ImageView)v.findViewById(R.id.noti_update);
         ImageView noti_dn = (ImageView)v.findViewById(R.id.noti_download);
 
-        RTTask.TaskState state = RTTask.S().getState(ii.cid, RTTask.Action.UPDATE);
+        RTTask.TaskState state = rtt.getState(ii.cid, RTTask.Action.UPDATE);
         noti_up.setVisibility(View.VISIBLE);
         switch(state) {
         case IDLE:
@@ -287,7 +290,7 @@ AsyncCursorAdapter.ItemBuilder {
             eAssert(false);
         }
 
-        if (0 == RTTask.S().getItemsDownloading(ii.cid).length)
+        if (0 == rtt.getItemsDownloading(ii.cid).length)
             noti_dn.setVisibility(View.GONE);
         else
             noti_dn.setVisibility(View.VISIBLE);
@@ -320,6 +323,6 @@ AsyncCursorAdapter.ItemBuilder {
     protected void
     finalize() throws Throwable {
         super.finalize();
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 }

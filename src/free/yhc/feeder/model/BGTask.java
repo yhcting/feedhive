@@ -33,26 +33,26 @@ import android.os.Handler;
 import android.os.PowerManager;
 
 public class BGTask<RunParam, CancelParam> extends Thread {
-    public static int OPT_WAKELOCK  = 0x01;
-    public static int OPT_WIFILOCK  = 0x02;
+    public static final int OPT_WAKELOCK  = 0x01;
+    public static final int OPT_WIFILOCK  = 0x02;
 
+    private static final String WLTAG = "BGTask";
 
-    private String           nick = null; // can be used several purpose.
-    private Handler          ownerHandler = new Handler();
+    private String                  nick        = null; // can be used several purpose.
+    private Handler                 ownerHandler= new Handler();
     private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
-    private volatile Err     result  = Err.NO_ERR;
+    private volatile Err            result      = Err.NO_ERR;
 
     // Flags
-    private volatile boolean cancelled = false;
+    private volatile boolean        cancelled   = false;
 
-    private int              opt         = 0;
-    private RunParam         runParam    = null;
-    private CancelParam      cancelParam = null;
+    private int                     opt         = 0;
+    private RunParam                runParam    = null;
+    private CancelParam             cancelParam = null;
 
-    private static final String     WLTAG = "BGTask";
-    private Object                  wlmx = new Object(); // Wakelock mutex
-    private PowerManager.WakeLock   wl = null;
-    private WifiManager.WifiLock    wfl = null;
+    private Object                  wlmx        = new Object(); // Wakelock mutex
+    private PowerManager.WakeLock   wl          = null;
+    private WifiManager.WifiLock    wfl         = null;
 
     public interface OnEvent<RunParam, CancelParam> {
         // return : false (DO NOT run this task)

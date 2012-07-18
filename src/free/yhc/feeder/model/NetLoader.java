@@ -49,7 +49,9 @@ import android.graphics.Bitmap;
 public class NetLoader {
     private static final int NET_RETRY = 5;
 
-    private DBPolicy                dbp     = DBPolicy.S();
+    private final UIPolicy  uip = UIPolicy.get();
+    private final DBPolicy  dbp = DBPolicy.get();
+
     private volatile boolean        cancelled = false;
     private volatile InputStream    istream = null; // Multi-thread access
     private volatile OutputStream   ostream = null;
@@ -322,12 +324,14 @@ public class NetLoader {
         // Actually deciding only once is enough in general case.
         // But, rarely whole channel item type may be changed and requires different action.
         // So, whenever update is executed try to adjust 'action' type.
-        long oldAction = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-        long action = UIPolicy.decideActionType(oldAction, parD.channel, parD.items.length > 0? parD.items[0]: null);
+        long oldAction = dbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        long action = uip.decideActionType(oldAction,
+                                           parD.channel,
+                                           parD.items.length > 0? parD.items[0]: null);
         if (action != oldAction)
-            DBPolicy.S().updateChannel(cid, DB.ColumnChannel.ACTION, action);
+            dbp.updateChannel(cid, DB.ColumnChannel.ACTION, action);
 
-        byte[] imageblob = DBPolicy.S().getChannelInfoImageblob(cid);
+        byte[] imageblob = dbp.getChannelInfoImageblob(cid);
         if (imageblob.length <= 0) {
             time = System.currentTimeMillis();
             // Kind Of Policy!!
@@ -352,7 +356,7 @@ public class NetLoader {
                 imageblob = Utils.compressBitmap(bm);
                 bm.recycle();
                 if (null != imageblob)
-                    DBPolicy.S().updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
+                    dbp.updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
             }
             logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
             checkInterrupted();
@@ -368,7 +372,7 @@ public class NetLoader {
         // Information in "ch.dynD" is not available in case update.
         // ('imageblob' and 'action' is exception case controlled with argument.)
         // This is dynamically assigned variable.
-        long updateMode = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
+        long updateMode = dbp.getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
         if (Feed.Channel.isUpdDn(updateMode)) {
             final long chact = action;
             idop = new DBPolicy.ItemDataOpInterface() {
@@ -381,8 +385,8 @@ public class NetLoader {
                         url = parD.enclosureUrl;
                     else
                         eAssert(false);
-                    File f = UIPolicy.getNewTempFile();
-                    downloadToFile(url, UIPolicy.getNewTempFile(), f, null);
+                    File f = uip.getNewTempFile();
+                    downloadToFile(url, uip.getNewTempFile(), f, null);
                     return f;
                 }
             };

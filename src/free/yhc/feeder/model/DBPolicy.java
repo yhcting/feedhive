@@ -64,16 +64,22 @@ UnexpectedExceptionHandler.TrackedModule {
     // To do that, below factor is used.
     // At most, recent items by amount of "<current # items> * DUP_CHECK_SCOPE_FACTOR" is used
     //   for comparison to check duplication.
-    private static int   DUP_SCOPE_FACTOR       = 2;
+    private static final int   DUP_SCOPE_FACTOR       = 2;
     // At least, <DUP_SCOPE_MIN> items SHOULD be used to compare duplication.
-    private static int   DUP_SCOPE_MIN          = 200;
+    private static final int   DUP_SCOPE_MIN          = 200;
     // unexpectedly large number of scope.
     // Warning log will be shown.
-    private static int   DUP_SCOPE_WARNING      = 3000;
+    private static final int   DUP_SCOPE_WARNING      = 3000;
 
     private static DBPolicy instance = null;
 
-    private final DB        db;
+    // Dependency on only following modules are allowed
+    // - Utils
+    // - UnexpectedExceptionHandler
+    // - DB / DBThread
+    // - UIPolicy
+    private final DB        db      = DB.get();
+    private final UIPolicy  uip     = UIPolicy.get();
     private final Handler   asyncHandler;
 
     // Getting max item id of channel takes longer time than expected.
@@ -105,14 +111,14 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class ItemUrls {
-        long    id;
-        String  link;
-        String  enclosure;
-        ItemUrls(long aid, String alink, String aenclosure) {
-            id = aid;
-            link = alink;
-            enclosure = aenclosure;
+    private static class ItemUrls {
+        final long    id;
+        final String  link;
+        final String  enclosure;
+        ItemUrls(long aId, String aLink, String aEnclosure) {
+            id = aId;
+            link = aLink;
+            enclosure = aEnclosure;
         }
     }
 
@@ -120,7 +126,7 @@ UnexpectedExceptionHandler.TrackedModule {
     //
     // ======================================================
     private DBPolicy() {
-        db = DB.db();
+        UnexpectedExceptionHandler.get().registerModule(instance);
         DBAsyncThread async = new DBAsyncThread();
         async.start();
         asyncHandler = new Handler(async.getLooper());
@@ -284,11 +290,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // S : Singleton instance
     public static DBPolicy
-    S() {
-        if (null == instance) {
+    get() {
+        if (null == instance)
             instance = new DBPolicy();
-            UnexpectedExceptionHandler.S().registerModule(instance);
-        }
         return instance;
     }
 
@@ -497,7 +501,7 @@ UnexpectedExceptionHandler.TrackedModule {
         parD.title = profD.url;
         cid = db.insertChannel(buildNewChannelContentValues(profD, parD, dbD));
         // check duplication...
-        if (!UIPolicy.makeChannelDir(cid)) {
+        if (!uip.makeChannelDir(cid)) {
             db.deleteChannel(ColumnChannel.ID, cid);
             throw new FeederException(Err.IO_FILE);
         }
@@ -652,7 +656,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             for (Feed.Item.ParD item : items) {
                 // ignore not-verified item
-                if (!UIPolicy.verifyConstraints(item))
+                if (!uip.verifyConstraints(item))
                     continue;
 
                 // -----------------------------------------------------------------------
@@ -798,7 +802,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     // NOTE
                     // At this moment, race-condition can be issued.
                     // But, as I mentioned above, it's not harmful and very rare case.
-                    if (!f.renameTo(UIPolicy.getItemDataFile(itemDbD.id)))
+                    if (!f.renameTo(getItemInfoDataFile(itemDbD.id)))
                         f.delete();
                 }
             } catch (FeederException e) {
@@ -974,7 +978,7 @@ UnexpectedExceptionHandler.TrackedModule {
             cols[i] = ColumnChannel.ID;
         long nr = db.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
         for (long cid : cids)
-            UIPolicy.removeChannelDir(cid);
+            uip.removeChannelDir(cid);
         return nr;
     }
 
@@ -1260,6 +1264,79 @@ UnexpectedExceptionHandler.TrackedModule {
 
         c.close();
         return v;
+    }
+
+    /**
+     * Get file which contains data for given feed item.
+     * Usually, this file is downloaded from internet.
+     * (Ex. downloaded web page / downloaded mp3 etc)
+     * @param id
+     * @return
+     */
+    public File
+    getItemInfoDataFile(long id) {
+        return getItemInfoDataFile(id, -1, null, null);
+    }
+
+    // NOTE
+    // Why this parameter is given even if we can get from DB?
+    // This is only for performance reason!
+    // postfix : usually, extension;
+    /**
+     * NOTE
+     * Why these parameters - title, url - are given even if we can get from DB?
+     * This is only for performance reason!
+     * @param id
+     *   item id
+     * @param cid
+     *   channel id of this item. if '< 0', than value read from DB is used.
+     * @param title
+     *   title of this item. if '== null' or 'isEmpty()', than value read from DB is used.
+     * @param url
+     *   target url of this item. link or enclosure is possible.
+     *   if '== null' or is 'isEmpty()', then value read from DB is used.
+     * @return
+     */
+    public File
+    getItemInfoDataFile(long id, long cid, String title, String url) {
+        if (cid < 0)
+            cid = getItemInfoLong(id, DB.ColumnItem.CHANNELID);
+
+        if (!Utils.isValidValue(title))
+            title = getItemInfoString(id, DB.ColumnItem.TITLE);
+
+        if (!Utils.isValidValue(url)) {
+            long action = getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+            if (Feed.Channel.isActTgtLink(action))
+                url = getItemInfoString(id, DB.ColumnItem.LINK);
+            else if (Feed.Channel.isActTgtEnclosure(action))
+                url = getItemInfoString(id, DB.ColumnItem.ENCLOSURE_URL);
+            else
+                url = "";
+        }
+
+        // we don't need to create valid filename with empty url value.
+        if (url.isEmpty())
+            return null;
+
+        String ext = Utils.getExtentionFromUrl(url);
+
+        // Title may include character that is not allowed as file name
+        // (ex. '/')
+        // Item is id is preserved even after update.
+        // So, item ID can be used as file name to match item and file.
+        String fname = Utils.convertToFilename(title) + "_" + id;
+        int endIndex = Utils.MAX_FILENAME_LENGTH - ext.length() - 1; // '- 1' for '.'
+        if (endIndex > fname.length())
+            endIndex = fname.length();
+
+        fname = fname.substring(0, endIndex);
+        fname = fname + '.' + ext;
+
+        // NOTE
+        //   In most UNIX file systems, only '/' and 'null' are reserved.
+        //   So, we don't worry about "converting string to valid file name".
+        return new File(uip.getAppRootDirectoryPath() + cid + "/" + fname);
     }
 
     public Cursor

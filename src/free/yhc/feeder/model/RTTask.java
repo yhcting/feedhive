@@ -38,11 +38,18 @@ import android.preference.PreferenceManager;
 public class RTTask implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
-    private static RTTask               instance = null;
+    private static RTTask   instance = null;
 
-    private final BGTaskManager         bgtm;
+    // Dependency on only following modules are allowed
+    // - Utils
+    // - UnexpectedExceptionHandler
+    // - DB / DBThread
+    // - UIPolicy
+    // - DBPolicy
+    private final DBPolicy              dbp    = DBPolicy.get();
+    private final BGTaskManager         bgtm   = new BGTaskManager();;
     private final LinkedList<BGTask>    readyQ = new LinkedList<BGTask>();
-    private final LinkedList<BGTask>    runQ = new LinkedList<BGTask>();
+    private final LinkedList<BGTask>    runQ   = new LinkedList<BGTask>();
 
     // NOTE
     // Why taskQSync is used instead of using 'readyQ' and 'runQ' object directly as an sync object for each list?
@@ -59,9 +66,8 @@ OnSharedPreferenceChangeListener {
     //       runQ.addLast(t);
     //   }
     private final Object       taskQSync = new Object();
-    private volatile int       maxConcurrent = 2; // temporally hard coding.
-
     private final LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
+    private volatile int       maxConcurrent = 2; // temporally hard coding.
 
     public interface OnRTTaskManagerEvent {
         void onBGTaskRegister(long id, BGTask task, Action act);
@@ -146,24 +152,18 @@ OnSharedPreferenceChangeListener {
 
 
     private RTTask() {
-        bgtm = new BGTaskManager();
+        UnexpectedExceptionHandler.get().registerModule(this);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
+        prefs.registerOnSharedPreferenceChangeListener(this);
+        onSharedPreferenceChanged(prefs, "maxnr_bgtask");
     }
 
     // Get singleton instance,.
     public static RTTask
-    S() {
-        if (null == instance) {
+    get() {
+        if (null == instance)
             instance = new RTTask();
-            UnexpectedExceptionHandler.S().registerModule(instance);
-        }
         return instance;
-    }
-
-    public void
-    init() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
-        prefs.registerOnSharedPreferenceChangeListener(this);
-        onSharedPreferenceChanged(prefs, "maxnr_bgtask");
     }
 
     // ===============================
@@ -605,12 +605,12 @@ OnSharedPreferenceChangeListener {
 
         LinkedList<Long> l = new LinkedList<Long>();
         try {
-            DBPolicy.S().getDelayedChannelUpdate();
+            dbp.getDelayedChannelUpdate();
             for (long dnid : dnids)
-                if (set.contains(DBPolicy.S().getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
+                if (set.contains(dbp.getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
                     l.add(dnid);
         } finally {
-            DBPolicy.S().putDelayedChannelUpdate();
+            dbp.putDelayedChannelUpdate();
         }
         return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
     }

@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
@@ -67,8 +66,8 @@ UnexpectedExceptionHandler.TrackedModule {
     // But, software is already released and this is not big problem...
     // So, let's ignore it until real DB structure is needed to be changed.
     // => this can be resolved by 'DB Upgrade operation'.
-    private static final String NAME    = "feader.db";
-    private static final int    VERSION = 2;
+    private static final String NAME            = "feader.db";
+    private static final int    VERSION         = 2;
 
     private static final String TABLE_CATEGORY  = "category";
     private static final String TABLE_CHANNEL   = "channel";
@@ -479,21 +478,15 @@ UnexpectedExceptionHandler.TrackedModule {
     /**************************************
      * Operation
      **************************************/
-    private DB(Context context) {
-        super(context, NAME, null, getVersion());
+    private DB() {
+        super(Utils.getAppContext(), NAME, null, getVersion());
+        UnexpectedExceptionHandler.get().registerModule(instance);
     }
 
     static DB
-    newSession() {
-        eAssert(null == instance);
-        instance = new DB(Utils.getAppContext());
-        UnexpectedExceptionHandler.S().registerModule(instance);
-        return instance;
-    }
-
-    static DB
-    db() {
-        eAssert(null != instance);
+    get() {
+        if (null == instance)
+            instance = new DB();
         return instance;
     }
 

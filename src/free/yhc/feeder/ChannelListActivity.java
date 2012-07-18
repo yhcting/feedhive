@@ -94,11 +94,17 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static final int CHANNEL_REFRESH_THRESHOLD = 2;
 
-    private ActionBar   ab      = null;
-    private Flipper     flipper = null;
+    private final UIPolicy      uip = UIPolicy.get();
+    private final DBPolicy      dbp = DBPolicy.get();
+    private final RTTask        rtt = RTTask.get();
+    private final UsageReport   ur  = UsageReport.get();
+    private final LookAndFeel   lnf = LookAndFeel.get();
+
+    private ActionBar   ab       = null;
+    private Flipper     flipper  = null;
 
     // Saved cid for Async execution.
-    private long      cidPickImage = -1;
+    private long        cidPickImage = -1;
 
     private static class FlipperScrollView extends ScrollView {
         private View.OnTouchListener touchInterceptor = null;
@@ -195,7 +201,7 @@ UnexpectedExceptionHandler.TrackedModule {
          */
         LinearLayout
         addListLayout() {
-            LinearLayout ll = (LinearLayout)LookAndFeel.inflateLayout(context, R.layout.channel_listview);
+            LinearLayout ll = (LinearLayout)lnf.inflateLayout(context, R.layout.channel_listview);
             ListView list = ((ListView)ll.findViewById(R.id.list));
             eAssert(null != list);
             list.setAdapter(new ChannelListAdapter(context, null,
@@ -345,7 +351,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (isActivityFinishing())
                 return;
 
-            if (0 == RTTask.S().getItemsDownloading(cid).length)
+            if (0 == rtt.getItemsDownloading(cid).length)
                 dataSetChanged(getListView(getMyTab(cid)), cid);
         }
 
@@ -360,7 +366,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (isActivityFinishing())
                 return;
 
-            if (0 == RTTask.S().getItemsDownloading(cid).length)
+            if (0 == rtt.getItemsDownloading(cid).length)
                 dataSetChanged(getListView(getMyTab(cid)), cid);
         }
     }
@@ -400,7 +406,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 eAssert(false);
                 return Err.UNKNOWN; // something evil!!!
             } else {
-                DBPolicy.S().updateChannel(cidPickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
+                dbp.updateChannel(cidPickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
                 cidPickImage = -1;
             }
             return Err.NO_ERR;
@@ -412,7 +418,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (Err.NO_ERR == result)
                 getCurrentListAdapter().setChannelIcon(cid, bm);
             else
-                LookAndFeel.showTextToast(ChannelListActivity.this, result.getMsgId());
+                lnf.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
 
         @Override
@@ -424,7 +430,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public Err
         onDoWork(SpinAsyncTask task, Object... objs) {
-            Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
+            Cursor c = dbp.queryChannel(DB.ColumnChannel.ID);
             if (!c.moveToFirst()) {
                 c.close();
                 return Err.NO_ERR;
@@ -432,7 +438,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             boolean bOk = true;
             do {
-                if (!UIPolicy.cleanChannelDir(c.getLong(0)))
+                if (!uip.cleanChannelDir(c.getLong(0)))
                     bOk = false;
             } while (c.moveToNext());
             return bOk? Err.NO_ERR: Err.IO_FILE;
@@ -442,7 +448,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
             if (Err.NO_ERR != result)
-                LookAndFeel.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
+                lnf.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
         }
 
         @Override
@@ -459,7 +465,7 @@ UnexpectedExceptionHandler.TrackedModule {
             for (int i = 0; i < objs.length; i++)
                 cids[i] = (Long)objs[i];
 
-            nrDelItems = DBPolicy.S().deleteChannel(cids);
+            nrDelItems = dbp.deleteChannel(cids);
             return Err.NO_ERR;
         }
 
@@ -471,7 +477,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
-            LookAndFeel.showTextToast(ChannelListActivity.this,
+            lnf.showTextToast(ChannelListActivity.this,
                                       nrDelItems + getResources().getString(R.string.channel_deleted_msg));
             refreshListAsync(ab.getSelectedTab());
             ScheduledUpdater.scheduleNextUpdate(Calendar.getInstance());
@@ -483,7 +489,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
             if (RTTask.Action.UPDATE == act)
-                RTTask.S().bind(cid, RTTask.Action.UPDATE, ChannelListActivity.this, new UpdateBGTaskOnEvent(cid));
+                rtt.bind(cid, RTTask.Action.UPDATE, ChannelListActivity.this, new UpdateBGTaskOnEvent(cid));
         }
         @Override
         public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
@@ -510,7 +516,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 return; // nothing to do
 
 
-            DBPolicy.S().updatechannel_switchPosition(adapter.getItemInfo_cid(pos - 1),
+            dbp.updatechannel_switchPosition(adapter.getItemInfo_cid(pos - 1),
                                                       adapter.getItemInfo_cid(pos));
             adapter.switchPos(pos - 1, pos);
         }
@@ -529,7 +535,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 return; // nothing to do
 
 
-            DBPolicy.S().updatechannel_switchPosition(adapter.getItemInfo_cid(pos),
+            dbp.updatechannel_switchPosition(adapter.getItemInfo_cid(pos),
                                                       adapter.getItemInfo_cid(pos + 1));
             adapter.switchPos(pos, pos + 1);
         }
@@ -609,7 +615,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private Tab
     getMyTab(long cid) {
-        long catid = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
+        long catid = dbp.getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
         for (int i = 0; i < ab.getTabCount(); i++)
             if (getTag(ab.getTabAt(i)).categoryid == catid)
                 return ab.getTabAt(i);
@@ -620,7 +626,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private Cursor
     adapterCursorQuery(long categoryid) {
-        return DBPolicy.S().queryChannel(categoryid, new DB.ColumnChannel[] {
+        return dbp.queryChannel(categoryid, new DB.ColumnChannel[] {
                     DB.ColumnChannel.ID, // Mandatory.
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.DESCRIPTION,
@@ -633,7 +639,7 @@ UnexpectedExceptionHandler.TrackedModule {
     changeCategory(long cid, Tab from, Tab to) {
         if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
-        DBPolicy.S().updateChannel(cid, DB.ColumnChannel.CATEGORYID, getTag(to).categoryid);
+        dbp.updateChannel(cid, DB.ColumnChannel.CATEGORYID, getTag(to).categoryid);
         getListAdapter(from).removeItem(getListAdapter(from).findPosition(cid));
         dataSetChanged(this.getListView(from));
         refreshListAsync(to);
@@ -715,8 +721,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private Tab
     addCategory(Feed.Category cat) {
         String text;
-        if (DBPolicy.S().isDefaultCategoryId(cat.id)
-           && !Utils.isValidValue(DBPolicy.S().getCategoryName(cat.id)))
+        if (dbp.isDefaultCategoryId(cat.id)
+           && !Utils.isValidValue(dbp.getCategoryName(cat.id)))
             text = getResources().getText(R.string.default_category_name).toString();
         else
             text = cat.name;
@@ -746,7 +752,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     deleteCategory(long categoryid) {
-        DBPolicy.S().deleteCategory(categoryid);
+        dbp.deleteCategory(categoryid);
         // channel list of default category is changed.
         refreshListAsync(getDefaultTab());
 
@@ -773,9 +779,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
         long cid = -1;
         try {
-            cid = DBPolicy.S().insertNewChannel(getCurrentCategoryId(), url);
+            cid = dbp.insertNewChannel(getCurrentCategoryId(), url);
         } catch (FeederException e) {
-            LookAndFeel.showTextToast(this, e.getError().getMsgId());
+            lnf.showTextToast(this, e.getError().getMsgId());
             return;
         }
 
@@ -786,8 +792,8 @@ UnexpectedExceptionHandler.TrackedModule {
         else
             task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
 
-        RTTask.S().register(cid, RTTask.Action.UPDATE, task);
-        RTTask.S().start(cid, RTTask.Action.UPDATE);
+        rtt.register(cid, RTTask.Action.UPDATE, task);
+        rtt.start(cid, RTTask.Action.UPDATE);
         ScheduledUpdater.scheduleNextUpdate(Calendar.getInstance());
 
         // refresh current category.
@@ -829,7 +835,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        LookAndFeel.buildOneLineEditTextDialog(this, item.getTitle(), action).show();
+        lnf.buildOneLineEditTextDialog(this, item.getTitle(), action).show();
     }
 
     private void
@@ -864,11 +870,11 @@ UnexpectedExceptionHandler.TrackedModule {
                 String url = edit.getText().toString();
                 if (!url.matches("http\\:\\/\\/\\s*")) {
                     addChannel(url, null);
-                    UsageReport.S().storeUsageReport("URL : " + url + "\n");
+                    ur.storeUsageReport("URL : " + url + "\n");
                 }
             }
         };
-        LookAndFeel.buildOneLineEditTextDialog(this, R.string.channel_url, action).show();
+        lnf.buildOneLineEditTextDialog(this, R.string.channel_url, action).show();
     }
 
     private void
@@ -886,13 +892,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (0 > ab.getSelectedNavigationIndex()) {
-            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
+            lnf.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
             return;
         }
 
         if (!Utils.isNetworkAvailable()) {
             // TODO Handling error
-            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
+            lnf.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
             return;
         }
 
@@ -931,12 +937,12 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
-                if (DBPolicy.S().isDuplicatedCategoryName(name)) {
-                    LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                if (dbp.isDuplicatedCategoryName(name)) {
+                    lnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
                     Feed.Category cat = new Feed.Category(name);
-                    if (0 > DBPolicy.S().insertCategory(cat))
-                        LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
+                    if (0 > dbp.insertCategory(cat))
+                        lnf.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
                     else {
                         eAssert(cat.id >= 0);
                         refreshListAsync(addCategory(cat));
@@ -944,7 +950,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        LookAndFeel.buildOneLineEditTextDialog(this, R.string.add_category, action).show();
+        lnf.buildOneLineEditTextDialog(this, R.string.add_category, action).show();
     }
 
     private void
@@ -958,22 +964,22 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
-                if (DBPolicy.S().isDuplicatedCategoryName(name)) {
-                    LookAndFeel.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                if (dbp.isDuplicatedCategoryName(name)) {
+                    lnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
                     ab.getSelectedTab().setText(name);
-                    DBPolicy.S().updateCategory(getCurrentCategoryId(), name);
+                    dbp.updateCategory(getCurrentCategoryId(), name);
                 }
             }
         };
-        LookAndFeel.buildOneLineEditTextDialog(this, R.string.rename_category, action).show();
+        lnf.buildOneLineEditTextDialog(this, R.string.rename_category, action).show();
     }
 
     private void
     onOpt_category_delete(final View anchor) {
         final long categoryid = getCategoryId(ab.getSelectedTab());
-        if (DBPolicy.S().isDefaultCategoryId(categoryid)) {
-            LookAndFeel.showTextToast(this, R.string.warn_delete_default_category);
+        if (dbp.isDefaultCategoryId(categoryid)) {
+            lnf.showTextToast(this, R.string.warn_delete_default_category);
             return;
         }
 
@@ -986,7 +992,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 deleteCategory(categoryid);
             }
         };
-        LookAndFeel.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
+        lnf.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
     }
 
     private void
@@ -1044,8 +1050,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_management_deleteAllDnFiles(final View anchor) {
         // check constraints
-        if (RTTask.S().getItemsDownloading().length > 0) {
-            LookAndFeel.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
+        if (rtt.getItemsDownloading().length > 0) {
+            lnf.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
             return;
         }
 
@@ -1059,7 +1065,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        LookAndFeel.buildConfirmDialog(this,
+        lnf.buildConfirmDialog(this,
                                        R.string.delete_all_downloaded_file,
                                        R.string.delete_all_downloaded_file_msg,
                                        action)
@@ -1069,12 +1075,12 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_management_feedbackOpinion(final View anchor) {
         if (!Utils.isNetworkAvailable()) {
-            LookAndFeel.showTextToast(this, R.string.warn_network_unavailable);
+            lnf.showTextToast(this, R.string.warn_network_unavailable);
             return;
         }
 
-        if (!UsageReport.S().sendFeedbackReportMain(this))
-            LookAndFeel.showTextToast(this, R.string.warn_find_email_app);
+        if (!ur.sendFeedbackReportMain(this))
+            lnf.showTextToast(this, R.string.warn_find_email_app);
     }
 
     private void
@@ -1132,7 +1138,7 @@ UnexpectedExceptionHandler.TrackedModule {
                .append(getResources().getText(R.string.about_app_email)).append("\n")
                .append(getResources().getText(R.string.about_app_blog)).append("\n")
                .append(getResources().getText(R.string.about_app_page)).append("\n");
-        AlertDialog diag = LookAndFeel.createAlertDialog(this, 0, title, strbldr.toString());
+        AlertDialog diag = lnf.createAlertDialog(this, 0, title, strbldr.toString());
         diag.show();
     }
 
@@ -1145,7 +1151,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        LookAndFeel.buildConfirmDialog(this,
+        lnf.buildConfirmDialog(this,
                                        R.string.delete_channel,
                                        R.string.delete_channel_msg,
                                        action)
@@ -1157,7 +1163,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // delete entire channel directory and re-make it.
         // Why?
         // All and only downloaded files are located in channel directory.
-        UIPolicy.cleanChannelDir(cid);
+        uip.cleanChannelDir(cid);
     }
 
     private void
@@ -1226,7 +1232,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                         getResources().getText(R.string.pick_icon)),
                                    REQC_PICK_IMAGE);
         } catch (ActivityNotFoundException e) {
-            LookAndFeel.showTextToast(this, R.string.warn_find_gallery_app);
+            lnf.showTextToast(this, R.string.warn_find_gallery_app);
             return;
         }
     }
@@ -1237,33 +1243,33 @@ UnexpectedExceptionHandler.TrackedModule {
         ScheduledUpdater.setNextScheduledUpdate(this, cid);
         return;
         */
-        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+        RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
         switch (state) {
         case IDLE: {
             //logI("ChannelList : update : " + cid);
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
-            RTTask.S().register(cid, RTTask.Action.UPDATE, task);
-            RTTask.S().start(cid, RTTask.Action.UPDATE);
+            rtt.register(cid, RTTask.Action.UPDATE, task);
+            rtt.start(cid, RTTask.Action.UPDATE);
             dataSetChanged(getCurrentListView(), cid);
         } break;
 
         case RUNNING:
         case READY:
             //logI("ChannelList : cancel : " + cid);
-            RTTask.S().cancel(cid, RTTask.Action.UPDATE, null);
+            rtt.cancel(cid, RTTask.Action.UPDATE, null);
             // to change icon into "canceling"
             dataSetChanged(getCurrentListView(), cid);
             break;
 
         case FAILED: {
-            Err result = RTTask.S().getErr(cid, RTTask.Action.UPDATE);
-            LookAndFeel.showTextToast(this, result.getMsgId());
-            RTTask.S().consumeResult(cid, RTTask.Action.UPDATE);
+            Err result = rtt.getErr(cid, RTTask.Action.UPDATE);
+            lnf.showTextToast(this, result.getMsgId());
+            rtt.consumeResult(cid, RTTask.Action.UPDATE);
             dataSetChanged(getCurrentListView(), cid);
         } break;
 
         case CANCELING:
-            LookAndFeel.showTextToast(this, R.string.wait_cancel);
+            lnf.showTextToast(this, R.string.wait_cancel);
             break;
 
         default:
@@ -1387,7 +1393,7 @@ UnexpectedExceptionHandler.TrackedModule {
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
         long dbId = getCurrentListAdapter().getItemInfo_cid(mInfo.position);
-        RTTask.TaskState updateState = RTTask.S().getState(dbId, RTTask.Action.UPDATE);
+        RTTask.TaskState updateState = rtt.getState(dbId, RTTask.Action.UPDATE);
 
         if (RTTask.TaskState.RUNNING == updateState
             || RTTask.TaskState.READY == updateState
@@ -1399,7 +1405,7 @@ UnexpectedExceptionHandler.TrackedModule {
             */
         }
 
-        if (RTTask.S().getItemsDownloading(dbId).length > 0) {
+        if (rtt.getItemsDownloading(dbId).length > 0) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
@@ -1459,7 +1465,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
 
         //logI("==> ChannelListActivity : onCreate");
@@ -1469,15 +1475,15 @@ UnexpectedExceptionHandler.TrackedModule {
         // More consideration is required.
 
         // Send error report if exists.
-        UsageReport.S().sendErrReportMail(this);
+        ur.sendErrReportMail(this);
         // Send usage report if exists and time is passed enough.
-        UsageReport.S().sendUsageReportMail(this);
+        ur.sendUsageReportMail(this);
 
 
         setContentView(R.layout.channel_list);
 
         Feed.Category[] cats;
-        cats = DBPolicy.S().getCategories();
+        cats = dbp.getCategories();
 
         eAssert(cats.length > 0);
 
@@ -1498,8 +1504,8 @@ UnexpectedExceptionHandler.TrackedModule {
         selectDefaultAsSelected();
 
         // To avoid duplicated refreshing list at onResume().
-        DBPolicy.S().registerChannelWatcher(this);
-        DBPolicy.S().registerChannelTableWatcher(this);
+        dbp.registerChannelWatcher(this);
+        dbp.registerChannelTableWatcher(this);
     }
 
 
@@ -1525,27 +1531,27 @@ UnexpectedExceptionHandler.TrackedModule {
         // If 'registerManagerEventListener' is below 'getUpdateState',
         //   we may miss binding some updating task!
 
-        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
+        rtt.registerManagerEventListener(this, new RTTaskManagerEventHandler());
 
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
         // See comments in 'onPause()'
         try {
-            DBPolicy.S().getDelayedChannelUpdate();
-            Cursor c = DBPolicy.S().queryChannel(DB.ColumnChannel.ID);
+            dbp.getDelayedChannelUpdate();
+            Cursor c = dbp.queryChannel(DB.ColumnChannel.ID);
             if (c.moveToFirst()) {
                 do {
                     long cid = c.getLong(0);
-                    if (RTTask.TaskState.IDLE != RTTask.S().getState(cid, RTTask.Action.UPDATE))
-                        RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
-                    long[] ids = RTTask.S().getItemsDownloading(cid);
+                    if (RTTask.TaskState.IDLE != rtt.getState(cid, RTTask.Action.UPDATE))
+                        rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+                    long[] ids = rtt.getItemsDownloading(cid);
                     for (long id : ids)
-                        RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent(cid));
+                        rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent(cid));
                 } while (c.moveToNext());
             }
             c.close();
         } finally {
-            DBPolicy.S().putDelayedChannelUpdate();
+            dbp.putDelayedChannelUpdate();
         }
 
         if (null == ab) {
@@ -1557,24 +1563,24 @@ UnexpectedExceptionHandler.TrackedModule {
         long cids[] = new long[0];
         boolean fullRefresh = true;
         boolean fullRefreshCurrent = false;
-        if (DBPolicy.S().isChannelWatcherRegistered(this))
-            cids = DBPolicy.S().getChannelWatcherUpdated(this);
+        if (dbp.isChannelWatcherRegistered(this))
+            cids = dbp.getChannelWatcherUpdated(this);
         fullRefresh = cids.length > CHANNEL_REFRESH_THRESHOLD? true: false;
 
         // NOTE
         // Channel may be added or deleted.
         // And channel operation is only allowed on current selected list
         //   according to use case.
-        if (DBPolicy.S().isChannelTableWatcherRegistered(this)
-            && DBPolicy.S().isChannelTableWatcherUpdated(this))
+        if (dbp.isChannelTableWatcherRegistered(this)
+            && dbp.isChannelTableWatcherUpdated(this))
             fullRefreshCurrent = true;
 
         // We don't need to worry about item table change.
         // Because, if item is newly inserted, that means some of channel is updated.
         // And that channel will be updated according to DB changes.
 
-        DBPolicy.S().unregisterChannelWatcher(this);
-        DBPolicy.S().unregisterChannelTableWatcher(this);
+        dbp.unregisterChannelWatcher(this);
+        dbp.unregisterChannelTableWatcher(this);
 
         if (fullRefresh)
             refreshListAsync();
@@ -1599,9 +1605,9 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPause() {
         //logI("==> ChannelListActivity : onPause");
-        DBPolicy.S().registerChannelWatcher(this);
-        DBPolicy.S().registerChannelTableWatcher(this);
-        RTTask.S().unregisterManagerEventListener(this);
+        dbp.registerChannelWatcher(this);
+        dbp.registerChannelTableWatcher(this);
+        rtt.unregisterManagerEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
         // And when exiting from 'ItemListActivity' by back-key event, 'onStart' is called.
@@ -1611,7 +1617,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // (This is experimental conclusion - NOT by analyzing framework source code.)
         // I think this is Android's bug or implicit policy.
         // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
-        RTTask.S().unbind(this);
+        rtt.unbind(this);
 
         super.onPause();
     }
@@ -1629,7 +1635,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onDestroy() {
         //logI("==> ChannelListActivity : onDestroy");
         super.onDestroy();
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 
     @Override

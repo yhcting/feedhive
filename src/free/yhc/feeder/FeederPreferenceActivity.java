@@ -34,6 +34,9 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 public class FeederPreferenceActivity extends PreferenceActivity implements
 SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
+    private final UIPolicy      uip = UIPolicy.get();
+    private final LookAndFeel   lnf = LookAndFeel.get();
+
     private String appRootOld = null;
 
     @Override
@@ -49,12 +52,12 @@ UnexpectedExceptionHandler.TrackedModule {
             String appRoot = sharedPreferences.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
             File appRootFile = new File(appRoot);
             if (!appRootFile.canWrite()) {
-                LookAndFeel.showTextToast(this, R.string.warn_file_access_denied);
+                lnf.showTextToast(this, R.string.warn_file_access_denied);
                 SharedPreferences.Editor prefEd = sharedPreferences.edit();
                 prefEd.putString(UIPolicy.PREF_KEY_APP_ROOT, appRootOld);
                 prefEd.apply();
             } else {
-                UIPolicy.setAppDirectories(appRoot);
+                uip.setAppDirectories(appRoot);
                 appRootOld = appRoot;
             }
         }
@@ -62,7 +65,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preference);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -75,6 +78,6 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onDestroy() {
         super.onDestroy();
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 }

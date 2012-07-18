@@ -9,8 +9,9 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 public class AsyncCursorAdapter extends AsyncAdapter implements
 AsyncAdapter.DataProvider {
-    private Cursor          cur;
     private final Object    curlock = new Object();
+
+    private Cursor          cur;
     private ItemBuilder     ibldr;
 
     interface ItemBuilder {
@@ -20,15 +21,15 @@ AsyncAdapter.DataProvider {
 
     AsyncCursorAdapter(Context        context,
                        Cursor         cursor,
-                       ItemBuilder    ibldr,
+                       ItemBuilder    bldr,
                        int            rowLayout,
                        ListView       lv,
                        Object         dummyItem,
                        final int      dataReqSz,
                        final int      maxArrSz) {
         super(context, rowLayout, lv, dummyItem, dataReqSz, maxArrSz);
-        this.cur = cursor;
-        this.ibldr = ibldr;
+        cur = cursor;
+        ibldr = bldr;
         setDataProvider(this);
     }
 

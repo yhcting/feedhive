@@ -68,10 +68,10 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final int DATA_REQ_SZ  = 20;
-    private static final int DATA_ARR_MAX = 500;
+    private static final int DATA_REQ_SZ    = 20;
+    private static final int DATA_ARR_MAX   = 500;
 
-    private static final int REQC_ITEM_VIEW    = 0;
+    private static final int REQC_ITEM_VIEW = 0;
 
     // Keys for extra value of intent : IKey (Intent Key)
     public static final String IKEY_MODE    = "mode";  // mode
@@ -82,20 +82,24 @@ UnexpectedExceptionHandler.TrackedModule {
     // bit[0:2] mode : scope of items to list
     // others are reserved (ex. ALL or ALL_LINK or ALL_ENCLOSURE)
     // Base query outline to create cursor, depends on this Mode value.
-    public static final int MODE_CHANNEL       = 0; // items of channel
-    public static final int MODE_CATEGORY      = 1; // items of category
-    public static final int MODE_FAVORITE      = 2; // favorite items
-    public static final int MODE_ALL           = 3; // all items
+    public static final int MODE_CHANNEL    = 0; // items of channel
+    public static final int MODE_CATEGORY   = 1; // items of category
+    public static final int MODE_FAVORITE   = 2; // favorite items
+    public static final int MODE_ALL        = 3; // all items
 
     // bit[3:7] filter : select items
     // others are reserved (ex. filtering items with time (specific period of time) etc)
     // Filtering from cursor depends on this value.
-    public static final int FILTER_NONE        = 0; // no filter
-    public static final int FILTER_NEW         = 1; // new items of each channel.
+    public static final int FILTER_NONE     = 0; // no filter
+    public static final int FILTER_NEW      = 1; // new items of each channel.
 
-    private final DBPolicy  db      = DBPolicy.S();
-    private OpMode          opMode  = null;
-    private ListView        list    = null;
+    private final UIPolicy      uip = UIPolicy.get();
+    private final DBPolicy      dbp = DBPolicy.get();
+    private final RTTask        rtt = RTTask.get();
+    private final LookAndFeel   lnf = LookAndFeel.get();
+
+    private OpMode      opMode  = null;
+    private ListView    list    = null;
 
     private class OpMode {
         // 'State' of item may be changed often dynamically (ex. when open item)
@@ -149,7 +153,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MSTAT_FAV;
-                    DBPolicy.S().updateItemAsync_state(id, state);
+                    dbp.updateItemAsync_state(id, state);
                     adapter.updateItemState(position, state);
                     dataSetChanged();
                 }
@@ -172,7 +176,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         void onCreate() {
             super.onCreate();
-            setTitle(db.getChannelInfoString(cid, DB.ColumnChannel.TITLE));
+            setTitle(dbp.getChannelInfoString(cid, DB.ColumnChannel.TITLE));
             // TODO
             //   How to use custom view + default option menu ???
             //
@@ -187,7 +191,7 @@ UnexpectedExceptionHandler.TrackedModule {
             int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
             bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
             // Update "OLDLAST_ITEMID" when user opens item views.
-            DBPolicy.S().updateChannel_lastItemId(cid);
+            dbp.updateChannel_lastItemId(cid);
         }
 
         @Override
@@ -195,26 +199,26 @@ UnexpectedExceptionHandler.TrackedModule {
             super.onResume();
             // See comments in 'ChannelListActivity.onPause()'
             // Bind update task if needed
-            RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+            RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
             if (RTTask.TaskState.IDLE != state)
-                RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+                rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
 
             // Bind downloading tasks
-            long[] ids = RTTask.S().getItemsDownloading(cid);
+            long[] ids = rtt.getItemsDownloading(cid);
             for (long id : ids)
-                RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
 
             setUpdateButton();
         }
 
         @Override
         Cursor query() {
-            return db.queryItem(cid, queryProjection, search, fromPubtime, toPubtime);
+            return dbp.queryItem(cid, queryProjection, search, fromPubtime, toPubtime);
         }
 
         @Override
         long minPubtime() {
-            return db.getItemMinPubtime(cid);
+            return dbp.getItemMinPubtime(cid);
         }
     }
 
@@ -225,7 +229,7 @@ UnexpectedExceptionHandler.TrackedModule {
         OpModeCategory(Intent intent) {
             categoryid = intent.getLongExtra("categoryid", -1);
             eAssert(-1 != categoryid);
-            cids = DBPolicy.S().getChannelIds(categoryid);
+            cids = dbp.getChannelIds(categoryid);
         }
 
         long getCategoryId() {
@@ -239,7 +243,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         void onCreate() {
             super.onCreate();
-            setTitle(getResources().getString(R.string.category) + ":" + db.getCategoryName(categoryid));
+            setTitle(getResources().getString(R.string.category) + ":" + dbp.getCategoryName(categoryid));
             bgtaskRunning = true;
             AsyncTask.execute(new Runnable() {
                 @Override
@@ -247,13 +251,13 @@ UnexpectedExceptionHandler.TrackedModule {
                     Long[] whereValues = Utils.convertArraylongToLong(cids);
                     Long[] targetValues = new Long[whereValues.length];
                     try {
-                        DBPolicy.S().getDelayedChannelUpdate();
+                        dbp.getDelayedChannelUpdate();
                         for (int i = 0; i < whereValues.length; i++)
-                            targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
-                        DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
+                            targetValues[i] = dbp.getItemInfoMaxId(whereValues[i]);
+                        dbp.updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
                                                       DB.ColumnChannel.ID, whereValues);
                     } finally {
-                        DBPolicy.S().putDelayedChannelUpdate();
+                        dbp.putDelayedChannelUpdate();
                         bgtaskRunning = false;
                     }
                 }
@@ -265,24 +269,24 @@ UnexpectedExceptionHandler.TrackedModule {
             super.onResume();
             // Bind update task if needed
             for (long cid : cids) {
-                RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+                RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
                 if (RTTask.TaskState.IDLE != state)
-                    RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+                    rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
             }
 
-            long[] ids = RTTask.S().getItemsDownloading(cids);
+            long[] ids = rtt.getItemsDownloading(cids);
             for (long id : ids)
-                RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
         }
 
         @Override
         Cursor query() {
-            return db.queryItem(cids, queryProjection, search, fromPubtime, toPubtime);
+            return dbp.queryItem(cids, queryProjection, search, fromPubtime, toPubtime);
         }
 
         @Override
         long minPubtime() {
-            return db.getItemMinPubtime(cids);
+            return dbp.getItemMinPubtime(cids);
         }
     }
 
@@ -299,14 +303,14 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         void onResume() {
             super.onResume();
-            long[] ids = RTTask.S().getItemsDownloading();
+            long[] ids = rtt.getItemsDownloading();
             try {
-                DBPolicy.S().getDelayedChannelUpdate();
+                dbp.getDelayedChannelUpdate();
                 for (long id : ids)
-                    if (Feed.Item.isStatFavOn(DBPolicy.S().getItemInfoLong(id, DB.ColumnItem.STATE)))
-                        RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                    if (Feed.Item.isStatFavOn(dbp.getItemInfoLong(id, DB.ColumnItem.STATE)))
+                        rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
             } finally {
-                DBPolicy.S().putDelayedChannelUpdate();
+                dbp.putDelayedChannelUpdate();
             }
         }
 
@@ -318,7 +322,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MSTAT_FAV;
-                    DBPolicy.S().updateItemAsync_state(id, state);
+                    dbp.updateItemAsync_state(id, state);
                     eAssert(!Feed.Item.isStatFavOn(state));
                     adapter.removeItem(position);
                     dataSetChanged();
@@ -328,14 +332,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         Cursor query() {
-            return db.queryItemMask(queryProjection, DB.ColumnItem.STATE,
+            return dbp.queryItemMask(queryProjection, DB.ColumnItem.STATE,
                                     Feed.Item.MSTAT_FAV, Feed.Item.FSTAT_FAV_ON,
                                     search, fromPubtime, toPubtime);
         }
 
         @Override
         long minPubtime() {
-            return db.getItemMinPubtime(DB.ColumnItem.STATE,
+            return dbp.getItemMinPubtime(DB.ColumnItem.STATE,
                                         Feed.Item.MSTAT_FAV,
                                         Feed.Item.FSTAT_FAV_ON);
         }
@@ -345,7 +349,7 @@ UnexpectedExceptionHandler.TrackedModule {
         private long[] cids = null;
 
         OpModeAll(Intent intent) {
-            cids = DBPolicy.S().getChannelIds();
+            cids = dbp.getChannelIds();
         }
 
         long[] getCids() {
@@ -364,13 +368,13 @@ UnexpectedExceptionHandler.TrackedModule {
                     Long[] whereValues = Utils.convertArraylongToLong(cids);
                     Long[] targetValues = new Long[whereValues.length];
                     try {
-                        DBPolicy.S().getDelayedChannelUpdate();
+                        dbp.getDelayedChannelUpdate();
                         for (int i = 0; i < whereValues.length; i++)
-                            targetValues[i] = DBPolicy.S().getItemInfoMaxId(whereValues[i]);
-                        DBPolicy.S().updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
+                            targetValues[i] = dbp.getItemInfoMaxId(whereValues[i]);
+                        dbp.updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
                                                       DB.ColumnChannel.ID, whereValues);
                     } finally {
-                        DBPolicy.S().putDelayedChannelUpdate();
+                        dbp.putDelayedChannelUpdate();
                         bgtaskRunning = false;
                     }
                 }
@@ -382,19 +386,19 @@ UnexpectedExceptionHandler.TrackedModule {
         void onResume() {
             super.onResume();
             // Bind downloading tasks
-            long[] ids = RTTask.S().getItemsDownloading();
+            long[] ids = rtt.getItemsDownloading();
             for (long id : ids)
-                RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
         }
 
         @Override
         Cursor query() {
-            return db.queryItem(queryProjection, search, fromPubtime, toPubtime);
+            return dbp.queryItem(queryProjection, search, fromPubtime, toPubtime);
         }
 
         @Override
         long minPubtime() {
-            return db.getItemMinPubtime();
+            return dbp.getItemMinPubtime();
         }
     }
 
@@ -448,7 +452,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // User already know that there is new feed because
                 //   user starts to update in feed screen!.
                 // So, we can assume that user knows latest updates here.
-                DBPolicy.S().updateChannel_lastItemId(chid);
+                dbp.updateChannel_lastItemId(chid);
                 refreshListAsync();
             }
         }
@@ -501,9 +505,9 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onBGTaskRegister(long id, BGTask task, RTTask.Action act) {
             if (RTTask.Action.UPDATE == act)
-                RTTask.S().bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent(id));
+                rtt.bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent(id));
             else if (RTTask.Action.DOWNLOAD == act)
-                RTTask.S().bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent(id));
         }
 
         @Override
@@ -592,7 +596,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onClick(View v) {
                 // Update is supported only at channel item list.
                 eAssert(opMode instanceof OpModeChannel);
-                RTTask.S().cancel(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE, null);
+                rtt.cancel(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE, null);
                 requestSetUpdateButton();
             }
         });
@@ -603,7 +607,7 @@ UnexpectedExceptionHandler.TrackedModule {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                LookAndFeel.showTextToast(ItemListActivity.this, msg);
+                lnf.showTextToast(ItemListActivity.this, msg);
             }
         });
     }
@@ -615,8 +619,8 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onClick(View v) {
                 // Update is supported only at channel item list.
                 eAssert(opMode instanceof OpModeChannel);
-                LookAndFeel.showTextToast(ItemListActivity.this, result.getMsgId());
-                RTTask.S().consumeResult(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE);
+                lnf.showTextToast(ItemListActivity.this, result.getMsgId());
+                rtt.consumeResult(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE);
                 requestSetUpdateButton();
             }
         });
@@ -625,10 +629,10 @@ UnexpectedExceptionHandler.TrackedModule {
     private boolean
     changeItemState_opened(long id, int position) {
         // change state as 'opened' at this moment.
-        long state = db.getItemInfoLong(id, DB.ColumnItem.STATE);
+        long state = dbp.getItemInfoLong(id, DB.ColumnItem.STATE);
         if (Feed.Item.isStateOpenNew(state)) {
             state = Utils.bitSet(state, Feed.Item.FSTAT_OPEN_OPENED, Feed.Item.MSTAT_OPEN);
-            db.updateItemAsync_state(id, state);
+            dbp.updateItemAsync_state(id, state);
             getListAdapter().updateItemState(position, state);
             dataSetChanged(id);
             return true;
@@ -642,17 +646,17 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(opMode instanceof OpModeChannel);
         long cid = ((OpModeChannel)opMode).getChannelId();
         BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
-        RTTask.S().register(cid, RTTask.Action.UPDATE, updateTask);
-        RTTask.S().bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
-        RTTask.S().start(cid, RTTask.Action.UPDATE);
+        rtt.register(cid, RTTask.Action.UPDATE, updateTask);
+        rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+        rtt.start(cid, RTTask.Action.UPDATE);
     }
 
     private void
     onActionOpen_http(long action, View view, long id, int position, String url, String protocol) {
-        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.DOWNLOAD);
+        RTTask.TaskState state = rtt.getState(id, RTTask.Action.DOWNLOAD);
         if (RTTask.TaskState.FAILED == state) {
-            LookAndFeel.showTextToast(this, RTTask.S().getErr(id, RTTask.Action.DOWNLOAD).getMsgId());
-            RTTask.S().consumeResult(id, RTTask.Action.DOWNLOAD);
+            lnf.showTextToast(this, rtt.getErr(id, RTTask.Action.DOWNLOAD).getMsgId());
+            rtt.consumeResult(id, RTTask.Action.DOWNLOAD);
             dataSetChanged(id);
             return;
         }
@@ -666,7 +670,7 @@ UnexpectedExceptionHandler.TrackedModule {
             try {
                 startActivity(intent);
             } catch (ActivityNotFoundException e) {
-                LookAndFeel.showTextToast(this,
+                lnf.showTextToast(this,
                         getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
                 return;
             }
@@ -682,7 +686,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             startActivity(intent);
         } catch (ActivityNotFoundException e) {
-            LookAndFeel.showTextToast(this,
+            lnf.showTextToast(this,
                     getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
             return;
         }
@@ -702,7 +706,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onActionDn(long action, View view, long id, int position, String url) {
         // 'enclosure' is used.
-        File f = UIPolicy.getItemDataFile(id);
+        File f = dbp.getItemInfoDataFile(id);
         eAssert(null != f);
         if (f.exists()) {
             // "RSS described media type" vs "mime type by guessing from file extention".
@@ -725,38 +729,38 @@ UnexpectedExceptionHandler.TrackedModule {
             try {
                 startActivity(intent);
             } catch (ActivityNotFoundException e) {
-                LookAndFeel.showTextToast(this,
+                lnf.showTextToast(this,
                         getResources().getText(R.string.warn_find_app_to_open).toString() + " [" + type + "]");
                 return;
             }
             // change state as 'opened' at this moment.
             changeItemState_opened(id, position);
         } else {
-            RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.DOWNLOAD);
+            RTTask.TaskState state = rtt.getState(id, RTTask.Action.DOWNLOAD);
             switch(state) {
             case IDLE: {
                 BGTaskDownloadToFile.Arg arg
-                    = new BGTaskDownloadToFile.Arg(url, f, UIPolicy.getNewTempFile());
+                    = new BGTaskDownloadToFile.Arg(url, f, uip.getNewTempFile());
                 BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(arg);
-                RTTask.S().register(id, RTTask.Action.DOWNLOAD, dnTask);
-                RTTask.S().start(id, RTTask.Action.DOWNLOAD);
+                rtt.register(id, RTTask.Action.DOWNLOAD, dnTask);
+                rtt.start(id, RTTask.Action.DOWNLOAD);
                 dataSetChanged(id);
             } break;
 
             case RUNNING:
             case READY:
-                RTTask.S().cancel(id, RTTask.Action.DOWNLOAD, null);
+                rtt.cancel(id, RTTask.Action.DOWNLOAD, null);
                 dataSetChanged(id);
                 break;
 
             case CANCELING:
-                LookAndFeel.showTextToast(this, R.string.wait_cancel);
+                lnf.showTextToast(this, R.string.wait_cancel);
                 break;
 
             case FAILED: {
-                Err result = RTTask.S().getErr(id, RTTask.Action.DOWNLOAD);
-                LookAndFeel.showTextToast(this, result.getMsgId());
-                RTTask.S().consumeResult(id, RTTask.Action.DOWNLOAD);
+                Err result = rtt.getErr(id, RTTask.Action.DOWNLOAD);
+                lnf.showTextToast(this, result.getMsgId());
+                rtt.consumeResult(id, RTTask.Action.DOWNLOAD);
                 dataSetChanged(id);
             } break;
 
@@ -806,7 +810,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         iv.setAlpha(1.0f);
         iv.setClickable(true);
-        RTTask.TaskState state = RTTask.S().getState(cid, RTTask.Action.UPDATE);
+        RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
         switch(state) {
         case IDLE:
             iv.setImageResource(R.drawable.ic_refresh);
@@ -833,7 +837,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         case FAILED: {
             iv.setImageResource(R.drawable.ic_info);
-            Err result = RTTask.S().getErr(cid, RTTask.Action.UPDATE);
+            Err result = rtt.getErr(cid, RTTask.Action.UPDATE);
             setOnClick_errResult(iv, result);
         } break;
 
@@ -856,16 +860,16 @@ UnexpectedExceptionHandler.TrackedModule {
     onContext_deleteDnFile(final long id, final int position) {
         // Create "Enter Url" dialog
         AlertDialog dialog =
-                LookAndFeel.createWarningDialog(this,
-                                                R.string.delete_downloaded_file,
-                                                R.string.delete_downloaded_file_msg);
+                lnf.createWarningDialog(this,
+                                        R.string.delete_downloaded_file,
+                                        R.string.delete_downloaded_file_msg);
         dialog.setButton(getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
             public void
             onClick (DialogInterface dialog, int which) {
-                if (!UIPolicy.getItemDataFile(id).delete())
-                    LookAndFeel.showTextToast(ItemListActivity.this, Err.IO_FILE.getMsgId());
+                if (!dbp.getItemInfoDataFile(id).delete())
+                    lnf.showTextToast(ItemListActivity.this, Err.IO_FILE.getMsgId());
                 else {
                     getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), false);
                     dataSetChanged(id);
@@ -901,7 +905,7 @@ UnexpectedExceptionHandler.TrackedModule {
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        if (UIPolicy.getItemDataFile(dbId).exists())
+        if (dbp.getItemInfoDataFile(dbId).exists())
             menu.findItem(R.id.delete_dnfile).setVisible(true);
     }
 
@@ -968,14 +972,14 @@ UnexpectedExceptionHandler.TrackedModule {
         since.setTimeInMillis(opMode.minPubtime());
         final Calendar now = Calendar.getInstance();
         if (now.getTimeInMillis() < since.getTimeInMillis()) {
-            LookAndFeel.showTextToast(this, R.string.warn_no_item_before_now);
+            lnf.showTextToast(this, R.string.warn_no_item_before_now);
             return;
         }
 
         // Setup search dialog controls
-        final View diagV  =  LookAndFeel.inflateLayout(this, R.layout.item_list_search);
+        final View diagV  =  lnf.inflateLayout(this, R.layout.item_list_search);
         final AlertDialog diag =
-                LookAndFeel.createEditTextDialog(this, diagV, R.string.feed_search);
+                lnf.createEditTextDialog(this, diagV, R.string.feed_search);
 
         String[] years = buildStringArray(since.get(Calendar.YEAR), now.get(Calendar.YEAR) + 1);
         setSpinner(diagV, R.id.sp_year0, years, 0, new AdapterView.OnItemSelectedListener() {
@@ -1096,7 +1100,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
         //logI("==> ItemListActivity : onCreate");
         getActionBar().show();
@@ -1128,7 +1132,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onItemClick (AdapterView<?> parent, View view, int position, long itemId) {
                 long dbId = getListAdapter().getItemInfo_id(position);
                 long cid = getListAdapter().getItemInfo_cid(position);
-                long act = DBPolicy.S().getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+                long act = dbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
                 onAction(act, view, dbId, position);
             }
         });
@@ -1167,7 +1171,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //logI("==> ItemListActivity : onResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
-        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
+        rtt.registerManagerEventListener(this, new RTTaskManagerEventHandler());
         View searchBtn = findViewById(R.id.searchbtn);
         if (getListAdapter().isEmpty())
             searchBtn.setVisibility(View.GONE);
@@ -1184,17 +1188,17 @@ UnexpectedExceptionHandler.TrackedModule {
         // If one of channel that are belongs to current item list, is changed
         //   and item table is changed, than I can decide that current viewing items are updated.
         long[] watchCids = new long[0];
-        if (DBPolicy.S().isChannelWatcherRegistered(this))
-            watchCids = DBPolicy.S().getChannelWatcherUpdated(this);
+        if (dbp.isChannelWatcherRegistered(this))
+            watchCids = dbp.getChannelWatcherUpdated(this);
 
         // default is 'full-refreshing'
         boolean itemTableWatcherUpdated = true;
 
-        if (DBPolicy.S().isItemTableWatcherRegistered(this))
-            itemTableWatcherUpdated = DBPolicy.S().isItemTableWatcherUpdated(this);
+        if (dbp.isItemTableWatcherRegistered(this))
+            itemTableWatcherUpdated = dbp.isItemTableWatcherUpdated(this);
 
-        DBPolicy.S().unregisterChannelWatcher(this);
-        DBPolicy.S().unregisterItemTableWatcher(this);
+        dbp.unregisterChannelWatcher(this);
+        dbp.unregisterItemTableWatcher(this);
 
         long[] cids = new long[0];
         if (opMode instanceof OpModeChannel)
@@ -1227,12 +1231,12 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPause() {
         //logI("==> ItemListActivity : onPause");
-        DBPolicy.S().registerChannelWatcher(this);
-        DBPolicy.S().registerItemTableWatcher(this);
+        dbp.registerChannelWatcher(this);
+        dbp.registerItemTableWatcher(this);
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
-        RTTask.S().unregisterManagerEventListener(this);
+        rtt.unregisterManagerEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
-        RTTask.S().unbind(this);
+        rtt.unbind(this);
         super.onPause();
     }
 
@@ -1248,7 +1252,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onDestroy() {
         //logI("==> ItemListActivity : onDestroy");
         super.onDestroy();
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 
     @Override

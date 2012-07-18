@@ -39,18 +39,18 @@ import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
 public class ItemListAdapter extends AsyncCursorAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    private final DBPolicy  dbp = DBPolicy.S();
+    private final DBPolicy  dbp = DBPolicy.get();
+    private final RTTask    rtt = RTTask.get();
+
     private final OnAction  onAction;
     // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
     // See "DownloadProgressOnEvent" for details
     private final TextView  dummyTextView;
-
     private final View.OnClickListener favOnClick;
 
     public static class ProgressTextView extends TextView {
@@ -167,7 +167,7 @@ AsyncCursorAdapter.ItemBuilder {
                     OnAction       actionListener) {
         super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
         setItemBuilder(this);
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         dummyTextView = new TextView(context);
         onAction = actionListener;
         favOnClick = new View.OnClickListener() {
@@ -252,13 +252,13 @@ AsyncCursorAdapter.ItemBuilder {
             i.enclosureLen = getCursorString(c, DB.ColumnItem.ENCLOSURE_LENGTH);
             i.enclosureUrl = getCursorString(c, DB.ColumnItem.ENCLOSURE_URL);
             i.link = getCursorString(c, DB.ColumnItem.LINK);
-            i.hasDnFile = UIPolicy.getItemDataFile(i.id).exists();
+            i.hasDnFile = dbp.getItemInfoDataFile(i.id).exists();
 
             int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
             i.bChannel = (0 <= cidx);
             if (i.bChannel) {
                 i.cid = c.getLong(cidx);
-                i.cTitle = DBPolicy.S().getChannelInfoString(i.cid, DB.ColumnChannel.TITLE);
+                i.cTitle = dbp.getChannelInfoString(i.cid, DB.ColumnChannel.TITLE);
             }
 
         } catch (StaleDataException e) {
@@ -280,10 +280,10 @@ AsyncCursorAdapter.ItemBuilder {
         // Override to use "delayed item update"
         int ret;
         try {
-            DBPolicy.S().getDelayedChannelUpdate();
+            dbp.getDelayedChannelUpdate();
             ret = super.requestData(adapter, priv, nrseq, from, sz);
         } finally {
-            DBPolicy.S().putDelayedChannelUpdate();
+            dbp.putDelayedChannelUpdate();
         }
         return ret;
     }
@@ -343,7 +343,7 @@ AsyncCursorAdapter.ItemBuilder {
         if (ii.hasDnFile) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
-            RTTask.TaskState dnState = RTTask.S().getState(ii.id, RTTask.Action.DOWNLOAD);
+            RTTask.TaskState dnState = rtt.getState(ii.id, RTTask.Action.DOWNLOAD);
             switch(dnState) {
             case IDLE:
                 imgv.setImageResource(R.drawable.download_anim0);
@@ -385,8 +385,8 @@ AsyncCursorAdapter.ItemBuilder {
                 // bind event listener to show progress
                 DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
                 progressv.switchOnEvent(onEvent);
-                RTTask.S().unbind(progressv);
-                RTTask.S().bind(ii.id, RTTask.Action.DOWNLOAD, progressv, onEvent);
+                rtt.unbind(progressv);
+                rtt.bind(ii.id, RTTask.Action.DOWNLOAD, progressv, onEvent);
                 progressv.setVisibility(View.VISIBLE);
                 break;
 
@@ -412,7 +412,7 @@ AsyncCursorAdapter.ItemBuilder {
 
     @Override
     protected void finalize() throws Throwable {
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
         super.finalize();
     }
 }

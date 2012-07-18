@@ -53,12 +53,17 @@ public class ItemViewActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
     public static final int RESULT_DOWNLOAD = 1;
 
-    private long    id  = -1;
-    private String  netUrl = "";
-    private String  fileUrl = "";
-    private String  currUrl = "";
-    private WebView wv  = null;
-    private ProgressBar pb = null;
+    private final UIPolicy      uip = UIPolicy.get();
+    private final DBPolicy      dbp = DBPolicy.get();
+    private final RTTask        rtt = RTTask.get();
+    private final LookAndFeel   lnf = LookAndFeel.get();
+
+    private long        id      = -1;
+    private String      netUrl  = "";
+    private String      fileUrl = "";
+    private String      currUrl = "";
+    private WebView     wv      = null;
+    private ProgressBar pb      = null;
 
     private class WVClient extends WebViewClient {
         @Override
@@ -100,7 +105,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
             if (RTTask.Action.DOWNLOAD == act)
-                RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent());
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent());
         }
 
         @Override
@@ -140,22 +145,22 @@ UnexpectedExceptionHandler.TrackedModule {
     startDownload() {
         BGTaskDownloadToFile dnTask
             = new BGTaskDownloadToFile(new BGTaskDownloadToFile.Arg(netUrl,
-                                                                    UIPolicy.getItemDataFile(id),
-                                                                    UIPolicy.getNewTempFile()));
-        RTTask.S().register(id, RTTask.Action.DOWNLOAD, dnTask);
-        RTTask.S().start(id, RTTask.Action.DOWNLOAD);
+                                                                    dbp.getItemInfoDataFile(id),
+                                                                    uip.getNewTempFile()));
+        rtt.register(id, RTTask.Action.DOWNLOAD, dnTask);
+        rtt.start(id, RTTask.Action.DOWNLOAD);
     }
 
     private void
     cancelDownload() {
-        RTTask.S().cancel(id, RTTask.Action.DOWNLOAD, null);
+        rtt.cancel(id, RTTask.Action.DOWNLOAD, null);
     }
 
     private void
     notifyResult() {
-        Err result = RTTask.S().getErr(id, RTTask.Action.DOWNLOAD);
-        LookAndFeel.showTextToast(ItemViewActivity.this, result.getMsgId());
-        RTTask.S().consumeResult(id, RTTask.Action.DOWNLOAD);
+        Err result = rtt.getErr(id, RTTask.Action.DOWNLOAD);
+        lnf.showTextToast(ItemViewActivity.this, result.getMsgId());
+        rtt.consumeResult(id, RTTask.Action.DOWNLOAD);
         setupLayout();
     }
 
@@ -180,7 +185,7 @@ UnexpectedExceptionHandler.TrackedModule {
             anim.reset();
         }
 
-        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.DOWNLOAD);
+        RTTask.TaskState state = rtt.getState(id, RTTask.Action.DOWNLOAD);
         logI("ItemViewActivity : setupLayout : state : " + state.name());
         switch(state) {
         case IDLE:
@@ -197,7 +202,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     }
                 });
             } else {
-                if (UIPolicy.getItemDataFile(id).exists()) {
+                if (dbp.getItemInfoDataFile(id).exists()) {
                     ItemViewActivity.this.findViewById(R.id.imgbtn).setVisibility(View.GONE);
                 } else {
                     imgbtn.setImageResource(R.drawable.download_anim0);
@@ -231,7 +236,7 @@ UnexpectedExceptionHandler.TrackedModule {
             imgbtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    LookAndFeel.showTextToast(ItemViewActivity.this, R.string.wait_cancel);
+                    lnf.showTextToast(ItemViewActivity.this, R.string.wait_cancel);
                 }
             });
             break;
@@ -276,7 +281,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onCreate(Bundle savedInstanceState) {
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.item_view);
         pb = (ProgressBar)findViewById(R.id.progressbar);
@@ -289,8 +294,8 @@ UnexpectedExceptionHandler.TrackedModule {
         id = getIntent().getLongExtra("id", -1);
         eAssert(id >= 0);
 
-        File f = UIPolicy.getItemDataFile(id);
-        netUrl = DBPolicy.S().getItemInfoString(id, DB.ColumnItem.LINK);
+        File f = dbp.getItemInfoDataFile(id);
+        netUrl = dbp.getItemInfoString(id, DB.ColumnItem.LINK);
         fileUrl = "file:///" + f.getAbsolutePath();
         currUrl = f.exists()? fileUrl: netUrl;
         wv.loadUrl(currUrl);
@@ -301,12 +306,12 @@ UnexpectedExceptionHandler.TrackedModule {
     onResume() {
         super.onResume();
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
-        RTTask.S().registerManagerEventListener(this, new RTTaskManagerEventHandler());
+        rtt.registerManagerEventListener(this, new RTTaskManagerEventHandler());
 
         // Bind download task if needed
-        RTTask.TaskState state = RTTask.S().getState(id, RTTask.Action.DOWNLOAD);
+        RTTask.TaskState state = rtt.getState(id, RTTask.Action.DOWNLOAD);
         if (RTTask.TaskState.IDLE != state)
-            RTTask.S().bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent());
+            rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent());
 
         setupLayout();
     }
@@ -316,9 +321,9 @@ UnexpectedExceptionHandler.TrackedModule {
     onPause() {
         //logI("==> ItemListActivity : onPause");
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
-        RTTask.S().unregisterManagerEventListener(this);
+        rtt.unregisterManagerEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
-        RTTask.S().unbind(this);
+        rtt.unbind(this);
         super.onPause();
     }
 
@@ -335,6 +340,6 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null != wv)
             wv.destroy();
         super.onDestroy();
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 }

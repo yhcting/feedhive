@@ -33,8 +33,14 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.Toast;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
-public class LookAndFeel {
+public class LookAndFeel implements
+UnexpectedExceptionHandler.TrackedModule {
+    // Even if LookAndFeel looks like suitable for static class,
+    //   singleton is used because multiple instance may be used with high possibility at future.
+    private static LookAndFeel instance = null;
+
     public interface EditTextDialogAction {
         void prepare(Dialog dialog, EditText edit);
         void onOk(Dialog dialog, EditText edit);
@@ -44,12 +50,36 @@ public class LookAndFeel {
         void onOk(Dialog dialog);
     }
 
+    private LookAndFeel() {
+        // Dependency on only following modules are allowed
+        // - Utils
+        // - UnexpectedExceptionHandler
+        // - DB / DBThread
+        // - UIPolicy
+        // - DBPolicy
+        // - RTTask
+        UnexpectedExceptionHandler.get().registerModule(this);
+    }
+
+    public static LookAndFeel
+    get() {
+        if (null == instance)
+            instance = new LookAndFeel();
+        return instance;
+    }
+
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ LookAndFeel ]";
+    }
+
     /**
      * This is for future use...
      * @param context
      * @param root
      */
-    private static void
+    private void
     showToast(Context context, ViewGroup root) {
         Toast t = Toast.makeText(context, "", Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
@@ -57,27 +87,27 @@ public class LookAndFeel {
         t.show();
     }
 
-    public static View
+    public View
     inflateLayout(Context context, int layout) {
         LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         return inflater.inflate(layout, null);
     }
 
-    public static void
+    public void
     showTextToast(Context context, String text) {
         Toast t = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.show();
     }
 
-    public static void
+    public void
     showTextToast(Context context, int textid) {
         Toast t = Toast.makeText(context, textid, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.show();
     }
 
-    public static AlertDialog
+    public AlertDialog
     createAlertDialog(Context context, int icon, CharSequence title, CharSequence message) {
         eAssert(null != title);
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -90,7 +120,7 @@ public class LookAndFeel {
         return dialog;
     }
 
-    public static AlertDialog
+    public AlertDialog
     createAlertDialog(Context context, int icon, int title, int message) {
         eAssert(0 != title);
         CharSequence t = context.getResources().getText(title);
@@ -98,19 +128,19 @@ public class LookAndFeel {
         return createAlertDialog(context, icon, t, msg);
     }
 
-    public static AlertDialog
+    public AlertDialog
     createWarningDialog(Context context, CharSequence title, CharSequence message) {
         return createAlertDialog(context, R.drawable.ic_alert, title, message);
     }
 
-    public static AlertDialog
+    public AlertDialog
     createWarningDialog(Context context, int title, int message) {
         return createWarningDialog(context,
                                    context.getResources().getText(title),
                                    context.getResources().getText(message));
     }
 
-    public static AlertDialog
+    public AlertDialog
     createEditTextDialog(Context context, View layout, CharSequence title) {
         // Create "Enter Url" dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -122,12 +152,12 @@ public class LookAndFeel {
         return dialog;
     }
 
-    public static AlertDialog
+    public AlertDialog
     createEditTextDialog(Context context, View layout, int title) {
         return createEditTextDialog(context, layout, context.getResources().getText(title));
     }
 
-    public static AlertDialog
+    public AlertDialog
     buildOneLineEditTextDialog(final Context context, final CharSequence title, final EditTextDialogAction action) {
         // Create "Enter Url" dialog
         View layout = inflateLayout(context, R.layout.oneline_editbox_dialog);
@@ -169,17 +199,17 @@ public class LookAndFeel {
         return dialog;
     }
 
-    public static AlertDialog
+    public AlertDialog
     buildOneLineEditTextDialog(final Context context, final int title, final EditTextDialogAction action) {
         return buildOneLineEditTextDialog(context, context.getResources().getText(title), action);
     }
 
-    public static AlertDialog
+    public AlertDialog
     buildConfirmDialog(final Context context,
                        final CharSequence title,
                        final CharSequence description,
                        final ConfirmDialogAction action) {
-        final AlertDialog dialog = LookAndFeel.createAlertDialog(context, R.drawable.ic_info, title, description);
+        final AlertDialog dialog = createAlertDialog(context, R.drawable.ic_info, title, description);
         dialog.setButton(context.getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
@@ -199,7 +229,7 @@ public class LookAndFeel {
         return dialog;
     }
 
-    public static AlertDialog
+    public AlertDialog
     buildConfirmDialog(final Context context,
                        final int title,
                        final int description,

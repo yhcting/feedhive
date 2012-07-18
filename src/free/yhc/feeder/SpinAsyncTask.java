@@ -53,7 +53,7 @@ DialogInterface.OnClickListener
 
     private void
     constructor(Context context, OnEvent onEvent, int msgid, boolean cancelable) {
-        UnexpectedExceptionHandler.S().registerModule(this);
+        UnexpectedExceptionHandler.get().registerModule(this);
         this.context = context;
         this.onEvent = onEvent;
         this.msgid   = msgid;
@@ -189,6 +189,6 @@ DialogInterface.OnClickListener
     protected void
     finalize() throws Throwable {
         super.finalize();
-        UnexpectedExceptionHandler.S().unregisterModule(this);
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 }

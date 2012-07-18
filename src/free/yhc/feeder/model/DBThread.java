@@ -20,7 +20,6 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.eAssert;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -30,8 +29,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static DBThread     instance = null;
 
     // Below two is for MsgArg
-    private static final Object idlock = new Object();
-    private static       long   idcnt = 0;
+    private static final Object idlock  = new Object();
+    private static       long   idcnt   = 0;
 
     private Handler handler = null;
 
@@ -58,22 +57,20 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private DBThread() {
+        // Dependency on only following modules are allowed
+        // - Utils.
+        // - UnexpectedExceptionHandler
+        UnexpectedExceptionHandler.get().registerModule(this);
         // Create singleton instances
-        DB.newSession().open();
+        DB.get().open();
     }
 
     // S : Singleton instance
     public static DBThread
-    S() {
-        eAssert(null != instance);
+    get() {
+        if (null == instance)
+            instance = new DBThread();
         return instance;
-    }
-
-    public static void
-    createSingleton() {
-        eAssert(null == instance);
-        instance = new DBThread();
-        UnexpectedExceptionHandler.S().registerModule(instance);
     }
 
     public Handler
