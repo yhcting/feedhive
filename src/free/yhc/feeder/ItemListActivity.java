@@ -128,6 +128,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         void    onResume() {}
+        long[]  getCids()  { return new long[0]; }
         Cursor  query()    { return null; }
 
         boolean doesRunningBGTaskExists() {
@@ -169,8 +170,9 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(-1 != cid);
         }
 
-        long getChannelId() {
-            return cid;
+        @Override
+        long[] getCids() {
+            return new long[] { cid };
         }
 
         @Override
@@ -232,10 +234,7 @@ UnexpectedExceptionHandler.TrackedModule {
             cids = dbp.getChannelIds(categoryid);
         }
 
-        long getCategoryId() {
-            return categoryid;
-        }
-
+        @Override
         long[] getCids() {
             return cids;
         }
@@ -352,6 +351,7 @@ UnexpectedExceptionHandler.TrackedModule {
             cids = dbp.getChannelIds();
         }
 
+        @Override
         long[] getCids() {
             return cids;
         }
@@ -596,7 +596,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void onClick(View v) {
                 // Update is supported only at channel item list.
                 eAssert(opMode instanceof OpModeChannel);
-                rtt.cancel(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE, null);
+                rtt.cancel(opMode.getCids()[0], RTTask.Action.UPDATE, null);
                 requestSetUpdateButton();
             }
         });
@@ -620,7 +620,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // Update is supported only at channel item list.
                 eAssert(opMode instanceof OpModeChannel);
                 lnf.showTextToast(ItemListActivity.this, result.getMsgId());
-                rtt.consumeResult(((OpModeChannel)opMode).getChannelId(), RTTask.Action.UPDATE);
+                rtt.consumeResult(opMode.getCids()[0], RTTask.Action.UPDATE);
                 requestSetUpdateButton();
             }
         });
@@ -644,7 +644,7 @@ UnexpectedExceptionHandler.TrackedModule {
     updateItems() {
         // Update is supported only at channel item list.
         eAssert(opMode instanceof OpModeChannel);
-        long cid = ((OpModeChannel)opMode).getChannelId();
+        long cid = opMode.getCids()[0];
         BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
         rtt.register(cid, RTTask.Action.UPDATE, updateTask);
         rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
@@ -800,7 +800,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == bar.getCustomView())
             return; // action bar is not initialized yet.
 
-        long cid = ((OpModeChannel)opMode).getChannelId();
+        long cid = opMode.getCids()[0];
         ImageView iv = (ImageView)bar.getCustomView().findViewById(R.id.update_button);
         Animation anim = iv.getAnimation();
 
@@ -1200,13 +1200,7 @@ UnexpectedExceptionHandler.TrackedModule {
         dbp.unregisterChannelWatcher(this);
         dbp.unregisterItemTableWatcher(this);
 
-        long[] cids = new long[0];
-        if (opMode instanceof OpModeChannel)
-            cids = new long[] { ((OpModeChannel)opMode).getChannelId() };
-        else if (opMode instanceof OpModeCategory)
-            cids = ((OpModeCategory)opMode).getCids();
-        else if (opMode instanceof OpModeAll)
-            cids = ((OpModeAll)opMode).getCids();
+        long[] cids = opMode.getCids();
 
         // Simple algorithm : nested loop because # of channel is small enough in most cases.
         boolean channelChanged = false;

@@ -67,10 +67,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         private Handler     handler;
         private OnEvent     onEvent;
 
-        EventListener(Object key, Handler handler, OnEvent onEvent) {
-            this.key = key;
-            this.handler = handler;
-            this.onEvent = onEvent;
+        EventListener(Object aKey, Handler aHandler, OnEvent aOnEvent) {
+            key = aKey;
+            handler = aHandler;
+            onEvent = aOnEvent;
         }
 
         Object getKey() {
@@ -88,8 +88,8 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
     private class BGTaskPost implements Runnable {
         private boolean bCancelled;
-        BGTaskPost(boolean bCancelled) {
-            this.bCancelled = bCancelled;
+        BGTaskPost(boolean aCancelled) {
+            this.bCancelled = aCancelled;
         }
 
         @Override

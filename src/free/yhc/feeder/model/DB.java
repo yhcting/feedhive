@@ -23,6 +23,7 @@ package free.yhc.feeder.model;
 import static free.yhc.feeder.model.Utils.eAssert;
 import static free.yhc.feeder.model.Utils.logI;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -857,14 +858,12 @@ UnexpectedExceptionHandler.TrackedModule {
     updateChannel(long cid, ColumnChannel field, Object v) {
         markChannelChanged(cid);
         ContentValues cvs = new ContentValues();
-        if (v instanceof String)
-            cvs.put(field.getName(), (String)v);
-        else if (v instanceof Long)
-            cvs.put(field.getName(), (Long)v);
-        else if (v instanceof byte[])
-            cvs.put(field.getName(), (byte[])v);
-        else
+        try {
+            Method m = cvs.getClass().getMethod("put", String.class, v.getClass());
+            m.invoke(cvs, field.getName(), v);
+        } catch (Exception e) {
             eAssert(false);
+        }
         return updateChannel(cid, cvs);
     }
 

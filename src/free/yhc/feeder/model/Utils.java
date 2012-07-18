@@ -33,6 +33,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -264,6 +265,14 @@ public class Utils {
     public static void logW(String msg) { log(LogLV.W, msg); }
     public static void logE(String msg) { log(LogLV.E, msg); }
     public static void logF(String msg) { log(LogLV.F, msg); }
+
+    public static <T> T[]
+    toArray(List<T> list, T[] a) {
+        if (a.length < list.size()) {
+          a = (T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), list.size());
+        }
+        return list.toArray(a);
+      }
 
     public static Context
     getAppContext() {

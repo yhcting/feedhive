@@ -21,8 +21,6 @@
 package free.yhc.feeder.model;
 
 public class FeederException extends Exception {
-    private static final long serialVersionUID = 1L;
-
     private Err err;
 
     public FeederException() {

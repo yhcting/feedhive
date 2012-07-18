@@ -167,7 +167,7 @@ OnSharedPreferenceChangeListener {
         long tmPassed = 0;
         if (tmstamp.exists())
             tmPassed = System.currentTimeMillis() - tmstamp.lastModified();
-        if (uip.USAGE_INFO_UPDATE_PERIOD > tmPassed)
+        if (UIPolicy.USAGE_INFO_UPDATE_PERIOD > tmPassed)
             return; // time is not passed enough
 
         sendReportMail(context, uip.getUsageLogFile(), R.string.send_usage_report, USAGE_REPORT_SUBJECT);
