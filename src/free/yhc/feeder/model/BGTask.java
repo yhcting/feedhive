@@ -21,7 +21,6 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Iterator;
@@ -40,7 +39,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
     private String                  nick        = null; // can be used several purpose.
     private Handler                 ownerHandler= new Handler();
-    private LinkedList<EventListener> listenerList = new LinkedList<EventListener>();
+
+    // Event if this is KeyBasedLinkedList, DO NOT USE KeyBasedLinkedList.
+    // Using KeyBasedLinkedList here just increases code complexity.
+    private LinkedList<EventLLElem> eventListenerl = new LinkedList<EventLLElem>();
     private volatile Err            result      = Err.NO_ERR;
 
     // Flags
@@ -54,7 +56,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     private PowerManager.WakeLock   wl          = null;
     private WifiManager.WifiLock    wfl         = null;
 
-    public interface OnEvent<RunParam, CancelParam> {
+    public interface OnEventListener<RunParam, CancelParam> {
         // return : false (DO NOT run this task)
         void onPreRun  (BGTask<RunParam, CancelParam> task);
         void onPostRun (BGTask<RunParam, CancelParam> task, Err result);
@@ -62,15 +64,16 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         void onProgress(BGTask<RunParam, CancelParam> task, long progress);
     }
 
-    public static class EventListener {
-        private Object      key;
-        private Handler     handler;
-        private OnEvent     onEvent;
+    // LLElem : Listener List ELEMent
+    private static class EventLLElem {
+        private final Object            key;
+        private final Handler           handler;
+        private final OnEventListener   listener;
 
-        EventListener(Object aKey, Handler aHandler, OnEvent aOnEvent) {
-            key = aKey;
-            handler = aHandler;
-            onEvent = aOnEvent;
+        EventLLElem(Object aKey, Handler aHandler, OnEventListener aListener) {
+            key         = aKey;
+            handler     = aHandler;
+            listener    = aListener;
         }
 
         Object getKey() {
@@ -81,8 +84,8 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             return handler;
         }
 
-        OnEvent getOnEvent() {
-            return onEvent;
+        OnEventListener getListener() {
+            return listener;
         }
     }
 
@@ -102,16 +105,16 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 return;
             }
 
-            //logI("BGTask : REAL POST!!! cancelled: " + bCancelled + ", NR Listener: " + getListeners().length);
+            //logI("BGTask : REAL POST!!! cancelled: " + bCancelled + ", NR Listener: " + getEventLLElems().length);
             if (bCancelled) {
                 onEarlyCancel(cancelParam);
-                for (EventListener listener : getListeners()) {
-                    final OnEvent onEvent = listener.getOnEvent();
+                for (EventLLElem e : getEventLLElems()) {
+                    final OnEventListener listener = e.getListener();
                     //logI("BGTask : Post(Cancel) to onEvent : " + onEvent.toString());
-                    listener.getHandler().post(new Runnable() {
+                    e.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
-                            onEvent.onCancel(BGTask.this, cancelParam);
+                            listener.onCancel(BGTask.this, cancelParam);
                         }
                     });
                 }
@@ -123,14 +126,14 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 });
             } else {
                 onEarlyPostRun(result);
-                for (EventListener listener : getListeners()) {
-                    final OnEvent onEvent = listener.getOnEvent();
+                for (EventLLElem e : getEventLLElems()) {
+                    final OnEventListener listener = e.getListener();
                     //logI("BGTask : Post(Post) to onEvent : " + onEvent.toString());
-                    listener.getHandler().post(new Runnable() {
+                    e.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
                             //logI("+++ BGTask : postRun : " + onEvent.toString());
-                            onEvent.onPostRun(BGTask.this, result);
+                            listener.onPostRun(BGTask.this, result);
                         }
                     });
                 }
@@ -148,7 +151,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         super();
         // NOTE
         // Even if, BGTask is designed considering multi-threaded environment,
-        //   to simplify synchronization issue, only UI Thread can create BG Task.
+        //   to help understanding code structure, only UI Thread can create BG Task.
         // (Actually, this is NOT constraints for BGTask, but for Feeder app.
         eAssert(Utils.isUiThread());
         runParam = arg;
@@ -193,10 +196,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         }
     }
 
-    private EventListener[]
-    getListeners() {
-        synchronized (listenerList) {
-            return listenerList.toArray(new EventListener[0]);
+    private EventLLElem[]
+    getEventLLElems() {
+        synchronized (eventListenerl) {
+            return eventListenerl.toArray(new EventLLElem[0]);
         }
     }
     // ==========================================
@@ -223,7 +226,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     // ==========================================
     // Open Interface
     // ==========================================
-    public String
+    String
     getNick() {
         return nick;
     }
@@ -238,12 +241,12 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      * To avoid this, isCancelled() is newly introduced and used.
      * @return
      */
-    public boolean
+    boolean
     isCancelled() {
         return cancelled;
     }
 
-    public Err
+    Err
     getResult() {
         eAssert(null != result);
         return result;
@@ -260,56 +263,54 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      * Several event listener may share one key value.
      * Event callback will be called on caller's thread message loop.
      * @param key
-     * @param onEvent
+     * @param listener
+     * @param hasPriority
+     *   true if this event listener
      */
-    public void
-    registerEventListener(Object key, OnEvent onEvent) {
+    void
+    registerEventListener(Object key, OnEventListener listener, boolean hasPriority) {
         // See comments regarding 'eAssert' at BGTask constructor.
         eAssert(Utils.isUiThread());
+        eAssert(null != key && null != listener);
 
         if (ownerHandler.getLooper().getThread() != Thread.currentThread())
             logW("BGTask IMPORTANT : owner thread is different with event listener thread");
 
-        // This is atomic expression
-        synchronized (listenerList) {
+        EventLLElem e = new EventLLElem(key, new Handler(), listener);
+        synchronized (eventListenerl) {
             //logI("BGTask : registerEventListener : key(" + key + ") onEvent(" + onEvent + ")");
-            EventListener listener = new EventListener(key, new Handler(), onEvent);
-            listenerList.addLast(listener);
+            if (hasPriority)
+                eventListenerl.addFirst(e);
+            else
+                eventListenerl.addLast(e);
         }
     }
 
     /**
-     * Same with 'registerEventListener' except for that newly added listener
-     *   will be added to the first of listener list.
-     * Event callback will be called on caller's thread message loop.
+     * Unregister event listener whose key and listener match.
+     * one of 'key' and 'listener' can be null, but NOT both.
+     * IMPORTANT
+     *   unregister SHOULD be called at the same thread context on which corresponding 'registerEventListener' is called.
      * @param key
-     * @param onEvent
+     *   'null' means ignore key value.
+     *   otherwise listeners having matching key value, are unregistered.
+     * @param listener
+     *   'null' means unregister all listeners whose key value matches.
+     *   otherwise, unregister listener whose key and listener both match.
      */
-    public void
-    registerPriorEventListener(Object key, OnEvent onEvent) {
+    void
+    unregisterEventListener(Object key, OnEventListener listener) {
         // See comments regarding 'eAssert' at BGTask constructor.
         eAssert(Utils.isUiThread());
+        eAssert(null != key || null != listener);
 
-        if (ownerHandler.getLooper().getThread() != Thread.currentThread())
-            logW("BGTask IMPORTANT : owner thread is different with event listener thread");
-
-        synchronized (listenerList) {
-            EventListener listener = new EventListener(key, new Handler(), onEvent);
-            listenerList.addFirst(listener);
-        }
-    }
-
-    /**
-     * Unregister all event listeners whose owner is given thread.
-     * @param owner
-     */
-    public void
-    unregisterEventListener(Thread owner) {
-        synchronized (listenerList) {
-            Iterator<EventListener> iter = listenerList.iterator();
+        synchronized (eventListenerl) {
+            Iterator<EventLLElem> iter = eventListenerl.iterator();
             while (iter.hasNext()) {
-                EventListener listener = iter.next();
-                if (listener.getHandler().getLooper().getThread() == owner) {
+                EventLLElem e = iter.next();
+                if ((null == key || e.getKey() == key)
+                    && (null == listener || listener == e.getListener())) {
+                    eAssert(e.getHandler().getLooper().getThread() == Thread.currentThread());
                     //logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
                     iter.remove();
                 }
@@ -318,34 +319,18 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     }
 
     /**
-     * Unregister event listener whose owner and object match.
-     * @param owner
-     * @param onEventKey
-     */
-    public void
-    unregisterEventListener(Thread owner, Object onEventKey) {
-        synchronized (listenerList) {
-            Iterator<EventListener> iter = listenerList.iterator();
-            while (iter.hasNext()) {
-                EventListener listener = iter.next();
-                if (listener.getHandler().getLooper().getThread() == owner
-                    && listener.getKey() == onEventKey) {
-                    //logI("BGTask : unregisterEventListener : (" + listener.key + ") onEvent(" + listener.onEvent + ")");
-                    iter.remove();
-                }
-            }
-        }
-    }
-
-    /**
+     * DANGEROUS FUNCTION
+     * DO NOT USE if you are not sure what your are doing!
      * Make event listener list empty.
      * (Same as unregistering all listeners.)
      */
-    public void
+    void
     clearEventListener() {
-        synchronized (listenerList) {
+        // See comments regarding 'eAssert' at BGTask constructor.
+        eAssert(Utils.isUiThread());
+        synchronized (eventListenerl) {
             //logI("BGTask : clearEventListener");
-            listenerList.clear();
+            eventListenerl.clear();
         }
     }
 
@@ -451,12 +436,12 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             @Override
             public void run() {
                 onEarlyPreRun();
-                for (EventListener listener : getListeners()) {
-                    final OnEvent onEvent = listener.getOnEvent();
-                    listener.getHandler().post(new Runnable() {
+                for (EventLLElem e : getEventLLElems()) {
+                    final OnEventListener listener = e.getListener();
+                    e.getHandler().post(new Runnable() {
                         @Override
                         public void run() {
-                            onEvent.onPreRun(BGTask.this);
+                            listener.onPreRun(BGTask.this);
                         }
                     });
                 }
@@ -483,7 +468,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         if (cancelled)
             return;
 
-        logI("BGTask : BGJobs started");
+        //logI("BGTask : BGJobs started");
         boolean bInterrupted = false;
         try {
             result =  doBGTask(runParam);
@@ -546,7 +531,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      * This will trigger onProgress listener.
      * onProgress listener will be called in their owner's thread context.
      */
-    public void
+    void
     publishProgress(final long progress) {
         ownerHandler.post(new Runnable() {
             @Override
@@ -554,12 +539,12 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 onProgress(progress);
             }
         });
-        for (EventListener listener : getListeners()) {
-            final OnEvent onEvent = listener.getOnEvent();
-            listener.getHandler().post(new Runnable() {
+        for (EventLLElem e : getEventLLElems()) {
+            final OnEventListener listener = e.getListener();
+            e.getHandler().post(new Runnable() {
                 @Override
                 public void run() {
-                    onEvent.onProgress(BGTask.this, progress);
+                    listener.onProgress(BGTask.this, progress);
                 }
             });
         }

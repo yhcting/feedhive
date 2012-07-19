@@ -207,7 +207,7 @@ UnexpectedExceptionHandler.TrackedModule {
             list.setAdapter(new ChannelListAdapter(context, null,
                                                    R.layout.channel_row, list,
                                                    DATA_REQ_SZ, DATA_ARR_MAX,
-                                                   new OnAdapterActionHandler()));
+                                                   new AdapterActionListener()));
             list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                 @Override
                 public void
@@ -282,10 +282,10 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class UpdateBGTaskOnEvent implements BGTask.OnEvent {
+    private class UpdateBGTaskListener implements BGTask.OnEventListener {
         private long    cid = -1;
 
-        UpdateBGTaskOnEvent(long cid) {
+        UpdateBGTaskListener(long cid) {
             this.cid = cid;
         }
 
@@ -297,7 +297,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onCancel(BGTask task, Object param) {
             eAssert(cid >= 0);
-            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
@@ -317,7 +317,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             eAssert(Err.USER_CANCELLED != result);
-            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
@@ -334,9 +334,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
 
-    private class DownloadBGTaskOnEvent implements BGTask.OnEvent {
+    private class DownloadBGTaskListener implements BGTask.OnEventListener {
         private long    cid = -1;
-        DownloadBGTaskOnEvent(long cid) {
+        DownloadBGTaskListener(long cid) {
             this.cid = cid;
         }
 
@@ -347,7 +347,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
-            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
@@ -362,7 +362,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
-            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
@@ -371,12 +371,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class PickIconEventHandler implements SpinAsyncTask.OnEvent {
+    private class PickIconWorker implements SpinAsyncTask.Worker {
         private long    cid = -1;
         private Bitmap  bm = null;
         @Override
         public Err
-        onDoWork(SpinAsyncTask task, Object... objs) {
+        doBackgroundWork(SpinAsyncTask task, Object... objs) {
             Intent data = (Intent)objs[0];
             Uri selectedImage = data.getData();
             String[] filePathColumn = {MediaColumns.DATA};
@@ -426,10 +426,10 @@ UnexpectedExceptionHandler.TrackedModule {
         onCancel(SpinAsyncTask task) {}
     }
 
-    private class DeleteAllDnfilesEventHandler implements SpinAsyncTask.OnEvent {
+    private class DeleteAllDnfilesWorker implements SpinAsyncTask.Worker {
         @Override
         public Err
-        onDoWork(SpinAsyncTask task, Object... objs) {
+        doBackgroundWork(SpinAsyncTask task, Object... objs) {
             Cursor c = dbp.queryChannel(DB.ColumnChannel.ID);
             if (!c.moveToFirst()) {
                 c.close();
@@ -456,11 +456,11 @@ UnexpectedExceptionHandler.TrackedModule {
         onCancel(SpinAsyncTask task) {}
     }
 
-    private class DeleteChannelEventHandler implements SpinAsyncTask.OnEvent {
+    private class DeleteChannelWorker implements SpinAsyncTask.Worker {
         private long nrDelItems    = -1;
         @Override
         public Err
-        onDoWork(SpinAsyncTask task, Object... objs) {
+        doBackgroundWork(SpinAsyncTask task, Object... objs) {
             long[] cids = new long[objs.length];
             for (int i = 0; i < objs.length; i++)
                 cids[i] = (Long)objs[i];
@@ -484,18 +484,18 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
+    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
         @Override
         public void
-        onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
+        onRegister(BGTask task, long cid, RTTask.Action act) {
             if (RTTask.Action.UPDATE == act)
-                rtt.bind(cid, RTTask.Action.UPDATE, ChannelListActivity.this, new UpdateBGTaskOnEvent(cid));
+                rtt.bind(cid, RTTask.Action.UPDATE, ChannelListActivity.this, new UpdateBGTaskListener(cid));
         }
         @Override
-        public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
+        public void onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
-    private class OnAdapterActionHandler implements ChannelListAdapter.OnAction {
+    private class AdapterActionListener implements ChannelListAdapter.OnActionListener {
         @Override
         public void
         onUpdateClick(ImageView ibtn, long cid) {
@@ -810,7 +810,7 @@ UnexpectedExceptionHandler.TrackedModule {
     deleteChannel(Tab tab, long cid) {
         eAssert(null != tab);
         SpinAsyncTask task = new SpinAsyncTask(this,
-                                               new DeleteChannelEventHandler(),
+                                               new DeleteChannelWorker(),
                                                R.string.deleting_channel_msg);
         task.execute(new Long(cid));
     }
@@ -1059,7 +1059,7 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onOk(Dialog dialog) {
                 SpinAsyncTask task = new SpinAsyncTask(ChannelListActivity.this,
-                                                       new DeleteAllDnfilesEventHandler(),
+                                                       new DeleteAllDnfilesWorker(),
                                                        R.string.delete_all_downloaded_file);
                 task.execute((Object)null); // just pass dummy object;
             }
@@ -1279,7 +1279,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         // this may takes quite long time (if image size is big!).
         // So, let's do it in background.
-        new SpinAsyncTask(this, new PickIconEventHandler(), R.string.pick_icon_progress).execute(data);
+        new SpinAsyncTask(this, new PickIconWorker(), R.string.pick_icon_progress).execute(data);
     }
 
     private void
@@ -1312,14 +1312,14 @@ UnexpectedExceptionHandler.TrackedModule {
         findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_itemsAll(v);
+                onOpt_itemsCategory(v);
             }
         });
 
         findViewById(R.id.btn_items_all).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onOpt_itemsCategory(v);
+                onOpt_itemsAll(v);
             }
         });
 
@@ -1527,7 +1527,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // If 'registerManagerEventListener' is below 'getUpdateState',
         //   we may miss binding some updating task!
 
-        rtt.registerManagerEventListener(this, new RTTaskManagerEventHandler());
+        rtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
 
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
@@ -1539,10 +1539,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 do {
                     long cid = c.getLong(0);
                     if (RTTask.TaskState.IDLE != rtt.getState(cid, RTTask.Action.UPDATE))
-                        rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+                        rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
                     long[] ids = rtt.getItemsDownloading(cid);
                     for (long id : ids)
-                        rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent(cid));
+                        rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener(cid));
                 } while (c.moveToNext());
             }
             c.close();
@@ -1603,7 +1603,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //logI("==> ChannelListActivity : onPause");
         dbp.registerChannelWatcher(this);
         dbp.registerChannelTableWatcher(this);
-        rtt.unregisterManagerEventListener(this);
+        rtt.unregisterRegisterEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
         // And when exiting from 'ItemListActivity' by back-key event, 'onStart' is called.

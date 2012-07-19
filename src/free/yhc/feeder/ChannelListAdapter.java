@@ -49,12 +49,12 @@ AsyncCursorAdapter.ItemBuilder {
     private final DBPolicy dbp = DBPolicy.get();
     private final RTTask   rtt = RTTask.get();
 
-    private final OnAction             onAction;
+    private final OnActionListener     actionListener;
     private final View.OnClickListener chIconOnClick;
     private final View.OnClickListener posUpOnClick;
     private final View.OnClickListener posDnOnClick;
 
-    interface OnAction {
+    interface OnActionListener {
         void onUpdateClick(ImageView ibtn, long cid);
         void onMoveUpClick(ImageView ibtn, long cid);
         void onMoveDownClick(ImageView ibtn, long cid);
@@ -85,45 +85,45 @@ AsyncCursorAdapter.ItemBuilder {
         return super.dump(lv) + "[ ChannelListAdapter ]";
     }
 
-    ChannelListAdapter(Context        context,
-                       Cursor         cursor,
-                       int            rowLayout,
-                       ListView       lv,
-                       final int      dataReqSz,
-                       final int      maxArrSz,
-                       OnAction       actionListener) {
+    ChannelListAdapter(Context          context,
+                       Cursor           cursor,
+                       int              rowLayout,
+                       ListView         lv,
+                       final int        dataReqSz,
+                       final int        maxArrSz,
+                       OnActionListener listener) {
         super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
         setItemBuilder(this);
         UnexpectedExceptionHandler.get().registerModule(this);
-        onAction = actionListener;
+        actionListener = listener;
 
         chIconOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == onAction)
+                if (null == actionListener)
                     return;
                 ImageViewEx iv = (ImageViewEx)v;
-                onAction.onUpdateClick(iv, iv.cid);
+                actionListener.onUpdateClick(iv, iv.cid);
             }
         };
 
         posUpOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == onAction)
+                if (null == actionListener)
                     return;
                 ImageViewEx iv = (ImageViewEx)v;
-                onAction.onMoveUpClick(iv, iv.cid);
+                actionListener.onMoveUpClick(iv, iv.cid);
             }
         };
 
         posDnOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == onAction)
+                if (null == actionListener)
                     return;
                 ImageViewEx iv = (ImageViewEx)v;
-                onAction.onMoveDownClick(iv, iv.cid);
+                actionListener.onMoveDownClick(iv, iv.cid);
             }
         };
     }

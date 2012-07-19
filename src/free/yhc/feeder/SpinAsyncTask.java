@@ -36,38 +36,38 @@ DialogInterface.OnDismissListener,
 DialogInterface.OnCancelListener,
 DialogInterface.OnClickListener
 {
-    private String         name         = ""; // for debugging
-    private Context        context      = null;
-    private long           cid          = -1;
-    private ProgressDialog dialog       = null;
-    private int            msgid        = -1;
-    private OnEvent        onEvent      = null;
-    private boolean        userCancelled= false;
-    private boolean        cancelable   = true;
+    private String          name         = ""; // for debugging
+    private Context         context      = null;
+    private long            cid          = -1;
+    private ProgressDialog  dialog       = null;
+    private int             msgid        = -1;
+    private Worker          worker       = null;
+    private boolean         userCancelled= false;
+    private boolean         cancelable   = true;
 
-    interface OnEvent {
-        Err  onDoWork(SpinAsyncTask task, Object... objs);
+    interface Worker {
+        Err  doBackgroundWork(SpinAsyncTask task, Object... objs);
         void onPostExecute(SpinAsyncTask task, Err result);
         void onCancel(SpinAsyncTask task);
     }
 
     private void
-    constructor(Context context, OnEvent onEvent, int msgid, boolean cancelable) {
+    constructor(Context aContext, Worker aWorker, int aMsgid, boolean aCancelable) {
         UnexpectedExceptionHandler.get().registerModule(this);
-        this.context = context;
-        this.onEvent = onEvent;
-        this.msgid   = msgid;
-        this.cancelable = cancelable;
+        context = aContext;
+        worker  = aWorker;
+        msgid   = aMsgid;
+        cancelable = aCancelable;
     }
 
-    SpinAsyncTask(Context context, OnEvent onEvent, int msgid) {
+    SpinAsyncTask(Context context, Worker listener, int msgid) {
         super();
-        constructor(context, onEvent, msgid, true);
+        constructor(context, listener, msgid, true);
     }
 
-    SpinAsyncTask(Context context, OnEvent onEvent, int msgid, boolean cancelable) {
+    SpinAsyncTask(Context context, Worker listener, int msgid, boolean cancelable) {
         super();
-        constructor(context, onEvent, msgid, cancelable);
+        constructor(context, listener, msgid, cancelable);
     }
 
     public void
@@ -99,8 +99,8 @@ DialogInterface.OnClickListener
     doInBackground(Object... objs) {
         //logI("* Start background Job : SpinSyncTask\n");
         Err ret = Err.NO_ERR;
-        if (null != onEvent)
-            ret = onEvent.onDoWork(this, objs);
+        if (null != worker)
+            ret = worker.doBackgroundWork(this, objs);
         return ret;
     }
 
@@ -126,8 +126,8 @@ DialogInterface.OnClickListener
         if (!cancelable)
             return;
         cancelWork();
-        if (null != onEvent)
-            onEvent.onCancel(this);
+        if (null != worker)
+            worker.onCancel(this);
     }
 
     @Override
@@ -150,8 +150,8 @@ DialogInterface.OnClickListener
         if (userCancelled)
             return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
-        if (null != onEvent)
-            onEvent.onPostExecute(this, result);
+        if (null != worker)
+            worker.onPostExecute(this, result);
     }
 
     @Override

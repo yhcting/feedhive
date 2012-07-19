@@ -47,24 +47,24 @@ AsyncCursorAdapter.ItemBuilder {
     private final DBPolicy  dbp = DBPolicy.get();
     private final RTTask    rtt = RTTask.get();
 
-    private final OnAction  onAction;
-    // To avoid using mutex in "DownloadProgressOnEvent", dummyTextView is used.
-    // See "DownloadProgressOnEvent" for details
+    private final OnActionListener  actionListener;
+    // To avoid using mutex in "DownloadProgressListener", dummyTextView is used.
+    // See "DownloadProgressListener" for details
     private final TextView  dummyTextView;
     private final View.OnClickListener favOnClick;
 
     public static class ProgressTextView extends TextView {
-        private DownloadProgressOnEvent onEvent = null;
+        private DownloadProgressListener listener = null;
 
         public ProgressTextView(Context context, AttributeSet attrs) {
             super(context, attrs);
         }
 
-        void switchOnEvent(DownloadProgressOnEvent newOnEvent) {
-            if (null != onEvent)
-                onEvent.setTextView(null);
-            onEvent = newOnEvent;
-            newOnEvent.setTextView(this);
+        void changeListener(DownloadProgressListener newListener) {
+            if (null != listener)
+                listener.setTextView(null);
+            listener = newListener;
+            listener.setTextView(this);
         }
     }
 
@@ -84,7 +84,7 @@ AsyncCursorAdapter.ItemBuilder {
         String      enclosureType   = "";
     }
 
-    private class DownloadProgressOnEvent implements BGTask.OnEvent<BGTaskDownloadToFile.Arg, Object> {
+    private class DownloadProgressListener implements BGTask.OnEventListener<BGTaskDownloadToFile.Arg, Object> {
         // dummyTextView is used for default 'tv' value.
         // If not, 'null' should be used.
         // In this case, code in 'onProgress' should be like below
@@ -97,7 +97,7 @@ AsyncCursorAdapter.ItemBuilder {
         // Keep in mind that assigning reference is atomic operation in Java.
         private volatile TextView tv = dummyTextView;
 
-        DownloadProgressOnEvent(TextView tv) {
+        DownloadProgressListener(TextView tv) {
             this.tv = tv;
         }
 
@@ -124,7 +124,7 @@ AsyncCursorAdapter.ItemBuilder {
         }
     }
 
-    interface OnAction {
+    interface OnActionListener {
         void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state);
     }
 
@@ -158,25 +158,25 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     public
-    ItemListAdapter(Context        context,
-                    Cursor         cursor,
-                    int            rowLayout,
-                    ListView       lv,
-                    final int      dataReqSz,
-                    final int      maxArrSz,
-                    OnAction       actionListener) {
+    ItemListAdapter(Context             context,
+                    Cursor              cursor,
+                    int                 rowLayout,
+                    ListView            lv,
+                    final int           dataReqSz,
+                    final int           maxArrSz,
+                    OnActionListener    listener) {
         super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
         setItemBuilder(this);
         UnexpectedExceptionHandler.get().registerModule(this);
         dummyTextView = new TextView(context);
-        onAction = actionListener;
+        actionListener = listener;
         favOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == onAction)
+                if (null == actionListener)
                     return;
                 ImageViewFavorite iv = (ImageViewFavorite)v;
-                onAction.onFavoriteClick(ItemListAdapter.this, iv, iv.position, iv.id, iv.state);
+                actionListener.onFavoriteClick(ItemListAdapter.this, iv, iv.position, iv.id, iv.state);
             }
         };
     }
@@ -383,10 +383,10 @@ AsyncCursorAdapter.ItemBuilder {
                 });
 
                 // bind event listener to show progress
-                DownloadProgressOnEvent onEvent = new DownloadProgressOnEvent(progressv);
-                progressv.switchOnEvent(onEvent);
+                DownloadProgressListener listener = new DownloadProgressListener(progressv);
+                progressv.changeListener(listener);
                 rtt.unbind(progressv);
-                rtt.bind(ii.id, RTTask.Action.DOWNLOAD, progressv, onEvent);
+                rtt.bind(ii.id, RTTask.Action.DOWNLOAD, progressv, listener);
                 progressv.setVisibility(View.VISIBLE);
                 break;
 

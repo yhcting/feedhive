@@ -100,20 +100,19 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
+    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
         @Override
         public void
-        onBGTaskRegister(long cid, BGTask task, RTTask.Action act) {
+        onRegister(BGTask task, long cid, RTTask.Action act) {
             if (RTTask.Action.DOWNLOAD == act)
-                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent());
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener());
         }
 
         @Override
-        public void onBGTaskUnregister(long cid, BGTask task, RTTask.Action act) { }
+        public void onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
-    private class DownloadBGTaskOnEvent implements
-    BGTask.OnEvent<BGTaskDownloadToFile.Arg, Object> {
+    private class DownloadBGTaskListener implements BGTask.OnEventListener<BGTaskDownloadToFile.Arg, Object> {
         @Override
         public void
         onProgress(BGTask task, long progress) { }
@@ -133,7 +132,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BGTask task, Err result) {
-            logI("ItemViewActivity : DownloadToDBBGTaskOnEvent : onPostRun");
+            logI("ItemViewActivity : DownloadToDBBGTaskListener : onPostRun");
             Intent i = new Intent();
             i.putExtra("id", id);
             setResult(RESULT_DOWNLOAD, i);
@@ -306,12 +305,12 @@ UnexpectedExceptionHandler.TrackedModule {
     onResume() {
         super.onResume();
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
-        rtt.registerManagerEventListener(this, new RTTaskManagerEventHandler());
+        rtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
 
         // Bind download task if needed
         RTTask.TaskState state = rtt.getState(id, RTTask.Action.DOWNLOAD);
         if (RTTask.TaskState.IDLE != state)
-            rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskOnEvent());
+            rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener());
 
         setupLayout();
     }
@@ -321,7 +320,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onPause() {
         //logI("==> ItemListActivity : onPause");
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
-        rtt.unregisterManagerEventListener(this);
+        rtt.unregisterRegisterEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
         rtt.unbind(this);
         super.onPause();

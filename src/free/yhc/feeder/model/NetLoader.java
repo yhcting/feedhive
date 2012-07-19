@@ -21,7 +21,6 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 import static free.yhc.feeder.model.Utils.logW;
 
 import java.io.BufferedInputStream;
@@ -241,7 +240,7 @@ public class NetLoader {
     private RSSParser.Result
     parseFeedUrl(String url)
             throws FeederException {
-        logI("Fetching Channel [" + url + "]");
+        //logI("Fetching Channel [" + url + "]");
         RSSParser.Result res = null;
         long             time;
         int              retry = NET_RETRY;
@@ -257,11 +256,11 @@ public class NetLoader {
                                     .newDocumentBuilder()
                                     .parse(istream);
                     istream.close();
-                    logI("TIME: Open URL and Parseing as Dom : " + (System.currentTimeMillis() - time));
+                    //logI("TIME: Open URL and Parseing as Dom : " + (System.currentTimeMillis() - time));
                     time = System.currentTimeMillis();
                     // Only RSS is supported at this version.
                     res = FeedParser.getParser(dom).parse(dom);
-                    logI("TIME: RSSParsing : " + (System.currentTimeMillis() - time));
+                    //logI("TIME: RSSParsing : " + (System.currentTimeMillis() - time));
                     break; // done
                 } catch (MalformedURLException e) {
                     throw new FeederException(Err.INVALID_URL);
@@ -312,11 +311,11 @@ public class NetLoader {
         String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
         eAssert(null != url);
 
-        logI("Loading Items: " + url);
+        //logI("Loading Items: " + url);
 
         long time = System.currentTimeMillis();
         RSSParser.Result parD = parseFeedUrl(url);
-        logI("TIME: Loading + Parsing : " + (System.currentTimeMillis() - time));
+        //logI("TIME: Loading + Parsing : " + (System.currentTimeMillis() - time));
 
         // set to given value forcely due to this is 'update' - Not new insertion.
 
@@ -358,7 +357,7 @@ public class NetLoader {
                 if (null != imageblob)
                     dbp.updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
             }
-            logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
+            //logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
             checkInterrupted();
         }
 
@@ -394,7 +393,7 @@ public class NetLoader {
         checkInterrupted();
         dbp.updateChannel(cid, parD.channel, newItems, idop);
 
-        logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
+        //logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
     }
 
     /**

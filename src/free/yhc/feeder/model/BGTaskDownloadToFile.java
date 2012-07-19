@@ -51,10 +51,9 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
         setPriority(UIPolicy.get().getPrefBGTaskPriority());
     }
 
-    @Override
     public void
-    registerEventListener(Object key, OnEvent onEvent) {
-        super.registerEventListener(key, onEvent);
+    registerEventListener(Object key, OnEventListener listener) {
+        super.registerEventListener(key, listener, false);
         publishProgress(progress);
     }
 

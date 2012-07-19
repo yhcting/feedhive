@@ -57,5 +57,11 @@
 				<action android:name="android.intent.action.TIME_SET" />
 			</intent-filter>
 		</receiver>
+        <receiver android:name=".NotiManager$NotiIntentReceiver">
+			<intent-filter>
+				<action android:name="feeder.intent.action.NOTIFICATION_DELETE" />
+				<action android:name="feeder.intent.action.NOTIFICATION_CONTENT" />
+			</intent-filter>
+        </receiver>
 	</application>
 </manifest>

@@ -266,14 +266,29 @@ public class Utils {
     public static void logE(String msg) { log(LogLV.E, msg); }
     public static void logF(String msg) { log(LogLV.F, msg); }
 
+    // ------------------------------------------------------
+    // To handle generic array
+    // ------------------------------------------------------
     public static <T> T[]
     toArray(List<T> list, T[] a) {
-        if (a.length < list.size()) {
-          a = (T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), list.size());
-        }
+        if (a.length < list.size())
+            a = (T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), list.size());
         return list.toArray(a);
-      }
+    }
 
+    public static <T> T[]
+    toArray(List<T> list, Class<T> k) {
+        return list.toArray((T[])java.lang.reflect.Array.newInstance(k, list.size()));
+    }
+
+    public static <T> T[]
+    newArray(Class<T> k, int size) {
+        return (T[])java.lang.reflect.Array.newInstance(k, size);
+    }
+
+    // ------------------------------------------------------
+    //
+    // ------------------------------------------------------
     public static Context
     getAppContext() {
         return appContext;

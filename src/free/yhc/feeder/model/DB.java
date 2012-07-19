@@ -484,14 +484,14 @@ UnexpectedExceptionHandler.TrackedModule {
         UnexpectedExceptionHandler.get().registerModule(instance);
     }
 
-    static DB
+    public static DB
     get() {
         if (null == instance)
             instance = new DB();
         return instance;
     }
 
-    void
+    public void
     open() {
         db = getWritableDatabase();
     }

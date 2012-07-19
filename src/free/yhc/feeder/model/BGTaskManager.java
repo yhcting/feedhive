@@ -21,7 +21,6 @@
 package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
 import java.util.HashMap;
 
@@ -31,15 +30,14 @@ import java.util.HashMap;
 // This should be THREAD-SAFE
 class BGTaskManager implements
 UnexpectedExceptionHandler.TrackedModule {
-    private final HashMap<String, TaskMapV> map = new HashMap<String, TaskMapV>();
+    private final HashMap<String, TaskMapElem> map = new HashMap<String, TaskMapElem>();
 
     // TaskMap Value
-    private class TaskMapV {
-        Thread          owner  = null;
+    private class TaskMapElem {
         BGTask          task   = null;
-        TaskMapV(BGTask task, String taskId) {
+        TaskMapElem(BGTask aTask, String taskId) {
+            task = aTask;
             task.setNick(taskId);
-            this.task = task;
         }
     }
 
@@ -63,69 +61,30 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     boolean
     register(String taskId, BGTask task) {
-        logI("BGTM : register :" + taskId);
+        //logI("BGTM : register :" + taskId);
         if (null != map.get(taskId)) {
             eAssert(false);
             return false;
         }
-        map.put(taskId, new TaskMapV(task, taskId));
+        map.put(taskId, new TaskMapElem(task, taskId));
         return true;
     }
 
     /**
-     * Unbind task that id and owner match.
-     * @param owner
-     * @param taskId
-     * @return
-     *   number of tasks unbinded (0 or 1)
-     */
-    int
-    unbind(Thread owner, String taskId) {
-        logI("BGTM : unbind :" + taskId);
-        TaskMapV v = map.get(taskId);
-        if (null == v || v.owner != owner)
-            return 0;
-        logI("BGTM : unbind :" + v.task.getNick());
-        v.task.unregisterEventListener(owner);
-        return 1;
-    }
-
-    /**
-     * Unbind tasks whose owner matches.
-     * @param owner
-     * @return
-     *   number of tasks unbinded.
-     */
-    int
-    unbind(Thread owner) {
-        int        ret = 0;
-        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
-        for (TaskMapV v : vs)
-            if (v.owner == owner) {
-                v.task.unregisterEventListener(owner);
-                logI("BGTM : unbind (owner):" + v.task.getNick());
-                ret++;
-            }
-        return ret;
-    }
-
-    /**
      * Unbind tasks that owner and onEventKey match.
-     * @param owner
-     * @param onEventKey
+     * @param key
      * @return
      *   number of tasks unbinded.
      */
     int
-    unbind(Thread owner, Object onEventKey) {
+    unbind(Object key) {
         int        ret = 0;
-        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
-        for (TaskMapV v : vs)
-            if (v.owner == owner) {
-                v.task.unregisterEventListener(owner, onEventKey);
-                logI("BGTM : unbind (onEventKey) :" + v.task.getNick());
-                ret++;
-            }
+        TaskMapElem[] vs = map.values().toArray(new TaskMapElem[0]);
+        for (TaskMapElem v : vs) {
+            v.task.unregisterEventListener(key, null);
+            //logI("BGTM : unbind (onEventKey) :" + v.task.getNick());
+            ret++;
+        }
         return ret;
     }
 
@@ -138,45 +97,27 @@ UnexpectedExceptionHandler.TrackedModule {
     BGTask
     peek(String taskId) {
         //logI("BGTM : peek [" + taskId);
-        TaskMapV v = map.get(taskId);
+        TaskMapElem v = map.get(taskId);
         return (null == v)? null: v.task;
     }
 
     /**
      * Newly bound event will be registered to the last of listener list.
      * @param taskId
-     * @param onEventKey
+     * @param key
      *   this can be associated with several onEvent.
-     * @param onEvent
+     * @param listener
+     * @param hasPriority
+     *   true if listener SHOULD receive event prior to other existing listeners.
      * @return
      */
     BGTask
-    bind(String taskId, Object onEventKey, BGTask.OnEvent onEvent) {
-        logI("BGTM : bind : " + taskId + " : " + onEvent.toString());
-        TaskMapV v = map.get(taskId);
+    bind(String taskId, Object key, BGTask.OnEventListener listener, boolean hasPriority) {
+        //logI("BGTM : bind : " + taskId + " : " + onEvent.toString());
+        TaskMapElem v = map.get(taskId);
         if (null == v)
             return null;
-        v.owner = Thread.currentThread();
-        v.task.registerEventListener(onEventKey, onEvent);
-        return v.task;
-    }
-
-    /**
-     * This is same with 'bind' except for that newly bound event will be
-     *   registered to the first of listener list.
-     * This SHOULD be used CAREFULLY.
-     * @param taskId
-     * @param onEventKey
-     * @param onEvent
-     * @return
-     */
-    BGTask
-    bindPrior(String taskId, Object onEventKey, BGTask.OnEvent onEvent) {
-        TaskMapV v = map.get(taskId);
-        if (null == v)
-            return null;
-        v.owner = Thread.currentThread();
-        v.task.registerPriorEventListener(onEventKey, onEvent);
+        v.task.registerEventListener(key, listener, hasPriority);
         return v.task;
     }
 
@@ -187,10 +128,10 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     int
     clear(String taskId) {
-        TaskMapV v = map.get(taskId);
+        TaskMapElem v = map.get(taskId);
         if (null == v)
             return 0;
-        logI("BGTM : clear :" + v.task.getNick());
+        //logI("BGTM : clear :" + v.task.getNick());
         v.task.clearEventListener();
         return 1;
     }
@@ -203,7 +144,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     boolean
     unregister(String taskId) {
-        logI("BGTM : unregister :" + taskId);
+        //logI("BGTM : unregister :" + taskId);
         if (null == map.get(taskId))
             return false;
         map.remove(taskId);
@@ -219,7 +160,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     boolean
     start(String taskId) {
-        TaskMapV v = map.get(taskId);
+        TaskMapElem v = map.get(taskId);
         if (null == v)
             return false;
 
@@ -237,11 +178,16 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     boolean
     cancel(String taskId, Object arg) {
-        TaskMapV v = map.get(taskId);
+        TaskMapElem v = map.get(taskId);
         if (null == v)
             return false;
 
         return v.task.cancel(arg);
+    }
+
+    String
+    getTaskId(BGTask task) {
+        return task.getNick();
     }
 
     /**
@@ -259,7 +205,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     BGTask[]
     getTasks() {
-        TaskMapV[] mv = map.values().toArray(new TaskMapV[0]);
+        TaskMapElem[] mv = map.values().toArray(new TaskMapElem[0]);
         BGTask[] ts = new BGTask[mv.length];
         for (int i = 0; i < ts.length; i++)
             ts[i] = mv[i].task;
@@ -271,8 +217,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     void
     cancelAll() {
-        TaskMapV[] vs = map.values().toArray(new TaskMapV[0]);
-        for (TaskMapV v : vs) {
+        TaskMapElem[] vs = map.values().toArray(new TaskMapElem[0]);
+        for (TaskMapElem v : vs) {
             v.task.clearEventListener();
             v.task.cancel(null);
         }

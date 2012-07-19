@@ -147,9 +147,9 @@ UnexpectedExceptionHandler.TrackedModule {
                    || ((fromPubtime <= toPubtime) && (fromPubtime > 0));
         }
 
-        ItemListAdapter.OnAction
+        ItemListAdapter.OnActionListener
         getAdapterActionHandler() {
-            return new ItemListAdapter.OnAction() {
+            return new ItemListAdapter.OnActionListener() {
                 @Override
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
@@ -203,12 +203,12 @@ UnexpectedExceptionHandler.TrackedModule {
             // Bind update task if needed
             RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
             if (RTTask.TaskState.IDLE != state)
-                rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+                rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
 
             // Bind downloading tasks
             long[] ids = rtt.getItemsDownloading(cid);
             for (long id : ids)
-                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
 
             setUpdateButton();
         }
@@ -247,14 +247,9 @@ UnexpectedExceptionHandler.TrackedModule {
             AsyncTask.execute(new Runnable() {
                 @Override
                 public void run() {
-                    Long[] whereValues = Utils.convertArraylongToLong(cids);
-                    Long[] targetValues = new Long[whereValues.length];
                     try {
                         dbp.getDelayedChannelUpdate();
-                        for (int i = 0; i < whereValues.length; i++)
-                            targetValues[i] = dbp.getItemInfoMaxId(whereValues[i]);
-                        dbp.updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
-                                                      DB.ColumnChannel.ID, whereValues);
+                        dbp.updateChannel_lastItemIds(cids);
                     } finally {
                         dbp.putDelayedChannelUpdate();
                         bgtaskRunning = false;
@@ -270,12 +265,12 @@ UnexpectedExceptionHandler.TrackedModule {
             for (long cid : cids) {
                 RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
                 if (RTTask.TaskState.IDLE != state)
-                    rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+                    rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
             }
 
             long[] ids = rtt.getItemsDownloading(cids);
             for (long id : ids)
-                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
         }
 
         @Override
@@ -307,16 +302,16 @@ UnexpectedExceptionHandler.TrackedModule {
                 dbp.getDelayedChannelUpdate();
                 for (long id : ids)
                     if (Feed.Item.isStatFavOn(dbp.getItemInfoLong(id, DB.ColumnItem.STATE)))
-                        rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                        rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
             } finally {
                 dbp.putDelayedChannelUpdate();
             }
         }
 
         @Override
-        ItemListAdapter.OnAction
+        ItemListAdapter.OnActionListener
         getAdapterActionHandler() {
-            return new ItemListAdapter.OnAction() {
+            return new ItemListAdapter.OnActionListener() {
                 @Override
                 public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
@@ -365,14 +360,9 @@ UnexpectedExceptionHandler.TrackedModule {
             AsyncTask.execute(new Runnable() {
                 @Override
                 public void run() {
-                    Long[] whereValues = Utils.convertArraylongToLong(cids);
-                    Long[] targetValues = new Long[whereValues.length];
                     try {
                         dbp.getDelayedChannelUpdate();
-                        for (int i = 0; i < whereValues.length; i++)
-                            targetValues[i] = dbp.getItemInfoMaxId(whereValues[i]);
-                        dbp.updateChannelSet(DB.ColumnChannel.OLDLAST_ITEMID, targetValues,
-                                                      DB.ColumnChannel.ID, whereValues);
+                        dbp.updateChannel_lastItemIds(cids);
                     } finally {
                         dbp.putDelayedChannelUpdate();
                         bgtaskRunning = false;
@@ -388,7 +378,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Bind downloading tasks
             long[] ids = rtt.getItemsDownloading();
             for (long id : ids)
-                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
         }
 
         @Override
@@ -402,9 +392,9 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    public class UpdateBGTaskOnEvent implements BGTask.OnEvent<Long, Object> {
+    public class UpdateBGTaskListener implements BGTask.OnEventListener<Long, Object> {
         private long chid = -1;
-        UpdateBGTaskOnEvent(long chid) {
+        UpdateBGTaskListener(long chid) {
             this.chid = chid;
         }
 
@@ -416,7 +406,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
-            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
@@ -458,10 +448,9 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class DownloadDataBGTaskOnEvent implements
-    BGTask.OnEvent<Object, Object> {
+    private class DownloadDataBGTaskListener implements BGTask.OnEventListener<Object, Object> {
         private long id = -1;
-        DownloadDataBGTaskOnEvent(long id) {
+        DownloadDataBGTaskListener(long id) {
             this.id = id;
         }
 
@@ -473,7 +462,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onCancel(BGTask task, Object param) {
-            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
@@ -491,7 +480,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             //logI("+++ Item Activity DownloadData PostRun");
-            // See comments at "ItemListActivity.UpdateBGTaskOnEvent.OnPostRun"
+            // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
@@ -500,18 +489,18 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class RTTaskManagerEventHandler implements RTTask.OnRTTaskManagerEvent {
+    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
         @Override
         public void
-        onBGTaskRegister(long id, BGTask task, RTTask.Action act) {
+        onRegister(BGTask task, long id, RTTask.Action act) {
             if (RTTask.Action.UPDATE == act)
-                rtt.bind(id, act, ItemListActivity.this, new UpdateBGTaskOnEvent(id));
+                rtt.bind(id, act, ItemListActivity.this, new UpdateBGTaskListener(id));
             else if (RTTask.Action.DOWNLOAD == act)
-                rtt.bind(id, act, ItemListActivity.this, new DownloadDataBGTaskOnEvent(id));
+                rtt.bind(id, act, ItemListActivity.this, new DownloadDataBGTaskListener(id));
         }
 
         @Override
-        public void onBGTaskUnregister(long id, BGTask task, RTTask.Action act) { }
+        public void onUnregister(BGTask task, long id, RTTask.Action act) { }
     }
 
     private boolean
@@ -647,7 +636,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long cid = opMode.getCids()[0];
         BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
         rtt.register(cid, RTTask.Action.UPDATE, updateTask);
-        rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskOnEvent(cid));
+        rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
         rtt.start(cid, RTTask.Action.UPDATE);
     }
 
@@ -1171,7 +1160,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //logI("==> ItemListActivity : onResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
-        rtt.registerManagerEventListener(this, new RTTaskManagerEventHandler());
+        rtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
         View searchBtn = findViewById(R.id.searchbtn);
         if (getListAdapter().isEmpty())
             searchBtn.setVisibility(View.GONE);
@@ -1228,7 +1217,7 @@ UnexpectedExceptionHandler.TrackedModule {
         dbp.registerChannelWatcher(this);
         dbp.registerItemTableWatcher(this);
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
-        rtt.unregisterManagerEventListener(this);
+        rtt.unregisterRegisterEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
         rtt.unbind(this);
         super.onPause();

@@ -64,8 +64,12 @@
     <string name="load_progress">로드 중입니다. 데이터의 크기와 네트웤 사정에 따라 최대 수 분정도 소요될 수도 있습니다.</string>
     <string name="pick_icon_progress">그림을 로드 중입니다.  이미지 크기와 네트웤 사정에 따라 최대 수 분 정도 소요될 수도 있습니다.</string>
     <string name="cancel">취소</string>
-    <string name="update_service_noti_title">예약된 업데이트</string>
-    <string name="update_service_noti_desc">예약된 업데이트 서비스가 시작되었습니다.</string>
+    <string name="noti_newitem_title">새로운 피드</string>
+    <string name="noti_newitem_desc">새로운 피드가 있습니다.</string>
+    <string name="noti_update_title">업데이트 중</string>
+    <string name="noti_update_desc">업데이트 중인 채널이 있습니다.</string>
+    <string name="noti_download_title">다운로드 중</string>
+    <string name="noti_download_desc">다운로드 중인 미디어 혹은 웹 페이지가 있습니다.</string>
     <string name="err_interrupted">동작이 취소 혹은 중단 되었습니다.</string>
     <string name="err_version_mismatch">버젼이 서로 맞지 않습니다.</string>
     <string name="err_url">잘못된 URL입니다.</string>

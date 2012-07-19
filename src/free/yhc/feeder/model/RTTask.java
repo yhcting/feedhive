@@ -66,12 +66,39 @@ OnSharedPreferenceChangeListener {
     //       runQ.addLast(t);
     //   }
     private final Object       taskQSync = new Object();
-    private final LinkedList<ManagerEventListener> eventListenerl = new LinkedList<ManagerEventListener>();
+    private final KeyBasedLinkedList<OnRegisterListener> registerListenerl
+                    = new KeyBasedLinkedList<OnRegisterListener>();
+    private final KeyBasedLinkedList<OnRunQueueChangedListener> runQChangedListenerl
+                    = new KeyBasedLinkedList<OnRunQueueChangedListener>();
     private volatile int       maxConcurrent = 2; // temporally hard coding.
 
-    public interface OnRTTaskManagerEvent {
-        void onBGTaskRegister(long id, BGTask task, Action act);
-        void onBGTaskUnregister(long id, BGTask task, Action act);
+    public interface OnRegisterListener {
+        void onRegister(BGTask task, long id, Action act);
+        void onUnregister(BGTask task, long id, Action act);
+    }
+
+    public interface OnRunQueueChangedListener {
+        // Task Run Queue is changed.
+        /**
+         * Queue is changed.
+         * enTask/enId/enAct is for enqueued task.
+         * deTask/deId/deAct is for dequeued task.
+         * "null == enTask" means only dequeue is issued.
+         * "null == deTask" means only enqueue is issued.
+         * One or both of enTask and deTask SHOULD be NOT null.
+         * @param enTask
+         * @param enId
+         *   valid only if null != enTask
+         * @param enAct
+         *   valid only if null != enTask
+         * @param deTask
+         * @param deId
+         *   valid only if null != deTask
+         * @param deAct
+         *   valid only if null != deTask
+         */
+        void onChanged(BGTask enTask, long enId, Action enAct,
+                       BGTask deTask, long deId, Action deAct);
     }
 
     public static enum TaskState {
@@ -95,16 +122,7 @@ OnSharedPreferenceChangeListener {
         }
     }
 
-    private class ManagerEventListener {
-        Object               key;
-        OnRTTaskManagerEvent listener;
-        ManagerEventListener(Object key, OnRTTaskManagerEvent listener) {
-            this.key = key;
-            this.listener = listener;
-        }
-    }
-
-    private class RunningBGTaskOnEvent implements BGTask.OnEvent {
+    private class RunningBGTaskListener implements BGTask.OnEventListener {
         private void
         onEnd(BGTask task) {
             eAssert(!task.isAlive());
@@ -116,15 +134,19 @@ OnSharedPreferenceChangeListener {
             BGTask t = null;
             synchronized (taskQSync) {
                 runQ.remove(task);
-                if (readyQ.isEmpty())
-                    return;
-                t = readyQ.pop();
-                runQ.addLast(t);
+                if (!readyQ.isEmpty()) {
+                    t = readyQ.pop();
+                    runQ.addLast(t);
+                }
             }
 
             synchronized (bgtm) {
-                bgtm.start(t.getNick());
+                if (null != t) {
+                    bgtm.start(bgtm.getTaskId(t));
+                }
             }
+
+            notifyRunQChanged(t, task);
         }
 
         @Override
@@ -235,6 +257,43 @@ OnSharedPreferenceChangeListener {
         }
         return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
     }
+
+    private void
+    notifyRunQChanged(BGTask enTask, BGTask deTask) {
+        // This is run on UI thread
+        // But to increase readibility... because runQChangedListenerl assumes handled on ui thread.
+        //   - not thread safe!
+
+        eAssert(Utils.isUiThread());
+        String deTid = null;
+        String enTid = null;
+        synchronized (bgtm) {
+            if (null != deTask)
+                deTid = bgtm.getTaskId(deTask);
+            if (null != enTask)
+                enTid = bgtm.getTaskId(enTask);
+        }
+
+        // Notify that runQ is changed to listeners.
+        long deId = 0;
+        Action deAct = null;
+        if (null != deTask) {
+            deId = idFromTid(deTid);
+            deAct = actionFromTid(deTid);
+        }
+
+        long enId = 0;
+        Action enAct = null;
+        if (null != enTask) {
+            enId = idFromTid(enTid);
+            enAct = actionFromTid(enTid);
+        }
+
+        Iterator<OnRunQueueChangedListener> iter = runQChangedListenerl.iterator();
+        while (iter.hasNext())
+            iter.next().onChanged(enTask, enId, enAct, deTask, deId, deAct);
+
+    }
     // ===============================
     // Package Private
     // ===============================
@@ -269,29 +328,36 @@ OnSharedPreferenceChangeListener {
      * @param listener
      */
     public void
-    registerManagerEventListener(Object key, OnRTTaskManagerEvent listener) {
+    registerRegisterEventListener(Object key, OnRegisterListener listener) {
+        eAssert(Utils.isUiThread());
         eAssert(null != key && null != listener);
-        eventListenerl.add(new ManagerEventListener(key, listener));
+        registerListenerl.add(key, listener);
     }
 
-    public long
-    unregisterManagerEventListener(Object key) {
-        Iterator<ManagerEventListener> itr = eventListenerl.iterator();
-        long ret = 0;
-        while (itr.hasNext()) {
-            ManagerEventListener el = itr.next();
-            if (key == el.key) {
-                itr.remove();
-                ret++;
-            }
-        }
-        return ret;
+    public void
+    unregisterRegisterEventListener(Object key) {
+        eAssert(Utils.isUiThread());
+        registerListenerl.remove(key);
+    }
+
+    public void
+    registerRunQChangedListener(Object key, OnRunQueueChangedListener listener) {
+        eAssert(Utils.isUiThread());
+        eAssert(null != key && null != listener);
+        runQChangedListenerl.add(key,  listener);
+    }
+
+    public void
+    unregisterRunQChangedListener(Object key) {
+        eAssert(Utils.isUiThread());
+        runQChangedListenerl.remove(key);
     }
 
     /**
      * Register task.
      * All BG task used SHOULD BE registered at RTTask.
      * If not, task cannot be handled anymore.
+     * It should be called only in UI Thread context
      * @param id
      *   ID of task
      * @param act
@@ -302,18 +368,23 @@ OnSharedPreferenceChangeListener {
      */
     public boolean
     register(long id, Action act, BGTask task) {
+        eAssert(Utils.isUiThread());
+        boolean r;
         synchronized (bgtm) {
-            boolean r = bgtm.register(tid(act, id), task);
-            if (r) {
-                for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
-                    el.listener.onBGTaskRegister(id, task, act);
-            }
-            return r;
+            r = bgtm.register(tid(act, id), task);
         }
+
+        if (r) {
+            Iterator<OnRegisterListener> itr = registerListenerl.iterator();
+            while (itr.hasNext())
+                itr.next().onRegister(task, id, act);
+        }
+        return r;
     }
 
 
     /**
+     * It should be called only in UI Thread context*
      *
      * @param
      *   id ID of task
@@ -324,6 +395,7 @@ OnSharedPreferenceChangeListener {
      */
     public boolean
     unregister(long id, Action act) {
+        eAssert(Utils.isUiThread());
         String taskId = tid(act, id);
 
         boolean r = false;
@@ -342,36 +414,23 @@ OnSharedPreferenceChangeListener {
                 return false;
         }
 
-        for (ManagerEventListener el : eventListenerl.toArray(new ManagerEventListener[0]))
-            el.listener.onBGTaskUnregister(id, task, act);
+        Iterator<OnRegisterListener> itr = registerListenerl.iterator();
+        while (itr.hasNext())
+            itr.next().onUnregister(task, id, act);
 
         return true;
     }
 
     /**
-     * Unbind given task.
-     * @param id
-     * @param act
-     * @return
-     *   number of tasks unbinded (0 or 1)
-     */
-    public int
-    unbind(long id, Action act) {
-        synchronized (bgtm) {
-            return bgtm.unbind(Thread.currentThread(), tid(act, id));
-        }
-    }
-
-    /**
      * Unbind all event listener of BGTask, whose event key matches given one.
-     * @param onEventKey
+     * @param key
      * @return
      *   number of tasks unbinded.
      */
     public int
-    unbind(Object onEventKey) {
+    unbind(Object key) {
         synchronized (bgtm) {
-            return bgtm.unbind(Thread.currentThread(), onEventKey);
+            return bgtm.unbind(key);
         }
     }
 
@@ -379,14 +438,14 @@ OnSharedPreferenceChangeListener {
      * Bind event listener of BGTask with key value.
      * @param id
      * @param act
-     * @param onEventKey
-     * @param onEvent
+     * @param key
+     * @param listener
      * @return
      */
     public BGTask
-    bind(long id, Action act, Object onEventKey, BGTask.OnEvent onEvent) {
+    bind(long id, Action act, Object key, BGTask.OnEventListener listener) {
         synchronized (bgtm) {
-            return bgtm.bind(tid(act, id), onEventKey, onEvent);
+            return bgtm.bind(tid(act, id), key, listener, false);
         }
     }
 
@@ -485,7 +544,7 @@ OnSharedPreferenceChangeListener {
                 return false;
         }
         // NOTE
-        // See comments in RunningBGTaskOnEvent.onEnd
+        // See comments in RunningBGTaskListener.onEnd
         // DO NOT change ORDER of code line.
         boolean bStartImmediate = false;
         synchronized (taskQSync) {
@@ -500,7 +559,7 @@ OnSharedPreferenceChangeListener {
             // operation related with 'runQ' and 'readyQ' SHOULD BE DONE
             //   before normal event listener is called!
             synchronized (bgtm) {
-                bgtm.bindPrior(tid(act, id), null, new RunningBGTaskOnEvent());
+                bgtm.bind(tid(act, id), this, new RunningBGTaskListener(), true);
             }
             // If there is no running task then start NOW!
             if (runQ.size() < maxConcurrent) {
@@ -514,6 +573,9 @@ OnSharedPreferenceChangeListener {
             if (bStartImmediate)
                 bgtm.start(taskId);
         }
+
+        if (bStartImmediate)
+            notifyRunQChanged(t, null);
 
         return true;
     }
@@ -624,9 +686,12 @@ OnSharedPreferenceChangeListener {
     getItemIdOfDownloadTask(BGTask task) {
         // Nick is task id.
         // See BGTM for details
-        String id = task.getNick();
-        eAssert(Action.DOWNLOAD == actionFromTid(id));
-        return idFromTid(id);
+        String tid;
+        synchronized (bgtm) {
+            tid = bgtm.getTaskId(task);
+        }
+        eAssert(Action.DOWNLOAD == actionFromTid(tid));
+        return idFromTid(tid);
     }
 
     public long[]

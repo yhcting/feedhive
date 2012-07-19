@@ -9,3 +9,22 @@ Only constant number and 'static final' variables whose type can be used as
         float, double, byte, char, short, int, long
     * Others
         String(Java 7 or later), Enum.
+
+
+Terms and concepts
+------------------
+* Listener / Observer
+Callback owner doesn't affected by callback's internal behavior.
+And usually, callback owner manages callbacks as list and callback all
+    registered object's callback one by one.
+In genenral, event is just passed to it's callbacks and caller don't care about
+  it.
+Usually, return type of callback is 'Void' because caller doens't care about
+  callback's internal operation.
+
+* Receiver
+Similar with Listener but callback's behavior affects to caller.
+So, usually, it's return type is 'boolean'.
+In genenral, event may be consumed by one of callback.
+For example, 'true' means "Do not pass event to other callbacks behind" and
+  'false' means "event is not consumed. Keep passing event others behind".

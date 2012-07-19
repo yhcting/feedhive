@@ -22,8 +22,8 @@ package free.yhc.feeder;
 
 import android.app.Application;
 import android.content.res.Configuration;
+import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
-import free.yhc.feeder.model.DBThread;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -53,10 +53,7 @@ public class FeederApp extends Application {
         // register default customized uncaught exception handler for error collecting.
         Thread.setDefaultUncaughtExceptionHandler(UnexpectedExceptionHandler.get());
 
-        // Create singleton instances
-        // At this class, DB class cannot be instanciate explicitly because of i's visibility.
-        // But, DBThread instanciate DB class in it.
-        DBThread.get().start();
+        DB.get().open();
         UIPolicy.get();
         DBPolicy.get();
         RTTask.get();
@@ -68,6 +65,9 @@ public class FeederApp extends Application {
     @Override
     public void
     onLowMemory() {
+        // Application is about to be killed.
+        // Remove all non-sticky notification.
+        NotiManager.get().removeAllNonStickyNotification();
         super.onLowMemory();
     }
 }

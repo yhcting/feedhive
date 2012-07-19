@@ -296,7 +296,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null != dpTask)
             dpTask.cancel(true);
 
-        SpinAsyncTask.OnEvent bgRun = new SpinAsyncTask.OnEvent() {
+        SpinAsyncTask.Worker bgRun = new SpinAsyncTask.Worker() {
             @Override
             public void onPostExecute(SpinAsyncTask task, Err result) {
                 if (null != onProvided)
@@ -304,7 +304,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
             @Override
             public Err
-            onDoWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 //logI(">>> async request RUN - START: from " + from + ", # " + sz);
                 dp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, sz);
                 waitDpDone(reqSeq, 50);

@@ -64,8 +64,12 @@
     <string name="load_progress">Loading in progress. It may takes long time (up to several minutes?) based on size of feeds of given site.</string>
     <string name="pick_icon_progress">Loading image in progress. It may takes long time based on size of selected image.</string>
     <string name="cancel">Cancel</string>
-    <string name="update_service_noti_title">Scheduled update</string>
-    <string name="update_service_noti_desc">Scheduled update service is started.</string>
+    <string name="noti_newitem_title">New feeds</string>
+    <string name="noti_newitem_desc">There are new feeds.</string>
+    <string name="noti_update_title">Updating</string>
+    <string name="noti_update_desc">There are channels under update.</string>
+    <string name="noti_download_title">Downloading</string>
+    <string name="noti_download_desc">There are medias or web pages under download.</string>
     <string name="err_interrupted">Operation is interrupted or cancelled.</string>
     <string name="err_version_mismatch">Version mismatch.</string>
     <string name="err_url">Invalid URL.</string>

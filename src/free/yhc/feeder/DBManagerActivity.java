@@ -177,10 +177,10 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        SpinAsyncTask.OnEvent exportWork = new SpinAsyncTask.OnEvent() {
+        SpinAsyncTask.Worker exportWork = new SpinAsyncTask.Worker() {
             @Override
             public Err
-            onDoWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 try {
                     FileInputStream fis = new FileInputStream(new File(inDBFilePath));
                     FileOutputStream fos = new FileOutputStream(new File(exDBFilePath));
@@ -267,10 +267,10 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        SpinAsyncTask.OnEvent importWork = new SpinAsyncTask.OnEvent() {
+        SpinAsyncTask.Worker importWork = new SpinAsyncTask.Worker() {
             @Override
             public Err
-            onDoWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 try {
                     FileInputStream fis = new FileInputStream(exDbf);
                     FileOutputStream fos = new FileOutputStream(inDbf);
@@ -333,11 +333,11 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     shrinkItemsAsync(final long cid, final int percent) {
-        SpinAsyncTask.OnEvent shrinkWork = new SpinAsyncTask.OnEvent() {
+        SpinAsyncTask.Worker shrinkWork = new SpinAsyncTask.Worker() {
             private int nr = 0;
             @Override
             public Err
-            onDoWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 nr = dbp.deleteOldItems(cid, percent);
                 return Err.NO_ERR;
             }
@@ -395,10 +395,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     loadChannInfoListAsync() {
-        SpinAsyncTask.OnEvent loadDBInfoWork = new SpinAsyncTask.OnEvent() {
+        SpinAsyncTask.Worker loadDBInfoWork = new SpinAsyncTask.Worker() {
             @Override
             public Err
-            onDoWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 // Load 'used channel information'
                 Cursor c = dbp.queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
                                                                               DB.ColumnChannel.TITLE });

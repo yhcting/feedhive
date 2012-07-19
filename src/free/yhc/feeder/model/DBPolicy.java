@@ -96,6 +96,15 @@ UnexpectedExceptionHandler.TrackedModule {
     // So, this HACK is used!
     private final AtomicInteger       delayedChannelUpdate = new AtomicInteger(0);
 
+    private final KeyBasedLinkedList<OnChannelUpdatedListener> channUpdatedListenerl
+                        = new KeyBasedLinkedList<OnChannelUpdatedListener>();
+
+    public interface OnChannelUpdatedListener {
+        // Called back after updating channel in case that new items are newly inserted.
+        void onNewItemsUpdated(long cid, int nrNewItems);
+        void onLastItemIdUpdated(long[] cids);
+    }
+
     enum ItemDataType {
         RAW,
         FILE
@@ -279,6 +288,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 eAssert(false);
         }
     }
+
     // ======================================================
     //
     // ======================================================
@@ -330,6 +340,47 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // ======================================================
     //
+    // Event Listeners
+    //
+    // ======================================================
+
+    // ------------------------------------------------------
+    // Channel Event Listeners
+    // ------------------------------------------------------
+    public void
+    registerChannelUpdatedListener(Object key, OnChannelUpdatedListener listener) {
+        synchronized (channUpdatedListenerl) {
+            channUpdatedListenerl.addLast(key, listener);
+        }
+    }
+
+    public void
+    unregisterChannelUpdatedListener(Object key) {
+        synchronized (channUpdatedListenerl) {
+            channUpdatedListenerl.remove(key);
+        }
+    }
+
+    private void
+    notifyNewItemsUpdated(long cid, int nrNewItems) {
+        synchronized (channUpdatedListenerl) {
+            Iterator<OnChannelUpdatedListener> itr = channUpdatedListenerl.iterator();
+            while (itr.hasNext())
+                itr.next().onNewItemsUpdated(cid, nrNewItems);
+        }
+    }
+
+    private void
+    notifyLastItemIdUpdated(long[] cids) {
+        synchronized (channUpdatedListenerl) {
+            Iterator<OnChannelUpdatedListener> itr = channUpdatedListenerl.iterator();
+            while (itr.hasNext())
+                itr.next().onLastItemIdUpdated(cids);
+        }
+    }
+
+    // ======================================================
+    //
     //
     //
     // ======================================================
@@ -348,7 +399,6 @@ UnexpectedExceptionHandler.TrackedModule {
     endTransaction() {
         db.endTransaction();
     }
-
 
     public boolean
     isDefaultCategoryId(long id) {
@@ -815,6 +865,10 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         logI("DBPolicy : new " + newItems.size() + " items are inserted");
         db.updateChannel(cid, ColumnChannel.LASTUPDATE, new Date().getTime());
+
+        if (newItems.size() > 0)
+            notifyNewItemsUpdated(cid, newItems.size());
+
         logI("UpdateChannel DB Section End");
         return 0;
     }
@@ -844,12 +898,6 @@ UnexpectedExceptionHandler.TrackedModule {
         // Fields those are allowed to be updated.
         eAssert(ColumnChannel.IMAGEBLOB == column);
         return db.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
-    }
-
-    public void
-    updateChannelSet(ColumnChannel target, Object[] targetValues,
-                     ColumnChannel where,  Object[] whereValues) {
-        db.updateChannelSet(target, targetValues, where, whereValues);
     }
 
     /**
@@ -900,13 +948,27 @@ UnexpectedExceptionHandler.TrackedModule {
      * Update OLDLAST_ITEMID field to up-to-date.
      * (update to current largest item ID)
      * @param cid
-     * @return
      */
-    public long
+    public void
     updateChannel_lastItemId(long cid) {
-        long maxId = getItemInfoMaxId(cid);
-        updateChannel(cid, ColumnChannel.OLDLAST_ITEMID, maxId);
-        return maxId;
+        updateChannel_lastItemIds(new long[] { cid });
+    }
+
+    /**
+     * Update OLDLAST_ITEMID field to up-to-date.
+     * (update to current largest item ID)
+     * @param cids
+     */
+    public void
+    updateChannel_lastItemIds(long[] cids) {
+        Long[] whereValues = Utils.convertArraylongToLong(cids);
+        Long[] targetValues = new Long[cids.length];
+        for (int i = 0; i < whereValues.length; i++)
+            targetValues[i] = getItemInfoMaxId(whereValues[i]);
+
+        db.updateChannelSet(ColumnChannel.OLDLAST_ITEMID, targetValues,
+                            ColumnChannel.ID, whereValues);
+        notifyLastItemIdUpdated(cids);
     }
 
     /**
