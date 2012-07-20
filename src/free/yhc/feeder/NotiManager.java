@@ -64,7 +64,7 @@ UnexpectedExceptionHandler.TrackedModule {
         private final int       desc;
         private final int       notiId; // notification id
 
-        private final Notification noti;
+        private Notification    noti;
 
         private Notification
         buildNotification() {
@@ -74,7 +74,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             Intent intent = new Intent(Utils.getAppContext(), NotiManager.NotiIntentReceiver.class);
             intent.setAction(NOTI_INTENT_DELETE_ACTION);
-            intent.putExtra("type", this.name());
+            intent.putExtra("type", name());
             PendingIntent piDelete = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent,
                                                                 PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -114,7 +114,19 @@ UnexpectedExceptionHandler.TrackedModule {
             // 'title' doens't have any meaning except for random unique number.
             notiId = title;
 
-            noti = buildNotification();
+            // NOTE
+            // THIS IS REALLY STRANGE! BUT returning 'noti' doesn't work as expected.
+            // PendingIntent sent by notification is NOT the one that is created.
+            // For example, NotiType.NEW_ITEM is shown at status bar. And user delete it.
+            // Then, pendingIntent for DELETE_ACTION is sent to receiver.
+            // That intent SHOULD have extra data string - name - 'NEW_ITEM'.
+            // But interestingly, it has 'DOWNLOAD' as it's extra data.
+            // One possibility is, it's too early to make pending intent because,
+            //   it is called at Application's onCreate().
+            // But, still it is NOT understandable!!
+            // So, based on experimental result, below code is commented out!
+            //
+            //noti = buildNotification();
         }
 
         boolean isSticky() {
@@ -126,6 +138,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         Notification getNotification() {
+            // Below code is a kind of workaround.
+            // Instead of building notification at the constructor,
+            //   delaying building notification as much as possible - on demand.
+            //return buildNotification();
+            if (null == noti)
+                noti = buildNotification();
             return noti;
         }
     }
@@ -247,21 +265,37 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onEnQ(BGTask task, long id, Action act) {
-            if (Action.UPDATE == act && 0 == nrUpdate++)
-                addNotification(NotiType.UPDATE);
+            if (Action.UPDATE == act) {
+                nrUpdate++;
+                // notification may be deleted by user in the middle.
+                // So, checking with only 'nrUpdate' is not enough.
+                // 'anset' should be checked too!
+                if (!anset.contains(NotiType.UPDATE))
+                    addNotification(NotiType.UPDATE);
+            }
 
-            if (Action.DOWNLOAD == act && 0 == nrDownload++)
-                addNotification(NotiType.DOWNLOAD);
+            if (Action.DOWNLOAD == act) {
+                nrDownload++;
+                // See comments above regarding 'UPDATE'
+                if (!anset.contains(NotiType.DOWNLOAD))
+                    addNotification(NotiType.DOWNLOAD);
+            }
         }
 
         @Override
         public void
         onDeQ(BGTask task, long id, Action act) {
-            if (Action.UPDATE == act && 0 == --nrUpdate)
-                removeNotification(NotiType.UPDATE);
+            if (Action.UPDATE == act) {
+                if (0 == --nrUpdate
+                    && anset.contains(NotiType.UPDATE))
+                    removeNotification(NotiType.UPDATE);
+            }
 
-            if (Action.DOWNLOAD == act && 0 == --nrDownload)
-                removeNotification(NotiType.DOWNLOAD);
+            if (Action.DOWNLOAD == act) {
+                if (0 == --nrDownload
+                    && anset.contains(NotiType.DOWNLOAD))
+                    removeNotification(NotiType.DOWNLOAD);
+            }
         }
     }
 
@@ -298,8 +332,9 @@ UnexpectedExceptionHandler.TrackedModule {
             return; // notification is already notified. Nothing to do.
         anset.add(type);
         // Set event time.
-        type.getNotification().when = System.currentTimeMillis();
-        nm.notify(type.getNotiId(), type.getNotification());
+        Notification n = type.getNotification();
+        n.when = System.currentTimeMillis();
+        nm.notify(type.getNotiId(), n);
     }
 
     private void
