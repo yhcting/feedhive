@@ -398,6 +398,9 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (reqSeq != nrseq)
                     return;
 
+                // 'posTop' is changed in 'buildNewItemsArray'.
+                // So backup it before building new items array.
+                int posTopSv = posTop;
                 final Object[] newItems;
                 if (LDType.INIT == ldtype || LDType.RELOAD == ldtype) {
                     newItems = buildNewItemsArray(ldtype, from, aitems.length);
@@ -419,7 +422,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
 
                 View v = lv.getChildAt(0);
-                int posTopSv = posTop;
                 int topY = (v == null) ? 0 : v.getTop();
                 int firstVisiblePos = lv.getFirstVisiblePosition();
 
