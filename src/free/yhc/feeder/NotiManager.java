@@ -3,7 +3,6 @@ package free.yhc.feeder;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.util.HashSet;
-import java.util.Iterator;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -37,7 +36,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private final HashSet<NotiType>     anset = new HashSet<NotiType>();
     private final NotificationManager   nm = (NotificationManager)Utils.getAppContext()
                                                                        .getSystemService(Context.NOTIFICATION_SERVICE);
-    private final TaskRunQListener      taskRunQListener = new TaskRunQListener();
+    private final TaskQListener         taskQListener = new TaskQListener();
     private final ChannUpdatedListener  channUpdatedListener = new ChannUpdatedListener();
 
     // Should be accessed only by NewItemChecker to avoid race-condition.
@@ -79,10 +78,12 @@ UnexpectedExceptionHandler.TrackedModule {
             PendingIntent piDelete = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent,
                                                                 PendingIntent.FLAG_UPDATE_CURRENT);
 
+            /* Disable this feature (Still under debugging & implementation)
             intent = new Intent(Utils.getAppContext(), NotiManager.NotiIntentReceiver.class);
             intent.setAction(NOTI_INTENT_CONTENT_ACTION);
             PendingIntent piContent = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent,
                                                                  PendingIntent.FLAG_UPDATE_CURRENT);
+             */
 
             Notification.Builder nbldr = new Notification.Builder(Utils.getAppContext());
             nbldr.setSmallIcon(icon)
@@ -90,7 +91,7 @@ UnexpectedExceptionHandler.TrackedModule {
                  .setContentTitle(textTitle)
                  .setContentText(textDesc)
                  .setAutoCancel(true)
-                 .setContentIntent(piContent)
+                 //.setContentIntent(piContent)
                  .setDeleteIntent(piDelete);
             return nbldr.getNotification();
         }
@@ -142,18 +143,19 @@ UnexpectedExceptionHandler.TrackedModule {
             if (NOTI_INTENT_DELETE_ACTION.equals(action))
                 NotiManager.get().removeNotification(NotiType.convert(intent.getStringExtra("type")));
             else if (NOTI_INTENT_CONTENT_ACTION.equals(action)) {
+                // Disable this feature (Still under debugging & implementation)
+                eAssert(false);
                 // Launch application
-                Intent i = new Intent(Utils.getAppContext(), FeederActivity.class);
-                i.setAction(Intent.ACTION_MAIN);
-                context.startActivity(i);
+                if (!Utils.isAppInForeground()) {
+                    String name = Utils.getAppContext().getPackageName();
+                    Intent launcher = context.getPackageManager().getLaunchIntentForPackage(name);
+                    try {
+                        context.startActivity(launcher);
+                    } catch (Exception e) {
+                        eAssert(false);
+                    }
+                }
             }
-        }
-    }
-
-
-    private static class BGWorker extends HandlerThread {
-        BGWorker() {
-            super("NotiManager", Process.THREAD_PRIORITY_BACKGROUND);
         }
     }
 
@@ -239,43 +241,27 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
 
-    private class TaskRunQListener implements RTTask.OnRunQueueChangedListener {
+    private class TaskQListener implements RTTask.OnTaskQueueChangedListener {
         private int nrUpdate    = 0;
         private int nrDownload  = 0;
         @Override
-        public void onChanged(BGTask enTask, long enId, Action enAct,
-                              BGTask deTask, long deId, Action deAct) {
-            if (null != enTask) {
-                if (Action.UPDATE == enAct)
-                    nrUpdate++;
-                if (Action.DOWNLOAD == enAct)
-                    nrDownload++;
-            }
+        public void
+        onEnQ(BGTask task, long id, Action act) {
+            if (Action.UPDATE == act && 0 == nrUpdate++)
+                addNotification(NotiType.UPDATE);
 
-            if (null != deTask) {
-                if (Action.UPDATE == deAct)
-                    nrUpdate--;
-                if (Action.DOWNLOAD == deAct)
-                    nrDownload--;
-            }
+            if (Action.DOWNLOAD == act && 0 == nrDownload++)
+                addNotification(NotiType.DOWNLOAD);
+        }
 
-            eAssert(nrUpdate >= 0 && nrDownload >= 0);
+        @Override
+        public void
+        onDeQ(BGTask task, long id, Action act) {
+            if (Action.UPDATE == act && 0 == --nrUpdate)
+                removeNotification(NotiType.UPDATE);
 
-            if (anset.contains(NotiType.UPDATE)) {
-                if (0 == nrUpdate)
-                    removeNotification(NotiType.UPDATE);
-            } else {
-                if (0 < nrUpdate)
-                    addNotification(NotiType.UPDATE);
-            }
-
-            if (anset.contains(NotiType.DOWNLOAD)) {
-                if (0 == nrDownload)
-                    removeNotification(NotiType.DOWNLOAD);
-            } else {
-                if (0 < nrDownload)
-                    addNotification(NotiType.DOWNLOAD);
-            }
+            if (Action.DOWNLOAD == act && 0 == --nrDownload)
+                removeNotification(NotiType.DOWNLOAD);
         }
     }
 
@@ -297,7 +283,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private NotiManager() {
         DBPolicy.get().registerChannelUpdatedListener(this, channUpdatedListener);
-        RTTask.get().registerRunQChangedListener(this, taskRunQListener);
+        RTTask.get().registerTaskQChangedListener(this, taskQListener);
         HandlerThread hThread = new HandlerThread("NotiManager",Process.THREAD_PRIORITY_BACKGROUND);
         hThread.start();
         bgWorkHandler = new Handler(hThread.getLooper());
@@ -335,9 +321,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public void
     removeAllNonStickyNotification() {
-        Iterator<NotiType> itr = anset.iterator();
-        while (itr.hasNext()) {
-            NotiType nty = itr.next();
+        for (NotiType nty : NotiType.values()) {
             if (!nty.isSticky())
                 removeNotification(nty);
         }

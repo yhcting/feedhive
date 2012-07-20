@@ -68,8 +68,8 @@ OnSharedPreferenceChangeListener {
     private final Object       taskQSync = new Object();
     private final KeyBasedLinkedList<OnRegisterListener> registerListenerl
                     = new KeyBasedLinkedList<OnRegisterListener>();
-    private final KeyBasedLinkedList<OnRunQueueChangedListener> runQChangedListenerl
-                    = new KeyBasedLinkedList<OnRunQueueChangedListener>();
+    private final KeyBasedLinkedList<OnTaskQueueChangedListener> taskQChangedListenerl
+                    = new KeyBasedLinkedList<OnTaskQueueChangedListener>();
     private volatile int       maxConcurrent = 2; // temporally hard coding.
 
     public interface OnRegisterListener {
@@ -77,28 +77,10 @@ OnSharedPreferenceChangeListener {
         void onUnregister(BGTask task, long id, Action act);
     }
 
-    public interface OnRunQueueChangedListener {
+    public interface OnTaskQueueChangedListener {
         // Task Run Queue is changed.
-        /**
-         * Queue is changed.
-         * enTask/enId/enAct is for enqueued task.
-         * deTask/deId/deAct is for dequeued task.
-         * "null == enTask" means only dequeue is issued.
-         * "null == deTask" means only enqueue is issued.
-         * One or both of enTask and deTask SHOULD be NOT null.
-         * @param enTask
-         * @param enId
-         *   valid only if null != enTask
-         * @param enAct
-         *   valid only if null != enTask
-         * @param deTask
-         * @param deId
-         *   valid only if null != deTask
-         * @param deAct
-         *   valid only if null != deTask
-         */
-        void onChanged(BGTask enTask, long enId, Action enAct,
-                       BGTask deTask, long deId, Action deAct);
+        void onEnQ(BGTask task, long id, Action act);
+        void onDeQ(BGTask task, long id, Action act);
     }
 
     public static enum TaskState {
@@ -146,7 +128,7 @@ OnSharedPreferenceChangeListener {
                 }
             }
 
-            notifyRunQChanged(t, task);
+            notifyTaskQChanged(task, false);
         }
 
         @Override
@@ -259,39 +241,26 @@ OnSharedPreferenceChangeListener {
     }
 
     private void
-    notifyRunQChanged(BGTask enTask, BGTask deTask) {
+    notifyTaskQChanged(BGTask task, boolean enQ) {
         // This is run on UI thread
-        // But to increase readibility... because runQChangedListenerl assumes handled on ui thread.
+        // But to increase readability... because taskQChangedListenerl assumes handled on ui thread.
         //   - not thread safe!
 
         eAssert(Utils.isUiThread());
-        String deTid = null;
-        String enTid = null;
+        String tid;
         synchronized (bgtm) {
-            if (null != deTask)
-                deTid = bgtm.getTaskId(deTask);
-            if (null != enTask)
-                enTid = bgtm.getTaskId(enTask);
+            tid = bgtm.getTaskId(task);
         }
+        long id = idFromTid(tid);
+        Action act = actionFromTid(tid);
 
-        // Notify that runQ is changed to listeners.
-        long deId = 0;
-        Action deAct = null;
-        if (null != deTask) {
-            deId = idFromTid(deTid);
-            deAct = actionFromTid(deTid);
+        Iterator<OnTaskQueueChangedListener> iter = taskQChangedListenerl.iterator();
+        while (iter.hasNext()) {
+            if (enQ)
+                iter.next().onEnQ(task, id, act);
+            else
+                iter.next().onDeQ(task, id, act);
         }
-
-        long enId = 0;
-        Action enAct = null;
-        if (null != enTask) {
-            enId = idFromTid(enTid);
-            enAct = actionFromTid(enTid);
-        }
-
-        Iterator<OnRunQueueChangedListener> iter = runQChangedListenerl.iterator();
-        while (iter.hasNext())
-            iter.next().onChanged(enTask, enId, enAct, deTask, deId, deAct);
 
     }
     // ===============================
@@ -341,16 +310,16 @@ OnSharedPreferenceChangeListener {
     }
 
     public void
-    registerRunQChangedListener(Object key, OnRunQueueChangedListener listener) {
+    registerTaskQChangedListener(Object key, OnTaskQueueChangedListener listener) {
         eAssert(Utils.isUiThread());
         eAssert(null != key && null != listener);
-        runQChangedListenerl.add(key,  listener);
+        taskQChangedListenerl.add(key,  listener);
     }
 
     public void
-    unregisterRunQChangedListener(Object key) {
+    unregisterTaskQChangedListener(Object key) {
         eAssert(Utils.isUiThread());
-        runQChangedListenerl.remove(key);
+        taskQChangedListenerl.remove(key);
     }
 
     /**
@@ -574,8 +543,7 @@ OnSharedPreferenceChangeListener {
                 bgtm.start(taskId);
         }
 
-        if (bStartImmediate)
-            notifyRunQChanged(t, null);
+        notifyTaskQChanged(t, true);
 
         return true;
     }
