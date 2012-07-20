@@ -126,14 +126,17 @@
     <string name="setting_browser">브라우져 설정</string>
     <string name="setting_browser_in">내부 브라우져</string>
     <string name="setting_browser_ex">외부 브라우져</string>
+    <string name="pref_tuning">성능 튜닝</string>
     <string name="pref_maxnr_bgtask">최대 백그라운드 Task개수</string>
     <string name="pref_maxnr_bgtask_desc">동시에 수행하는 업데이트, 다운로드 등의 백그라운드 Task개수. 값이 높으면 여러 작업을 동시에 수행하나 반응속도가 떨어질 수 있습니다.</string>
     <string name="pref_bgtask_prio">백그라운드 Task 우선순위</string>
     <string name="pref_bgtask_prio_desc">값이 높으면 업데이트나 다운로드의 시간은 빨라질 수 있으나 반응속도가 떨어지고, 낮으면 그 반대가 됩니다.</string>
+    <string name="pref_feedback">피드백</string>
     <string name="pref_send_err_report">에러 레보트 보내기</string>
     <string name="pref_send_err_report_desc">어플리케이션에 문제가 발생했을때, 에러 레포트를 보냅니다.</string>
     <string name="pref_send_usage_report">개선정보 보내기</string>
     <string name="pref_send_usage_report_desc">어플리케이션 기능을 향상시킬 수 있는 정보를 보냅니다. (예. 추천채널에는 없으나, 현재 사용중인 채널들 등)</string>
+    <string name="pref_storage">저장소</string>
     <string name="pref_download_root">앱 디렉토리</string>
     <string name="pref_download_root_desc">다운로드 받은 파일들이 저장될 디렉토리를 설정합니다. 기존 디렉토리는 그대로 보존됩니다.</string>
 </resources>

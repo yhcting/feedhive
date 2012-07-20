@@ -126,14 +126,17 @@
     <string name="setting_browser">Browser setting</string>
     <string name="setting_browser_in">Internal browser</string>
     <string name="setting_browser_ex">External browser</string>
+    <string name="pref_tuning">Performance Tuning</string>
     <string name="pref_maxnr_bgtask">Maximum BG Tasks</string>
     <string name="pref_maxnr_bgtask_desc">Maximum number of background tasks that can be run concurrently.</string>
     <string name="pref_bgtask_prio">Priority of background task</string>
     <string name="pref_bgtask_prio_desc">Update or download performance will be increased with higher value, but responsibility will be worse.</string>
+    <string name="pref_feedback">Feedback</string>
     <string name="pref_send_err_report">Sending error report</string>
     <string name="pref_send_err_report_desc">Error report is sent when application is crashed.</string>
     <string name="pref_send_usage_report">Sending usage report</string>
     <string name="pref_send_usage_report_desc">Sends usage information to improve application (ex. channel urls those are not included at predefined channel.)</string>
+    <string name="pref_storage">Storage</string>
     <string name="pref_download_root">Application directory.</string>
     <string name="pref_download_root_desc">Root directory where downloaded files are stored.</string>
 </resources>

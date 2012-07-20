@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <PreferenceCategory android:title="@string/setting">
+    <PreferenceCategory android:title="@string/pref_tuning">
         <ListPreference
             android:title="@string/pref_maxnr_bgtask"
             android:summary="@string/pref_maxnr_bgtask_desc"
@@ -15,6 +15,8 @@
             android:defaultValue="low"
             android:entries="@array/pref_bgtask_prio_entry"
             android:entryValues="@array/pref_bgtask_prio_value" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_feedback">
         <ListPreference
             android:title="@string/pref_send_err_report"
             android:summary="@string/pref_send_err_report_desc"
@@ -29,6 +31,8 @@
             android:defaultValue="yes"
             android:entries="@array/pref_yes_no_entry"
             android:entryValues="@array/pref_yes_no_value" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_storage">
         <EditTextPreference
             android:title="@string/pref_download_root"
             android:summary="@string/pref_download_root_desc"
