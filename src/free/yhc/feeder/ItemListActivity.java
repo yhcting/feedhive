@@ -484,7 +484,9 @@ UnexpectedExceptionHandler.TrackedModule {
             if (isActivityFinishing())
                 return;
 
-            getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
+            if (Err.NO_ERR == result)
+                getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
+
             dataSetChanged(id);
         }
     }
