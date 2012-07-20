@@ -38,15 +38,14 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     private static final String WLTAG = "BGTask";
 
     private String                  nick        = null; // can be used several purpose.
-    private Handler                 ownerHandler= new Handler();
+    private final Handler           ownerHandler= new Handler();
+    private final Object            stateLock   = new Object();
+    private volatile State          state       = State.READY;
 
     // Event if this is KeyBasedLinkedList, DO NOT USE KeyBasedLinkedList.
     // Using KeyBasedLinkedList here just increases code complexity.
     private LinkedList<EventLLElem> eventListenerl = new LinkedList<EventLLElem>();
     private volatile Err            result      = Err.NO_ERR;
-
-    // Flags
-    private volatile boolean        cancelled   = false;
 
     private int                     opt         = 0;
     private RunParam                runParam    = null;
@@ -62,6 +61,13 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         void onPostRun (BGTask<RunParam, CancelParam> task, Err result);
         void onCancel  (BGTask<RunParam, CancelParam> task, CancelParam param);
         void onProgress(BGTask<RunParam, CancelParam> task, long progress);
+    }
+
+    private static enum State {
+        READY,
+        RUNNING,
+        CANCELLED,
+        DONE,
     }
 
     // LLElem : Listener List ELEMent
@@ -91,8 +97,10 @@ public class BGTask<RunParam, CancelParam> extends Thread {
 
     private class BGTaskPost implements Runnable {
         private boolean bCancelled;
-        BGTaskPost(boolean aCancelled) {
-            this.bCancelled = aCancelled;
+        private Err     result;
+        BGTaskPost(boolean aCancelled, Err aResult) {
+            bCancelled = aCancelled;
+            result = aResult;
         }
 
         @Override
@@ -101,7 +109,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 //logI("BGTask : REPOST : wait for task is Done");
                 // post message continuously may drop responsibility for user, in case that ownerHandler is attached to UI thread.
                 // To increase responsibility, post message with some delay.
-                ownerHandler.postDelayed(new BGTaskPost(bCancelled), 10);
+                ownerHandler.postDelayed(new BGTaskPost(bCancelled, result), 10);
                 return;
             }
 
@@ -243,7 +251,8 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      */
     boolean
     isCancelled() {
-        return cancelled;
+        // stateLock don't needed to be used here because state is volatile.
+        return State.CANCELLED == state;
     }
 
     Err
@@ -465,13 +474,19 @@ public class BGTask<RunParam, CancelParam> extends Thread {
     public final void
     run() {
         // Task may be cancelled before real-running.
-        if (cancelled)
-            return;
+        // 'stateLock' don't needed to be used here because state is volatile.
+        synchronized (stateLock) {
+            if (State.READY != state) {
+                eAssert(false);
+                return;
+            }
+            state = State.RUNNING;
+        }
 
         //logI("BGTask : BGJobs started");
         boolean bInterrupted = false;
         try {
-            result =  doBGTask(runParam);
+            result = doBGTask(runParam);
             eAssert(null != result);
         } catch (FeederException e) {
             if (Err.INTERRUPTED == e.getError())
@@ -481,17 +496,21 @@ public class BGTask<RunParam, CancelParam> extends Thread {
         if (!bInterrupted)
             bInterrupted = Thread.currentThread().isInterrupted();
 
-        if (cancelled && Err.NO_ERR != result)
-            result = Err.USER_CANCELLED;
+        synchronized (stateLock) {
+            if (State.CANCELLED == state)
+                result = Err.USER_CANCELLED;
+            else
+                state = State.DONE;
+        }
 
         //logI("BGTask : BGJobs done - try to post! : " + result.name() + " interrupted(" + bInterrupted + ")");
 
         if (bInterrupted
             || Err.INTERRUPTED == result
             || Err.USER_CANCELLED == result)
-            ownerHandler.post(new BGTaskPost(true));
+            ownerHandler.post(new BGTaskPost(true, result));
         else
-            ownerHandler.post(new BGTaskPost(false));
+            ownerHandler.post(new BGTaskPost(false, result));
     }
 
     /**
@@ -503,10 +522,16 @@ public class BGTask<RunParam, CancelParam> extends Thread {
      */
     boolean
     cancel(CancelParam param) {
-        if (cancelled)
-            return true; // nothing to do.
+        synchronized (stateLock) {
+            switch(state) {
+            case CANCELLED:
+                return true;
+            case DONE:
+                return false;
+            }
+            state = State.CANCELLED;
+        }
 
-        cancelled = true;
         result = Err.USER_CANCELLED;
         cancelParam = param;
         //logI("BGTask : cancel()");
@@ -515,7 +540,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
             // Task is not even started.
             // We can cancel it!.
             interrupt();
-            ownerHandler.post(new BGTaskPost(true));
+            ownerHandler.post(new BGTaskPost(true, result));
         } else if (Thread.State.TERMINATED == getState())
             // Task is already finished.
             // So, we cannot cancel it!
