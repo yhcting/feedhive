@@ -20,7 +20,6 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.logI;
 
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
     private volatile NetLoader loader = null;
@@ -56,7 +55,7 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
             else
                 loader.updateLoad(arg.cid, arg.customIconref);
         } catch (FeederException e) {
-            logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
+            //logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
             return e.getError();
         }
         return Err.NO_ERR;

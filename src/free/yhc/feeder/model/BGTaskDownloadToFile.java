@@ -20,8 +20,6 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.logI;
-
 import java.io.File;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
@@ -60,8 +58,8 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     @Override
     protected Err
     doBGTask(Arg arg) {
-        logI("* Start background Job : DownloadToFileTask\n" +
-             "    Url : " + arg.url);
+        //logI("* Start background Job : DownloadToFileTask\n" +
+        //     "    Url : " + arg.url);
         loader = new NetLoader();
 
         Err result = Err.NO_ERR;

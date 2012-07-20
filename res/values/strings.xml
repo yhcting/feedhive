@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">FeedHive</string>
+    <string name="app_name">피드집</string>
     <string name="ok">확인</string>
     <string name="yes">예</string>
     <string name="no">아니오</string>
