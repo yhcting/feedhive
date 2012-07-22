@@ -20,9 +20,12 @@
 
 package free.yhc.feeder;
 
+import java.util.Calendar;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.os.AsyncTask;
 import android.os.Bundle;
 
 public class FeederActivity extends Activity {
@@ -30,6 +33,21 @@ public class FeederActivity extends Activity {
     public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Sometimes released version may have some issues regarding scheduled update.
+        // Once scheduled update is executed for some reasons, next scheduled update is not
+        //   set either.
+        // That leads to scheduled update never happens until there are some changes at channel
+        //   (adding new one or deleting existing one) even if issues are fixed at next release version
+        // To avoid this case, reschedule whenever starting application.
+        // This may lead to some delay for starting application(but not much) and no harmful.
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
+            }
+        });
+
+
         Intent intent = new Intent(this, ChannelListActivity.class);
         startActivity(intent);
         finish();

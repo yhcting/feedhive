@@ -71,7 +71,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static int                   srvcnt = 0;
 
     // Scheduled update is enabled/disabled.
-    // If disabled, requested command is continuosly posted to message Q until
+    // If disabled, requested command is continuously posted to message Q until
     //   scheduled update is re-enabled again.
     private static boolean               enabled = true;
 
