@@ -378,11 +378,6 @@ OnSharedPreferenceChangeListener {
         if (!r || null == task)
             return false;
 
-        synchronized (taskQSync) {
-            if (runQ.contains(task) || readyQ.contains(task))
-                return false;
-        }
-
         Iterator<OnRegisterListener> itr = registerListenerl.iterator();
         while (itr.hasNext())
             itr.next().onUnregister(task, id, act);
