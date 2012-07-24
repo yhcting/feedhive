@@ -82,6 +82,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private final UIPolicy  uip     = UIPolicy.get();
     private final Handler   asyncHandler;
 
+    // Only for bug reporting.
+    private final LinkedList<String>  wiredChannl = new LinkedList<String>();
     // Getting max item id of channel takes longer time than expected.
     // So, let's caching it.
     // It is used at very few places.
@@ -295,7 +297,13 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ DBPolicy ]";
+        StringBuilder bldr = new StringBuilder("[ DBPolicy ]\n");
+        synchronized (wiredChannl) {
+            Iterator<String> itr = wiredChannl.iterator();
+            while (itr.hasNext())
+                bldr.append("  Wired Channel : " + itr.next() + "\n");
+        }
+        return bldr.toString();
     }
 
     // S : Singleton instance
@@ -1378,8 +1386,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // we don't need to create valid filename with empty url value.
-        if (url.isEmpty())
+        if (url.isEmpty()) {
+            synchronized (wiredChannl) {
+                wiredChannl.add(getChannelInfoString(cid, DB.ColumnChannel.URL));
+            }
             return null;
+        }
 
         String ext = Utils.getExtentionFromUrl(url);
 
