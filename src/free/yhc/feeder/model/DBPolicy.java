@@ -137,7 +137,7 @@ UnexpectedExceptionHandler.TrackedModule {
     //
     // ======================================================
     private DBPolicy() {
-        UnexpectedExceptionHandler.get().registerModule(instance);
+        UnexpectedExceptionHandler.get().registerModule(this);
         DBAsyncThread async = new DBAsyncThread();
         async.start();
         asyncHandler = new Handler(async.getLooper());

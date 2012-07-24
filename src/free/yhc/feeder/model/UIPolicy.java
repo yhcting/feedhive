@@ -104,7 +104,10 @@ UnexpectedExceptionHandler.TrackedModule {
             actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
             break;
         case Feed.Channel.CHANN_TYPE_MEDIA:
-            actFlag = Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_DN | Feed.Channel.FACT_PROG_DEFAULT;
+            if (Utils.isValidValue(iParD.enclosureUrl))
+                actFlag = Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_DN | Feed.Channel.FACT_PROG_DEFAULT;
+            else
+                actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
             break;
         case Feed.Channel.CHANN_TYPE_EMBEDDED_MEDIA: // special for youtube!
             actFlag = Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_EX;

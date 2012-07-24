@@ -160,6 +160,9 @@ UncaughtExceptionHandler {
      */
     public boolean
     registerModule(TrackedModule m) {
+        if (null == m)
+            return false;
+
         synchronized (mods) {
             if (mods.contains(m))
                 return false;
