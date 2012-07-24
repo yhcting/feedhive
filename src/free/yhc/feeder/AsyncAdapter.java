@@ -296,11 +296,15 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    waitDpDone(long reqSeq, int ms) {
+    waitDpDone(long reqSeq, int ms, int timeoutms) {
+        int summs = 0;
         try {
-            while (!dpDone && reqSeq == nrseq)
+            while (!dpDone && reqSeq == nrseq && summs < timeoutms) {
                 Thread.sleep(ms);
+                summs += ms;
+            }
         } catch (InterruptedException e) {}
+        eAssert(summs < timeoutms);
     }
 
     private void
@@ -327,7 +331,7 @@ UnexpectedExceptionHandler.TrackedModule {
             doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 //logI(">>> async request RUN - START: from " + from + ", # " + sz);
                 dp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, sz);
-                waitDpDone(reqSeq, 50);
+                waitDpDone(reqSeq, 50, (int)Utils.MIN_IN_MS * 3); // timeout 3 minutes.
                 //logI(">>> async request RUN - END: from " + from + ", # " + sz);
                 return Err.NO_ERR;
             }

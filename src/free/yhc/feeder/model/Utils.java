@@ -56,6 +56,7 @@ public class Utils {
     public static final int    MAX_FILENAME_LENGTH = 127;
 
 
+    public static final long   MIN_IN_MS    = 60 * 1000;
     public static final long   HOUR_IN_MS   = 60 * 60 * 1000;
     public static final long   DAY_IN_MS    = 24 * HOUR_IN_MS;
     public static final int    HOUR_IN_SEC  = 60 * 60;
