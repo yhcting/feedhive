@@ -127,11 +127,11 @@ public class Feed {
         // Feed Type
         // ==================
         // for news/article etc
-        public static final long CHANN_TYPE_ARTICLE        = 0;
+        public static final int CHANN_TYPE_ARTICLE        = 0;
         // for link and description for media data (ex. podcast)
-        public static final long CHANN_TYPE_MEDIA          = 1;
+        public static final int CHANN_TYPE_MEDIA          = 1;
         // link is page that embedding media data (ex. youtube)
-        public static final long CHANN_TYPE_EMBEDDED_MEDIA = 2;
+        public static final int CHANN_TYPE_EMBEDDED_MEDIA = 2;
 
         // 100 x 100 is enough size for channel icon.
         public static final int ICON_MAX_WIDTH  = 100;
@@ -147,7 +147,7 @@ public class Feed {
             // Type is usually determined by which namespace is used at XML.
             // For example.
             //   xmlns:itunes -> Media
-            long     type         = CHANN_TYPE_ARTICLE;
+            int      type         = CHANN_TYPE_ARTICLE;
             String   title        = "";
             String   description  = "";
             String   imageref     = "";

@@ -21,6 +21,9 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.io.File;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.database.StaleDataException;
@@ -252,7 +255,11 @@ AsyncCursorAdapter.ItemBuilder {
             i.enclosureLen = getCursorString(c, DB.ColumnItem.ENCLOSURE_LENGTH);
             i.enclosureUrl = getCursorString(c, DB.ColumnItem.ENCLOSURE_URL);
             i.link = getCursorString(c, DB.ColumnItem.LINK);
-            i.hasDnFile = dbp.getItemInfoDataFile(i.id).exists();
+            // This runs on background thread.
+            // So, assert on this thread doesn't stop application and reporting bug.
+            // Therefore, this should be endurable for unexpected result.
+            File df = dbp.getItemInfoDataFile(i.id);
+            i.hasDnFile = null != df && df.exists();
 
             int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
             i.bChannel = (0 <= cidx);
