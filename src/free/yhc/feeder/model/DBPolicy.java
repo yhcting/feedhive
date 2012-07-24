@@ -1656,4 +1656,24 @@ UnexpectedExceptionHandler.TrackedModule {
     isChannelTableWatcherUpdated(Object key) {
         return db.isChannelTableWatcherUpdated(key);
     }
+    // -------------- Category Table ------------------
+    public void
+    registerCategoryTableWatcher(Object key) {
+        db.registerCategoryTableWatcher(key);
+    }
+
+    public boolean
+    isCategoryTableWatcherRegistered(Object key) {
+        return db.isCategoryTableWatcherRegistered(key);
+    }
+
+    public void
+    unregisterCategoryTableWatcher(Object key) {
+        db.unregisterCategoryTableWatcher(key);
+    }
+
+    public boolean
+    isCategoryTableWatcherUpdated(Object key) {
+        return db.isCategoryTableWatcherUpdated(key);
+    }
 }

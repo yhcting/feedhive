@@ -1516,6 +1516,16 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onResume() {
         super.onResume();
+
+        if (dbp.isCategoryTableWatcherRegistered(this)
+            && dbp.isCategoryTableWatcherUpdated(this)) {
+            // category table is changed outside of this activity.
+            // restarting is required!!
+            Intent intent = new Intent(this, ChannelListActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
         //logI("==> ChannelListActivity : onResume");
         // NOTE
         // Case to think about
@@ -1603,6 +1613,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //logI("==> ChannelListActivity : onPause");
         dbp.registerChannelWatcher(this);
         dbp.registerChannelTableWatcher(this);
+        dbp.registerCategoryTableWatcher(this);
         rtt.unregisterRegisterEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.

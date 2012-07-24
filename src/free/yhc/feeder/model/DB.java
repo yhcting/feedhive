@@ -52,6 +52,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private final HashMap<Object, Boolean>       itmTblMark = new HashMap<Object, Boolean>();
     // Marker whether channel table size is changed or not by insert or delete
     private final HashMap<Object, Boolean>       chTblMark = new HashMap<Object, Boolean>();
+    // Marker whether category table size is changed or not by insert or delete
+    private final HashMap<Object, Boolean>       catTblMark = new HashMap<Object, Boolean>();
 
     /**************************************
      *
@@ -682,6 +684,34 @@ UnexpectedExceptionHandler.TrackedModule {
         return isBooleanMarkerUpdated(chTblMark, key);
     }
 
+    // =======================================
+    // Category Table Watcher
+    // =======================================
+    private void
+    markCategoryTableChanged() {
+        markBooleanChanged(catTblMark);
+    }
+
+    void
+    registerCategoryTableWatcher(Object key) {
+        registerToBooleanMarker(catTblMark, key);
+    }
+
+    boolean
+    isCategoryTableWatcherRegistered(Object key) {
+        return isRegisteredToBooleanMarker(catTblMark, key);
+    }
+
+    void
+    unregisterCategoryTableWatcher(Object key) {
+        unregisterToBooleanMarker(catTblMark, key);
+    }
+
+    boolean
+    isCategoryTableWatcherUpdated(Object key) {
+        return isBooleanMarkerUpdated(catTblMark, key);
+    }
+
     /**************************************
      * DB operation
      **************************************/
@@ -698,6 +728,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // All DB information is changed now!.
         markChannelTableChanged();
         markItemTableChanged();
+        markCategoryTableChanged();
 
         // Mark as all channel is changed
         Cursor c = db.query(TABLE_CHANNEL,
@@ -741,11 +772,13 @@ UnexpectedExceptionHandler.TrackedModule {
     insertCategory(Feed.Category category) {
         ContentValues values = new ContentValues();
         values.put(ColumnCategory.NAME.getName(), category.name);
+        markCategoryTableChanged();
         return db.insert(TABLE_CATEGORY, null, values);
     }
 
     long
     deleteCategory(long id) {
+        markCategoryTableChanged();
         return db.delete(TABLE_CATEGORY,
                          ColumnCategory.ID.getName() + " = " + id,
                          null);
@@ -753,6 +786,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     long
     deleteCategory(String name) {
+        markCategoryTableChanged();
         return db.delete(TABLE_CATEGORY,
                          ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
                          null);
