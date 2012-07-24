@@ -27,6 +27,7 @@ import java.io.File;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
@@ -340,5 +341,12 @@ UnexpectedExceptionHandler.TrackedModule {
             wv.destroy();
         super.onDestroy();
         UnexpectedExceptionHandler.get().unregisterModule(this);
+    }
+
+    @Override
+    public void
+    onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Do nothing!
     }
 }
