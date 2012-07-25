@@ -1377,16 +1377,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         if (!Utils.isValidValue(url)) {
             long action = getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-            if (Feed.Channel.isActTgtLink(action))
-                url = getItemInfoString(id, DB.ColumnItem.LINK);
-            else if (Feed.Channel.isActTgtEnclosure(action))
-                url = getItemInfoString(id, DB.ColumnItem.ENCLOSURE_URL);
-            else
-                url = "";
+            String link = getItemInfoString(id, DB.ColumnItem.LINK);
+            String enclosure = getItemInfoString(id, DB.ColumnItem.ENCLOSURE_URL);
+            url = uip.getDynamicActionTargetUrl(action, link, enclosure);
         }
 
         // we don't need to create valid filename with empty url value.
-        if (url.isEmpty()) {
+        if (!Utils.isValidValue(url)) {
             synchronized (wiredChannl) {
                 wiredChannl.add(getChannelInfoString(cid, DB.ColumnChannel.URL));
             }

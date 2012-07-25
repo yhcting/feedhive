@@ -239,7 +239,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
                 Feed.Item.ParD item = new Feed.Item.ParD();
                 iv.set(item);
-                iteml.addLast(item);
+                if (isValidItem(item))
+                    iteml.addLast(item);
             } else {
                 for (NSParser p : parser) {
                     if (p.parseChannel(cv, n))
@@ -287,10 +288,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
             res = new Result();
 
+            // Some channels use itunes namespace even if they don't have any enclosure media.
+            // So, below check doesn't have any meaning.
+            /*
             // Channel type which uses itunes namespace is needed to be set as 'Media type'.
             for (NSParser p : pl.toArray(new NSParser[0]))
                 if (p instanceof NSItunesParser)
                     res.channel.type = Feed.Channel.CHANN_TYPE_MEDIA;
+             */
 
             // For Channel node
             Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");

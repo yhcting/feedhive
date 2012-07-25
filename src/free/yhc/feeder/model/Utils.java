@@ -668,7 +668,11 @@ public class Utils {
     public static String
     guessMimeTypeFromUrl(String url) {
         String ext = getExtentionFromUrl(url);
-        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        // NOTE
+        // "MimeTypeMap.getSingleton().getMimeTypeFromExtension()" doesn't work for
+        //   uppercase-extension - ex. MP3.
+        // For workaround, converted lowercase is used.
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext.toLowerCase());
         /* -- obsoleted implementation.
         String ext = getExtention(filename);
         if (null == ext)
@@ -680,6 +684,12 @@ public class Utils {
 
         return null;
         */
+    }
+
+    public static boolean
+    isAudioOrVideo(String url) {
+        String mime = guessMimeTypeFromUrl(url);
+        return null != mime && (mime.startsWith("audio/") || mime.startsWith("video/"));
     }
 
     /**

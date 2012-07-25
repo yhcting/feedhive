@@ -108,7 +108,8 @@ UnexpectedExceptionHandler.TrackedModule {
         long old_action = dbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
         long action = old_action;
 
-        if (!Feed.Channel.isActTgtLink(action))
+        if (Feed.Channel.FACT_TYPE_DYNAMIC != Feed.Channel.getActType(action))
+            // In this case, spinner itself is 'GONE'. So, nothing to do.
             return; // nothing to do.
 
         Spinner sp = (Spinner)findViewById(R.id.sp_browser);
@@ -214,7 +215,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Setup Browser
         long action = dbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-        if (Feed.Channel.isActTgtLink(action)) {
+        long actionType = Feed.Channel.getActType(action);
+        if (actionType == Feed.Channel.FACT_TYPE_DYNAMIC) {
             sp = (Spinner)findViewById(R.id.sp_browser);
             spadapter = ArrayAdapter.createFromResource(
                         this, R.array.strarr_browser_setting, android.R.layout.simple_spinner_item);
@@ -227,8 +229,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 sp.setSelection(SPPOS_BROWSER_EX); // 'external browser' is position 1
             else
                 eAssert(false);
-        } else
+        } else if (Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA == actionType) {
             findViewById(R.id.browser_layout).setVisibility(View.GONE);
+        } else
+            eAssert(false);
     }
 
     @Override

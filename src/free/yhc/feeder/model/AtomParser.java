@@ -259,7 +259,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
                 Feed.Item.ParD item = new Feed.Item.ParD();
                 iv.set(item);
-                iteml.addLast(item);
+                if (isValidItem(item))
+                    iteml.addLast(item);
             } else {
                 for (NSParser p : parser) {
                     if (p.parseChannel(cv, n))
@@ -297,7 +298,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // NOTE YOUTUBE hack
             for (NSParser p : pl.toArray(new NSParser[0]))
                 if ((p instanceof NSMediaParser) && ((NSMediaParser)p).isYoutubeEnabled())
-                    res.channel.type = Feed.Channel.CHANN_TYPE_EMBEDDED_MEDIA;
+                    res.channel.type = Feed.Channel.Type.EMBEDDED_MEDIA;
 
             nodeFeed(res, pl.toArray(new NSParser[0]), root);
         } finally {

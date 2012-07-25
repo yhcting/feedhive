@@ -377,13 +377,10 @@ public class NetLoader {
             idop = new DBPolicy.ItemDataOpInterface() {
                 @Override
                 public File getFile(Feed.Item.ParD parD) throws FeederException {
-                    String url = null;
-                    if (Feed.Channel.isActTgtLink(chact))
-                        url = parD.link;
-                    else if (Feed.Channel.isActTgtEnclosure(chact))
-                        url = parD.enclosureUrl;
-                    else
-                        eAssert(false);
+                    String url = uip.getDynamicActionTargetUrl(chact, parD.link, parD.enclosureUrl);
+                    if (!Utils.isValidValue(url))
+                        return null;
+
                     File f = uip.getNewTempFile();
                     downloadToFile(url, uip.getNewTempFile(), f, null);
                     return f;

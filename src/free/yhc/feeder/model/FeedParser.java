@@ -309,6 +309,17 @@ public abstract class FeedParser {
 
     // ========================================
     //
+    //        Constraints
+    //
+    // ========================================
+    protected boolean
+    isValidItem(Feed.Item.ParD iParD) {
+        return Utils.isValidValue(iParD.title)
+               && (Utils.isValidValue(iParD.link) || Utils.isValidValue(iParD.enclosureUrl));
+    }
+
+    // ========================================
+    //
     //        Interface functions
     //
     // ========================================

@@ -86,21 +86,15 @@ public class Feed {
         // ==================
         // Flag Action
         // ==================
-        // bit[0] : Action target is 'link / enclosure' - default : link
-        public static final long FACT_TGT_LINK      = 0x00;
-        public static final long FACT_TGT_ENCLOSURE = 0x01;
-        public static final long MACT_TGT           = 0x01;
-        public static final long FACT_TGT_DEFAULT   = FACT_TGT_LINK;
+        // bit[0:1] : Action target is 'link / enclosure' - default : link
+        // action for enclosure => download
+        // action for link      => open with ex/in browser
+        public static final long FACT_TYPE_DYNAMIC          = 0x00;
+        public static final long FACT_TYPE_EMBEDDED_MEDIA   = 0x01;
+        public static final long MACT_TYPE                  = 0x03;
+        public static final long FACT_TYPE_DEFAULT          = FACT_TYPE_DYNAMIC;
 
-        // bit[1] : Action type is 'open / download / extern open' - default - open
-        // This value is not changed by user action.
-        // It's internal value.
-        public static final long FACT_OP_OPEN        = 0x00;
-        public static final long FACT_OP_DN          = 0x02;
-        public static final long MACT_OP             = 0x02;
-        public static final long FACT_OP_DEFAULT     = FACT_OP_OPEN;
-
-        // bit[3] : Action program is 'internal program / external - default - internal
+        // bit[2] : Action program is 'internal program / external - default - internal
         // Ex. in case of view web link, internal program means 'ItemViewActivity' and
         //   external program means 'other browsers'.
         // Internal program is very simple version so, it's fast.
@@ -111,7 +105,7 @@ public class Feed {
         public static final long MACT_PROG          = 0x04;
         public static final long FACT_PROG_DEFAULT  = FACT_PROG_IN;
 
-        public static final long FACT_DEFAULT      = FACT_TGT_DEFAULT | FACT_OP_DEFAULT | FACT_PROG_DEFAULT;
+        public static final long FACT_DEFAULT      = FACT_TYPE_DEFAULT | FACT_PROG_DEFAULT;
 
         // ==================
         // Flag UpdateMode
@@ -126,12 +120,10 @@ public class Feed {
         // ==================
         // Feed Type
         // ==================
-        // for news/article etc
-        public static final int CHANN_TYPE_ARTICLE        = 0;
-        // for link and description for media data (ex. podcast)
-        public static final int CHANN_TYPE_MEDIA          = 1;
-        // link is page that embedding media data (ex. youtube)
-        public static final int CHANN_TYPE_EMBEDDED_MEDIA = 2;
+        enum Type {
+            NORMAL,
+            EMBEDDED_MEDIA;
+        }
 
         // 100 x 100 is enough size for channel icon.
         public static final int ICON_MAX_WIDTH  = 100;
@@ -147,7 +139,7 @@ public class Feed {
             // Type is usually determined by which namespace is used at XML.
             // For example.
             //   xmlns:itunes -> Media
-            int      type         = CHANN_TYPE_ARTICLE;
+            Type     type         = Type.NORMAL;
             String   title        = "";
             String   description  = "";
             String   imageref     = "";
@@ -163,24 +155,9 @@ public class Feed {
         // ==================
         // Flag Functions
         // ==================
-        public static final boolean
-        isActOpOpen(long flag) {
-            return bitIsSet(flag, FACT_OP_OPEN, MACT_OP);
-        }
-
-        public static final boolean
-        isActOpDn(long flag) {
-            return bitIsSet(flag, FACT_OP_DN, MACT_OP);
-        }
-
-        public static final boolean
-        isActTgtLink(long flag) {
-            return bitIsSet(flag, FACT_TGT_LINK, MACT_TGT);
-        }
-
-        public static final boolean
-        isActTgtEnclosure(long flag) {
-            return bitIsSet(flag, FACT_TGT_ENCLOSURE, MACT_TGT);
+        public static final long
+        getActType(long flag) {
+            return flag & MACT_TYPE;
         }
 
         public static final boolean

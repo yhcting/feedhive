@@ -96,24 +96,19 @@ UnexpectedExceptionHandler.TrackedModule {
                 return Feed.FINVALID; // do nothing if there is no items at first insertion.
 
             // default value
-            actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
+            actFlag = Feed.Channel.FACT_DEFAULT;
         }
 
         switch (cParD.type) {
-        case Feed.Channel.CHANN_TYPE_ARTICLE:
-            actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
+        case NORMAL:
+            actFlag = Feed.Channel.FACT_TYPE_DYNAMIC | Feed.Channel.FACT_PROG_IN;
             break;
-        case Feed.Channel.CHANN_TYPE_MEDIA:
-            if (Utils.isValidValue(iParD.enclosureUrl))
-                actFlag = Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_DN | Feed.Channel.FACT_PROG_DEFAULT;
-            else
-                actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
-            break;
-        case Feed.Channel.CHANN_TYPE_EMBEDDED_MEDIA: // special for youtube!
-            actFlag = Feed.Channel.FACT_TGT_ENCLOSURE | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_EX;
+        case EMBEDDED_MEDIA: // special for youtube!
+            actFlag = Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA | Feed.Channel.FACT_PROG_EX;
             break;
         default:
-            actFlag = Feed.Channel.FACT_TGT_LINK | Feed.Channel.FACT_OP_OPEN | Feed.Channel.FACT_PROG_DEFAULT;
+            eAssert(false);
+            actFlag = Feed.Channel.FACT_DEFAULT;
         }
 
         // NOTE
@@ -121,13 +116,11 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, this flag should not be changed except for action is invalid value.
         if (Feed.FINVALID == action)
             // In case of newly inserted channel (first decision), FACT_PROG_XX should be set as recommended one.
-            return Utils.bitSet(action, actFlag,
-                                Feed.Channel.MACT_TGT | Feed.Channel.MACT_OP | Feed.Channel.MACT_PROG);
+            return Utils.bitSet(action, actFlag, Feed.Channel.MACT_TYPE | Feed.Channel.MACT_PROG);
         else
             // If this is NOT first decision, user may change FACT_PROG_XX setting (UX scenario support this.)
             // So, in this case, FACT_PROG_XX SHOULD NOT be changed.
-            return Utils.bitSet(action, actFlag,
-                    Feed.Channel.MACT_TGT | Feed.Channel.MACT_OP);
+            return Utils.bitSet(action, actFlag, Feed.Channel.MACT_TYPE);
     }
 
     /**
@@ -271,6 +264,20 @@ UnexpectedExceptionHandler.TrackedModule {
         else {
             eAssert(false);
             return Thread.MIN_PRIORITY;
+        }
+    }
+
+    public String
+    getDynamicActionTargetUrl(long action, String link, String enclosure) {
+        if (Feed.Channel.FACT_TYPE_DYNAMIC != Feed.Channel.getActType(action))
+            return null; // Not applicable for other case!
+
+        if (Utils.isValidValue(enclosure)
+            && Utils.isAudioOrVideo(enclosure))
+            return enclosure;
+        else {
+            eAssert(Utils.isValidValue(link));
+            return link;
         }
     }
 }

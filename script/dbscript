@@ -927,8 +927,6 @@ INSERT INTO channels VALUES (!<#>, "허재현의 현장일기", "", "!<feedburne
 
 
 -- Think TV
-INSERT INTO channels VALUES (!<#>, "싱크TV", "", "http://thinktv.kr/rss/news.xml", "", "시사", "", "", "", "", "kor", 0);
-
 
 
 -- CBS

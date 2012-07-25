@@ -294,7 +294,10 @@ UnexpectedExceptionHandler.TrackedModule {
         id = getIntent().getLongExtra("id", -1);
         eAssert(id >= 0);
 
+        // NOTE
+        // There is no use case that 'null == f' here!
         File f = dbp.getItemInfoDataFile(id);
+        eAssert(null != f);
         netUrl = dbp.getItemInfoString(id, DB.ColumnItem.LINK);
         fileUrl = "file:///" + f.getAbsolutePath();
         currUrl = f.exists()? fileUrl: netUrl;

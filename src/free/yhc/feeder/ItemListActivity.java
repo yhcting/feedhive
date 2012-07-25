@@ -765,19 +765,26 @@ UnexpectedExceptionHandler.TrackedModule {
     onAction(long action, View view, long id, final int position) {
         // NOTE
         // This is very simple policy!
-        String url = null;
-        if (Feed.Channel.isActTgtLink(action))
-            url = getListAdapter().getItemInfo_link(position);
-        else if (Feed.Channel.isActTgtEnclosure(action))
-            url = getListAdapter().getItemInfo_encUrl(position);
-        else
-            eAssert(false);
+        long actionType = Feed.Channel.getActType(action);
+        String link = getListAdapter().getItemInfo_link(position);
+        String enclosure = getListAdapter().getItemInfo_encUrl(position);
 
-        if (Feed.Channel.isActOpOpen(action))
-            onActionOpen(action, view, id, position, url);
-        else if (Feed.Channel.isActOpDn(action))
-            onActionDn(action, view, id, position, url);
-        else
+        if (Feed.Channel.FACT_TYPE_DYNAMIC == actionType) {
+            String url = uip.getDynamicActionTargetUrl(action, link, enclosure);
+            // NOTE
+            // Items that have both invalid link and enclosure url, SHOULD NOT be added to DB.
+            // Parser give those away in parsing phase.
+            // See RSSParser/AtomParser.
+            eAssert(null != url);
+            if (enclosure.equals(url))
+                onActionDn(action, view, id, position, url);
+            else
+                onActionOpen(action, view, id, position, url);
+        } else if (Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA == actionType) {
+            // In case of embedded media, external program should be used in force.
+            action = Utils.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
+            onActionOpen(action, view, id, position, enclosure);
+        } else
             eAssert(false);
     }
 
@@ -859,7 +866,11 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onClick (DialogInterface dialog, int which) {
-                if (!dbp.getItemInfoDataFile(id).delete())
+                // NOTE
+                // There is no use case that "null == f" here.
+                File f = dbp.getItemInfoDataFile(id);
+                eAssert(null != f);
+                if (!f.delete())
                     lnf.showTextToast(ItemListActivity.this, Err.IO_FILE.getMsgId());
                 else {
                     getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), false);
@@ -896,8 +907,11 @@ UnexpectedExceptionHandler.TrackedModule {
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        if (dbp.getItemInfoDataFile(dbId).exists())
+        File f = dbp.getItemInfoDataFile(dbId);
+        if (null != f && f.exists())
             menu.findItem(R.id.delete_dnfile).setVisible(true);
+        else
+            menu.findItem(R.id.delete_dnfile).setVisible(false);
     }
 
     @Override
