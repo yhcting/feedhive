@@ -30,7 +30,6 @@ import android.database.Cursor;
 import android.database.StaleDataException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -58,15 +57,6 @@ AsyncCursorAdapter.ItemBuilder {
         void onUpdateClick(ImageView ibtn, long cid);
         void onMoveUpClick(ImageView ibtn, long cid);
         void onMoveDownClick(ImageView ibtn, long cid);
-    }
-
-    public static class ImageViewEx extends ImageView {
-        long cid = -1;
-
-        public
-        ImageViewEx(Context context, AttributeSet attrs) {
-            super(context, attrs);
-        }
     }
 
     private static class ItemInfo {
@@ -102,8 +92,7 @@ AsyncCursorAdapter.ItemBuilder {
             public void onClick(View v) {
                 if (null == actionListener)
                     return;
-                ImageViewEx iv = (ImageViewEx)v;
-                actionListener.onUpdateClick(iv, iv.cid);
+                actionListener.onUpdateClick((ImageView)v, (long)(Long)v.getTag());
             }
         };
 
@@ -112,8 +101,7 @@ AsyncCursorAdapter.ItemBuilder {
             public void onClick(View v) {
                 if (null == actionListener)
                     return;
-                ImageViewEx iv = (ImageViewEx)v;
-                actionListener.onMoveUpClick(iv, iv.cid);
+                actionListener.onMoveUpClick((ImageView)v, (long)(Long)v.getTag());
             }
         };
 
@@ -122,8 +110,7 @@ AsyncCursorAdapter.ItemBuilder {
             public void onClick(View v) {
                 if (null == actionListener)
                     return;
-                ImageViewEx iv = (ImageViewEx)v;
-                actionListener.onMoveDownClick(iv, iv.cid);
+                actionListener.onMoveDownClick((ImageView)v, (long)(Long)v.getTag());
             }
         };
     }
@@ -242,16 +229,16 @@ AsyncCursorAdapter.ItemBuilder {
 
         long nrNew = ii.maxItemId - ii.oldLastItemId;
 
-        ImageViewEx chIcon = (ImageViewEx)v.findViewById(R.id.image);
-        chIcon.cid = ii.cid;
+        ImageView chIcon = (ImageView)v.findViewById(R.id.image);
+        chIcon.setTag(ii.cid);
         chIcon.setOnClickListener(chIconOnClick);
 
-        ImageViewEx ibtn = (ImageViewEx)v.findViewById(R.id.imgup);
-        ibtn.cid = ii.cid;
+        ImageView ibtn = (ImageView)v.findViewById(R.id.imgup);
+        ibtn.setTag(ii.cid);
         ibtn.setOnClickListener(posUpOnClick);
 
-        ibtn = (ImageViewEx)v.findViewById(R.id.imgdown);
-        ibtn.cid = ii.cid;
+        ibtn = (ImageView)v.findViewById(R.id.imgdown);
+        ibtn.setTag(ii.cid);
         ibtn.setOnClickListener(posDnOnClick);
 
         if (null == ii.bm)

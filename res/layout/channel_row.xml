@@ -11,8 +11,7 @@
         android:paddingRight="@dimen/list_item_left_padding"
         android:layout_gravity="center_vertical"
         >
-        <view
-            class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
+        <ImageView
             android:id="@+id/image"
             android:layout_width="60dip"
             android:layout_height="65dip"
@@ -79,8 +78,7 @@
                 android:src="@drawable/ic_new_msg"
                 />
         </LinearLayout>
-        <view
-            class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
+        <ImageView
             android:id="@+id/imgup"
             android:layout_width="35dip"
             android:layout_height="35dip"
@@ -92,8 +90,7 @@
             android:src="@drawable/ic_up"
             android:clickable="true"
             />
-        <view
-            class="free.yhc.feeder.ChannelListAdapter$ImageViewEx"
+        <ImageView
             android:id="@+id/imgdown"
             android:layout_width="35dip"
             android:layout_height="35dip"
