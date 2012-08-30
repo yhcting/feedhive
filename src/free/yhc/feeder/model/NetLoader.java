@@ -46,7 +46,8 @@ import org.xml.sax.SAXException;
 import android.graphics.Bitmap;
 
 public class NetLoader {
-    private static final int NET_RETRY = 5;
+    private static final int NET_RETRY = 3;
+    private static final int NET_CONN_TIMEOUT = 5000;
 
     private final UIPolicy  uip = UIPolicy.get();
     private final DBPolicy  dbp = DBPolicy.get();
@@ -157,7 +158,7 @@ public class NetLoader {
            while (0 < retry--) {
                try {
                    conn = url.openConnection();
-                   conn.setConnectTimeout(1000);
+                   conn.setConnectTimeout(NET_CONN_TIMEOUT);
                    conn.connect();
                    break; // done
                } catch (Exception e) {
