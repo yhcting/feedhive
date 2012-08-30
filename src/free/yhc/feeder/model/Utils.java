@@ -35,6 +35,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.http.impl.cookie.DateParseException;
+import org.apache.http.impl.cookie.DateUtils;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -436,8 +439,8 @@ public class Utils {
         Date date = null;
         try {
             // instead of using android's DateUtils, apache's DateUtils is used because it is faster.
-            date = org.apache.commons.lang.time.DateUtils.parseDateStrictly(dateString, dateFormats);
-        } catch (java.text.ParseException e) { }
+            date = DateUtils.parseDate(dateString, dateFormats);
+        } catch (DateParseException e) { }
         return (null == date)? -1: date.getTime();
     }
 
