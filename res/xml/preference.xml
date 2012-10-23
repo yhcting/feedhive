@@ -7,14 +7,16 @@
             android:key="maxnr_bgtask"
             android:defaultValue="2"
             android:entries="@array/pref_maxnr_concurrent_entry"
-            android:entryValues="@array/pref_maxnr_concurrent_value" />
+            android:entryValues="@array/pref_maxnr_concurrent_value"
+            />
         <ListPreference
             android:title="@string/pref_bgtask_prio"
             android:summary="@string/pref_bgtask_prio_desc"
             android:key="bgtask_prio"
             android:defaultValue="low"
             android:entries="@array/pref_bgtask_prio_entry"
-            android:entryValues="@array/pref_bgtask_prio_value" />
+            android:entryValues="@array/pref_bgtask_prio_value"
+            />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_feedback">
         <ListPreference
@@ -23,14 +25,16 @@
             android:key="err_report"
             android:defaultValue="yes"
             android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value" />
+            android:entryValues="@array/pref_yes_no_value"
+            />
         <ListPreference
             android:title="@string/pref_send_usage_report"
             android:summary="@string/pref_send_usage_report_desc"
             android:key="usage_report"
             android:defaultValue="yes"
             android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value" />
+            android:entryValues="@array/pref_yes_no_value"
+            />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_storage">
         <EditTextPreference
@@ -40,5 +44,14 @@
             android:defaultValue="/sdcard/yhcFeeder"
             android:dialogTitle="@string/pref_download_root"
             />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="@string/pref_usage">
+        <ListPreference
+            android:title="@string/pref_newmsg_noti"
+            android:summary="@string/pref_newmsg_noti_desc"
+            android:key="newmsg_noti"
+            android:defaultValue="yes"
+            android:entries="@array/pref_yes_no_entry"
+            android:entryValues="@array/pref_yes_no_value" />
     </PreferenceCategory>
 </PreferenceScreen>

@@ -350,6 +350,11 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(Utils.isUiThread());
         if (anset.contains(type))
             return; // notification is already notified. Nothing to do.
+
+        if (NotiType.NEWITEM == type
+            && !Utils.isPrefNewmsgNoti())
+            return;
+
         anset.add(type);
         // Set event time.
         Notification n = type.getNotification();

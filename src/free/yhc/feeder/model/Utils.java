@@ -39,12 +39,14 @@ import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.text.Layout;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -75,6 +77,7 @@ public class Utils {
     //   because those are set only at init() function, and SHOULD NOT be changed.
     private static Context  appContext  = null;
     private static Handler  uiHandler   = null;
+    private static SharedPreferences prefs = null;
 
     // To enable logging to file - NOT LOGCAT
     // These are for debugging purpose
@@ -253,6 +256,7 @@ public class Utils {
 
         appContext = aAppContext;
         uiHandler = new Handler();
+        prefs = PreferenceManager.getDefaultSharedPreferences(getAppContext());
     }
 
     // Assert
@@ -786,6 +790,16 @@ public class Utils {
             return ni.isConnectedOrConnecting();
         else
             return false;
+    }
+
+    // ------------------------------------------------------------------------
+    //
+    // Accessing preference
+    //
+    // ------------------------------------------------------------------------
+    public static boolean
+    isPrefNewmsgNoti() {
+        return prefs.getString("newmsg_noti", "yes").equals("yes");
     }
 
     // ================================================
