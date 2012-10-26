@@ -46,7 +46,6 @@ import free.yhc.feeder.model.Utils;
 public class NotiManager implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final String NOTI_INTENT_DELETE_ACTION = "feeder.intent.action.NOTIFICATION_DELETE";
-    private static final String NOTI_INTENT_CONTENT_ACTION = "feeder.intent.action.NOTIFICATION_CONTENT";
 
     private static NotiManager instance = null;
 
@@ -98,20 +97,17 @@ UnexpectedExceptionHandler.TrackedModule {
             PendingIntent piDelete = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent,
                                                                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-            /* Disable this feature (Still under debugging & implementation)
-            intent = new Intent(Utils.getAppContext(), NotiManager.NotiIntentReceiver.class);
-            intent.setAction(NOTI_INTENT_CONTENT_ACTION);
-            PendingIntent piContent = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent,
-                                                                 PendingIntent.FLAG_UPDATE_CURRENT);
-             */
-
+            intent = new Intent(Utils.getAppContext(), FeederActivity.class);
+            intent.setAction(Intent.ACTION_MAIN);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            PendingIntent piContent = PendingIntent.getActivity(Utils.getAppContext(), 0, intent, 0);
             Notification.Builder nbldr = new Notification.Builder(Utils.getAppContext());
             nbldr.setSmallIcon(icon)
                  .setTicker(textTitle)
                  .setContentTitle(textTitle)
                  .setContentText(textDesc)
                  .setAutoCancel(true)
-                 //.setContentIntent(piContent)
+                 .setContentIntent(piContent)
                  .setDeleteIntent(piDelete);
             return nbldr.getNotification();
         }
@@ -180,20 +176,6 @@ UnexpectedExceptionHandler.TrackedModule {
             String action = intent.getAction();
             if (NOTI_INTENT_DELETE_ACTION.equals(action))
                 NotiManager.get().removeNotification(NotiType.convert(intent.getStringExtra("type")));
-            else if (NOTI_INTENT_CONTENT_ACTION.equals(action)) {
-                // Disable this feature (Still under debugging & implementation)
-                eAssert(false);
-                // Launch application
-                if (!Utils.isAppInForeground()) {
-                    String name = Utils.getAppContext().getPackageName();
-                    Intent launcher = context.getPackageManager().getLaunchIntentForPackage(name);
-                    try {
-                        context.startActivity(launcher);
-                    } catch (Exception e) {
-                        eAssert(false);
-                    }
-                }
-            }
         }
     }
 

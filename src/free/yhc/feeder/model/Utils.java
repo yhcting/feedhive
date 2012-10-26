@@ -303,24 +303,6 @@ public class Utils {
     }
 
     public static boolean
-    isAppInForeground() {
-        /* Below code doesn't work as expected!!
-        ActivityManager activityManager = (ActivityManager)getAppContext().getSystemService( Context.ACTIVITY_SERVICE );
-        List<RunningAppProcessInfo> appProcesses = activityManager.getRunningAppProcesses();
-        for (RunningAppProcessInfo appProcess : appProcesses){
-            logI("App : " + appProcess.processName + " / " + (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
-                    + " / " + (appProcess.importance == RunningAppProcessInfo.IMPORTANCE_VISIBLE));
-            if (RunningAppProcessInfo.IMPORTANCE_FOREGROUND == appProcess.importance
-                && appProcess.processName.equals(getAppContext().getPackageName())){
-                return true;
-            }
-        }
-        */
-        eAssert(false);
-        return false;
-    }
-
-    public static boolean
     isUiThread() {
         return Thread.currentThread() == uiHandler.getLooper().getThread();
     }
