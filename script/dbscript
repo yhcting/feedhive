@@ -6,7 +6,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 4;
+PRAGMA user_version = 5;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -510,6 +510,7 @@ INSERT INTO channels VALUES (!<#>, "나는 꼼수다", "", "!<pref>ddradio.xml",
 INSERT INTO channels VALUES (!<#>, "나는 꼽사리다", "", "!<pref>ggobsari.xml", "", "시사", "팟캐스트", "경제", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 딴따라다", "", "!<pref>ddanddara.xml", "", "시사", "팟캐스트", "문화", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "주진우의 현대사", "", "!<pref>drama.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "그것은 알기싫다", "", "!<pref>umcuw.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 
 
 
@@ -1022,3 +1023,4 @@ INSERT INTO channels VALUES (!<#>, "책, 즐겁게 듣자!!", "", "http://audien
 INSERT INTO channels VALUES (!<#>, "이동진의 빨간 책가방", "", "http://ec.libsyn.com/p/d/0/9/d0996a60a3c2ad2c/redbooks.xml?d13a76d516d9dec20c3d276ce028ed5089ab1ce3dae902ea1d01cb8e33d5cf58b943&c_id=4456658", "", "교양", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "대한민국 직업이야기 잡수다", "", "!<feedburner>libsyn/jobsooda", "", "교양", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "티엔티엔 생활중국어회화", "", "http://www.jrchina.com/jrchina/podcast/tiantian.xml", "", "외국어", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "이박사와 이작가의 이이제이", "", "http://pod.ssenhosting.com/rss/vamp666.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
