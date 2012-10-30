@@ -109,7 +109,7 @@ public class BGTask<RunParam, CancelParam> extends Thread {
                 //logI("BGTask : REPOST : wait for task is Done");
                 // post message continuously may drop responsibility for user, in case that ownerHandler is attached to UI thread.
                 // To increase responsibility, post message with some delay.
-                ownerHandler.postDelayed(new BGTaskPost(bCancelled, result), 10);
+                ownerHandler.postDelayed(this, 10);
                 return;
             }
 
