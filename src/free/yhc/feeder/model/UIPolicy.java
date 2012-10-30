@@ -276,8 +276,12 @@ UnexpectedExceptionHandler.TrackedModule {
             && Utils.isAudioOrVideo(enclosure))
             return enclosure;
         else {
-            eAssert(Utils.isValidValue(link));
-            return link;
+            if (Utils.isValidValue(link))
+                return link;
+            else if (Utils.isValidValue(enclosure))
+                return enclosure;
+            else
+                return "";
         }
     }
 }
