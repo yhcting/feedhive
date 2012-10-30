@@ -98,6 +98,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private final RTTask        rtt = RTTask.get();
     private final LookAndFeel   lnf = LookAndFeel.get();
 
+    private final RTTaskQChangedListener    rttqcl = new RTTaskQChangedListener();
+
     private OpMode      opMode  = null;
     private ListView    list    = null;
 
@@ -488,6 +490,24 @@ UnexpectedExceptionHandler.TrackedModule {
                 getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
 
             dataSetChanged(id);
+        }
+    }
+
+    private class RTTaskQChangedListener implements RTTask.OnTaskQueueChangedListener {
+        @Override
+        public void
+        onEnQ(BGTask task, long id, RTTask.Action act) {
+        }
+
+        @Override
+        public void
+        onDeQ(BGTask task, long id, RTTask.Action act) {
+            if (RTTask.Action.DOWNLOAD == act) {
+                // This will be run after activity is paused.
+                File df = dbp.getItemInfoDataFile(id);
+                getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id),
+                                                     null != df && df.exists());
+            }
         }
     }
 
@@ -1176,6 +1196,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //logI("==> ItemListActivity : onResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
+        rtt.unregisterTaskQChangedListener(this);
         rtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
         View searchBtn = findViewById(R.id.searchbtn);
         if (getListAdapter().isEmpty())
@@ -1236,6 +1257,7 @@ UnexpectedExceptionHandler.TrackedModule {
         rtt.unregisterRegisterEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
         rtt.unbind(this);
+        rtt.registerTaskQChangedListener(this, rttqcl);
         super.onPause();
     }
 
