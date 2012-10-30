@@ -281,7 +281,8 @@ UnexpectedExceptionHandler.TrackedModule {
             else if (Utils.isValidValue(enclosure))
                 return enclosure;
             else
-                return "";
+                eAssert(false); // there is no valid link or enclosure value...
         }
+        return null;
     }
 }
