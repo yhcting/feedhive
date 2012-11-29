@@ -27,7 +27,7 @@ import android.text.Html;
 // Private implementation is NOT used.
 // Now this is just wrapper of predefined Html class of Android.
 class HtmlParser {
-    private static final String[] tagsRegex = new String[] {
+    private static final String[] sTagsRegex = new String[] {
         "\\!\\-\\-",
         "\\!DOCTYPE",
         "a",
@@ -120,7 +120,7 @@ class HtmlParser {
     private static Pattern tagPattern;
     static {
         StringBuilder sbuilder = new StringBuilder("</?(");
-        for (String s : tagsRegex)
+        for (String s : sTagsRegex)
             sbuilder.append(s).append("|");
 
         sbuilder.append("\\!DOCTYPE)(\\s*|\\s+[^>]+)/?>");

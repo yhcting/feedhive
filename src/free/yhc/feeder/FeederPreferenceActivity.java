@@ -34,10 +34,10 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 public class FeederPreferenceActivity extends PreferenceActivity implements
 SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
-    private final UIPolicy      uip = UIPolicy.get();
-    private final LookAndFeel   lnf = LookAndFeel.get();
+    private final UIPolicy      mUip = UIPolicy.get();
+    private final LookAndFeel   mLnf = LookAndFeel.get();
 
-    private String appRootOld = null;
+    private String mAppRootOld = null;
 
     @Override
     public String
@@ -52,26 +52,27 @@ UnexpectedExceptionHandler.TrackedModule {
             String appRoot = sharedPreferences.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
             File appRootFile = new File(appRoot);
             if (!appRootFile.canWrite()) {
-                lnf.showTextToast(this, R.string.warn_file_access_denied);
+                mLnf.showTextToast(this, R.string.warn_file_access_denied);
                 SharedPreferences.Editor prefEd = sharedPreferences.edit();
-                prefEd.putString(UIPolicy.PREF_KEY_APP_ROOT, appRootOld);
+                prefEd.putString(UIPolicy.PREF_KEY_APP_ROOT, mAppRootOld);
                 prefEd.apply();
             } else {
-                uip.setAppDirectories(appRoot);
-                appRootOld = appRoot;
+                mUip.setAppDirectories(appRoot);
+                mAppRootOld = appRoot;
             }
         }
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void
+    onCreate(Bundle savedInstanceState) {
         UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preference);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        appRootOld = prefs.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
+        mAppRootOld = prefs.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
         prefs.registerOnSharedPreferenceChangeListener(this);
-        eAssert(null != appRootOld);
+        eAssert(null != mAppRootOld);
     }
 
     @Override

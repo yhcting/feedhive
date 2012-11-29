@@ -62,14 +62,14 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final long  ID_ALL_CHANNEL   = -1;
     private static final int   POS_ALL_CHANNEL  = -1;
 
-    private final UIPolicy      uip = UIPolicy.get();
-    private final DBPolicy      dbp = DBPolicy.get();
-    private final RTTask        rtt = RTTask.get();
-    private final LookAndFeel   lnf = LookAndFeel.get();
+    private final UIPolicy      mUip = UIPolicy.get();
+    private final DBPolicy      mDbp = DBPolicy.get();
+    private final RTTask        mRtt = RTTask.get();
+    private final LookAndFeel   mLnf = LookAndFeel.get();
 
-    private String exDBFilePath = null;
-    private String inDBFilePath = null;
-    private DBInfo dbInfo       = new DBInfo();
+    private String mExDBFilePath = null;
+    private String mInDBFilePath = null;
+    private DBInfo mDbInfo       = new DBInfo();
 
     private static class DBInfo {
         int         sz;    // db file sz (KB)
@@ -95,10 +95,10 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private static class ChannInfoAdapter extends ArrayAdapter<DBInfo.ChannInfo> {
-        private int resId;
-        ChannInfoAdapter(Context context, int aResId, DBInfo.ChannInfo[] data) {
-            super(context, aResId, data);
-            resId = aResId;
+        private int _mResId;
+        ChannInfoAdapter(Context context, int resId, DBInfo.ChannInfo[] data) {
+            super(context, resId, data);
+            _mResId = resId;
         }
 
         @Override
@@ -108,7 +108,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (null == v) {
                 LayoutInflater li = (LayoutInflater)Utils.getAppContext()
                                                          .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                v = li.inflate(resId, null);
+                v = li.inflate(_mResId, null);
             }
             DBInfo.ChannInfo e = getItem(position);
             ((TextView)v.findViewById(R.id.chann_name)).setText(e.title);
@@ -134,7 +134,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //
         // To avoid race condition this function should be run on main UI thread!
         if (ScheduledUpdateService.doesInstanceExist()
-            || rtt.getChannelsUpdating().length > 0)
+            || mRtt.getChannelsUpdating().length > 0)
             return false;
 
         // To get exclusive access right to DB, disabling scheduled updater service is enough
@@ -173,7 +173,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     exportDBAsync() {
         if (!getExclusiveDBAccess()) {
-            lnf.showTextToast(this, R.string.warn_db_in_use);
+            mLnf.showTextToast(this, R.string.warn_db_in_use);
             return;
         }
 
@@ -182,8 +182,8 @@ UnexpectedExceptionHandler.TrackedModule {
             public Err
             doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 try {
-                    FileInputStream fis = new FileInputStream(new File(inDBFilePath));
-                    FileOutputStream fos = new FileOutputStream(new File(exDBFilePath));
+                    FileInputStream fis = new FileInputStream(new File(mInDBFilePath));
+                    FileOutputStream fos = new FileOutputStream(new File(mExDBFilePath));
                     Utils.copy(fos, fis);
                     fis.close();
                     fos.close();
@@ -197,7 +197,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onPostExecute(SpinAsyncTask task, Err result) {
                 if (result != Err.NO_ERR)
-                    lnf.showTextToast(DBManagerActivity.this, result.getMsgId());
+                    mLnf.showTextToast(DBManagerActivity.this, result.getMsgId());
 
                 putExclusiveDBAccess();
             }
@@ -215,8 +215,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     actionExportDB() {
         CharSequence title = getResources().getText(R.string.exportdb);
-        CharSequence msg = getResources().getText(R.string.database) + " => " + exDBFilePath;
-        lnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        CharSequence msg = getResources().getText(R.string.database) + " => " + mExDBFilePath;
+        mLnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 exportDBAsync();
@@ -235,34 +235,34 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     importDBAsync() {
         final String inDBBackupSuffix = "______backup";
-        final File exDbf = new File(exDBFilePath);
+        final File exDbf = new File(mExDBFilePath);
         if (!exDbf.exists()) {
-            lnf.showTextToast(this, R.string.warn_exdb_access_denied);
+            mLnf.showTextToast(this, R.string.warn_exdb_access_denied);
             return;
         }
 
         switch(verifyCandidateDB(exDbf)) {
         case VERSION_MISMATCH:
-            lnf.showTextToast(this, R.string.warn_db_version_mismatch);
+            mLnf.showTextToast(this, R.string.warn_db_version_mismatch);
             return;
 
         case NO_ERR:
             break;
 
         default:
-            lnf.showTextToast(this, R.string.warn_exdb_not_compatible);
+            mLnf.showTextToast(this, R.string.warn_exdb_not_compatible);
             return;
         }
 
         if (!getExclusiveDBAccess()) {
-            lnf.showTextToast(this, R.string.warn_db_in_use);
+            mLnf.showTextToast(this, R.string.warn_db_in_use);
             return;
         }
 
-        final File inDbf = new File(inDBFilePath);
+        final File inDbf = new File(mInDBFilePath);
         final File inDbfBackup = new File(inDbf.getAbsoluteFile() + inDBBackupSuffix);
         if (!inDbf.renameTo(inDbfBackup)) {
-            lnf.showTextToast(this, Err.IO_FILE.getMsgId());
+            mLnf.showTextToast(this, Err.IO_FILE.getMsgId());
             putExclusiveDBAccess();
             return;
         }
@@ -281,7 +281,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     return Err.IO_FILE;
                 }
 
-                dbp.reloadDatabase();
+                mDbp.reloadDatabase();
 
                 return Err.NO_ERR;
             }
@@ -296,9 +296,9 @@ UnexpectedExceptionHandler.TrackedModule {
                     onDBChanged(ID_ALL_CHANNEL, 0);
                 } else {
                     if (inDbfBackup.renameTo(inDbf))
-                        lnf.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
+                        mLnf.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
                     else
-                        lnf.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
+                        mLnf.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
                 }
                 putExclusiveDBAccess();
             }
@@ -316,8 +316,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     actionImportDB() {
         CharSequence title = getResources().getText(R.string.importdb);
-        CharSequence msg = getResources().getText(R.string.database) + " <= " + exDBFilePath;
-        lnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        CharSequence msg = getResources().getText(R.string.database) + " <= " + mExDBFilePath;
+        mLnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 importDBAsync();
@@ -338,14 +338,14 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public Err
             doBackgroundWork(SpinAsyncTask task, Object... objs) {
-                nr = dbp.deleteOldItems(cid, percent);
+                nr = mDbp.deleteOldItems(cid, percent);
                 return Err.NO_ERR;
             }
 
             @Override
             public void
             onPostExecute(SpinAsyncTask task, Err result) {
-                lnf.showTextToast(DBManagerActivity.this, nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
+                mLnf.showTextToast(DBManagerActivity.this, nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
                 onDBChanged(cid, nr);
             }
 
@@ -386,7 +386,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (POS_ALL_CHANNEL == position)
                     shrinkItemsAsync(ID_ALL_CHANNEL, delPercent);
                 else
-                    shrinkItemsAsync(dbInfo.channs[position].id, delPercent);
+                    shrinkItemsAsync(mDbInfo.channs[position].id, delPercent);
                 return true;
             }
         });
@@ -400,22 +400,22 @@ UnexpectedExceptionHandler.TrackedModule {
             public Err
             doBackgroundWork(SpinAsyncTask task, Object... objs) {
                 // Load 'used channel information'
-                Cursor c = dbp.queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
+                Cursor c = mDbp.queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
                                                                               DB.ColumnChannel.TITLE });
 
-                dbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
+                mDbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
                 c.moveToFirst();
-                for (int i = 0; i < dbInfo.channs.length; i++) {
-                    dbInfo.channs[i] = new DBInfo.ChannInfo();
-                    dbInfo.channs[i].id = c.getLong(0);
-                    dbInfo.channs[i].nrItmes = dbp.getChannelInfoNrItems(c.getLong(0));
-                    dbInfo.channs[i].title = c.getString(1);
+                for (int i = 0; i < mDbInfo.channs.length; i++) {
+                    mDbInfo.channs[i] = new DBInfo.ChannInfo();
+                    mDbInfo.channs[i].id = c.getLong(0);
+                    mDbInfo.channs[i].nrItmes = mDbp.getChannelInfoNrItems(c.getLong(0));
+                    mDbInfo.channs[i].title = c.getString(1);
                     c.moveToNext();
                 }
                 c.close();
 
                 // sorting by number of items
-                Arrays.sort(dbInfo.channs, dbInfo.channInfoComparator);
+                Arrays.sort(mDbInfo.channs, mDbInfo.channInfoComparator);
                 return Err.NO_ERR;
             }
 
@@ -424,7 +424,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onPostExecute(SpinAsyncTask task, Err result) {
                 activateChannelInfoListView(true);
                 ListView lv = (ListView)DBManagerActivity.this.findViewById(R.id.list);
-                ChannInfoAdapter adapter = new ChannInfoAdapter(DBManagerActivity.this, R.layout.db_manager_channel_row, dbInfo.channs);
+                ChannInfoAdapter adapter = new ChannInfoAdapter(DBManagerActivity.this, R.layout.db_manager_channel_row, mDbInfo.channs);
                 lv.setAdapter(adapter);
                 lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
@@ -450,17 +450,17 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     onDBChanged(long cid, int nrDeleted) {
-        dbInfo.sz = (int)(new File(inDBFilePath).length() / 1024);
-        CharSequence text = getResources().getText(R.string.db_size) + " : " + dbInfo.sz + " KB";
+        mDbInfo.sz = (int)(new File(mInDBFilePath).length() / 1024);
+        CharSequence text = getResources().getText(R.string.db_size) + " : " + mDbInfo.sz + " KB";
         ((TextView)findViewById(R.id.total_dbsz)).setText(text);
         if (ID_ALL_CHANNEL == cid)
             activateChannelInfoListView(false);
         else {
-            for (DBInfo.ChannInfo ci : dbInfo.channs) {
+            for (DBInfo.ChannInfo ci : mDbInfo.channs) {
                 if (ci.id == cid)
                     ci.nrItmes -= nrDeleted;
             }
-            Arrays.sort(dbInfo.channs, dbInfo.channInfoComparator);
+            Arrays.sort(mDbInfo.channs, mDbInfo.channInfoComparator);
             ((ChannInfoAdapter)((ListView)findViewById(R.id.list)).getAdapter()).notifyDataSetChanged();
         }
     }
@@ -471,7 +471,7 @@ UnexpectedExceptionHandler.TrackedModule {
             findViewById(R.id.channinfo_list).setVisibility(View.VISIBLE);
             findViewById(R.id.per_chann_mgmt).setVisibility(View.GONE);
             int nrItems = 0;
-            for (DBInfo.ChannInfo ci : dbInfo.channs)
+            for (DBInfo.ChannInfo ci : mDbInfo.channs)
                 nrItems += ci.nrItmes;
             ((TextView)findViewById(R.id.nr_all_items)).setText(
                     getResources().getText(R.string.nr_all_items) + " : " + nrItems);
@@ -496,9 +496,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
         setContentView(R.layout.db_manager);
 
-        exDBFilePath = uip.getAppRootDirectoryPath()
-                       + getResources().getText(R.string.app_name) + ".db";
-        inDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
+        mExDBFilePath = mUip.getAppRootDirectoryPath()
+                        + getResources().getText(R.string.app_name) + ".db";
+        mInDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
 
         ((Button)findViewById(R.id.exportdb)).setOnClickListener(new View.OnClickListener() {
             @Override

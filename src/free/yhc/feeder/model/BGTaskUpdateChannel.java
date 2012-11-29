@@ -22,7 +22,7 @@ package free.yhc.feeder.model;
 
 
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
-    private volatile NetLoader loader = null;
+    private volatile NetLoader mLoader = null;
 
     public static class Arg {
         final long    cid;
@@ -49,11 +49,11 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     protected Err
     doBGTask(Arg arg) {
         try {
-            loader = new NetLoader();
+            mLoader = new NetLoader();
             if (null == arg.customIconref)
-                loader.updateLoad(arg.cid);
+                mLoader.updateLoad(arg.cid);
             else
-                loader.updateLoad(arg.cid, arg.customIconref);
+                mLoader.updateLoad(arg.cid, arg.customIconref);
         } catch (FeederException e) {
             //logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
             return e.getError();
@@ -69,8 +69,8 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
         // But java thread doesn't interrupt it's executing.
         // So, I don't worry about this (different from C.)
         super.cancel(param); // cancel thread
-        if (null != loader)
-            loader.cancel();     // This is HACK for fast-interrupt.
+        if (null != mLoader)
+            mLoader.cancel();     // This is HACK for fast-interrupt.
         return true;
     }
 }

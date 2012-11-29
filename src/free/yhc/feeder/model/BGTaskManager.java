@@ -30,7 +30,7 @@ import java.util.HashMap;
 // This should be THREAD-SAFE
 class BGTaskManager implements
 UnexpectedExceptionHandler.TrackedModule {
-    private final HashMap<String, TaskMapElem> map = new HashMap<String, TaskMapElem>();
+    private final HashMap<String, TaskMapElem> mMap = new HashMap<String, TaskMapElem>();
 
     // TaskMap Value
     private class TaskMapElem {
@@ -62,11 +62,11 @@ UnexpectedExceptionHandler.TrackedModule {
     boolean
     register(String taskId, BGTask task) {
         //logI("BGTM : register :" + taskId);
-        if (null != map.get(taskId)) {
+        if (null != mMap.get(taskId)) {
             eAssert(false);
             return false;
         }
-        map.put(taskId, new TaskMapElem(task, taskId));
+        mMap.put(taskId, new TaskMapElem(task, taskId));
         return true;
     }
 
@@ -79,7 +79,7 @@ UnexpectedExceptionHandler.TrackedModule {
     int
     unbind(Object key) {
         int        ret = 0;
-        TaskMapElem[] vs = map.values().toArray(new TaskMapElem[0]);
+        TaskMapElem[] vs = mMap.values().toArray(new TaskMapElem[0]);
         for (TaskMapElem v : vs) {
             v.task.unregisterEventListener(key, null);
             //logI("BGTM : unbind (onEventKey) :" + v.task.getNick());
@@ -97,7 +97,7 @@ UnexpectedExceptionHandler.TrackedModule {
     BGTask
     peek(String taskId) {
         //logI("BGTM : peek [" + taskId);
-        TaskMapElem v = map.get(taskId);
+        TaskMapElem v = mMap.get(taskId);
         return (null == v)? null: v.task;
     }
 
@@ -114,7 +114,7 @@ UnexpectedExceptionHandler.TrackedModule {
     BGTask
     bind(String taskId, Object key, BGTask.OnEventListener listener, boolean hasPriority) {
         //logI("BGTM : bind : " + taskId + " : " + onEvent.toString());
-        TaskMapElem v = map.get(taskId);
+        TaskMapElem v = mMap.get(taskId);
         if (null == v)
             return null;
         v.task.registerEventListener(key, listener, hasPriority);
@@ -128,7 +128,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     int
     clear(String taskId) {
-        TaskMapElem v = map.get(taskId);
+        TaskMapElem v = mMap.get(taskId);
         if (null == v)
             return 0;
         //logI("BGTM : clear :" + v.task.getNick());
@@ -145,9 +145,9 @@ UnexpectedExceptionHandler.TrackedModule {
     boolean
     unregister(String taskId) {
         //logI("BGTM : unregister :" + taskId);
-        if (null == map.get(taskId))
+        if (null == mMap.get(taskId))
             return false;
-        map.remove(taskId);
+        mMap.remove(taskId);
         return true;
     }
 
@@ -160,7 +160,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     boolean
     start(String taskId) {
-        TaskMapElem v = map.get(taskId);
+        TaskMapElem v = mMap.get(taskId);
         if (null == v)
             return false;
 
@@ -178,7 +178,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     boolean
     cancel(String taskId, Object arg) {
-        TaskMapElem v = map.get(taskId);
+        TaskMapElem v = mMap.get(taskId);
         if (null == v)
             return false;
 
@@ -196,7 +196,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     String[]
     getTaskIds() {
-        return map.keySet().toArray(new String[0]);
+        return mMap.keySet().toArray(new String[0]);
     }
 
     /**
@@ -205,7 +205,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     BGTask[]
     getTasks() {
-        TaskMapElem[] mv = map.values().toArray(new TaskMapElem[0]);
+        TaskMapElem[] mv = mMap.values().toArray(new TaskMapElem[0]);
         BGTask[] ts = new BGTask[mv.length];
         for (int i = 0; i < ts.length; i++)
             ts[i] = mv[i].task;
@@ -217,7 +217,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     void
     cancelAll() {
-        TaskMapElem[] vs = map.values().toArray(new TaskMapElem[0]);
+        TaskMapElem[] vs = mMap.values().toArray(new TaskMapElem[0]);
         for (TaskMapElem v : vs) {
             v.task.clearEventListener();
             v.task.cancel(null);

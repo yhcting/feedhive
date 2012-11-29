@@ -23,8 +23,8 @@ package free.yhc.feeder.model;
 import java.io.File;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
-    private volatile NetLoader      loader   = null;
-    private volatile long           progress = 0;
+    private volatile NetLoader      mLoader   = null;
+    private volatile long           mProgress = 0;
 
     public static class Arg {
         final String url;
@@ -53,7 +53,7 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     public void
     registerEventListener(Object key, OnEventListener listener, boolean hasPriority) {
         super.registerEventListener(key, listener, hasPriority);
-        publishProgress(progress);
+        publishProgress(mProgress);
     }
 
     @Override
@@ -61,18 +61,18 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     doBGTask(Arg arg) {
         //logI("* Start background Job : DownloadToFileTask\n" +
         //     "    Url : " + arg.url);
-        loader = new NetLoader();
+        mLoader = new NetLoader();
 
         Err result = Err.NO_ERR;
         try {
-            loader.downloadToFile(arg.url,
+            mLoader.downloadToFile(arg.url,
                     arg.tempFile,
                     arg.toFile,
                     new NetLoader.OnProgress() {
                 @Override
-                public void onProgress(NetLoader loader, long prog) {
-                    // TODO Auto-generated method stub
-                    progress = prog;
+                public void
+                onProgress(NetLoader loader, long prog) {
+                    mProgress = prog;
                     publishProgress(prog);
                 }
             });
@@ -89,8 +89,8 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
         // HACK for fast-interrupt
         // Raise IOException in force
         super.cancel(param);
-        if (null != loader)
-            loader.cancel();
+        if (null != mLoader)
+            mLoader.cancel();
         cleanupStream();
         return true;
     }

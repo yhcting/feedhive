@@ -68,20 +68,20 @@ UnexpectedExceptionHandler.TrackedModule {
     // This is used to check whether there is running scheduled update service instance or not.
     // NOTE
     // This variable only be accessed by main UI thread!
-    private static int                   srvcnt = 0;
+    private static int                   mSrvcnt = 0;
 
     // Scheduled update is enabled/disabled.
     // If disabled, requested command is continuously posted to message Q until
     //   scheduled update is re-enabled again.
-    private static boolean               enabled = true;
+    private static boolean               mEnabled = true;
 
-    private static PowerManager.WakeLock wl = null;
-    private static WifiManager.WifiLock  wfl = null;
-    private static int                   wlcnt = 0;
+    private static PowerManager.WakeLock mWl = null;
+    private static WifiManager.WifiLock  mWfl = null;
+    private static int                   mWlcnt = 0;
 
-    private final DBPolicy               dbp = DBPolicy.get();
-    private final RTTask                 rtt = RTTask.get();
-    private final HashSet<Long>          taskset = new HashSet<Long>();
+    private final DBPolicy               mDbp = DBPolicy.get();
+    private final RTTask                 mRtt = RTTask.get();
+    private final HashSet<Long>          mTaskset = new HashSet<Long>();
 
     // If time is changed Feeder need to re-scheduling scheduled-update.
     public static class DateChangedReceiver extends BroadcastReceiver {
@@ -141,13 +141,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class UpdateBGTask extends BGTaskUpdateChannel implements
     BGTask.OnEventListener {
-        private long    cid = -1;
-        private int     startId = -1;
+        private long    mCid = -1;
+        private int     mStartId = -1;
 
         UpdateBGTask(long cid, int startId, BGTaskUpdateChannel.Arg arg) {
             super(arg);
-            this.cid = cid;
-            this.startId = startId;
+            mCid = cid;
+            mStartId = startId;
         }
 
         @Override
@@ -159,10 +159,10 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onCancel(BGTask task, Object param) {
             //logI("ScheduledUpdateService(onCancel) : " + cid);
-            synchronized (taskset) {
-                taskset.remove(cid);
-                //logI("    taskset size : " + taskset.size());
-                if (taskset.isEmpty())
+            synchronized (mTaskset) {
+                mTaskset.remove(mCid);
+                //logI("    mTaskset size : " + mTaskset.size());
+                if (mTaskset.isEmpty())
                     stopSelf();
             }
         }
@@ -176,22 +176,22 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostRun(BGTask task, Err result) {
             //logI("ScheduledUpdateService(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
-            synchronized (taskset) {
-                taskset.remove(cid);
-                if (taskset.isEmpty())
+            synchronized (mTaskset) {
+                mTaskset.remove(mCid);
+                if (mTaskset.isEmpty())
                     stopSelf();
             }
         }
     }
 
     private class StartCmdPost implements Runnable {
-        private Intent intent;
-        private int    flags;
-        private int    startId;
-        StartCmdPost(Intent aIntent, int aFlags, int aStartId) {
-            intent = aIntent;
-            flags = aFlags;
-            startId = aStartId;
+        private Intent _mIntent;
+        private int    _mFlags;
+        private int    _mStartId;
+        StartCmdPost(Intent intent, int flags, int startId) {
+            _mIntent = intent;
+            _mFlags = flags;
+            _mStartId = startId;
         }
 
         @Override
@@ -201,7 +201,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 //logI("runStartCommand --- POST!!!");
                 Utils.getUiHandler().postDelayed(this, RETRY_DELAY);
             } else
-                runStartCommand(intent, flags, startId);
+                runStartCommand(_mIntent, _mFlags, _mStartId);
         }
     }
 
@@ -237,8 +237,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private static void
     incInstanceCount() {
-        eAssert(Utils.isUiThread() && srvcnt >= 0);
-        srvcnt++;
+        eAssert(Utils.isUiThread() && mSrvcnt >= 0);
+        mSrvcnt++;
     }
 
     /**
@@ -246,8 +246,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private static void
     decInstanceCount() {
-        eAssert(Utils.isUiThread() && srvcnt > 0);
-        srvcnt--;
+        eAssert(Utils.isUiThread() && mSrvcnt > 0);
+        mSrvcnt--;
     }
 
     /**
@@ -256,7 +256,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public static boolean
     doesInstanceExist() {
         eAssert(Utils.isUiThread());
-        return srvcnt > 0;
+        return mSrvcnt > 0;
     }
 
     /**
@@ -267,7 +267,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public static void
     enable() {
         eAssert(Utils.isUiThread());
-        enabled = true;
+        mEnabled = true;
     }
 
     /**
@@ -278,7 +278,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public static void
     disable() {
         eAssert(Utils.isUiThread());
-        enabled = false;
+        mEnabled = false;
     }
 
     /**
@@ -287,7 +287,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static boolean
     isEnabled() {
         eAssert(Utils.isUiThread());
-        return enabled;
+        return mEnabled;
     }
 
     // =======================================================
@@ -299,37 +299,37 @@ UnexpectedExceptionHandler.TrackedModule {
     getWakeLock() {
         // getWakeLock() and putWakeLock() are used only at main ui thread (broadcast receiver, onStartCommand).
         // So, we don't need to synchronize it!
-        eAssert(wlcnt >= 0);
-        if (null == wl) {
-            wl = ((PowerManager)Utils.getAppContext().getSystemService(Context.POWER_SERVICE))
+        eAssert(mWlcnt >= 0);
+        if (null == mWl) {
+            mWl = ((PowerManager)Utils.getAppContext().getSystemService(Context.POWER_SERVICE))
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
-            wfl = ((WifiManager)Utils.getAppContext().getSystemService(Context.WIFI_SERVICE))
+            mWfl = ((WifiManager)Utils.getAppContext().getSystemService(Context.WIFI_SERVICE))
                     .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG);
             //logI("ScheduledUpdateService : WakeLock created and aquired");
-            wl.acquire();
-            wfl.acquire();
+            mWl.acquire();
+            mWfl.acquire();
         }
-        wlcnt++;
-        //logI("ScheduledUpdateService(GET) : current WakeLock count: " + wlcnt);
+        mWlcnt++;
+        //logI("ScheduledUpdateService(GET) : current WakeLock count: " + mWlcnt);
     }
 
     private static void
     putWakeLock() {
-        eAssert(wlcnt > 0);
-        wlcnt--;
-        //logI("ScheduledUpdateService(PUT) : current WakeLock count: " + wlcnt);
-        if (0 == wlcnt) {
-            wl.release();
-            wfl.release();
+        eAssert(mWlcnt > 0);
+        mWlcnt--;
+        //logI("ScheduledUpdateService(PUT) : current WakeLock count: " + mWlcnt);
+        if (0 == mWlcnt) {
+            mWl.release();
+            mWfl.release();
             // !! NOTE : Important.
-            // if below line "wl = null" is removed, then RuntimeException is raised
+            // if below line "mWl = null" is removed, then RuntimeException is raised
             //   when 'getWakeLock' -> 'putWakeLock' -> 'getWakeLock' -> 'putWakeLock(*)'
             //   (at them moment of location on * is marked - last 'putWakeLock').
             // That is, once WakeLock is released, reusing is dangerous in current Android Framework.
             // I'm not sure that this is Android FW's bug... or I missed something else...
-            // Anyway, let's set 'wl' as 'null' here to re-create new WakeLock at next time.
-            wl = null;
-            wfl = null;
+            // Anyway, let's set 'mWl' as 'null' here to re-create new WakeLock at next time.
+            mWl = null;
+            mWfl = null;
             //logI("ScheduledUpdateService : WakeLock is released");
         }
     }
@@ -432,7 +432,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // If we get killed, after returning from here, restart
-        Cursor c = dbp.queryChannel(new DB.ColumnChannel[] {
+        Cursor c = mDbp.queryChannel(new DB.ColumnChannel[] {
                 DB.ColumnChannel.ID,
                 DB.ColumnChannel.SCHEDUPDATETIME });
         // below values are 'Column Index' for above query.
@@ -476,7 +476,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand() is run on UIThread.
             // So, I don't need to worry about race-condition caused from re-entrance of this function
             // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
-            RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
+            RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
             if (RTTask.TaskState.CANCELING == state
                 || RTTask.TaskState.RUNNING == state
                 || RTTask.TaskState.READY == state) {
@@ -486,18 +486,18 @@ UnexpectedExceptionHandler.TrackedModule {
                 // unregister gracefully to start update.
                 // There is sanity check in BGTaskManager - see BGTaskManager
                 //   to know why this 'unregister' is required.
-                rtt.unregister(cid, RTTask.Action.UPDATE);
+                mRtt.unregister(cid, RTTask.Action.UPDATE);
 
                 UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
-                rtt.register(cid, RTTask.Action.UPDATE, task);
-                rtt.bind(cid, RTTask.Action.UPDATE, this, task);
+                mRtt.register(cid, RTTask.Action.UPDATE, task);
+                mRtt.bind(cid, RTTask.Action.UPDATE, this, task);
                 //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
-                synchronized (taskset) {
-                    if (!taskset.add(cid)) {
+                synchronized (mTaskset) {
+                    if (!mTaskset.add(cid)) {
                         logW("doCmdAlarm : starts duplicated update! : " + cid);
                     }
                 }
-                rtt.start(cid, RTTask.Action.UPDATE);
+                mRtt.start(cid, RTTask.Action.UPDATE);
             }
         }
 
@@ -535,8 +535,8 @@ UnexpectedExceptionHandler.TrackedModule {
             putWakeLock();
         }
 
-        synchronized (taskset) {
-            if (taskset.isEmpty())
+        synchronized (mTaskset) {
+            if (mTaskset.isEmpty())
                 stopSelf();
         }
     }

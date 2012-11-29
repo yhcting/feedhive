@@ -29,10 +29,10 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
 public class AsyncCursorAdapter extends AsyncAdapter implements
 AsyncAdapter.DataProvider {
-    private final Object    curlock = new Object();
+    private final Object    mCurlock = new Object();
 
-    private Cursor          cur;
-    private ItemBuilder     ibldr;
+    private Cursor          mCur;
+    private ItemBuilder     mIbldr;
 
     interface ItemBuilder {
         Object buildItem(AsyncCursorAdapter adapter, Cursor c);
@@ -48,14 +48,14 @@ AsyncAdapter.DataProvider {
                        final int      dataReqSz,
                        final int      maxArrSz) {
         super(context, rowLayout, lv, dummyItem, dataReqSz, maxArrSz);
-        cur = cursor;
-        ibldr = bldr;
+        mCur = cursor;
+        mIbldr = bldr;
         setDataProvider(this);
     }
 
     public void
     setItemBuilder(ItemBuilder bldr) {
-        ibldr = bldr;
+        mIbldr = bldr;
     }
 
     /**
@@ -68,10 +68,10 @@ AsyncAdapter.DataProvider {
     public void
     changeCursor(Cursor newCur) {
         //logI("AsyncCursorAdapter : changeCursor");
-        synchronized (curlock) {
-            if (null != cur)
-                cur.close();
-            cur = newCur;
+        synchronized (mCurlock) {
+            if (null != mCur)
+                mCur.close();
+            mCur = newCur;
         }
     }
 
@@ -95,7 +95,7 @@ AsyncAdapter.DataProvider {
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         return super.dump(lv)
                 + "[ AsyncCursorAdapter ]"
-                + "  curCount : " + ((null == cur)? "null": cur.getCount()) + "\n";
+                + "  curCount : " + ((null == mCur)? "null": mCur.getCount()) + "\n";
     }
 
     /**
@@ -115,9 +115,9 @@ AsyncAdapter.DataProvider {
     reloadItem(int[] itemIds) {
         for (int id : itemIds) {
             int pos = id - getPosTop();
-            synchronized (curlock) {
-                if (cur.moveToPosition(id))
-                    destroyItem(setItem(pos ,ibldr.buildItem(this, cur)));
+            synchronized (mCurlock) {
+                if (mCur.moveToPosition(id))
+                    destroyItem(setItem(pos ,mIbldr.buildItem(this, mCur)));
                 else
                     ;// ignore
             }
@@ -141,13 +141,13 @@ AsyncAdapter.DataProvider {
         //logI("AsyncCursorAdapter : requestData - START");
         Object[] items;
         boolean eod = true;
-        synchronized (curlock) {
-            eAssert(null != cur && null != ibldr);
+        synchronized (mCurlock) {
+            eAssert(null != mCur && null != mIbldr);
 
-            if (cur.isClosed())
+            if (mCur.isClosed())
                 eAssert(false);
 
-            int szAvail = cur.getCount() - from;
+            int szAvail = mCur.getCount() - from;
             // szAvail has range - [0, sz]
             if (szAvail < 0)
                 szAvail = 0;
@@ -157,14 +157,14 @@ AsyncAdapter.DataProvider {
             }
 
             items = new Object[szAvail];
-            if (cur.moveToPosition(from)) {
+            if (mCur.moveToPosition(from)) {
                 int i = 0;
                 do {
-                    items[i++] = ibldr.buildItem(this, cur);
-                } while (i < szAvail && cur.moveToNext());
+                    items[i++] = mIbldr.buildItem(this, mCur);
+                } while (i < szAvail && mCur.moveToNext());
                 eAssert(i == szAvail);
             } else
-                eAssert(0 == cur.getCount() || 0 == szAvail);
+                eAssert(0 == mCur.getCount() || 0 == szAvail);
         }
         adapter.provideItems(priv, nrseq, from, items, eod);
         //logI("AsyncCursorAdapter : requestData - END");
@@ -174,23 +174,23 @@ AsyncAdapter.DataProvider {
     @Override
     public int
     requestDataCnt(AsyncAdapter adapter) {
-        // cur.getCount() is very slow at first call.
-        synchronized (curlock) {
-            return cur.getCount();
+        // mCur.getCount() is very slow at first call.
+        synchronized (mCurlock) {
+            return mCur.getCount();
         }
     }
 
     @Override
     public void
     destroyData(AsyncAdapter adapter, Object data) {
-        ibldr.destroyItem(this, data);
+        mIbldr.destroyItem(this, data);
     }
 
     @Override
     protected void
     finalize() throws Throwable {
         super.finalize();
-        if (null != cur)
-            cur.close();
+        if (null != mCur)
+            mCur.close();
     }
 }

@@ -38,7 +38,7 @@ import android.preference.PreferenceManager;
 public class RTTask implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
-    private static RTTask   instance = null;
+    private static RTTask   sInstance = null;
 
     // Dependency on only following modules are allowed
     // - Utils
@@ -46,31 +46,31 @@ OnSharedPreferenceChangeListener {
     // - DB / DBThread
     // - UIPolicy
     // - DBPolicy
-    private final DBPolicy              dbp    = DBPolicy.get();
-    private final BGTaskManager         bgtm   = new BGTaskManager();;
-    private final LinkedList<BGTask>    readyQ = new LinkedList<BGTask>();
-    private final LinkedList<BGTask>    runQ   = new LinkedList<BGTask>();
+    private final DBPolicy              mDbp    = DBPolicy.get();
+    private final BGTaskManager         mBgtm   = new BGTaskManager();;
+    private final LinkedList<BGTask>    mReadyQ = new LinkedList<BGTask>();
+    private final LinkedList<BGTask>    mRunQ   = new LinkedList<BGTask>();
 
     // NOTE
-    // Why taskQSync is used instead of using 'readyQ' and 'runQ' object directly as an sync object for each list?
+    // Why mTaskQSync is used instead of using 'mReadyQ' and 'mRunQ' object directly as an sync object for each list?
     // This is to avoid following unexpected state
-    //   "Task is not in readyQ and runQ. But is not Idle!"
-    // If 'readyQ' and 'runQ' are used as synch. object for their own list,
+    //   "Task is not in mReadyQ and mRunQ. But is not Idle!"
+    // If 'mReadyQ' and 'mRunQ' are used as synch. object for their own list,
     //   above unexpected state is unavoidable.
     // For example.
-    //   synchronized (readyQ) {
-    //       t = readyQ.pop();
+    //   synchronized (mReadyQ) {
+    //       t = mReadyQ.pop();
     //   }
     //   <==== Unexpected state! ====>
-    //   synchronized (runQ) {
-    //       runQ.addLast(t);
+    //   synchronized (mRunQ) {
+    //       mRunQ.addLast(t);
     //   }
-    private final Object       taskQSync = new Object();
-    private final KeyBasedLinkedList<OnRegisterListener> registerListenerl
+    private final Object       mTaskQSync = new Object();
+    private final KeyBasedLinkedList<OnRegisterListener> mRegisterListenerl
                     = new KeyBasedLinkedList<OnRegisterListener>();
-    private final KeyBasedLinkedList<OnTaskQueueChangedListener> taskQChangedListenerl
+    private final KeyBasedLinkedList<OnTaskQueueChangedListener> mTaskQChangedListenerl
                     = new KeyBasedLinkedList<OnTaskQueueChangedListener>();
-    private volatile int       maxConcurrent = 2; // temporally hard coding.
+    private volatile int       mMaxConcurrent = 2; // temporally hard coding.
 
     public interface OnRegisterListener {
         void onRegister(BGTask task, long id, Action act);
@@ -114,17 +114,17 @@ OnSharedPreferenceChangeListener {
             // Order of these codes are deeply related with avoiding unexpected race-condition.
             // DO NOT change ORDER of code line!
             BGTask t = null;
-            synchronized (taskQSync) {
-                runQ.remove(task);
-                if (!readyQ.isEmpty()) {
-                    t = readyQ.pop();
-                    runQ.addLast(t);
+            synchronized (mTaskQSync) {
+                mRunQ.remove(task);
+                if (!mReadyQ.isEmpty()) {
+                    t = mReadyQ.pop();
+                    mRunQ.addLast(t);
                 }
             }
 
-            synchronized (bgtm) {
+            synchronized (mBgtm) {
                 if (null != t) {
-                    bgtm.start(bgtm.getTaskId(t));
+                    mBgtm.start(mBgtm.getTaskId(t));
                 }
             }
 
@@ -165,9 +165,9 @@ OnSharedPreferenceChangeListener {
     // Get singleton instance,.
     public static RTTask
     get() {
-        if (null == instance)
-            instance = new RTTask();
-        return instance;
+        if (null == sInstance)
+            sInstance = new RTTask();
+        return sInstance;
     }
 
     // ===============================
@@ -182,7 +182,7 @@ OnSharedPreferenceChangeListener {
      */
     private void
     setMaxConcurrent(int v) {
-        maxConcurrent = v;
+        mMaxConcurrent = v;
     }
 
     private String
@@ -209,8 +209,8 @@ OnSharedPreferenceChangeListener {
      */
     private boolean
     isTaskInAction(BGTask task) {
-        synchronized (taskQSync) {
-            if (runQ.contains(task) || readyQ.contains(task))
+        synchronized (mTaskQSync) {
+            if (mRunQ.contains(task) || mReadyQ.contains(task))
                 return true;
         }
         eAssert(!task.isAlive());
@@ -225,11 +225,11 @@ OnSharedPreferenceChangeListener {
     getIdsInAction(Action action) {
         String[] tids;
         LinkedList<Long> l = new LinkedList<Long>();
-        synchronized (bgtm) {
-            tids = bgtm.getTaskIds();
+        synchronized (mBgtm) {
+            tids = mBgtm.getTaskIds();
             for (String tid : tids) {
                 if (action == actionFromTid(tid)) {
-                    BGTask task = bgtm.peek(tid);
+                    BGTask task = mBgtm.peek(tid);
                     long id = idFromTid(tid);
                     if (null != task && isTaskInAction(task)) {
                         l.add(id); // all items
@@ -243,18 +243,18 @@ OnSharedPreferenceChangeListener {
     private void
     notifyTaskQChanged(BGTask task, boolean enQ) {
         // This is run on UI thread
-        // But to increase readability... because taskQChangedListenerl assumes handled on ui thread.
+        // But to increase readability... because mTaskQChangedListenerl assumes handled on ui thread.
         //   - not thread safe!
 
         eAssert(Utils.isUiThread());
         String tid;
-        synchronized (bgtm) {
-            tid = bgtm.getTaskId(task);
+        synchronized (mBgtm) {
+            tid = mBgtm.getTaskId(task);
         }
         long id = idFromTid(tid);
         Action act = actionFromTid(tid);
 
-        Iterator<OnTaskQueueChangedListener> iter = taskQChangedListenerl.iterator();
+        Iterator<OnTaskQueueChangedListener> iter = mTaskQChangedListenerl.iterator();
         while (iter.hasNext()) {
             if (enQ)
                 iter.next().onEnQ(task, id, act);
@@ -300,26 +300,26 @@ OnSharedPreferenceChangeListener {
     registerRegisterEventListener(Object key, OnRegisterListener listener) {
         eAssert(Utils.isUiThread());
         eAssert(null != key && null != listener);
-        registerListenerl.add(key, listener);
+        mRegisterListenerl.add(key, listener);
     }
 
     public void
     unregisterRegisterEventListener(Object key) {
         eAssert(Utils.isUiThread());
-        registerListenerl.remove(key);
+        mRegisterListenerl.remove(key);
     }
 
     public void
     registerTaskQChangedListener(Object key, OnTaskQueueChangedListener listener) {
         eAssert(Utils.isUiThread());
         eAssert(null != key && null != listener);
-        taskQChangedListenerl.add(key,  listener);
+        mTaskQChangedListenerl.add(key,  listener);
     }
 
     public void
     unregisterTaskQChangedListener(Object key) {
         eAssert(Utils.isUiThread());
-        taskQChangedListenerl.remove(key);
+        mTaskQChangedListenerl.remove(key);
     }
 
     /**
@@ -339,12 +339,12 @@ OnSharedPreferenceChangeListener {
     register(long id, Action act, BGTask task) {
         eAssert(Utils.isUiThread());
         boolean r;
-        synchronized (bgtm) {
-            r = bgtm.register(tid(act, id), task);
+        synchronized (mBgtm) {
+            r = mBgtm.register(tid(act, id), task);
         }
 
         if (r) {
-            Iterator<OnRegisterListener> itr = registerListenerl.iterator();
+            Iterator<OnRegisterListener> itr = mRegisterListenerl.iterator();
             while (itr.hasNext())
                 itr.next().onRegister(task, id, act);
         }
@@ -369,16 +369,16 @@ OnSharedPreferenceChangeListener {
 
         boolean r = false;
         BGTask task;
-        synchronized (bgtm) {
+        synchronized (mBgtm) {
             // remove from manager.
-            task = bgtm.peek(taskId);
-            r = bgtm.unregister(taskId);
+            task = mBgtm.peek(taskId);
+            r = mBgtm.unregister(taskId);
         }
 
         if (!r || null == task)
             return false;
 
-        Iterator<OnRegisterListener> itr = registerListenerl.iterator();
+        Iterator<OnRegisterListener> itr = mRegisterListenerl.iterator();
         while (itr.hasNext())
             itr.next().onUnregister(task, id, act);
 
@@ -393,8 +393,8 @@ OnSharedPreferenceChangeListener {
      */
     public int
     unbind(Object key) {
-        synchronized (bgtm) {
-            return bgtm.unbind(key);
+        synchronized (mBgtm) {
+            return mBgtm.unbind(key);
         }
     }
 
@@ -408,8 +408,8 @@ OnSharedPreferenceChangeListener {
      */
     public BGTask
     bind(long id, Action act, Object key, BGTask.OnEventListener listener) {
-        synchronized (bgtm) {
-            return bgtm.bind(tid(act, id), key, listener, false);
+        synchronized (mBgtm) {
+            return mBgtm.bind(tid(act, id), key, listener, false);
         }
     }
 
@@ -420,8 +420,8 @@ OnSharedPreferenceChangeListener {
      */
     public int
     getNRActiveTask() {
-        synchronized (taskQSync) {
-            return runQ.size() + readyQ.size();
+        synchronized (mTaskQSync) {
+            return mRunQ.size() + mReadyQ.size();
         }
     }
     /**
@@ -434,8 +434,8 @@ OnSharedPreferenceChangeListener {
      */
     public BGTask
     getTask(long id, Action act) {
-        synchronized (bgtm) {
-            return bgtm.peek(tid(act, id));
+        synchronized (mBgtm) {
+            return mBgtm.peek(tid(act, id));
         }
     }
 
@@ -449,18 +449,18 @@ OnSharedPreferenceChangeListener {
     getState(long id, Action act) {
         // channel is updating???
         BGTask task;
-        synchronized (bgtm) {
-            task = bgtm.peek(tid(act, id));
+        synchronized (mBgtm) {
+            task = mBgtm.peek(tid(act, id));
         }
 
         if (null == task)
             return TaskState.IDLE;
 
-        synchronized (taskQSync) {
-            if (runQ.contains(task))
+        synchronized (mTaskQSync) {
+            if (mRunQ.contains(task))
                 return task.isCancelled()? TaskState.CANCELING: TaskState.RUNNING;
 
-            if (readyQ.contains(task))
+            if (mReadyQ.contains(task))
                 return TaskState.READY;
         }
 
@@ -482,8 +482,8 @@ OnSharedPreferenceChangeListener {
     public void
     consumeResult(long id, Action act) {
         BGTask task;
-        synchronized (bgtm) {
-            task = bgtm.peek(tid(act, id));
+        synchronized (mBgtm) {
+            task = mBgtm.peek(tid(act, id));
         }
         if (null == task)
             return;
@@ -502,8 +502,8 @@ OnSharedPreferenceChangeListener {
     start(long id, Action act) {
         String taskId = tid(act, id);
         BGTask t = null;
-        synchronized (bgtm) {
-            t = bgtm.peek(taskId);
+        synchronized (mBgtm) {
+            t = mBgtm.peek(taskId);
             if (null == t)
                 return false;
         }
@@ -511,31 +511,31 @@ OnSharedPreferenceChangeListener {
         // See comments in RunningBGTaskListener.onEnd
         // DO NOT change ORDER of code line.
         boolean bStartImmediate = false;
-        synchronized (taskQSync) {
+        synchronized (mTaskQSync) {
             // Why remove 't' at this moment?
             // This means, "if task is already in ready state,
             //   it will move to last of the list."
             // In summary, "start request cancels previous one and newly added".
-            readyQ.remove(t);
+            mReadyQ.remove(t);
 
             // NOTE
             // This SHOULD be 'bindPrior' is used.
-            // operation related with 'runQ' and 'readyQ' SHOULD BE DONE
+            // operation related with 'mRunQ' and 'mReadyQ' SHOULD BE DONE
             //   before normal event listener is called!
-            synchronized (bgtm) {
-                bgtm.bind(tid(act, id), this, new RunningBGTaskListener(), true);
+            synchronized (mBgtm) {
+                mBgtm.bind(tid(act, id), this, new RunningBGTaskListener(), true);
             }
             // If there is no running task then start NOW!
-            if (runQ.size() < maxConcurrent) {
+            if (mRunQ.size() < mMaxConcurrent) {
                 bStartImmediate = true;
-                runQ.addLast(t);
+                mRunQ.addLast(t);
             } else
-                readyQ.addLast(t);
+                mReadyQ.addLast(t);
         }
 
-        synchronized (bgtm) {
+        synchronized (mBgtm) {
             if (bStartImmediate)
-                bgtm.start(taskId);
+                mBgtm.start(taskId);
         }
 
         notifyTaskQChanged(t, true);
@@ -554,18 +554,18 @@ OnSharedPreferenceChangeListener {
     public boolean
     cancel(long id, Action act, Object arg) {
         BGTask t = null;
-        synchronized (bgtm) {
-            t = bgtm.peek(tid(act, id));
+        synchronized (mBgtm) {
+            t = mBgtm.peek(tid(act, id));
             if (null == t)
                 return true;
         }
 
-        synchronized (taskQSync) {
-            readyQ.remove(t);
+        synchronized (mTaskQSync) {
+            mReadyQ.remove(t);
         }
 
-        synchronized (bgtm) {
-            return bgtm.cancel(tid(act, id), arg);
+        synchronized (mBgtm) {
+            return mBgtm.cancel(tid(act, id), arg);
         }
     }
 
@@ -577,15 +577,15 @@ OnSharedPreferenceChangeListener {
      */
     public Err
     getErr(long id, Action act) {
-        synchronized (bgtm) {
-            return bgtm.peek(tid(act, id)).getResult();
+        synchronized (mBgtm) {
+            return mBgtm.peek(tid(act, id)).getResult();
         }
     }
 
     public void
     cancelAll() {
-        synchronized (bgtm) {
-            bgtm.cancelAll();
+        synchronized (mBgtm) {
+            mBgtm.cancelAll();
         }
     }
 
@@ -630,12 +630,12 @@ OnSharedPreferenceChangeListener {
 
         LinkedList<Long> l = new LinkedList<Long>();
         try {
-            dbp.getDelayedChannelUpdate();
+            mDbp.getDelayedChannelUpdate();
             for (long dnid : dnids)
-                if (set.contains(dbp.getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
+                if (set.contains(mDbp.getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
                     l.add(dnid);
         } finally {
-            dbp.putDelayedChannelUpdate();
+            mDbp.putDelayedChannelUpdate();
         }
         return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
     }
@@ -650,8 +650,8 @@ OnSharedPreferenceChangeListener {
         // Nick is task id.
         // See BGTM for details
         String tid;
-        synchronized (bgtm) {
-            tid = bgtm.getTaskId(task);
+        synchronized (mBgtm) {
+            tid = mBgtm.getTaskId(task);
         }
         eAssert(Action.DOWNLOAD == actionFromTid(tid));
         return idFromTid(tid);

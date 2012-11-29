@@ -35,7 +35,7 @@ public class UnexpectedExceptionHandler implements
 UncaughtExceptionHandler {
     private static final String UNKNOWN = "unknown";
 
-    private static UnexpectedExceptionHandler instance = null;
+    private static UnexpectedExceptionHandler sInstance = null;
 
     // This module to capturing unexpected exception.
     // So this SHOULD have minimum set of code in constructor,
@@ -44,10 +44,10 @@ UncaughtExceptionHandler {
     //
     // Dependency on only following modules are allowed
     // - Utils
-    private final Thread.UncaughtExceptionHandler   oldHandler = Thread.getDefaultUncaughtExceptionHandler();
-    private final LinkedList<TrackedModule>         mods = new LinkedList<TrackedModule>();
-    private final PackageReport pr = new PackageReport();
-    private final BuildReport   br = new BuildReport();
+    private final Thread.UncaughtExceptionHandler   mOldHandler = Thread.getDefaultUncaughtExceptionHandler();
+    private final LinkedList<TrackedModule>         mMods = new LinkedList<TrackedModule>();
+    private final PackageReport mPr = new PackageReport();
+    private final BuildReport   mBr = new BuildReport();
 
     private class PackageReport {
         String packageName          = UNKNOWN;
@@ -89,52 +89,52 @@ UncaughtExceptionHandler {
         PackageManager pm = context.getPackageManager();
         try {
             PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
-            pr.versionName = pi.versionName;
-            pr.packageName = pi.packageName;
+            mPr.versionName = pi.versionName;
+            mPr.packageName = pi.packageName;
         }catch (NameNotFoundException e) {
             ; // ignore
         }
-        pr.filesDir        = context.getFilesDir().getAbsolutePath();
-        br.model           = android.os.Build.MODEL;
-        br.androidVersion  = android.os.Build.VERSION.RELEASE;
-        br.board           = android.os.Build.BOARD;
-        br.brand           = android.os.Build.BRAND;
-        br.device          = android.os.Build.DEVICE;
-        br.display         = android.os.Build.DISPLAY;
-        br.fingerPrint     = android.os.Build.FINGERPRINT;
-        br.host            = android.os.Build.HOST;
-        br.id              = android.os.Build.ID;
-        br.product         = android.os.Build.PRODUCT;
-        br.tags            = android.os.Build.TAGS;
-        br.time            = android.os.Build.TIME;
-        br.type            = android.os.Build.TYPE;
-        br.user            = android.os.Build.USER;
+        mPr.filesDir        = context.getFilesDir().getAbsolutePath();
+        mBr.model           = android.os.Build.MODEL;
+        mBr.androidVersion  = android.os.Build.VERSION.RELEASE;
+        mBr.board           = android.os.Build.BOARD;
+        mBr.brand           = android.os.Build.BRAND;
+        mBr.device          = android.os.Build.DEVICE;
+        mBr.display         = android.os.Build.DISPLAY;
+        mBr.fingerPrint     = android.os.Build.FINGERPRINT;
+        mBr.host            = android.os.Build.HOST;
+        mBr.id              = android.os.Build.ID;
+        mBr.product         = android.os.Build.PRODUCT;
+        mBr.tags            = android.os.Build.TAGS;
+        mBr.time            = android.os.Build.TIME;
+        mBr.type            = android.os.Build.TYPE;
+        mBr.user            = android.os.Build.USER;
     }
 
 
     private void
     appendCommonReport(StringBuilder report) {
         report.append("==================== Package Information ==================\n")
-              .append("  - name        : " + pr.packageName + "\n")
-              .append("  - version     : " + pr.versionName + "\n")
-              .append("  - filesDir    : " + pr.filesDir + "\n")
+              .append("  - name        : " + mPr.packageName + "\n")
+              .append("  - version     : " + mPr.versionName + "\n")
+              .append("  - filesDir    : " + mPr.filesDir + "\n")
               .append("\n")
               .append("===================== Device Information ==================\n")
-              .append("  - androidVer  : " + br.androidVersion + "\n")
-              .append("  - board       : " + br.board + "\n")
-              .append("  - brand       : " + br.brand + "\n")
-              .append("  - device      : " + br.device + "\n")
-              .append("  - display     : " + br.display + "\n")
-              .append("  - fingerprint : " + br.fingerPrint + "\n")
-              .append("  - host        : " + br.host + "\n")
-              .append("  - id          : " + br.id + "\n")
-              .append("  - manufactuere: " + br.manufacturer + "\n")
-              .append("  - model       : " + br.model + "\n")
-              .append("  - product     : " + br.product + "\n")
-              .append("  - tags        : " + br.tags + "\n")
-              .append("  - time        : " + br.time + "\n")
-              .append("  - type        : " + br.type + "\n")
-              .append("  - user        : " + br.user + "\n")
+              .append("  - androidVer  : " + mBr.androidVersion + "\n")
+              .append("  - board       : " + mBr.board + "\n")
+              .append("  - brand       : " + mBr.brand + "\n")
+              .append("  - device      : " + mBr.device + "\n")
+              .append("  - display     : " + mBr.display + "\n")
+              .append("  - fingerprint : " + mBr.fingerPrint + "\n")
+              .append("  - host        : " + mBr.host + "\n")
+              .append("  - id          : " + mBr.id + "\n")
+              .append("  - manufactuere: " + mBr.manufacturer + "\n")
+              .append("  - model       : " + mBr.model + "\n")
+              .append("  - product     : " + mBr.product + "\n")
+              .append("  - tags        : " + mBr.tags + "\n")
+              .append("  - time        : " + mBr.time + "\n")
+              .append("  - type        : " + mBr.type + "\n")
+              .append("  - user        : " + mBr.user + "\n")
               .append("\n\n");
     }
 
@@ -148,9 +148,9 @@ UncaughtExceptionHandler {
     // Get singleton instance,.
     public static UnexpectedExceptionHandler
     get() {
-        if (null == instance)
-            instance = new UnexpectedExceptionHandler();
-        return instance;
+        if (null == sInstance)
+            sInstance = new UnexpectedExceptionHandler();
+        return sInstance;
     }
 
     /**
@@ -163,19 +163,19 @@ UncaughtExceptionHandler {
         if (null == m)
             return false;
 
-        synchronized (mods) {
-            if (mods.contains(m))
+        synchronized (mMods) {
+            if (mMods.contains(m))
                 return false;
 
-            mods.addLast(m);
+            mMods.addLast(m);
             return true;
         }
     }
 
     public boolean
     unregisterModule(TrackedModule m) {
-        synchronized (mods) {
-            return mods.remove(m);
+        synchronized (mMods) {
+            return mMods.remove(m);
         }
     }
 
@@ -186,7 +186,7 @@ UncaughtExceptionHandler {
         appendCommonReport(report);
 
         // collect dump informations
-        Iterator<TrackedModule> iter = mods.iterator();
+        Iterator<TrackedModule> iter = mMods.iterator();
         while (iter.hasNext()) {
             TrackedModule tm = iter.next();
             report.append(tm.dump(DumpLevel.FULL)).append("\n\n");
@@ -198,6 +198,6 @@ UncaughtExceptionHandler {
         pw.close();
 
         UsageReport.get().storeErrReport(report.toString());
-        oldHandler.uncaughtException(thread, ex);
+        mOldHandler.uncaughtException(thread, ex);
     }
 }

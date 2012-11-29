@@ -49,13 +49,13 @@ public class NetLoader {
     private static final int NET_RETRY = 3;
     private static final int NET_CONN_TIMEOUT = 5000;
 
-    private final UIPolicy  uip = UIPolicy.get();
-    private final DBPolicy  dbp = DBPolicy.get();
+    private final UIPolicy  mUip = UIPolicy.get();
+    private final DBPolicy  mDbp = DBPolicy.get();
 
-    private volatile boolean        cancelled = false;
-    private volatile InputStream    istream = null; // Multi-thread access
-    private volatile OutputStream   ostream = null;
-    private volatile File           tmpFile = null;
+    private volatile boolean        mCancelled = false;
+    private volatile InputStream    mIstream = null; // Multi-thread access
+    private volatile OutputStream   mOstream = null;
+    private volatile File           mTmpFile = null;
 
     interface OnProgress {
         // "progress < 0" means "Unknown progress"
@@ -64,60 +64,60 @@ public class NetLoader {
     }
 
     /**
-     * Close network input stream of this loader - istream.
+     * Close network input stream of this loader - mIstream.
      * @throws FeederException
      */
     private void
     closeIstream() throws FeederException {
         try {
-            if (null != istream)
-                istream.close();
+            if (null != mIstream)
+                mIstream.close();
         } catch (IOException e) {
             throw new FeederException (Err.IO_NET);
         }
     }
 
     /**
-     * Close output stream - ostream.
+     * Close output stream - mOstream.
      * (Usually, output stream is file stream)
      * @throws FeederException
      */
     private void
     closeOstream() throws FeederException {
         try {
-            if (null != ostream)
-                ostream.close();
+            if (null != mOstream)
+                mOstream.close();
         } catch (IOException e) {
             throw new FeederException (Err.IO_FILE);
         }
     }
 
     /**
-     * Delete temp file - tmpFile - used.
+     * Delete temp file - mTmpFile - used.
      * @return
      */
     private boolean
     clearTempFile() {
         boolean ret = true;
-        if (null != tmpFile)
-            ret = tmpFile.delete();
+        if (null != mTmpFile)
+            ret = mTmpFile.delete();
         return ret;
     }
 
     /**
-     * Close input/output stream (istream, ostream) and
-     *   delete temp file (tmpFile)
+     * Close input/output stream (mIstream, mOstream) and
+     *   delete temp file (mTmpFile)
      * @return
      */
     private boolean
     cleanup() {
         try {
-            if (null != istream)
-                istream.close();
-            if (null != ostream)
-                ostream.close();
-            if (null != tmpFile)
-                tmpFile.delete();
+            if (null != mIstream)
+                mIstream.close();
+            if (null != mOstream)
+                mOstream.close();
+            if (null != mTmpFile)
+                mTmpFile.delete();
             return true;
         } catch (IOException e) {
             return false;
@@ -126,7 +126,7 @@ public class NetLoader {
 
     private void
     checkInterrupted() throws FeederException {
-        if (cancelled)
+        if (mCancelled)
             throw new FeederException(Err.USER_CANCELLED);
         if (Thread.currentThread().isInterrupted())
             throw new FeederException(Err.INTERRUPTED);
@@ -138,7 +138,7 @@ public class NetLoader {
      *   If another exception need to be thrown, all callers should be checked and verified!
      *
      * FeederException : Err.IONet / Err.UserCancelled / Err.Interrupted
-     * @param ostream
+     * @param outstream
      * @param urlStr
      * @param progressListener
      * @throws FeederException
@@ -164,7 +164,7 @@ public class NetLoader {
                } catch (Exception e) {
                    // SocketTimeoutException
                    // IOException
-                   if (cancelled)
+                   if (mCancelled)
                        throw new FeederException(Err.USER_CANCELLED);
 
                    if (0 >= retry)
@@ -173,7 +173,7 @@ public class NetLoader {
                    try {
                        Thread.sleep(500);
                    } catch (InterruptedException ie) {
-                       if (cancelled)
+                       if (mCancelled)
                            throw new FeederException(Err.USER_CANCELLED);
                        else
                            throw new FeederException(Err.INTERRUPTED);
@@ -189,7 +189,7 @@ public class NetLoader {
                    if (lengthOfFile >= 0)
                        break;
                }
-               istream = new BufferedInputStream(conn.getInputStream());
+               mIstream = new BufferedInputStream(conn.getInputStream());
 
                if (Thread.currentThread().isInterrupted()) {
                    cancel();
@@ -202,7 +202,7 @@ public class NetLoader {
                int  count;
                long prevProgress = -1;
                while (true) {
-                   if (-1 == (count = istream.read(data)))
+                   if (-1 == (count = mIstream.read(data)))
                        break;
                    outstream.write(data, 0, count);
                    total += count;
@@ -222,7 +222,7 @@ public class NetLoader {
                // User's canceling operation close in/out stream in force.
                // And this leads to IOException here.
                // So, we should check that this Exception is caused by user's cancel or real IOException.
-               if (cancelled)
+               if (mCancelled)
                    throw new FeederException(Err.USER_CANCELLED);
                else {
                    e.printStackTrace();
@@ -251,12 +251,12 @@ public class NetLoader {
                     time = System.currentTimeMillis();
                     URLConnection conn = new URL(url).openConnection();
                     conn.setReadTimeout(1000);
-                    istream = conn.getInputStream();
+                    mIstream = conn.getInputStream();
                     Document dom = DocumentBuilderFactory
                                     .newInstance()
                                     .newDocumentBuilder()
-                                    .parse(istream);
-                    istream.close();
+                                    .parse(mIstream);
+                    mIstream.close();
                     //logI("TIME: Open URL and Parseing as Dom : " + (System.currentTimeMillis() - time));
                     time = System.currentTimeMillis();
                     // Only RSS is supported at this version.
@@ -266,7 +266,7 @@ public class NetLoader {
                 } catch (MalformedURLException e) {
                     throw new FeederException(Err.INVALID_URL);
                 } catch (IOException e) {
-                    if (cancelled)
+                    if (mCancelled)
                         throw new FeederException(Err.USER_CANCELLED);
 
                     if (0 >= retry)
@@ -276,7 +276,7 @@ public class NetLoader {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException ie) {
-                        if (cancelled)
+                        if (mCancelled)
                             throw new FeederException(Err.USER_CANCELLED);
                         else
                             throw new FeederException(Err.INTERRUPTED);
@@ -309,7 +309,7 @@ public class NetLoader {
     private void
     update(long cid, String imageref)
             throws FeederException {
-        String url = dbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
+        String url = mDbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
         eAssert(null != url);
 
         //logI("Loading Items: " + url);
@@ -324,14 +324,14 @@ public class NetLoader {
         // Actually deciding only once is enough in general case.
         // But, rarely whole channel item type may be changed and requires different action.
         // So, whenever update is executed try to adjust 'action' type.
-        long oldAction = dbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-        long action = uip.decideActionType(oldAction,
-                                           parD.channel,
-                                           parD.items.length > 0? parD.items[0]: null);
+        long oldAction = mDbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        long action = mUip.decideActionType(oldAction,
+                                            parD.channel,
+                                            parD.items.length > 0? parD.items[0]: null);
         if (action != oldAction)
-            dbp.updateChannel(cid, DB.ColumnChannel.ACTION, action);
+            mDbp.updateChannel(cid, DB.ColumnChannel.ACTION, action);
 
-        byte[] imageblob = dbp.getChannelInfoImageblob(cid);
+        byte[] imageblob = mDbp.getChannelInfoImageblob(cid);
         if (imageblob.length <= 0) {
             time = System.currentTimeMillis();
             // Kind Of Policy!!
@@ -356,7 +356,7 @@ public class NetLoader {
                 imageblob = Utils.compressBitmap(bm);
                 bm.recycle();
                 if (null != imageblob)
-                    dbp.updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
+                    mDbp.updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
             }
             //logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
             checkInterrupted();
@@ -365,31 +365,31 @@ public class NetLoader {
         time = System.currentTimeMillis();
 
         LinkedList<Feed.Item.ParD> newItems = new LinkedList<Feed.Item.ParD>();
-        dbp.getNewItems(cid, parD.items, newItems);
+        mDbp.getNewItems(cid, parD.items, newItems);
 
         DBPolicy.ItemDataOpInterface idop = null;
         // NOTE
         // Information in "ch.dynD" is not available in case update.
         // ('imageblob' and 'action' is exception case controlled with argument.)
         // This is dynamically assigned variable.
-        long updateMode = dbp.getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
+        long updateMode = mDbp.getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
         if (Feed.Channel.isUpdDn(updateMode)) {
             final long chact = action;
             idop = new DBPolicy.ItemDataOpInterface() {
                 @Override
                 public File getFile(Feed.Item.ParD parD) throws FeederException {
-                    String url = uip.getDynamicActionTargetUrl(chact, parD.link, parD.enclosureUrl);
+                    String url = mUip.getDynamicActionTargetUrl(chact, parD.link, parD.enclosureUrl);
                     if (!Utils.isValidValue(url))
                         return null;
 
-                    File f = uip.getNewTempFile();
-                    downloadToFile(url, uip.getNewTempFile(), f, null);
+                    File f = mUip.getNewTempFile();
+                    downloadToFile(url, mUip.getNewTempFile(), f, null);
                     return f;
                 }
             };
         }
         checkInterrupted();
-        dbp.updateChannel(cid, parD.channel, newItems, idop);
+        mDbp.updateChannel(cid, parD.channel, newItems, idop);
 
         //logI("TIME: Updating Items : " + (System.currentTimeMillis() - time));
     }
@@ -430,11 +430,11 @@ public class NetLoader {
     downloadToRaw(String url, OnProgress progressListener)
             throws FeederException {
         // set as class private for future cleanup.
-        ostream = new ByteArrayOutputStream();
+        mOstream = new ByteArrayOutputStream();
         byte[] ret = null;
         try {
-            download(ostream, url, null);
-            ret = ((ByteArrayOutputStream )ostream).toByteArray();
+            download(mOstream, url, null);
+            ret = ((ByteArrayOutputStream )mOstream).toByteArray();
         } finally {
             closeIstream();
             closeOstream();
@@ -463,11 +463,11 @@ public class NetLoader {
         new File(parent).mkdirs();
 
         // Set as class private for future cleanup.
-        tmpFile = tempFile;
+        mTmpFile = tempFile;
         try {
-            ostream = new FileOutputStream(tmpFile);
-            download(ostream, url, progressListener);
-            if (!tmpFile.renameTo(toFile))
+            mOstream = new FileOutputStream(mTmpFile);
+            download(mOstream, url, progressListener);
+            if (!mTmpFile.renameTo(toFile))
                 throw new FeederException(Err.IO_FILE);
         } catch (FileNotFoundException e) {
             throw new FeederException(Err.IO_FILE);
@@ -484,7 +484,7 @@ public class NetLoader {
      */
     public boolean
     cancel() {
-        cancelled = true;
+        mCancelled = true;
         // Kind of hack!
         // There is no fast-way to cancel running-java thread.
         // So, make input-stream closed by force to stop loading/DOM-parsing etc.

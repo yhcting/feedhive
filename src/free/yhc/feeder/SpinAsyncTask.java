@@ -36,14 +36,14 @@ DialogInterface.OnDismissListener,
 DialogInterface.OnCancelListener,
 DialogInterface.OnClickListener
 {
-    private String          name         = ""; // for debugging
-    private Context         context      = null;
-    private long            cid          = -1;
-    private ProgressDialog  dialog       = null;
-    private int             msgid        = -1;
-    private Worker          worker       = null;
-    private boolean         userCancelled= false;
-    private boolean         cancelable   = true;
+    private String          mName           = ""; // for debugging
+    private Context         mContext        = null;
+    private long            mCid            = -1;
+    private ProgressDialog  mDialog         = null;
+    private int             mMsgid          = -1;
+    private Worker          mWorker         = null;
+    private boolean         mUserCancelled  = false;
+    private boolean         mCancelable     = true;
 
     interface Worker {
         Err  doBackgroundWork(SpinAsyncTask task, Object... objs);
@@ -52,12 +52,12 @@ DialogInterface.OnClickListener
     }
 
     private void
-    constructor(Context aContext, Worker aWorker, int aMsgid, boolean aCancelable) {
+    constructor(Context context, Worker worker, int msgid, boolean cancelable) {
         UnexpectedExceptionHandler.get().registerModule(this);
-        context = aContext;
-        worker  = aWorker;
-        msgid   = aMsgid;
-        cancelable = aCancelable;
+        mContext = context;
+        mWorker  = worker;
+        mMsgid   = msgid;
+        mCancelable = cancelable;
     }
 
     SpinAsyncTask(Context context, Worker listener, int msgid) {
@@ -72,15 +72,15 @@ DialogInterface.OnClickListener
 
     public void
     setName(String newName) {
-        name = newName;
+        mName = newName;
     }
 
     public Err
     updateLoad(Object obj)
             throws FeederException {
-        cid = ((Long)obj).longValue();
+        mCid = ((Long)obj).longValue();
         try {
-            new NetLoader().updateLoad(cid);
+            new NetLoader().updateLoad(mCid);
             return Err.NO_ERR;
         } catch (FeederException e) {
             return e.getError();
@@ -90,7 +90,7 @@ DialogInterface.OnClickListener
     @Override
     public String
     dump(DumpLevel lvl) {
-        return "[ SpinAsyncTask : " + name + " ]";
+        return "[ SpinAsyncTask : " + mName + " ]";
     }
 
     // return :
@@ -99,17 +99,17 @@ DialogInterface.OnClickListener
     doInBackground(Object... objs) {
         //logI("* Start background Job : SpinSyncTask\n");
         Err ret = Err.NO_ERR;
-        if (null != worker)
-            ret = worker.doBackgroundWork(this, objs);
+        if (null != mWorker)
+            ret = mWorker.doBackgroundWork(this, objs);
         return ret;
     }
 
     private boolean
     cancelWork() {
-        if (!cancelable)
+        if (!mCancelable)
             return false;
         // See comments in BGTaskUpdateChannel.cancel()
-        userCancelled = true;
+        mUserCancelled = true;
         cancel(true);
         return true;
     }
@@ -117,41 +117,41 @@ DialogInterface.OnClickListener
     @Override
     public void
     onCancelled(Err result) {
-        dialog.dismiss();
+        mDialog.dismiss();
     }
 
     @Override
     public void
     onCancel(DialogInterface dialogI) {
-        if (!cancelable)
+        if (!mCancelable)
             return;
         cancelWork();
-        if (null != worker)
-            worker.onCancel(this);
+        if (null != mWorker)
+            mWorker.onCancel(this);
     }
 
     @Override
     public void
     onClick(DialogInterface dialogI, int which) {
-        if (!cancelable)
+        if (!mCancelable)
             return;
-        dialog.setMessage(context.getResources().getText(R.string.wait_cancel));
-        dialog.cancel();
+        mDialog.setMessage(mContext.getResources().getText(R.string.wait_cancel));
+        mDialog.cancel();
     }
 
     @Override
     protected void
     onPostExecute(Err result) {
         //logI("* postExecuted : SpinSyncTask\n");
-        dialog.dismiss();
+        mDialog.dismiss();
 
         // In normal case, onPostExecute is not called in case of 'user-cancel'.
         // below code is for safety.
-        if (userCancelled)
+        if (mUserCancelled)
             return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
-        if (null != worker)
-            worker.onPostExecute(this, result);
+        if (null != mWorker)
+            mWorker.onPostExecute(this, result);
     }
 
     @Override
@@ -162,19 +162,19 @@ DialogInterface.OnClickListener
     @Override
     protected void
     onPreExecute() {
-        dialog = new ProgressDialog(context);
-        dialog.setMessage(context.getResources().getText(msgid));
-        dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-        dialog.setCanceledOnTouchOutside(false);
+        mDialog = new ProgressDialog(mContext);
+        mDialog.setMessage(mContext.getResources().getText(mMsgid));
+        mDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        mDialog.setCanceledOnTouchOutside(false);
 
-        if (cancelable) {
-            dialog.setButton(context.getResources().getText(R.string.cancel), this);
-            dialog.setOnCancelListener(this);
+        if (mCancelable) {
+            mDialog.setButton(mContext.getResources().getText(R.string.cancel), this);
+            mDialog.setOnCancelListener(this);
         } else
-            dialog.setCancelable(false);
+            mDialog.setCancelable(false);
 
-        dialog.setOnDismissListener(this);
-        dialog.show();
+        mDialog.setOnDismissListener(this);
+        mDialog.show();
     }
 
     /*

@@ -74,30 +74,30 @@ UnexpectedExceptionHandler.TrackedModule {
     // country code value defined by "ISO 3166-1 alpha-3"
     private static final String DB_COL_CCODE    = "countrycode";
     private static final String DB_COL_STATE    = "state";
-    private static final String[] DB_COL_CATEGORIES = new String[] {"category0",
-                                                                    "category1",
-                                                                    "category2",
-                                                                    "category3",
-                                                                    "category4"};
+    private static final String[] sDbColCategories = new String[] {"category0",
+                                                                   "category1",
+                                                                   "category2",
+                                                                   "category3",
+                                                                   "category4"};
 
-    private static final String[] listCursorProj = new String[] { DB_COL_ID,
-                                                                  DB_COL_TITLE,
-                                                                  DB_COL_DESC,
-                                                                  DB_COL_URL,
-                                                                  DB_COL_ICONURL,
-                                                                  DB_COL_CATEGORIES[0],
-                                                                  DB_COL_CATEGORIES[1],
-                                                                  DB_COL_CATEGORIES[2],
-                                                                  DB_COL_CATEGORIES[3],
-                                                                  DB_COL_CATEGORIES[4],
-                                                                  DB_COL_STATE };
+    private static final String[] sListCursorProj = new String[] { DB_COL_ID,
+                                                                   DB_COL_TITLE,
+                                                                   DB_COL_DESC,
+                                                                   DB_COL_URL,
+                                                                   DB_COL_ICONURL,
+                                                                   sDbColCategories[0],
+                                                                   sDbColCategories[1],
+                                                                   sDbColCategories[2],
+                                                                   sDbColCategories[3],
+                                                                   sDbColCategories[4],
+                                                                   DB_COL_STATE };
     // ========================================================================
     // Members
     // ========================================================================
-    private final DBPolicy      dbp    = DBPolicy.get();
+    private final DBPolicy      mDbp    = DBPolicy.get();
 
     // Variables set only once.
-    private AssetSQLiteHelper   assetDB     = null;
+    private AssetSQLiteHelper   mAssetDB     = null;
     private long                categoryid  = -1;
 
     // Runtime variable
@@ -143,7 +143,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Need to check this!!!
             // (I think this is definitely BUG of ANDROID FRAMEWORK!)
             // => This case is same with below "else" case too.
-            if (dbp.isDuplicatedChannelUrl(row.url)) {
+            if (mDbp.isDuplicatedChannelUrl(row.url)) {
                 titlev.setTextColor(context.getResources().getColor(R.color.title_color_opened));
                 titlev.setFocusable(true);
             } else {
@@ -159,13 +159,13 @@ UnexpectedExceptionHandler.TrackedModule {
     private String[]
     getCategories() {
         SortedSet<String> ss = new TreeSet<String>();
-        for (String col : DB_COL_CATEGORIES) {
-            Cursor c = assetDB.sqlite().query(true,
-                                              DB_TABLE,
-                                              new String[] { col },
-                                              null, null,
-                                              null, null,
-                                              null, null);
+        for (String col : sDbColCategories) {
+            Cursor c = mAssetDB.sqlite().query(true,
+                                               DB_TABLE,
+                                               new String[] { col },
+                                               null, null,
+                                               null, null,
+                                               null, null);
             if (c.moveToFirst())
                 do {
                     String cat = c.getString(0);
@@ -194,9 +194,9 @@ UnexpectedExceptionHandler.TrackedModule {
         String   where = "";
         if (!category.isEmpty()) {
             int i = 0;
-            while (i < DB_COL_CATEGORIES.length) {
-                where += DB_COL_CATEGORIES[i] + " = " + DatabaseUtils.sqlEscapeString(category);
-                if (++i < DB_COL_CATEGORIES.length)
+            while (i < sDbColCategories.length) {
+                where += sDbColCategories[i] + " = " + DatabaseUtils.sqlEscapeString(category);
+                if (++i < sDbColCategories.length)
                     where += " OR ";
             }
         }
@@ -208,11 +208,11 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // implement this.
-        Cursor c = assetDB.sqlite().query(DB_TABLE,
-                                          listCursorProj,
-                                          where, null,
-                                          null, null,
-                                          DB_COL_TITLE);
+        Cursor c = mAssetDB.sqlite().query(DB_TABLE,
+                                           sListCursorProj,
+                                           where, null,
+                                           null, null,
+                                           DB_COL_TITLE);
         getAdapter().changeCursor(c);
     }
 
@@ -292,11 +292,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     setListView(final ListView lv) {
-        Cursor c = assetDB.sqlite().query(DB_TABLE,
-                                          listCursorProj,
-                                          null, null,
-                                          null, null,
-                                          DB_COL_TITLE);
+        Cursor c = mAssetDB.sqlite().query(DB_TABLE,
+                                           sListCursorProj,
+                                           null, null,
+                                           null, null,
+                                           DB_COL_TITLE);
         lv.setAdapter(new ListAdapter(this, R.layout.predefined_channel_row, c));
         lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -326,8 +326,8 @@ UnexpectedExceptionHandler.TrackedModule {
         categoryid = this.getIntent().getLongExtra("category", -1);
         eAssert(categoryid >= 0);
 
-        assetDB = new AssetSQLiteHelper(DB_NAME, DB_ASSET, DB_VERSION);
-        assetDB.open();
+        mAssetDB = new AssetSQLiteHelper(DB_NAME, DB_ASSET, DB_VERSION);
+        mAssetDB.open();
 
         setContentView(R.layout.predefined_channel);
 
@@ -346,7 +346,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onDestroy() {
-        assetDB.close();
+        mAssetDB.close();
         super.onDestroy();
         UnexpectedExceptionHandler.get().unregisterModule(this);
     }

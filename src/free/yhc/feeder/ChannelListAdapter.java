@@ -43,15 +43,15 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListAdapter extends AsyncCursorAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    private static final Date dummyDate = new Date();
+    private static final Date sDummyDate = new Date();
 
-    private final DBPolicy dbp = DBPolicy.get();
-    private final RTTask   rtt = RTTask.get();
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final RTTask   mRtt = RTTask.get();
 
-    private final OnActionListener     actionListener;
-    private final View.OnClickListener chIconOnClick;
-    private final View.OnClickListener posUpOnClick;
-    private final View.OnClickListener posDnOnClick;
+    private final OnActionListener     mActionListener;
+    private final View.OnClickListener mChIconOnClick;
+    private final View.OnClickListener mPosUpOnClick;
+    private final View.OnClickListener mPosDnOnClick;
 
     interface OnActionListener {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -63,7 +63,7 @@ AsyncCursorAdapter.ItemBuilder {
         long        cid             = -1;
         String      title           = "";
         String      desc            = "";
-        Date        lastUpdate      = dummyDate;
+        Date        lastUpdate      = sDummyDate;
         long        maxItemId       = 0;
         long        oldLastItemId   = 0;
         Bitmap      bm              = null;
@@ -85,32 +85,32 @@ AsyncCursorAdapter.ItemBuilder {
         super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
         setItemBuilder(this);
         UnexpectedExceptionHandler.get().registerModule(this);
-        actionListener = listener;
+        mActionListener = listener;
 
-        chIconOnClick = new View.OnClickListener() {
+        mChIconOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == actionListener)
+                if (null == mActionListener)
                     return;
-                actionListener.onUpdateClick((ImageView)v, (long)(Long)v.getTag());
+                mActionListener.onUpdateClick((ImageView)v, (long)(Long)v.getTag());
             }
         };
 
-        posUpOnClick = new View.OnClickListener() {
+        mPosUpOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == actionListener)
+                if (null == mActionListener)
                     return;
-                actionListener.onMoveUpClick((ImageView)v, (long)(Long)v.getTag());
+                mActionListener.onMoveUpClick((ImageView)v, (long)(Long)v.getTag());
             }
         };
 
-        posDnOnClick = new View.OnClickListener() {
+        mPosDnOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == actionListener)
+                if (null == mActionListener)
                     return;
-                actionListener.onMoveDownClick((ImageView)v, (long)(Long)v.getTag());
+                mActionListener.onMoveDownClick((ImageView)v, (long)(Long)v.getTag());
             }
         };
     }
@@ -182,8 +182,8 @@ AsyncCursorAdapter.ItemBuilder {
             i.title = getCursorString(c, DB.ColumnChannel.TITLE);
             i.desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
             i.lastUpdate = new Date(getCursorLong(c, DB.ColumnChannel.LASTUPDATE));
-            i.maxItemId = dbp.getItemInfoMaxId(i.cid);
-            i.oldLastItemId = dbp.getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
+            i.maxItemId = mDbp.getItemInfoMaxId(i.cid);
+            i.oldLastItemId = mDbp.getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
             i.bm = null;
             byte[] imgRaw = getCursorBlob(c, DB.ColumnChannel.IMAGEBLOB);
             if (imgRaw.length > 0)
@@ -214,10 +214,10 @@ AsyncCursorAdapter.ItemBuilder {
         // Override to use "delayed item update"
         int ret;
         try {
-            dbp.getDelayedChannelUpdate();
+            mDbp.getDelayedChannelUpdate();
             ret = super.requestData(adapter, priv, nrseq, from, sz);
         } finally {
-            dbp.putDelayedChannelUpdate();
+            mDbp.putDelayedChannelUpdate();
         }
         return ret;
     }
@@ -231,15 +231,15 @@ AsyncCursorAdapter.ItemBuilder {
 
         ImageView chIcon = (ImageView)v.findViewById(R.id.image);
         chIcon.setTag(ii.cid);
-        chIcon.setOnClickListener(chIconOnClick);
+        chIcon.setOnClickListener(mChIconOnClick);
 
         ImageView ibtn = (ImageView)v.findViewById(R.id.imgup);
         ibtn.setTag(ii.cid);
-        ibtn.setOnClickListener(posUpOnClick);
+        ibtn.setOnClickListener(mPosUpOnClick);
 
         ibtn = (ImageView)v.findViewById(R.id.imgdown);
         ibtn.setTag(ii.cid);
-        ibtn.setOnClickListener(posDnOnClick);
+        ibtn.setOnClickListener(mPosDnOnClick);
 
         if (null == ii.bm)
             // fail to decode.
@@ -250,7 +250,7 @@ AsyncCursorAdapter.ItemBuilder {
         ImageView noti_up = (ImageView)v.findViewById(R.id.noti_update);
         ImageView noti_dn = (ImageView)v.findViewById(R.id.noti_download);
 
-        RTTask.TaskState state = rtt.getState(ii.cid, RTTask.Action.UPDATE);
+        RTTask.TaskState state = mRtt.getState(ii.cid, RTTask.Action.UPDATE);
         noti_up.setVisibility(View.VISIBLE);
         switch(state) {
         case IDLE:
@@ -277,7 +277,7 @@ AsyncCursorAdapter.ItemBuilder {
             eAssert(false);
         }
 
-        if (0 == rtt.getItemsDownloading(ii.cid).length)
+        if (0 == mRtt.getItemsDownloading(ii.cid).length)
             noti_dn.setVisibility(View.GONE);
         else
             noti_dn.setVisibility(View.VISIBLE);

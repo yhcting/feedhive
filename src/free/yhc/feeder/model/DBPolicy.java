@@ -71,24 +71,24 @@ UnexpectedExceptionHandler.TrackedModule {
     // Warning log will be shown.
     private static final int   DUP_SCOPE_WARNING      = 3000;
 
-    private static DBPolicy instance = null;
+    private static DBPolicy sInstance = null;
 
     // Dependency on only following modules are allowed
     // - Utils
     // - UnexpectedExceptionHandler
     // - DB / DBThread
     // - UIPolicy
-    private final DB        db      = DB.get();
-    private final UIPolicy  uip     = UIPolicy.get();
-    private final Handler   asyncHandler;
+    private final DB        mDb     = DB.get();
+    private final UIPolicy  mUip    = UIPolicy.get();
+    private final Handler   mAsyncHandler;
 
     // Only for bug reporting.
-    private final LinkedList<String>  wiredChannl = new LinkedList<String>();
+    private final LinkedList<String>  mWiredChannl = new LinkedList<String>();
     // Getting max item id of channel takes longer time than expected.
     // So, let's caching it.
     // It is used at very few places.
     // Therefore, it is easy to caching and easy to avoid cache-synchronization issue.
-    private final HashMap<Long, Long> maxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
+    private final HashMap<Long, Long> mMaxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
 
     // NOTE
     // This is a kind of dirty-HACK!
@@ -96,9 +96,9 @@ UnexpectedExceptionHandler.TrackedModule {
     //   it may take too long time because DB is continuously accessed by channel updater.
     // This may let user annoying.
     // So, this HACK is used!
-    private final AtomicInteger       delayedChannelUpdate = new AtomicInteger(0);
+    private final AtomicInteger       mDelayedChannelUpdate = new AtomicInteger(0);
 
-    private final KeyBasedLinkedList<OnChannelUpdatedListener> channUpdatedListenerl
+    private final KeyBasedLinkedList<OnChannelUpdatedListener> mChannUpdatedListenerl
                         = new KeyBasedLinkedList<OnChannelUpdatedListener>();
 
     public interface OnChannelUpdatedListener {
@@ -140,7 +140,7 @@ UnexpectedExceptionHandler.TrackedModule {
         UnexpectedExceptionHandler.get().registerModule(this);
         DBAsyncThread async = new DBAsyncThread();
         async.start();
-        asyncHandler = new Handler(async.getLooper());
+        mAsyncHandler = new Handler(async.getLooper());
     }
 
     /**
@@ -254,10 +254,10 @@ UnexpectedExceptionHandler.TrackedModule {
     private long
     findChannel(long[] state, String url) {
         long ret = -1;
-        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
-                                                         ColumnChannel.STATE},
-                                   ColumnChannel.URL, url,
-                                   null, false, 0);
+        Cursor c = mDb.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
+                                                          ColumnChannel.STATE},
+                                    ColumnChannel.URL, url,
+                                    null, false, 0);
         if (!c.moveToFirst()) {
             c.close();
             return -1;
@@ -278,9 +278,9 @@ UnexpectedExceptionHandler.TrackedModule {
     checkDelayedChannelUpdate() {
         long timems = System.currentTimeMillis();
             // Dangerous!!
-            // Always be careful when using 'delayedChannelUpdate'
+            // Always be careful when using 'mDelayedChannelUpdate'
             // This may lead to infinite loop!
-        while (0 < delayedChannelUpdate.get()) {
+        while (0 < mDelayedChannelUpdate.get()) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {}
@@ -298,8 +298,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         StringBuilder bldr = new StringBuilder("[ DBPolicy ]\n");
-        synchronized (wiredChannl) {
-            Iterator<String> itr = wiredChannl.iterator();
+        synchronized (mWiredChannl) {
+            Iterator<String> itr = mWiredChannl.iterator();
             while (itr.hasNext())
                 bldr.append("  Wired Channel : " + itr.next() + "\n");
         }
@@ -309,14 +309,14 @@ UnexpectedExceptionHandler.TrackedModule {
     // S : Singleton instance
     public static DBPolicy
     get() {
-        if (null == instance)
-            instance = new DBPolicy();
-        return instance;
+        if (null == sInstance)
+            sInstance = new DBPolicy();
+        return sInstance;
     }
 
     public void
     reloadDatabase() {
-        db.reloadDatabase();
+        mDb.reloadDatabase();
     }
 
     // ======================================================
@@ -333,8 +333,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     getDelayedChannelUpdate() {
-        eAssert(delayedChannelUpdate.get() >= 0);
-        delayedChannelUpdate.incrementAndGet();
+        eAssert(mDelayedChannelUpdate.get() >= 0);
+        mDelayedChannelUpdate.incrementAndGet();
     }
 
     /**
@@ -342,8 +342,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     putDelayedChannelUpdate() {
-        eAssert(delayedChannelUpdate.get() > 0);
-        delayedChannelUpdate.decrementAndGet();
+        eAssert(mDelayedChannelUpdate.get() > 0);
+        mDelayedChannelUpdate.decrementAndGet();
     }
 
     // ======================================================
@@ -357,22 +357,22 @@ UnexpectedExceptionHandler.TrackedModule {
     // ------------------------------------------------------
     public void
     registerChannelUpdatedListener(Object key, OnChannelUpdatedListener listener) {
-        synchronized (channUpdatedListenerl) {
-            channUpdatedListenerl.addLast(key, listener);
+        synchronized (mChannUpdatedListenerl) {
+            mChannUpdatedListenerl.addLast(key, listener);
         }
     }
 
     public void
     unregisterChannelUpdatedListener(Object key) {
-        synchronized (channUpdatedListenerl) {
-            channUpdatedListenerl.remove(key);
+        synchronized (mChannUpdatedListenerl) {
+            mChannUpdatedListenerl.remove(key);
         }
     }
 
     private void
     notifyNewItemsUpdated(long cid, int nrNewItems) {
-        synchronized (channUpdatedListenerl) {
-            Iterator<OnChannelUpdatedListener> itr = channUpdatedListenerl.iterator();
+        synchronized (mChannUpdatedListenerl) {
+            Iterator<OnChannelUpdatedListener> itr = mChannUpdatedListenerl.iterator();
             while (itr.hasNext())
                 itr.next().onNewItemsUpdated(cid, nrNewItems);
         }
@@ -380,8 +380,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     notifyLastItemIdUpdated(long[] cids) {
-        synchronized (channUpdatedListenerl) {
-            Iterator<OnChannelUpdatedListener> itr = channUpdatedListenerl.iterator();
+        synchronized (mChannUpdatedListenerl) {
+            Iterator<OnChannelUpdatedListener> itr = mChannUpdatedListenerl.iterator();
             while (itr.hasNext())
                 itr.next().onLastItemIdUpdated(cids);
         }
@@ -395,17 +395,17 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public void
     beginTransaction() {
-        db.beginTransaction();
+        mDb.beginTransaction();
     }
 
     public void
     setTransactionSuccessful() {
-        db.setTransactionSuccessful();
+        mDb.setTransactionSuccessful();
     }
 
     public void
     endTransaction() {
-        db.endTransaction();
+        mDb.endTransaction();
     }
 
     public boolean
@@ -416,9 +416,9 @@ UnexpectedExceptionHandler.TrackedModule {
     public boolean
     isDuplicatedCategoryName(String name) {
         boolean ret = false;
-        Cursor c = db.queryCategory(ColumnCategory.NAME,
-                                    ColumnCategory.NAME,
-                                    name);
+        Cursor c = mDb.queryCategory(ColumnCategory.NAME,
+                                     ColumnCategory.NAME,
+                                     name);
         if (0 < c.getCount())
             ret = true;
         c.close();
@@ -445,7 +445,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public String
     getCategoryName(long categoryid) {
         String ret = null;
-        Cursor c = db.queryCategory(ColumnCategory.NAME, ColumnCategory.ID, categoryid);
+        Cursor c = mDb.queryCategory(ColumnCategory.NAME, ColumnCategory.ID, categoryid);
         if (c.moveToFirst())
             ret = c.getString(0);
         c.close();
@@ -462,7 +462,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public int
     insertCategory(Feed.Category category) {
         eAssert(null != category.name);
-        long id = db.insertCategory(category);
+        long id = mDb.insertCategory(category);
         if (0 > id)
             return -1;
         else {
@@ -486,7 +486,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long[] cids = getChannelIds(id);
         for (long cid : cids)
             updateChannel(cid, DB.ColumnChannel.CATEGORYID, DB.getDefaultCategoryId());
-        return (1 == db.deleteCategory(id))? 0: -1;
+        return (1 == mDb.deleteCategory(id))? 0: -1;
     }
 
     /**
@@ -497,7 +497,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long
     updateCategory(long id, String name) {
-        return db.updateCategory(id, name);
+        return mDb.updateCategory(id, name);
     }
 
     /**
@@ -507,8 +507,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public Feed.Category[]
     getCategories() {
         // Column index is used below. So order is important.
-        Cursor c = db.queryCategory(new ColumnCategory[] { ColumnCategory.ID, ColumnCategory.NAME, },
-                                    null, null);
+        Cursor c = mDb.queryCategory(new ColumnCategory[] { ColumnCategory.ID, ColumnCategory.NAME, },
+                                     null, null);
 
         int i = 0;
         Feed.Category[] cats = new Feed.Category[c.getCount()];
@@ -557,10 +557,10 @@ UnexpectedExceptionHandler.TrackedModule {
         dbD.lastupdate = new Date().getTime();
         Feed.Channel.ParD parD = new Feed.Channel.ParD();
         parD.title = profD.url;
-        cid = db.insertChannel(buildNewChannelContentValues(profD, parD, dbD));
+        cid = mDb.insertChannel(buildNewChannelContentValues(profD, parD, dbD));
         // check duplication...
-        if (!uip.makeChannelDir(cid)) {
-            db.deleteChannel(ColumnChannel.ID, cid);
+        if (!mUip.makeChannelDir(cid)) {
+            mDb.deleteChannel(ColumnChannel.ID, cid);
             throw new FeederException(Err.IO_FILE);
         }
 
@@ -658,23 +658,23 @@ UnexpectedExceptionHandler.TrackedModule {
         String    subKey;
         ItemUrls  iurls;
         if (pubDateAvail) {
-            c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID,           // SHOULD BE index 0
-                                                   ColumnItem.LINK,         // SHOULD BE index 1
-                                                   ColumnItem.ENCLOSURE_URL,// SHOULD BE index 2
-                                                   ColumnItem.TITLE,
-                                                   ColumnItem.PUBDATE },
-                                new ColumnItem[] { ColumnItem.CHANNELID },
-                                new String[] { "" + cid },
-                                0);
+            c = mDb.queryItemAND(new ColumnItem[] { ColumnItem.ID,           // SHOULD BE index 0
+                                                    ColumnItem.LINK,         // SHOULD BE index 1
+                                                    ColumnItem.ENCLOSURE_URL,// SHOULD BE index 2
+                                                    ColumnItem.TITLE,
+                                                    ColumnItem.PUBDATE },
+                                 new ColumnItem[] { ColumnItem.CHANNELID },
+                                 new String[] { "" + cid },
+                                 0);
             mainKeyI = 3; // title
             subKeyI = 4;  // pubdate
         } else {
-            c = db.queryItemAND(new ColumnItem[] { ColumnItem.ID,           // SHOULD BE index 0
-                                                   ColumnItem.LINK,         // SHOULD BE index 1
-                                                   ColumnItem.ENCLOSURE_URL },// SHOULD BE index 2
-                                new ColumnItem[] { ColumnItem.CHANNELID },
-                                new String[] { "" + cid },
-                                0);
+            c = mDb.queryItemAND(new ColumnItem[] { ColumnItem.ID,           // SHOULD BE index 0
+                                                    ColumnItem.LINK,         // SHOULD BE index 1
+                                                    ColumnItem.ENCLOSURE_URL },// SHOULD BE index 2
+                                 new ColumnItem[] { ColumnItem.CHANNELID },
+                                 new String[] { "" + cid },
+                                 0);
             mainKeyI = 1; // link
             subKeyI = 2;  // enclosure url
         }
@@ -714,7 +714,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             for (Feed.Item.ParD item : items) {
                 // ignore not-verified item
-                if (!uip.verifyConstraints(item))
+                if (!mUip.verifyConstraints(item))
                     continue;
 
                 // -----------------------------------------------------------------------
@@ -766,7 +766,7 @@ UnexpectedExceptionHandler.TrackedModule {
                             ContentValues cvs = new ContentValues();
                             cvs.put(ColumnItem.LINK.getName(), item.link);
                             cvs.put(ColumnItem.ENCLOSURE_URL.getName(), item.enclosureUrl);
-                            db.updateItem(iurls.id, cvs);
+                            mDb.updateItem(iurls.id, cvs);
                         }
                     }
                 }
@@ -803,7 +803,7 @@ UnexpectedExceptionHandler.TrackedModule {
             ContentValues channelUpdateValues = new ContentValues();
             channelUpdateValues.put(ColumnChannel.TITLE.getName(),       ch.title);
             channelUpdateValues.put(ColumnChannel.DESCRIPTION.getName(), ch.description);
-            db.updateChannel(cid, channelUpdateValues);
+            mDb.updateChannel(cid, channelUpdateValues);
         }
 
         Iterator<Feed.Item.ParD> iter = newItems.iterator();
@@ -849,11 +849,11 @@ UnexpectedExceptionHandler.TrackedModule {
                 // So, user may think like "During handling user-request, DB may updated."
                 // At this moment, let's ignore this race-condition.
                 // If issued case is found, let's consider it at the moment.
-                if (0 > (itemDbD.id = db.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
+                if (0 > (itemDbD.id = mDb.insertItem(buildNewItemContentValues(itemParD, itemDbD))))
                     throw new FeederException(Err.DB_UNKNOWN);
                 // Invalidate cached value.
-                synchronized (maxIdCache) {
-                    maxIdCache.put(cid, itemDbD.id);
+                synchronized (mMaxIdCache) {
+                    mMaxIdCache.put(cid, itemDbD.id);
                 }
 
                 if (null != idop && null != f) {
@@ -872,7 +872,7 @@ UnexpectedExceptionHandler.TrackedModule {
             checkInterrupted();
         }
         logI("DBPolicy : new " + newItems.size() + " items are inserted");
-        db.updateChannel(cid, ColumnChannel.LASTUPDATE, new Date().getTime());
+        mDb.updateChannel(cid, ColumnChannel.LASTUPDATE, new Date().getTime());
 
         if (newItems.size() > 0)
             notifyNewItemsUpdated(cid, newItems.size());
@@ -898,14 +898,14 @@ UnexpectedExceptionHandler.TrackedModule {
                 || ColumnChannel.POSITION == column
                 || ColumnChannel.STATE == column
                 || ColumnChannel.NRITEMS_SOFTMAX == column);
-        return db.updateChannel(cid, column, value);
+        return mDb.updateChannel(cid, column, value);
     }
 
     public long
     updateChannel(long cid, ColumnChannel column, byte[] data) {
         // Fields those are allowed to be updated.
         eAssert(ColumnChannel.IMAGEBLOB == column);
-        return db.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
+        return mDb.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
     }
 
     /**
@@ -920,8 +920,8 @@ UnexpectedExceptionHandler.TrackedModule {
         Long pos1 = getChannelInfoLong(cid1, ColumnChannel.POSITION);
         if (null == pos0 || null == pos1)
             return 0;
-        db.updateChannel(cid0, ColumnChannel.POSITION, pos1);
-        db.updateChannel(cid1, ColumnChannel.POSITION, pos0);
+        mDb.updateChannel(cid0, ColumnChannel.POSITION, pos1);
+        mDb.updateChannel(cid1, ColumnChannel.POSITION, pos0);
         return 2;
     }
 
@@ -949,7 +949,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // verify values SECONDS_OF_DAY
         for (long s : secs)
             eAssert(0 <= s && s <= Utils.DAY_IN_SEC);
-        return db.updateChannel(cid, ColumnChannel.SCHEDUPDATETIME, Utils.nrsToNString(secs));
+        return mDb.updateChannel(cid, ColumnChannel.SCHEDUPDATETIME, Utils.nrsToNString(secs));
     }
 
     /**
@@ -974,8 +974,8 @@ UnexpectedExceptionHandler.TrackedModule {
         for (int i = 0; i < whereValues.length; i++)
             targetValues[i] = getItemInfoMaxId(whereValues[i]);
 
-        db.updateChannelSet(ColumnChannel.OLDLAST_ITEMID, targetValues,
-                            ColumnChannel.ID, whereValues);
+        mDb.updateChannelSet(ColumnChannel.OLDLAST_ITEMID, targetValues,
+                             ColumnChannel.ID, whereValues);
         notifyLastItemIdUpdated(cids);
     }
 
@@ -1001,7 +1001,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
         eAssert(categoryid >= 0);
-        return db.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid, null, false, 0);
+        return mDb.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid, null, false, 0);
     }
 
     /**
@@ -1021,7 +1021,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public Cursor
     queryChannel(ColumnChannel[] columns) {
-        return db.queryChannel(columns, (ColumnChannel[])null, null, null, false, 0);
+        return mDb.queryChannel(columns, (ColumnChannel[])null, null, null, false, 0);
     }
 
     /**
@@ -1046,9 +1046,9 @@ UnexpectedExceptionHandler.TrackedModule {
         ColumnChannel[] cols = new ColumnChannel[cids.length];
         for (int i = 0; i < cols.length; i++)
             cols[i] = ColumnChannel.ID;
-        long nr = db.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
+        long nr = mDb.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
         for (long cid : cids)
-            uip.removeChannelDir(cid);
+            mUip.removeChannelDir(cid);
         return nr;
     }
 
@@ -1077,9 +1077,9 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long[]
     getChannelIds(long categoryid) {
-        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
-                                   ColumnChannel.CATEGORYID, categoryid,
-                                   null, false, 0);
+        Cursor c = mDb.queryChannel(new ColumnChannel[] { ColumnChannel.ID },
+                                    ColumnChannel.CATEGORYID, categoryid,
+                                    null, false, 0);
         long[] cids = new long[c.getCount()];
         if (c.moveToFirst()) {
             int i = 0;
@@ -1100,9 +1100,9 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private Object
     getChannelInfoObject(long cid, ColumnChannel column) {
-        Cursor c = db.queryChannel(new ColumnChannel[] { column },
-                                   ColumnChannel.ID, cid,
-                                   null, false, 0);
+        Cursor c = mDb.queryChannel(new ColumnChannel[] { column },
+                                    ColumnChannel.ID, cid,
+                                    null, false, 0);
         Object ret = null;
         if (c.moveToFirst())
             ret = getCursorValue(c, 0);
@@ -1131,9 +1131,9 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public String[]
     getChannelInfoStrings(long cid, ColumnChannel[] columns) {
-        Cursor c = db.queryChannel(columns,
-                                   ColumnChannel.ID, cid,
-                                   null, false, 0);
+        Cursor c = mDb.queryChannel(columns,
+                                    ColumnChannel.ID, cid,
+                                    null, false, 0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -1156,7 +1156,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     getChannelInfoMaxLong(ColumnChannel column) {
         eAssert(column.getType().equals("integer"));
-        Cursor c = db.queryChannelMax(column);
+        Cursor c = mDb.queryChannelMax(column);
         if (!c.moveToFirst()) {
             c.close();
             return 0;
@@ -1175,9 +1175,9 @@ UnexpectedExceptionHandler.TrackedModule {
     public byte[]
     getChannelInfoImageblob(long cid) {
         byte[] blob = new byte[0];
-        Cursor c = db.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
-                                   ColumnChannel.ID, cid,
-                                   null, false, 0);
+        Cursor c = mDb.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
+                                    ColumnChannel.ID, cid,
+                                    null, false, 0);
         if (c.moveToFirst())
             blob = c.getBlob(0);
         c.close();
@@ -1191,8 +1191,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public int
     getChannelInfoNrItems(long cid) {
-        Cursor c = db.queryItemCount(ColumnItem.ID,
-                                     ColumnItem.CHANNELID, cid);
+        Cursor c = mDb.queryItemCount(ColumnItem.ID,
+                                      ColumnItem.CHANNELID, cid);
         if (!c.moveToFirst())
             eAssert(false);
 
@@ -1211,13 +1211,13 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long
     getItemInfoMaxId(long cid) {
-        synchronized (maxIdCache) {
-            Long v = maxIdCache.get(cid);
+        synchronized (mMaxIdCache) {
+            Long v = mMaxIdCache.get(cid);
             if (null != v)
                 return v;
         }
 
-        Cursor c = db.queryItemIds(cid, 1);
+        Cursor c = mDb.queryItemIds(cid, 1);
         if (!c.moveToFirst())
             return 0; // there is no item!
         // Why?
@@ -1226,8 +1226,8 @@ UnexpectedExceptionHandler.TrackedModule {
         long lastId = c.getLong(0);
         c.close();
 
-        synchronized (maxIdCache) {
-            maxIdCache.put(cid, lastId);
+        synchronized (mMaxIdCache) {
+            mMaxIdCache.put(cid, lastId);
         }
         return lastId;
     }
@@ -1261,7 +1261,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     getItemMinPubtime(long[] cids) {
         long v = -1;
-        Cursor c = db.queryItemMinMax(cids, DB.ColumnItem.PUBTIME, false);
+        Cursor c = mDb.queryItemMinMax(cids, DB.ColumnItem.PUBTIME, false);
         if (c.moveToFirst())
             v = c.getLong(0);
         c.close();
@@ -1279,7 +1279,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     getItemMinPubtime(ColumnItem where, long mask, long value) {
         long v = -1;
-        Cursor c = db.queryItemMinMax(where, mask, value, DB.ColumnItem.PUBTIME, false);
+        Cursor c = mDb.queryItemMinMax(where, mask, value, DB.ColumnItem.PUBTIME, false);
         if (c.moveToFirst())
             v = c.getLong(0);
         c.close();
@@ -1288,10 +1288,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private Object
     getItemInfoObject(long id, ColumnItem column) {
-        Cursor c = db.queryItemAND(new ColumnItem[] { column },
-                                   new ColumnItem[] { ColumnItem.ID },
-                                   new Object[] { id },
-                                   0);
+        Cursor c = mDb.queryItemAND(new ColumnItem[] { column },
+                                    new ColumnItem[] { ColumnItem.ID },
+                                    new Object[] { id },
+                                    0);
         Object ret = null;
         if (c.moveToFirst())
             ret = getCursorValue(c, 0);
@@ -1319,10 +1319,10 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public String[]
     getItemInfoStrings(long id, ColumnItem[] columns) {
-        Cursor c = db.queryItemAND(columns,
-                                   new ColumnItem[] { ColumnItem.ID },
-                                   new Object[] { id },
-                                   0);
+        Cursor c = mDb.queryItemAND(columns,
+                                    new ColumnItem[] { ColumnItem.ID },
+                                    new Object[] { id },
+                                    0);
         if (!c.moveToFirst()) {
             c.close();
             return null;
@@ -1379,13 +1379,13 @@ UnexpectedExceptionHandler.TrackedModule {
             long action = getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
             String link = getItemInfoString(id, DB.ColumnItem.LINK);
             String enclosure = getItemInfoString(id, DB.ColumnItem.ENCLOSURE_URL);
-            url = uip.getDynamicActionTargetUrl(action, link, enclosure);
+            url = mUip.getDynamicActionTargetUrl(action, link, enclosure);
         }
 
         // we don't need to create valid filename with empty url value.
         if (!Utils.isValidValue(url)) {
-            synchronized (wiredChannl) {
-                wiredChannl.add(getChannelInfoString(cid, DB.ColumnChannel.URL));
+            synchronized (mWiredChannl) {
+                mWiredChannl.add(getChannelInfoString(cid, DB.ColumnChannel.URL));
             }
             return null;
         }
@@ -1407,7 +1407,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // NOTE
         //   In most UNIX file systems, only '/' and 'null' are reserved.
         //   So, we don't worry about "converting string to valid file name".
-        return new File(uip.getAppRootDirectoryPath() + cid + "/" + fname);
+        return new File(mUip.getAppRootDirectoryPath() + cid + "/" + fname);
     }
 
     public Cursor
@@ -1477,13 +1477,13 @@ UnexpectedExceptionHandler.TrackedModule {
             for (int i = 0; i < cols.length; i++)
                 cols[i] = ColumnItem.CHANNELID;
         }
-        return db.queryItemOR(columns,
-                              cols,
-                              null != cids? Utils.convertArraylongToLong(cids): null,
-                              new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
-                              new String[] { search, search },
-                              fromPubtime, toPubtime,
-                              0, true);
+        return mDb.queryItemOR(columns,
+                               cols,
+                               null != cids? Utils.convertArraylongToLong(cids): null,
+                               new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
+                               new String[] { search, search },
+                               fromPubtime, toPubtime,
+                               0, true);
     }
 
     /**
@@ -1514,10 +1514,10 @@ UnexpectedExceptionHandler.TrackedModule {
     queryItemMask(ColumnItem[] columns,
                   ColumnItem where, long mask, long value,
                   String search, long fromPubtime, long toPubtime) {
-        return db.queryItemMask(columns, where, mask, value,
-                                new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
-                                new String[] { search, search },
-                                fromPubtime, toPubtime, true);
+        return mDb.queryItemMask(columns, where, mask, value,
+                                 new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
+                                 new String[] { search, search },
+                                 fromPubtime, toPubtime, true);
     }
 
 
@@ -1531,7 +1531,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     updateItem_state(long id, long state) {
         // Update item during 'updating channel' is not expected!!
-        return db.updateItem(id, ColumnItem.STATE, state);
+        return mDb.updateItem(id, ColumnItem.STATE, state);
     }
 
     /**
@@ -1542,7 +1542,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     updateItemAsync_state(final long id, final long state) {
-        asyncHandler.post(new Runnable() {
+        mAsyncHandler.post(new Runnable() {
             @Override
             public void run() {
                 long old = getItemInfoLong(id, ColumnItem.STATE);
@@ -1561,12 +1561,12 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long
     deleteItem(ColumnItem where, Object value) {
-        return db.deleteItem(where, value);
+        return mDb.deleteItem(where, value);
     }
 
     public long
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
-        return db.deleteItemOR(wheres, values);
+        return mDb.deleteItemOR(wheres, values);
     }
 
     // ===============================================
@@ -1586,7 +1586,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public int
     deleteOldItems(long cid, int percent) {
-        return db.deleteOldItems(cid, percent);
+        return mDb.deleteOldItems(cid, percent);
     }
 
     // ===============================================
@@ -1601,88 +1601,88 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     registerChannelWatcher(Object key) {
-        db.registerChannelWatcher(key);
+        mDb.registerChannelWatcher(key);
     }
 
     public boolean
     isChannelWatcherRegistered(Object key) {
-        return db.isChannelWatcherRegistered(key);
+        return mDb.isChannelWatcherRegistered(key);
     }
 
     public void
     unregisterChannelWatcher(Object key) {
-        db.unregisterChannelWatcher(key);
+        mDb.unregisterChannelWatcher(key);
     }
 
     public boolean
     isChannelWatcherUpdated(Object key, long cid) {
-        return db.isChannelWatcherUpdated(key, cid);
+        return mDb.isChannelWatcherUpdated(key, cid);
     }
 
     public long[]
     getChannelWatcherUpdated(Object key) {
-        return db.getChannelWatcherUpdated(key);
+        return mDb.getChannelWatcherUpdated(key);
     }
 
     // -------------- Item Table ------------------
     public void
     registerItemTableWatcher(Object key) {
-        db.registerItemTableWatcher(key);
+        mDb.registerItemTableWatcher(key);
     }
 
     public boolean
     isItemTableWatcherRegistered(Object key) {
-        return db.isItemTableWatcherRegistered(key);
+        return mDb.isItemTableWatcherRegistered(key);
     }
 
     public void
     unregisterItemTableWatcher(Object key) {
-        db.unregisterItemTableWatcher(key);
+        mDb.unregisterItemTableWatcher(key);
     }
 
     public boolean
     isItemTableWatcherUpdated(Object key) {
-        return db.isItemTableWatcherUpdated(key);
+        return mDb.isItemTableWatcherUpdated(key);
     }
 
     // -------------- Channel Table ------------------
     public void
     registerChannelTableWatcher(Object key) {
-        db.registerChannelTableWatcher(key);
+        mDb.registerChannelTableWatcher(key);
     }
 
     public boolean
     isChannelTableWatcherRegistered(Object key) {
-        return db.isChannelTableWatcherRegistered(key);
+        return mDb.isChannelTableWatcherRegistered(key);
     }
 
     public void
     unregisterChannelTableWatcher(Object key) {
-        db.unregisterChannelTableWatcher(key);
+        mDb.unregisterChannelTableWatcher(key);
     }
 
     public boolean
     isChannelTableWatcherUpdated(Object key) {
-        return db.isChannelTableWatcherUpdated(key);
+        return mDb.isChannelTableWatcherUpdated(key);
     }
     // -------------- Category Table ------------------
     public void
     registerCategoryTableWatcher(Object key) {
-        db.registerCategoryTableWatcher(key);
+        mDb.registerCategoryTableWatcher(key);
     }
 
     public boolean
     isCategoryTableWatcherRegistered(Object key) {
-        return db.isCategoryTableWatcherRegistered(key);
+        return mDb.isCategoryTableWatcherRegistered(key);
     }
 
     public void
     unregisterCategoryTableWatcher(Object key) {
-        db.unregisterCategoryTableWatcher(key);
+        mDb.unregisterCategoryTableWatcher(key);
     }
 
     public boolean
     isCategoryTableWatcherUpdated(Object key) {
-        return db.isCategoryTableWatcherUpdated(key);
+        return mDb.isCategoryTableWatcherUpdated(key);
     }
 }

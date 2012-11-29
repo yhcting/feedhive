@@ -39,7 +39,7 @@ public class LookAndFeel implements
 UnexpectedExceptionHandler.TrackedModule {
     // Even if LookAndFeel looks like suitable for static class,
     //   singleton is used because multiple instance may be used with high possibility at future.
-    private static LookAndFeel instance = null;
+    private static LookAndFeel sInstance = null;
 
     public interface EditTextDialogAction {
         void prepare(Dialog dialog, EditText edit);
@@ -63,9 +63,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static LookAndFeel
     get() {
-        if (null == instance)
-            instance = new LookAndFeel();
-        return instance;
+        if (null == sInstance)
+            sInstance = new LookAndFeel();
+        return sInstance;
     }
 
     @Override

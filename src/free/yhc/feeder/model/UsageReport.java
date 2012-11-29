@@ -43,7 +43,7 @@ OnSharedPreferenceChangeListener {
     private static final String USAGE_REPORT_SUBJECT    = "[FeedHive] Usage Report.";
     private static final String TIME_STAMP_FILE_SUFFIX  = "____tmstamp___";
 
-    private static UsageReport instance = null;
+    private static UsageReport sInstance = null;
 
     // Dependency on only following modules are allowed
     // - Utils
@@ -52,10 +52,10 @@ OnSharedPreferenceChangeListener {
     // - UIPolicy
     // - DBPolicy
     // - RTTask
-    private final UIPolicy uip = UIPolicy.get();
+    private final UIPolicy mUip = UIPolicy.get();
 
-    private boolean errReportEnabled = true;
-    private boolean usageReportEnabled = true;
+    private boolean mErrReportEnabled = true;
+    private boolean mUsageReportEnabled = true;
 
     private UsageReport() {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
@@ -130,11 +130,11 @@ OnSharedPreferenceChangeListener {
     // S : Singleton instance
     public static UsageReport
     get() {
-        if (null == instance) {
-            instance = new UsageReport();
-            UnexpectedExceptionHandler.get().registerModule(instance);
+        if (null == sInstance) {
+            sInstance = new UsageReport();
+            UnexpectedExceptionHandler.get().registerModule(sInstance);
         }
-        return instance;
+        return sInstance;
     }
 
     @Override
@@ -142,10 +142,10 @@ OnSharedPreferenceChangeListener {
     onSharedPreferenceChanged(SharedPreferences prefs, String key) {
         if ("err_report".equals(key)) {
             String v = prefs.getString("err_report", "yes");
-            errReportEnabled = v.equals("yes")? true: false;
+            mErrReportEnabled = v.equals("yes")? true: false;
         } else if ("usage_report".equals(key)) {
             String v = prefs.getString("usage_report", "yes");
-            usageReportEnabled = v.equals("yes")? true: false;
+            mUsageReportEnabled = v.equals("yes")? true: false;
         }
     }
 
@@ -155,9 +155,9 @@ OnSharedPreferenceChangeListener {
      */
     void
     storeErrReport(String report) {
-        if (!errReportEnabled)
+        if (!mErrReportEnabled)
             return;
-        storeReport(uip.getErrLogFile(), report);
+        storeReport(mUip.getErrLogFile(), report);
     }
 
     /**
@@ -166,23 +166,23 @@ OnSharedPreferenceChangeListener {
      */
     public void
     sendErrReportMail(Context context) {
-        if (!errReportEnabled)
+        if (!mErrReportEnabled)
             return;
-        sendReportMail(context, uip.getErrLogFile(), R.string.send_err_report, ERR_REPORT_SUBJECT);
+        sendReportMail(context, mUip.getErrLogFile(), R.string.send_err_report, ERR_REPORT_SUBJECT);
     }
 
     public void
     storeUsageReport(String report) {
-        if (!usageReportEnabled)
+        if (!mUsageReportEnabled)
             return;
-        storeReport(uip.getUsageLogFile(), report);
+        storeReport(mUip.getUsageLogFile(), report);
     }
 
     public void
     sendUsageReportMail(Context context) {
-        if (!usageReportEnabled)
+        if (!mUsageReportEnabled)
             return;
-        File f = uip.getUsageLogFile();
+        File f = mUip.getUsageLogFile();
         File tmstamp = getTimeStampFile(f);
         long tmPassed = 0;
         if (tmstamp.exists())
@@ -190,7 +190,7 @@ OnSharedPreferenceChangeListener {
         if (UIPolicy.USAGE_INFO_UPDATE_PERIOD > tmPassed)
             return; // time is not passed enough
 
-        sendReportMail(context, uip.getUsageLogFile(), R.string.send_usage_report, USAGE_REPORT_SUBJECT);
+        sendReportMail(context, mUip.getUsageLogFile(), R.string.send_usage_report, USAGE_REPORT_SUBJECT);
     }
 
     public boolean

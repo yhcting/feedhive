@@ -35,11 +35,11 @@ import android.database.sqlite.SQLiteException;
 // This module is NOT THREAD SAFE!
 public class AssetSQLiteHelper {
     // Constructing arguments
-    private String  dbName;
-    private String  assetDBFile;
-    private int     version;
+    private String  mDbName;
+    private String  mAssetDBFile;
+    private int     mVersion;
 
-    private SQLiteDatabase db = null;
+    private SQLiteDatabase mDb = null;
 
     /**
      *
@@ -54,17 +54,17 @@ public class AssetSQLiteHelper {
      *     existing db is replaced with new db file by copying from asset db file.
      *   Starts from 1.
      */
-    public AssetSQLiteHelper(String aDbName, String aAssetDBFile, int aVersion) {
-        dbName     = aDbName;
-        assetDBFile= aAssetDBFile;
-        version    = aVersion;
+    public AssetSQLiteHelper(String dbName, String assetDBFile, int version) {
+        mDbName     = dbName;
+        mAssetDBFile= assetDBFile;
+        mVersion    = version;
     }
 
     public void
     open() {
-        File dbf = Utils.getAppContext().getDatabasePath(dbName);
+        File dbf = Utils.getAppContext().getDatabasePath(mDbName);
         try {
-            InputStream is = Utils.getAppContext().getAssets().open(assetDBFile);
+            InputStream is = Utils.getAppContext().getAssets().open(mAssetDBFile);
             if (!dbf.exists()) {
                 FileOutputStream fos = new FileOutputStream(dbf);
                 // This is first time. Just copy it!
@@ -72,15 +72,15 @@ public class AssetSQLiteHelper {
                 fos.close();
             }
 
-            db = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
-            logI("AssetSQLiteHelper : App DB version: " + version + " / current DB version: " + db.getVersion());
-            if (version > db.getVersion()) {
+            mDb = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+            logI("AssetSQLiteHelper : App DB version: " + mVersion + " / current DB version: " + mDb.getVersion());
+            if (mVersion > mDb.getVersion()) {
                 // need to overwrite old db with new asset db.
-                db.close();
+                mDb.close();
                 FileOutputStream fos = new FileOutputStream(dbf);
                 Utils.copy(fos, is);
                 fos.close();
-                db = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
+                mDb = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
             }
             is.close();
         } catch (SQLiteException e0) {
@@ -92,12 +92,12 @@ public class AssetSQLiteHelper {
 
     public SQLiteDatabase
     sqlite() {
-        return db;
+        return mDb;
     }
 
     public void
     close() {
-        if (null != db)
-            db.close();
+        if (null != mDb)
+            mDb.close();
     }
 }

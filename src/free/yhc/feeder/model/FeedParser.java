@@ -117,12 +117,12 @@ public abstract class FeedParser {
         private static final int    NS_PRI_SHIFT       = 16;
         private static final short  NODE_PRI_DEFAULT   = 0;
 
-        private short     nspri;
+        private short     _mNspri;
 
         private NSParser(){} // block default constructor.
 
         NSParser(short priority) {
-            nspri = priority;
+            _mNspri = priority;
         }
 
         private final int
@@ -153,7 +153,7 @@ public abstract class FeedParser {
          */
         protected boolean
         setValue(NodeValue nv, String value, short nodePri) {
-            int newPri = pri(nspri, nodePri);
+            int newPri = pri(_mNspri, nodePri);
             if (nv.priority <= newPri) {
                 nv.value = value;
                 nv.priority = newPri;

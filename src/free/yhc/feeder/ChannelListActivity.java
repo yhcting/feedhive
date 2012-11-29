@@ -94,20 +94,20 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static final int CHANNEL_REFRESH_THRESHOLD = 2;
 
-    private final UIPolicy      uip = UIPolicy.get();
-    private final DBPolicy      dbp = DBPolicy.get();
-    private final RTTask        rtt = RTTask.get();
-    private final UsageReport   ur  = UsageReport.get();
-    private final LookAndFeel   lnf = LookAndFeel.get();
+    private final UIPolicy      mUip = UIPolicy.get();
+    private final DBPolicy      mDbp = DBPolicy.get();
+    private final RTTask        mRtt = RTTask.get();
+    private final UsageReport   mUr  = UsageReport.get();
+    private final LookAndFeel   mLnf = LookAndFeel.get();
 
-    private ActionBar   ab       = null;
-    private Flipper     flipper  = null;
+    private ActionBar   mAb       = null;
+    private Flipper     mFlipper  = null;
 
     // Saved cid for Async execution.
-    private long        cidPickImage = -1;
+    private long        mCidPickImage = -1;
 
     private static class FlipperScrollView extends ScrollView {
-        private View.OnTouchListener touchInterceptor = null;
+        private View.OnTouchListener _mTouchInterceptor = null;
 
         public
         FlipperScrollView(Context context, AttributeSet attrs) {
@@ -116,15 +116,15 @@ UnexpectedExceptionHandler.TrackedModule {
 
         void
         setTouchInterceptor(View.OnTouchListener interceptor) {
-            touchInterceptor = interceptor;
+            _mTouchInterceptor = interceptor;
         }
 
         @Override
         public boolean
         onTouchEvent(MotionEvent ev) {
             boolean ret = super.onTouchEvent(ev);
-            if (null != touchInterceptor)
-                touchInterceptor.onTouch(this, ev);
+            if (null != _mTouchInterceptor)
+                _mTouchInterceptor.onTouch(this, ev);
             return ret;
         }
 
@@ -136,13 +136,13 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private class Flipper {
-        private Context     context;
-        private ViewFlipper viewFlipper;
-        private Animation   slideLeftIn;
-        private Animation   slideLeftOut;
-        private Animation   slideRightIn;
-        private Animation   slideRightOut;
-        private GestureDetector gestureDetector;
+        private Context     _mContext;
+        private ViewFlipper _mViewFlipper;
+        private Animation   _mSlideLeftIn;
+        private Animation   _mSlideLeftOut;
+        private Animation   _mSlideRightIn;
+        private Animation   _mSlideRightOut;
+        private GestureDetector _mGestureDetector;
 
         private class SwipeGestureDetector extends SimpleOnGestureListener {
             // For swipe animation
@@ -160,21 +160,21 @@ UnexpectedExceptionHandler.TrackedModule {
                     if (e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE
                        && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
                         // Change ActionBar Tab.
-                        int nextIdx = ab.getSelectedNavigationIndex() + 1;
-                        if (nextIdx < ab.getNavigationItemCount()) {
+                        int nextIdx = mAb.getSelectedNavigationIndex() + 1;
+                        if (nextIdx < mAb.getNavigationItemCount()) {
                             showNext();
-                            getTag(ab.getTabAt(nextIdx)).fromGesture = true;
-                            ab.setSelectedNavigationItem(nextIdx);
+                            getTag(mAb.getTabAt(nextIdx)).fromGesture = true;
+                            mAb.setSelectedNavigationItem(nextIdx);
                         }
                         return true;
                     } else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE
                                && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
                         // Change ActionBar Tab.
-                        int nextIdx = ab.getSelectedNavigationIndex() - 1;
+                        int nextIdx = mAb.getSelectedNavigationIndex() - 1;
                         if (nextIdx >= 0) {
                             showPrev();
-                            getTag(ab.getTabAt(nextIdx)).fromGesture = true;
-                            ab.setSelectedNavigationItem(nextIdx);
+                            getTag(mAb.getTabAt(nextIdx)).fromGesture = true;
+                            mAb.setSelectedNavigationItem(nextIdx);
                         }
                         return true;
                     }
@@ -186,13 +186,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         Flipper(Context context, ViewFlipper viewFlipper) {
-            this.context = context;
-            this.viewFlipper = viewFlipper;
-            slideLeftIn = AnimationUtils.loadAnimation(context, R.anim.slide_left_in);
-            slideLeftOut = AnimationUtils.loadAnimation(context, R.anim.slide_left_out);
-            slideRightIn = AnimationUtils.loadAnimation(context, R.anim.slide_right_in);
-            slideRightOut = AnimationUtils.loadAnimation(context, R.anim.slide_right_out);
-            gestureDetector = new GestureDetector(new SwipeGestureDetector());
+            _mContext = context;
+            _mViewFlipper = viewFlipper;
+            _mSlideLeftIn = AnimationUtils.loadAnimation(context, R.anim.slide_left_in);
+            _mSlideLeftOut = AnimationUtils.loadAnimation(context, R.anim.slide_left_out);
+            _mSlideRightIn = AnimationUtils.loadAnimation(context, R.anim.slide_right_in);
+            _mSlideRightOut = AnimationUtils.loadAnimation(context, R.anim.slide_right_out);
+            _mGestureDetector = new GestureDetector(new SwipeGestureDetector());
         }
 
         /**
@@ -201,10 +201,10 @@ UnexpectedExceptionHandler.TrackedModule {
          */
         LinearLayout
         addListLayout() {
-            LinearLayout ll = (LinearLayout)lnf.inflateLayout(context, R.layout.channel_listview);
+            LinearLayout ll = (LinearLayout)mLnf.inflateLayout(_mContext, R.layout.channel_listview);
             ListView list = ((ListView)ll.findViewById(R.id.list));
             eAssert(null != list);
-            list.setAdapter(new ChannelListAdapter(context, null,
+            list.setAdapter(new ChannelListAdapter(_mContext, null,
                                                    R.layout.channel_row, list,
                                                    DATA_REQ_SZ, DATA_ARR_MAX,
                                                    new AdapterActionListener()));
@@ -247,38 +247,38 @@ UnexpectedExceptionHandler.TrackedModule {
 
         void
         addView(View child) {
-            viewFlipper.addView(child);
+            _mViewFlipper.addView(child);
         }
 
         void
         showNext() {
-            viewFlipper.setInAnimation(slideLeftIn);
-            viewFlipper.setOutAnimation(slideLeftOut);
-            viewFlipper.showNext();
+            _mViewFlipper.setInAnimation(_mSlideLeftIn);
+            _mViewFlipper.setOutAnimation(_mSlideLeftOut);
+            _mViewFlipper.showNext();
         }
 
         void
         showPrev() {
-            viewFlipper.setInAnimation(slideRightIn);
-            viewFlipper.setOutAnimation(slideRightOut);
-            viewFlipper.showPrevious();
+            _mViewFlipper.setInAnimation(_mSlideRightIn);
+            _mViewFlipper.setOutAnimation(_mSlideRightOut);
+            _mViewFlipper.showPrevious();
         }
 
         void
         show(Tab tab) {
-            viewFlipper.setInAnimation(null);
-            viewFlipper.setOutAnimation(null);
-            viewFlipper.setDisplayedChild(viewFlipper.indexOfChild(getTag(tab).layout));
+            _mViewFlipper.setInAnimation(null);
+            _mViewFlipper.setOutAnimation(null);
+            _mViewFlipper.setDisplayedChild(_mViewFlipper.indexOfChild(getTag(tab).layout));
         }
 
         void
         remove(Tab tab) {
-            viewFlipper.removeView(getTag(tab).layout);
+            _mViewFlipper.removeView(getTag(tab).layout);
         }
 
         boolean
         onTouch(MotionEvent event) {
-            return gestureDetector.onTouchEvent(event);
+            return _mGestureDetector.onTouchEvent(event);
         }
     }
 
@@ -351,7 +351,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (isActivityFinishing())
                 return;
 
-            if (0 == rtt.getItemsDownloading(cid).length)
+            if (0 == mRtt.getItemsDownloading(cid).length)
                 dataSetChanged(getListView(getMyTab(cid)), cid);
         }
 
@@ -366,7 +366,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (isActivityFinishing())
                 return;
 
-            if (0 == rtt.getItemsDownloading(cid).length)
+            if (0 == mRtt.getItemsDownloading(cid).length)
                 dataSetChanged(getListView(getMyTab(cid)), cid);
         }
     }
@@ -381,7 +381,7 @@ UnexpectedExceptionHandler.TrackedModule {
             Uri selectedImage = data.getData();
             String[] filePathColumn = {MediaColumns.DATA};
 
-            cid = cidPickImage;
+            cid = mCidPickImage;
 
             Cursor c = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
             if (!c.moveToFirst()) {
@@ -402,12 +402,12 @@ UnexpectedExceptionHandler.TrackedModule {
             if (null == imageData)
                 return Err.CODEC_DECODE;
 
-            if (cidPickImage < 0) {
+            if (mCidPickImage < 0) {
                 eAssert(false);
                 return Err.UNKNOWN; // something evil!!!
             } else {
-                dbp.updateChannel(cidPickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
-                cidPickImage = -1;
+                mDbp.updateChannel(mCidPickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
+                mCidPickImage = -1;
             }
             return Err.NO_ERR;
         }
@@ -418,7 +418,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (Err.NO_ERR == result)
                 getCurrentListAdapter().setChannelIcon(cid, bm);
             else
-                lnf.showTextToast(ChannelListActivity.this, result.getMsgId());
+                mLnf.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
 
         @Override
@@ -430,7 +430,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public Err
         doBackgroundWork(SpinAsyncTask task, Object... objs) {
-            Cursor c = dbp.queryChannel(DB.ColumnChannel.ID);
+            Cursor c = mDbp.queryChannel(DB.ColumnChannel.ID);
             if (!c.moveToFirst()) {
                 c.close();
                 return Err.NO_ERR;
@@ -438,7 +438,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             boolean bOk = true;
             do {
-                if (!uip.cleanChannelDir(c.getLong(0)))
+                if (!mUip.cleanChannelDir(c.getLong(0)))
                     bOk = false;
             } while (c.moveToNext());
             return bOk? Err.NO_ERR: Err.IO_FILE;
@@ -448,7 +448,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
             if (Err.NO_ERR != result)
-                lnf.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
+                mLnf.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
         }
 
         @Override
@@ -465,7 +465,7 @@ UnexpectedExceptionHandler.TrackedModule {
             for (int i = 0; i < objs.length; i++)
                 cids[i] = (Long)objs[i];
 
-            nrDelItems = dbp.deleteChannel(cids);
+            nrDelItems = mDbp.deleteChannel(cids);
             return Err.NO_ERR;
         }
 
@@ -477,9 +477,9 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostExecute(SpinAsyncTask task, Err result) {
-            lnf.showTextToast(ChannelListActivity.this,
+            mLnf.showTextToast(ChannelListActivity.this,
                                       nrDelItems + getResources().getString(R.string.channel_deleted_msg));
-            refreshListAsync(ab.getSelectedTab());
+            refreshListAsync(mAb.getSelectedTab());
             ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
         }
     }
@@ -489,7 +489,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onRegister(BGTask task, long cid, RTTask.Action act) {
             if (RTTask.Action.UPDATE == act)
-                rtt.bind(cid, RTTask.Action.UPDATE, ChannelListActivity.this, new UpdateBGTaskListener(cid));
+                mRtt.bind(cid, RTTask.Action.UPDATE, ChannelListActivity.this, new UpdateBGTaskListener(cid));
         }
         @Override
         public void onUnregister(BGTask task, long cid, RTTask.Action act) { }
@@ -516,7 +516,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 return; // nothing to do
 
 
-            dbp.updatechannel_switchPosition(adapter.getItemInfo_cid(pos - 1),
+            mDbp.updatechannel_switchPosition(adapter.getItemInfo_cid(pos - 1),
                                                       adapter.getItemInfo_cid(pos));
             adapter.switchPos(pos - 1, pos);
         }
@@ -535,7 +535,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 return; // nothing to do
 
 
-            dbp.updatechannel_switchPosition(adapter.getItemInfo_cid(pos),
+            mDbp.updatechannel_switchPosition(adapter.getItemInfo_cid(pos),
                                                       adapter.getItemInfo_cid(pos + 1));
             adapter.switchPos(pos, pos + 1);
         }
@@ -566,17 +566,17 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     selectDefaultAsSelected() {
         // 0 is index of default tab
-        ab.setSelectedNavigationItem(0);
+        mAb.setSelectedNavigationItem(0);
     }
 
     private Tab
     getDefaultTab() {
-        return ab.getTabAt(0);
+        return mAb.getTabAt(0);
     }
 
     private ListView
     getCurrentListView() {
-        return getListView(ab.getSelectedTab());
+        return getListView(mAb.getSelectedTab());
     }
 
     private ChannelListAdapter
@@ -586,7 +586,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private ChannelListAdapter
     getCurrentListAdapter() {
-        return getListAdapter(ab.getSelectedTab());
+        return getListAdapter(mAb.getSelectedTab());
     }
 
     private int
@@ -605,7 +605,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private long
     getCurrentCategoryId() {
-        return getCategoryId(ab.getSelectedTab());
+        return getCategoryId(mAb.getSelectedTab());
     }
 
     /**
@@ -615,18 +615,18 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private Tab
     getMyTab(long cid) {
-        long catid = dbp.getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
-        for (int i = 0; i < ab.getTabCount(); i++)
-            if (getTag(ab.getTabAt(i)).categoryid == catid)
-                return ab.getTabAt(i);
+        long catid = mDbp.getChannelInfoLong(cid, DB.ColumnChannel.CATEGORYID);
+        for (int i = 0; i < mAb.getTabCount(); i++)
+            if (getTag(mAb.getTabAt(i)).categoryid == catid)
+                return mAb.getTabAt(i);
 
         logW("getMyTab : Wrong cid(" + cid + ")!!");
-        return ab.getSelectedTab(); // return selected tab by default;
+        return mAb.getSelectedTab(); // return selected tab by default;
     }
 
     private Cursor
     adapterCursorQuery(long categoryid) {
-        return dbp.queryChannel(categoryid, new DB.ColumnChannel[] {
+        return mDbp.queryChannel(categoryid, new DB.ColumnChannel[] {
                     DB.ColumnChannel.ID, // Mandatory.
                     DB.ColumnChannel.TITLE,
                     DB.ColumnChannel.DESCRIPTION,
@@ -639,7 +639,7 @@ UnexpectedExceptionHandler.TrackedModule {
     changeCategory(long cid, Tab from, Tab to) {
         if (from.getPosition() == to.getPosition()) // nothing to do
             return true;
-        dbp.updateChannel(cid, DB.ColumnChannel.CATEGORYID, getTag(to).categoryid);
+        mDbp.updateChannel(cid, DB.ColumnChannel.CATEGORYID, getTag(to).categoryid);
         getListAdapter(from).removeItem(getListAdapter(from).findPosition(cid));
         dataSetChanged(this.getListView(from));
         refreshListAsync(to);
@@ -714,26 +714,26 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     refreshListAsync() {
-        for (int i = 0; i < ab.getTabCount(); i++)
-            refreshListAsync(ab.getTabAt(i));
+        for (int i = 0; i < mAb.getTabCount(); i++)
+            refreshListAsync(mAb.getTabAt(i));
     }
 
     private Tab
     addCategory(Feed.Category cat) {
         String text;
-        if (dbp.isDefaultCategoryId(cat.id)
-           && !Utils.isValidValue(dbp.getCategoryName(cat.id)))
+        if (mDbp.isDefaultCategoryId(cat.id)
+           && !Utils.isValidValue(mDbp.getCategoryName(cat.id)))
             text = getResources().getText(R.string.default_category_name).toString();
         else
             text = cat.name;
 
         // Add new tab to action bar
-        Tab tab = ab.newTab()
+        Tab tab = mAb.newTab()
                     .setText(text)
                     .setTag(cat.id)
                     .setTabListener(this);
 
-        LinearLayout layout = flipper.addListLayout();
+        LinearLayout layout = mFlipper.addListLayout();
 
         TabTag tag = new TabTag();
         tag.categoryid = cat.id;
@@ -741,7 +741,7 @@ UnexpectedExceptionHandler.TrackedModule {
         tag.listView = (ListView)layout.findViewById(R.id.list);
 
         tab.setTag(tag);
-        ab.addTab(tab, false);
+        mAb.addTab(tab, false);
         refreshListAsync(tab); // create cursor adapters
         return tab;
     }
@@ -752,13 +752,13 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     deleteCategory(long categoryid) {
-        dbp.deleteCategory(categoryid);
+        mDbp.deleteCategory(categoryid);
         // channel list of default category is changed.
         refreshListAsync(getDefaultTab());
 
-        Tab curTab = ab.getSelectedTab();
-        ab.removeTab(curTab);
-        flipper.remove(curTab);
+        Tab curTab = mAb.getSelectedTab();
+        mAb.removeTab(curTab);
+        mFlipper.remove(curTab);
         selectDefaultAsSelected();
     }
 
@@ -779,9 +779,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
         long cid = -1;
         try {
-            cid = dbp.insertNewChannel(getCurrentCategoryId(), url);
+            cid = mDbp.insertNewChannel(getCurrentCategoryId(), url);
         } catch (FeederException e) {
-            lnf.showTextToast(this, e.getError().getMsgId());
+            mLnf.showTextToast(this, e.getError().getMsgId());
             return;
         }
 
@@ -792,12 +792,12 @@ UnexpectedExceptionHandler.TrackedModule {
         else
             task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
 
-        rtt.register(cid, RTTask.Action.UPDATE, task);
-        rtt.start(cid, RTTask.Action.UPDATE);
+        mRtt.register(cid, RTTask.Action.UPDATE, task);
+        mRtt.start(cid, RTTask.Action.UPDATE);
         ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
 
         // refresh current category.
-        refreshListAsync(ab.getSelectedTab());
+        refreshListAsync(mAb.getSelectedTab());
     }
 
     /**
@@ -835,7 +835,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        lnf.buildOneLineEditTextDialog(this, item.getTitle(), action).show();
+        mLnf.buildOneLineEditTextDialog(this, item.getTitle(), action).show();
     }
 
     private void
@@ -870,11 +870,11 @@ UnexpectedExceptionHandler.TrackedModule {
                 String url = edit.getText().toString();
                 if (!url.matches("http\\:\\/\\/\\s*")) {
                     addChannel(url, null);
-                    ur.storeUsageReport("URL : " + url + "\n");
+                    mUr.storeUsageReport("URL : " + url + "\n");
                 }
             }
         };
-        lnf.buildOneLineEditTextDialog(this, R.string.channel_url, action).show();
+        mLnf.buildOneLineEditTextDialog(this, R.string.channel_url, action).show();
     }
 
     private void
@@ -886,19 +886,19 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_addChannel(final View anchor) {
-        if (0 == ab.getNavigationItemCount()) {
+        if (0 == mAb.getNavigationItemCount()) {
             eAssert(false);
             return;
         }
 
-        if (0 > ab.getSelectedNavigationIndex()) {
-            lnf.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
+        if (0 > mAb.getSelectedNavigationIndex()) {
+            mLnf.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
             return;
         }
 
         if (!Utils.isNetworkAvailable()) {
             // TODO Handling error
-            lnf.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
+            mLnf.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
             return;
         }
 
@@ -937,12 +937,12 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
-                if (dbp.isDuplicatedCategoryName(name)) {
-                    lnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                if (mDbp.isDuplicatedCategoryName(name)) {
+                    mLnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
                     Feed.Category cat = new Feed.Category(name);
-                    if (0 > dbp.insertCategory(cat))
-                        lnf.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
+                    if (0 > mDbp.insertCategory(cat))
+                        mLnf.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
                     else {
                         eAssert(cat.id >= 0);
                         refreshListAsync(addCategory(cat));
@@ -950,7 +950,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        lnf.buildOneLineEditTextDialog(this, R.string.add_category, action).show();
+        mLnf.buildOneLineEditTextDialog(this, R.string.add_category, action).show();
     }
 
     private void
@@ -964,27 +964,27 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
-                if (dbp.isDuplicatedCategoryName(name)) {
-                    lnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                if (mDbp.isDuplicatedCategoryName(name)) {
+                    mLnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
-                    ab.getSelectedTab().setText(name);
-                    dbp.updateCategory(getCurrentCategoryId(), name);
+                    mAb.getSelectedTab().setText(name);
+                    mDbp.updateCategory(getCurrentCategoryId(), name);
                 }
             }
         };
-        lnf.buildOneLineEditTextDialog(this, R.string.rename_category, action).show();
+        mLnf.buildOneLineEditTextDialog(this, R.string.rename_category, action).show();
     }
 
     private void
     onOpt_category_delete(final View anchor) {
-        final long categoryid = getCategoryId(ab.getSelectedTab());
-        if (dbp.isDefaultCategoryId(categoryid)) {
-            lnf.showTextToast(this, R.string.warn_delete_default_category);
+        final long categoryid = getCategoryId(mAb.getSelectedTab());
+        if (mDbp.isDefaultCategoryId(categoryid)) {
+            mLnf.showTextToast(this, R.string.warn_delete_default_category);
             return;
         }
 
         // 0 should be default category index!
-        eAssert(ab.getSelectedNavigationIndex() > 0);
+        eAssert(mAb.getSelectedNavigationIndex() > 0);
 
         ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
@@ -992,7 +992,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 deleteCategory(categoryid);
             }
         };
-        lnf.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
+        mLnf.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
     }
 
     private void
@@ -1050,8 +1050,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_management_deleteAllDnFiles(final View anchor) {
         // check constraints
-        if (rtt.getItemsDownloading().length > 0) {
-            lnf.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
+        if (mRtt.getItemsDownloading().length > 0) {
+            mLnf.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
             return;
         }
 
@@ -1065,7 +1065,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        lnf.buildConfirmDialog(this,
+        mLnf.buildConfirmDialog(this,
                                        R.string.delete_all_downloaded_file,
                                        R.string.delete_all_downloaded_file_msg,
                                        action)
@@ -1075,12 +1075,12 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_management_feedbackOpinion(final View anchor) {
         if (!Utils.isNetworkAvailable()) {
-            lnf.showTextToast(this, R.string.warn_network_unavailable);
+            mLnf.showTextToast(this, R.string.warn_network_unavailable);
             return;
         }
 
-        if (!ur.sendFeedbackReportMain(this))
-            lnf.showTextToast(this, R.string.warn_find_email_app);
+        if (!mUr.sendFeedbackReportMain(this))
+            mLnf.showTextToast(this, R.string.warn_find_email_app);
     }
 
     private void
@@ -1138,7 +1138,7 @@ UnexpectedExceptionHandler.TrackedModule {
                .append(getResources().getText(R.string.about_app_email)).append("\n")
                .append(getResources().getText(R.string.about_app_blog)).append("\n")
                .append(getResources().getText(R.string.about_app_page)).append("\n");
-        AlertDialog diag = lnf.createAlertDialog(this, 0, title, strbldr.toString());
+        AlertDialog diag = mLnf.createAlertDialog(this, 0, title, strbldr.toString());
         diag.show();
     }
 
@@ -1147,11 +1147,11 @@ UnexpectedExceptionHandler.TrackedModule {
         ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
-                deleteChannel(ab.getSelectedTab(), cid);
+                deleteChannel(mAb.getSelectedTab(), cid);
             }
         };
 
-        lnf.buildConfirmDialog(this,
+        mLnf.buildConfirmDialog(this,
                                        R.string.delete_channel,
                                        R.string.delete_channel_msg,
                                        action)
@@ -1163,7 +1163,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // delete entire channel directory and re-make it.
         // Why?
         // All and only downloaded files are located in channel directory.
-        uip.cleanChannelDir(cid);
+        mUip.cleanChannelDir(cid);
     }
 
     private void
@@ -1177,9 +1177,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Create Adapter for list and set it.
         final ListView list = (ListView)layout.findViewById(R.id.list);
-        Tab[] tabs = new Tab[ab.getTabCount()];
-        for (int i = 0; i < ab.getTabCount(); i++)
-            tabs[i] = ab.getTabAt(i);
+        Tab[] tabs = new Tab[mAb.getTabCount()];
+        for (int i = 0; i < mAb.getTabCount(); i++)
+            tabs[i] = mAb.getTabAt(i);
         list.setAdapter(new ArrayAdapter<Tab>(this, R.id.text, tabs) {
             @Override
             public View
@@ -1204,7 +1204,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
                 changeCategory(cid,
-                               ab.getSelectedTab(),
+                               mAb.getSelectedTab(),
                                (Tab)list.getAdapter().getItem(position));
                 dialog.dismiss();
             }
@@ -1226,46 +1226,46 @@ UnexpectedExceptionHandler.TrackedModule {
     onContext_pickIcon(final long cid) {
         Intent i = new Intent(Intent.ACTION_PICK,
                               android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        cidPickImage = cid;
+        mCidPickImage = cid;
         try {
             startActivityForResult(Intent.createChooser(i,
                                                         getResources().getText(R.string.pick_icon)),
                                    REQC_PICK_IMAGE);
         } catch (ActivityNotFoundException e) {
-            lnf.showTextToast(this, R.string.warn_find_gallery_app);
+            mLnf.showTextToast(this, R.string.warn_find_gallery_app);
             return;
         }
     }
 
     private void
     onContextBtn_channelUpdate(ImageView ibtn, long cid) {
-        RTTask.TaskState state = rtt.getState(cid, RTTask.Action.UPDATE);
+        RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
         switch (state) {
         case IDLE: {
             //logI("ChannelList : update : " + cid);
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
-            rtt.register(cid, RTTask.Action.UPDATE, task);
-            rtt.start(cid, RTTask.Action.UPDATE);
+            mRtt.register(cid, RTTask.Action.UPDATE, task);
+            mRtt.start(cid, RTTask.Action.UPDATE);
             dataSetChanged(getCurrentListView(), cid);
         } break;
 
         case RUNNING:
         case READY:
             //logI("ChannelList : cancel : " + cid);
-            rtt.cancel(cid, RTTask.Action.UPDATE, null);
+            mRtt.cancel(cid, RTTask.Action.UPDATE, null);
             // to change icon into "canceling"
             dataSetChanged(getCurrentListView(), cid);
             break;
 
         case FAILED: {
-            Err result = rtt.getErr(cid, RTTask.Action.UPDATE);
-            lnf.showTextToast(this, result.getMsgId());
-            rtt.consumeResult(cid, RTTask.Action.UPDATE);
+            Err result = mRtt.getErr(cid, RTTask.Action.UPDATE);
+            mLnf.showTextToast(this, result.getMsgId());
+            mRtt.consumeResult(cid, RTTask.Action.UPDATE);
             dataSetChanged(getCurrentListView(), cid);
         } break;
 
         case CANCELING:
-            lnf.showTextToast(this, R.string.wait_cancel);
+            mLnf.showTextToast(this, R.string.wait_cancel);
             break;
 
         default:
@@ -1376,7 +1376,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onTabReselected(Tab tab, FragmentTransaction ft) {
         if (!getTag(tab).fromGesture)
-            flipper.show(tab);
+            mFlipper.show(tab);
         getTag(tab).fromGesture = false;
         registerForContextMenu(getTag(tab).listView);
     }
@@ -1389,7 +1389,7 @@ UnexpectedExceptionHandler.TrackedModule {
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
         long dbId = getCurrentListAdapter().getItemInfo_cid(mInfo.position);
-        RTTask.TaskState updateState = rtt.getState(dbId, RTTask.Action.UPDATE);
+        RTTask.TaskState updateState = mRtt.getState(dbId, RTTask.Action.UPDATE);
 
         if (RTTask.TaskState.RUNNING == updateState
             || RTTask.TaskState.READY == updateState
@@ -1401,7 +1401,7 @@ UnexpectedExceptionHandler.TrackedModule {
             */
         }
 
-        if (rtt.getItemsDownloading(dbId).length > 0) {
+        if (mRtt.getItemsDownloading(dbId).length > 0) {
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.delete_dnfile).setEnabled(false);
         }
@@ -1471,27 +1471,27 @@ UnexpectedExceptionHandler.TrackedModule {
         // More consideration is required.
 
         // Send error report if exists.
-        ur.sendErrReportMail(this);
+        mUr.sendErrReportMail(this);
         // Send usage report if exists and time is passed enough.
-        ur.sendUsageReportMail(this);
+        mUr.sendUsageReportMail(this);
 
 
         setContentView(R.layout.channel_list);
 
         Feed.Category[] cats;
-        cats = dbp.getCategories();
+        cats = mDbp.getCategories();
 
         eAssert(cats.length > 0);
 
         // Setup for swipe.
-        flipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
+        mFlipper = new Flipper(this, (ViewFlipper)findViewById(R.id.flipper));
         setupToolButtons();
 
         // Setup Tabs
-        ab = getActionBar();
-        ab.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-        ab.setDisplayShowTitleEnabled(false);
-        ab.setDisplayShowHomeEnabled(false);
+        mAb = getActionBar();
+        mAb.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+        mAb.setDisplayShowTitleEnabled(false);
+        mAb.setDisplayShowHomeEnabled(false);
 
         for (Feed.Category cat : cats)
             addCategory(cat);
@@ -1500,8 +1500,8 @@ UnexpectedExceptionHandler.TrackedModule {
         selectDefaultAsSelected();
 
         // To avoid duplicated refreshing list at onResume().
-        dbp.registerChannelWatcher(this);
-        dbp.registerChannelTableWatcher(this);
+        mDbp.registerChannelWatcher(this);
+        mDbp.registerChannelTableWatcher(this);
     }
 
 
@@ -1517,8 +1517,8 @@ UnexpectedExceptionHandler.TrackedModule {
     onResume() {
         super.onResume();
 
-        if (dbp.isCategoryTableWatcherRegistered(this)
-            && dbp.isCategoryTableWatcherUpdated(this)) {
+        if (mDbp.isCategoryTableWatcherRegistered(this)
+            && mDbp.isCategoryTableWatcherUpdated(this)) {
             // category table is changed outside of this activity.
             // restarting is required!!
             Intent intent = new Intent(this, ChannelListActivity.class);
@@ -1537,66 +1537,66 @@ UnexpectedExceptionHandler.TrackedModule {
         // If 'registerManagerEventListener' is below 'getUpdateState',
         //   we may miss binding some updating task!
 
-        rtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
+        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
 
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
         // See comments in 'onPause()'
         try {
-            dbp.getDelayedChannelUpdate();
-            Cursor c = dbp.queryChannel(DB.ColumnChannel.ID);
+            mDbp.getDelayedChannelUpdate();
+            Cursor c = mDbp.queryChannel(DB.ColumnChannel.ID);
             if (c.moveToFirst()) {
                 do {
                     long cid = c.getLong(0);
-                    if (RTTask.TaskState.IDLE != rtt.getState(cid, RTTask.Action.UPDATE))
-                        rtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
-                    long[] ids = rtt.getItemsDownloading(cid);
+                    if (RTTask.TaskState.IDLE != mRtt.getState(cid, RTTask.Action.UPDATE))
+                        mRtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
+                    long[] ids = mRtt.getItemsDownloading(cid);
                     for (long id : ids)
-                        rtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener(cid));
+                        mRtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener(cid));
                 } while (c.moveToNext());
             }
             c.close();
         } finally {
-            dbp.putDelayedChannelUpdate();
+            mDbp.putDelayedChannelUpdate();
         }
 
-        if (null == ab) {
-            logW("ChannelListActivity : ab(action bar) is NULL");
-            ab = getActionBar();
+        if (null == mAb) {
+            logW("ChannelListActivity : mAb(action bar) is NULL");
+            mAb = getActionBar();
         }
 
         // default is "full refresh"
         long cids[] = new long[0];
         boolean fullRefresh = true;
         boolean fullRefreshCurrent = false;
-        if (dbp.isChannelWatcherRegistered(this))
-            cids = dbp.getChannelWatcherUpdated(this);
+        if (mDbp.isChannelWatcherRegistered(this))
+            cids = mDbp.getChannelWatcherUpdated(this);
         fullRefresh = cids.length > CHANNEL_REFRESH_THRESHOLD? true: false;
 
         // NOTE
         // Channel may be added or deleted.
         // And channel operation is only allowed on current selected list
         //   according to use case.
-        if (dbp.isChannelTableWatcherRegistered(this)
-            && dbp.isChannelTableWatcherUpdated(this))
+        if (mDbp.isChannelTableWatcherRegistered(this)
+            && mDbp.isChannelTableWatcherUpdated(this))
             fullRefreshCurrent = true;
 
         // We don't need to worry about item table change.
         // Because, if item is newly inserted, that means some of channel is updated.
         // And that channel will be updated according to DB changes.
 
-        dbp.unregisterChannelWatcher(this);
-        dbp.unregisterChannelTableWatcher(this);
+        mDbp.unregisterChannelWatcher(this);
+        mDbp.unregisterChannelTableWatcher(this);
 
         if (fullRefresh)
             refreshListAsync();
         else {
             // only small amount of channel is updated. do synchronous update.
-            for (int i = 0; i < ab.getTabCount(); i++)
-                if (fullRefreshCurrent && ab.getTabAt(i) == ab.getSelectedTab())
-                    refreshListAsync(ab.getTabAt(i));
+            for (int i = 0; i < mAb.getTabCount(); i++)
+                if (fullRefreshCurrent && mAb.getTabAt(i) == mAb.getSelectedTab())
+                    refreshListAsync(mAb.getTabAt(i));
                 else
-                    refreshListItem(ab.getTabAt(i), cids);
+                    refreshListItem(mAb.getTabAt(i), cids);
         }
     }
 
@@ -1611,10 +1611,10 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPause() {
         //logI("==> ChannelListActivity : onPause");
-        dbp.registerChannelWatcher(this);
-        dbp.registerChannelTableWatcher(this);
-        dbp.registerCategoryTableWatcher(this);
-        rtt.unregisterRegisterEventListener(this);
+        mDbp.registerChannelWatcher(this);
+        mDbp.registerChannelTableWatcher(this);
+        mDbp.registerCategoryTableWatcher(this);
+        mRtt.unregisterRegisterEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
         // And when exiting from 'ItemListActivity' by back-key event, 'onStart' is called.
@@ -1624,7 +1624,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // (This is experimental conclusion - NOT by analyzing framework source code.)
         // I think this is Android's bug or implicit policy.
         // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
-        rtt.unbind(this);
+        mRtt.unbind(this);
 
         super.onPause();
     }

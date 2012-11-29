@@ -38,22 +38,22 @@ import android.provider.BaseColumns;
 // This is singleton
 public final class DB extends SQLiteOpenHelper implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static DB instance = null;
+    private static DB sInstance = null;
 
     /**************************************
      * Members
      **************************************/
-    private SQLiteDatabase db = null;
+    private SQLiteDatabase mDb = null;
 
     // below two vars are used to improve app performance to check some DB data are changed or not.
     // These are NOT functionality purpose BUT performance.
-    private final HashMap<Object, HashSet<Long>> chMark = new HashMap<Object, HashSet<Long>>();
+    private final HashMap<Object, HashSet<Long>> mChMark = new HashMap<Object, HashSet<Long>>();
     // Marker whether item table size is changed or not by insert or delete
-    private final HashMap<Object, Boolean>       itmTblMark = new HashMap<Object, Boolean>();
+    private final HashMap<Object, Boolean>       mItmTblMark = new HashMap<Object, Boolean>();
     // Marker whether channel table size is changed or not by insert or delete
-    private final HashMap<Object, Boolean>       chTblMark = new HashMap<Object, Boolean>();
+    private final HashMap<Object, Boolean>       mChTblMark = new HashMap<Object, Boolean>();
     // Marker whether category table size is changed or not by insert or delete
-    private final HashMap<Object, Boolean>       catTblMark = new HashMap<Object, Boolean>();
+    private final HashMap<Object, Boolean>       mCatTblMark = new HashMap<Object, Boolean>();
 
     /**************************************
      *
@@ -392,10 +392,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private boolean
     doesTableExists(String tablename) {
-        Cursor c = db.query("sqlite_master",
-                    new String[] {"name"},
-                    "type = 'table' AND name = '" + tablename + "'",
-                    null, null, null, null);
+        Cursor c = mDb.query("sqlite_master",
+                             new String[] {"name"},
+                             "type = 'table' AND name = '" + tablename + "'",
+                             null, null, null, null);
         boolean ret = c.moveToFirst();
         c.close();
         return ret;
@@ -483,19 +483,19 @@ UnexpectedExceptionHandler.TrackedModule {
      **************************************/
     private DB() {
         super(Utils.getAppContext(), NAME, null, getVersion());
-        UnexpectedExceptionHandler.get().registerModule(instance);
+        UnexpectedExceptionHandler.get().registerModule(sInstance);
     }
 
     public static DB
     get() {
-        if (null == instance)
-            instance = new DB();
-        return instance;
+        if (null == sInstance)
+            sInstance = new DB();
+        return sInstance;
     }
 
     public void
     open() {
-        db = getWritableDatabase();
+        mDb = getWritableDatabase();
     }
 
     @Override
@@ -600,32 +600,32 @@ UnexpectedExceptionHandler.TrackedModule {
     // =======================================
     private void
     markChannelChanged(long cid) {
-        markHashSetChanged(chMark, cid);
+        markHashSetChanged(mChMark, cid);
     }
 
     void
     registerChannelWatcher(Object key) {
-        registerToHashSetMarker(chMark, key);
+        registerToHashSetMarker(mChMark, key);
     }
 
     boolean
     isChannelWatcherRegistered(Object key) {
-        return isRegisteredToHashSetMarker(chMark, key);
+        return isRegisteredToHashSetMarker(mChMark, key);
     }
 
     void
     unregisterChannelWatcher(Object key) {
-        unregisterToHashSetMarker(chMark, key);
+        unregisterToHashSetMarker(mChMark, key);
     }
 
     boolean
     isChannelWatcherUpdated(Object key, long cid) {
-        return isHashSetMarkerUpdated(chMark, key, cid);
+        return isHashSetMarkerUpdated(mChMark, key, cid);
     }
 
     long[]
     getChannelWatcherUpdated(Object key) {
-        return getHashSetMarkerUpdated(chMark, key);
+        return getHashSetMarkerUpdated(mChMark, key);
     }
 
     // =======================================
@@ -633,27 +633,27 @@ UnexpectedExceptionHandler.TrackedModule {
     // =======================================
     private void
     markItemTableChanged() {
-        markBooleanChanged(itmTblMark);
+        markBooleanChanged(mItmTblMark);
     }
 
     void
     registerItemTableWatcher(Object key) {
-        registerToBooleanMarker(itmTblMark, key);
+        registerToBooleanMarker(mItmTblMark, key);
     }
 
     boolean
     isItemTableWatcherRegistered(Object key) {
-        return isRegisteredToBooleanMarker(itmTblMark, key);
+        return isRegisteredToBooleanMarker(mItmTblMark, key);
     }
 
     void
     unregisterItemTableWatcher(Object key) {
-        unregisterToBooleanMarker(itmTblMark, key);
+        unregisterToBooleanMarker(mItmTblMark, key);
     }
 
     boolean
     isItemTableWatcherUpdated(Object key) {
-        return isBooleanMarkerUpdated(itmTblMark, key);
+        return isBooleanMarkerUpdated(mItmTblMark, key);
     }
 
     // =======================================
@@ -661,27 +661,27 @@ UnexpectedExceptionHandler.TrackedModule {
     // =======================================
     private void
     markChannelTableChanged() {
-        markBooleanChanged(chTblMark);
+        markBooleanChanged(mChTblMark);
     }
 
     void
     registerChannelTableWatcher(Object key) {
-        registerToBooleanMarker(chTblMark, key);
+        registerToBooleanMarker(mChTblMark, key);
     }
 
     boolean
     isChannelTableWatcherRegistered(Object key) {
-        return isRegisteredToBooleanMarker(chTblMark, key);
+        return isRegisteredToBooleanMarker(mChTblMark, key);
     }
 
     void
     unregisterChannelTableWatcher(Object key) {
-        unregisterToBooleanMarker(chTblMark, key);
+        unregisterToBooleanMarker(mChTblMark, key);
     }
 
     boolean
     isChannelTableWatcherUpdated(Object key) {
-        return isBooleanMarkerUpdated(chTblMark, key);
+        return isBooleanMarkerUpdated(mChTblMark, key);
     }
 
     // =======================================
@@ -689,27 +689,27 @@ UnexpectedExceptionHandler.TrackedModule {
     // =======================================
     private void
     markCategoryTableChanged() {
-        markBooleanChanged(catTblMark);
+        markBooleanChanged(mCatTblMark);
     }
 
     void
     registerCategoryTableWatcher(Object key) {
-        registerToBooleanMarker(catTblMark, key);
+        registerToBooleanMarker(mCatTblMark, key);
     }
 
     boolean
     isCategoryTableWatcherRegistered(Object key) {
-        return isRegisteredToBooleanMarker(catTblMark, key);
+        return isRegisteredToBooleanMarker(mCatTblMark, key);
     }
 
     void
     unregisterCategoryTableWatcher(Object key) {
-        unregisterToBooleanMarker(catTblMark, key);
+        unregisterToBooleanMarker(mCatTblMark, key);
     }
 
     boolean
     isCategoryTableWatcherUpdated(Object key) {
-        return isBooleanMarkerUpdated(catTblMark, key);
+        return isBooleanMarkerUpdated(mCatTblMark, key);
     }
 
     /**************************************
@@ -722,7 +722,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     void
     reloadDatabase() {
-        db.close();
+        mDb.close();
         open();
 
         // All DB information is changed now!.
@@ -731,9 +731,9 @@ UnexpectedExceptionHandler.TrackedModule {
         markCategoryTableChanged();
 
         // Mark as all channel is changed
-        Cursor c = db.query(TABLE_CHANNEL,
-                            getColumnNames(new ColumnChannel[] { ColumnChannel.ID }),
-                            null, null, null, null, null);
+        Cursor c = mDb.query(TABLE_CHANNEL,
+                             getColumnNames(new ColumnChannel[] { ColumnChannel.ID }),
+                             null, null, null, null, null);
         if (c.moveToFirst()) {
             do {
                 markChannelChanged(c.getLong(0));
@@ -750,17 +750,17 @@ UnexpectedExceptionHandler.TrackedModule {
     // ====================
     void
     beginTransaction() {
-        db.beginTransaction();
+        mDb.beginTransaction();
     }
 
     void
     setTransactionSuccessful() {
-        db.setTransactionSuccessful();
+        mDb.setTransactionSuccessful();
     }
 
     void
     endTransaction() {
-        db.endTransaction();
+        mDb.endTransaction();
     }
 
     // ====================
@@ -773,23 +773,23 @@ UnexpectedExceptionHandler.TrackedModule {
         ContentValues values = new ContentValues();
         values.put(ColumnCategory.NAME.getName(), category.name);
         markCategoryTableChanged();
-        return db.insert(TABLE_CATEGORY, null, values);
+        return mDb.insert(TABLE_CATEGORY, null, values);
     }
 
     long
     deleteCategory(long id) {
         markCategoryTableChanged();
-        return db.delete(TABLE_CATEGORY,
-                         ColumnCategory.ID.getName() + " = " + id,
-                         null);
+        return mDb.delete(TABLE_CATEGORY,
+                          ColumnCategory.ID.getName() + " = " + id,
+                          null);
     }
 
     long
     deleteCategory(String name) {
         markCategoryTableChanged();
-        return db.delete(TABLE_CATEGORY,
-                         ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
-                         null);
+        return mDb.delete(TABLE_CATEGORY,
+                          ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
+                          null);
     }
 
     /**
@@ -803,10 +803,10 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(Utils.isValidValue(name));
         ContentValues cvs = new ContentValues();
         cvs.put(ColumnCategory.NAME.getName(), name);
-        return db.update(TABLE_CATEGORY,
-                         cvs,
-                         ColumnCategory.ID.getName() + " = " + id,
-                         null);
+        return mDb.update(TABLE_CATEGORY,
+                          cvs,
+                          ColumnCategory.ID.getName() + " = " + id,
+                          null);
     }
 
     /**
@@ -837,10 +837,10 @@ UnexpectedExceptionHandler.TrackedModule {
             whereStr = null;
         else
             whereStr = where.getName() + " = " + DatabaseUtils.sqlEscapeString(value.toString());
-        return db.query(TABLE_CATEGORY,
-                        getColumnNames(columns),
-                        whereStr,
-                        null, null, null, null);
+        return mDb.query(TABLE_CATEGORY,
+                         getColumnNames(columns),
+                         whereStr,
+                         null, null, null, null);
     }
 
     // ====================
@@ -857,7 +857,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     insertChannel(ContentValues values) {
-        long cid = db.insert(TABLE_CHANNEL, null, values);
+        long cid = mDb.insert(TABLE_CHANNEL, null, values);
         markChannelChanged(cid);
         markChannelTableChanged();
         return cid;
@@ -874,7 +874,7 @@ UnexpectedExceptionHandler.TrackedModule {
     long
     updateChannel(long cid, ContentValues values) {
         markChannelChanged(cid);
-        return db.update(TABLE_CHANNEL,
+        return mDb.update(TABLE_CHANNEL,
                 values,
                 ColumnChannel.ID.getName() + " = " + cid,
                 null);
@@ -947,7 +947,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 sbldr.append(", ");
         }
         sbldr.append(");");
-        db.execSQL(sbldr.toString());
+        mDb.execSQL(sbldr.toString());
     }
 
     /**
@@ -995,12 +995,12 @@ UnexpectedExceptionHandler.TrackedModule {
                         orderColumn.getName() + (bAsc? " ASC": " DESC");
         String whereClause = buildSQLWhere(wheres, values, "=", "AND");
 
-        return db.query(TABLE_CHANNEL,
-                        getColumnNames(columns),
-                        whereClause.isEmpty()? null: whereClause,
-                        null, null, null,
-                        order,
-                        (limit > 0)? "" + limit: null);
+        return mDb.query(TABLE_CHANNEL,
+                         getColumnNames(columns),
+                         whereClause.isEmpty()? null: whereClause,
+                         null, null, null,
+                         order,
+                         (limit > 0)? "" + limit: null);
     }
 
     /**
@@ -1010,7 +1010,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     Cursor
     queryChannelMax(ColumnChannel column) {
-        return db.rawQuery("SELECT MAX(" + column.getName() + ") FROM " + TABLE_CHANNEL +"", null);
+        return mDb.rawQuery("SELECT MAX(" + column.getName() + ") FROM " + TABLE_CHANNEL +"", null);
     }
 
     /**
@@ -1052,10 +1052,10 @@ UnexpectedExceptionHandler.TrackedModule {
         String chWhereStr = buildSQLWhere(wheres, values, "=", "OR");
 
         // getting channels to delete.
-        Cursor c = db.query(TABLE_CHANNEL,
-                            new String[] { ColumnChannel.ID.getName() },
-                            chWhereStr.isEmpty()? null: chWhereStr,
-                            null, null, null, null);
+        Cursor c = mDb.query(TABLE_CHANNEL,
+                             new String[] { ColumnChannel.ID.getName() },
+                             chWhereStr.isEmpty()? null: chWhereStr,
+                             null, null, null, null);
 
         if (!c.moveToFirst()) {
             c.close();
@@ -1075,12 +1075,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
         String wh = buildSQLWhere(cols, cids, "=", "OR");
         // delete items first
-        long nrItems = db.delete(TABLE_ITEM,
-                                 wh.isEmpty()? null: wh,
-                                 null);
+        long nrItems = mDb.delete(TABLE_ITEM,
+                                  wh.isEmpty()? null: wh,
+                                  null);
         markItemTableChanged();
         // then delete channel.
-        db.delete(TABLE_CHANNEL, chWhereStr, null);
+        mDb.delete(TABLE_CHANNEL, chWhereStr, null);
         markChannelTableChanged();
         return nrItems;
     }
@@ -1100,7 +1100,7 @@ UnexpectedExceptionHandler.TrackedModule {
     long
     insertItem(ContentValues values) {
         markItemTableChanged();
-        return db.insert(TABLE_ITEM, null, values);
+        return mDb.insert(TABLE_ITEM, null, values);
     }
 
     /**
@@ -1112,10 +1112,10 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     updateItem(long id, ContentValues values) {
-        return db.update(TABLE_ITEM,
-                         values,
-                         ColumnItem.ID.getName() + " = " + id,
-                         null);
+        return mDb.update(TABLE_ITEM,
+                          values,
+                          ColumnItem.ID.getName() + " = " + id,
+                          null);
     }
 
     /**
@@ -1173,12 +1173,12 @@ UnexpectedExceptionHandler.TrackedModule {
     queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
         // recently inserted item is located at top of rows.
         String wh = buildSQLWhere(wheres, values, "=", "AND");
-        return db.query(TABLE_ITEM,
-                        getColumnNames(columns),
-                        wh.isEmpty()? null: wh,
-                        null, null, null,
-                        ITEM_QUERY_DEFAULT_ORDER,
-                        (limit > 0)? "" + limit: null);
+        return mDb.query(TABLE_ITEM,
+                         getColumnNames(columns),
+                         wh.isEmpty()? null: wh,
+                         null, null, null,
+                         ITEM_QUERY_DEFAULT_ORDER,
+                         (limit > 0)? "" + limit: null);
     }
 
     /**
@@ -1213,11 +1213,11 @@ UnexpectedExceptionHandler.TrackedModule {
                                       fromPubtime, toPubtime);
         if (!search.isEmpty())
             wh = "(" + wh + ") AND " + search;
-        return db.query(TABLE_ITEM,
-                getColumnNames(columns),
-                wh,
-                null, null, null,
-                ordered? ITEM_QUERY_DEFAULT_ORDER: null);
+        return mDb.query(TABLE_ITEM,
+                         getColumnNames(columns),
+                         wh,
+                         null, null, null,
+                         ordered? ITEM_QUERY_DEFAULT_ORDER: null);
     }
 
     /**
@@ -1258,12 +1258,12 @@ UnexpectedExceptionHandler.TrackedModule {
         else if (!search.isEmpty())
             wh += " AND " + search;
         // recently inserted item is located at top of rows.
-        return db.query(TABLE_ITEM,
-                        getColumnNames(columns),
-                        wh.isEmpty()? null: wh,
-                        null, null, null,
-                        ordered? ITEM_QUERY_DEFAULT_ORDER: null,
-                        (limit > 0)? "" + limit: null);
+        return mDb.query(TABLE_ITEM,
+                         getColumnNames(columns),
+                         wh.isEmpty()? null: wh,
+                         null, null, null,
+                         ordered? ITEM_QUERY_DEFAULT_ORDER: null,
+                         (limit > 0)? "" + limit: null);
     }
 
     /**
@@ -1276,10 +1276,10 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     Cursor
     queryItemCount(ColumnItem column, ColumnItem where, long value) {
-        return db.query(TABLE_ITEM,
-                        new String[] { "COUNT(" + column.getName() + ")" },
-                        where.getName() + " = " + value,
-                        null, null, null, null);
+        return mDb.query(TABLE_ITEM,
+                         new String[] { "COUNT(" + column.getName() + ")" },
+                         where.getName() + " = " + value,
+                         null, null, null, null);
     }
 
     /**
@@ -1306,9 +1306,9 @@ UnexpectedExceptionHandler.TrackedModule {
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
         markItemTableChanged();
         String wh = buildSQLWhere(wheres, values, "=", "OR");
-        return db.delete(TABLE_ITEM,
-                         wh.isEmpty()? null: wh,
-                         null);
+        return mDb.delete(TABLE_ITEM,
+                          wh.isEmpty()? null: wh,
+                          null);
     }
 
     // ========================================================================
@@ -1338,11 +1338,11 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     Cursor
     queryItemIds(long cid, long limit) {
-        return db.query(TABLE_ITEM, new String[] {ColumnItem.ID.getName()},
-                        ColumnItem.CHANNELID.getName() + " = " + cid,
-                        null, null, null,
-                        ColumnItem.ID.getName() + " DESC",
-                        (limit > 0)? "" + limit: null);
+        return mDb.query(TABLE_ITEM, new String[] {ColumnItem.ID.getName()},
+                         ColumnItem.CHANNELID.getName() + " = " + cid,
+                         null, null, null,
+                         ColumnItem.ID.getName() + " DESC",
+                         (limit > 0)? "" + limit: null);
     }
 
     /**
@@ -1367,9 +1367,9 @@ UnexpectedExceptionHandler.TrackedModule {
         if (!where.isEmpty())
             where = " WHERE " + where;
 
-        return db.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
-                           + ") FROM " + TABLE_ITEM
-                           + where, null);
+        return mDb.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
+                            + ") FROM " + TABLE_ITEM
+                            + where, null);
     }
 
     /**
@@ -1384,9 +1384,9 @@ UnexpectedExceptionHandler.TrackedModule {
     Cursor
     queryItemMinMax(ColumnItem where, long mask, long value, ColumnItem column, boolean bMax) {
         String wh = where.getName() + " & " + mask + " = " + value;
-        return db.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
-                           + ") FROM " + TABLE_ITEM
-                           + " WHERE " + wh, null);
+        return mDb.rawQuery("SELECT " + (bMax? "MAX": "MIN") + "(" + column.getName()
+                            + ") FROM " + TABLE_ITEM
+                            + " WHERE " + wh, null);
     }
 
     // -----------------------------------------------------------------------
@@ -1437,7 +1437,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 wh = ColumnItem.CHANNELID.getName() + " = " + cid + " AND ";
             wh += ColumnItem.PUBTIME.getName() + " < " + putTimeFrom;
         }
-        int ret = db.delete(TABLE_ITEM, wh, null);
+        int ret = mDb.delete(TABLE_ITEM, wh, null);
 
         // NOTE
         // Important fact that should be considered here is,

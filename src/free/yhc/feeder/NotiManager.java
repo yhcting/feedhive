@@ -47,19 +47,19 @@ public class NotiManager implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final String NOTI_INTENT_DELETE_ACTION = "feeder.intent.action.NOTIFICATION_DELETE";
 
-    private static NotiManager instance = null;
+    private static NotiManager sInstance = null;
 
-    private final Handler               bgWorkHandler;
+    private final Handler               mBgWorkHandler;
 
     // active notification set.
-    private final HashSet<NotiType>     anset = new HashSet<NotiType>();
-    private final NotificationManager   nm = (NotificationManager)Utils.getAppContext()
-                                                                       .getSystemService(Context.NOTIFICATION_SERVICE);
-    private final TaskQListener         taskQListener = new TaskQListener();
-    private final ChannUpdatedListener  channUpdatedListener = new ChannUpdatedListener();
+    private final HashSet<NotiType>     mAnset = new HashSet<NotiType>();
+    private final NotificationManager   mNm = (NotificationManager)Utils.getAppContext()
+                                                                        .getSystemService(Context.NOTIFICATION_SERVICE);
+    private final TaskQListener         mTaskQListener = new TaskQListener();
+    private final ChannUpdatedListener  mChannUpdatedListener = new ChannUpdatedListener();
 
     // Should be accessed only by NewItemChecker to avoid race-condition.
-    private final HashSet<Long>         newItemChannSet = new HashSet<Long>();
+    private final HashSet<Long>         mNewItemChannSet = new HashSet<Long>();
 
     private static enum NotiType {
         NEWITEM   (true,
@@ -77,19 +77,19 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // true : for keep notification alive even if app. is killed.
         // false: notification should be removed when app. is killed.
-        private final boolean   sticky;
-        private final int       icon;
-        private final int       title;
-        private final int       desc;
-        private final int       notiId; // notification id
+        private final boolean   _mSticky;
+        private final int       _mIcon;
+        private final int       _mTitle;
+        private final int       _mDesc;
+        private final int       _mNotiId; // notification id
 
-        private Notification    noti;
+        private Notification    _mNoti;
 
         private Notification
         buildNotification() {
             Resources res = Utils.getAppContext().getResources();
-            CharSequence textTitle = res.getText(title);
-            CharSequence textDesc = res.getText(desc);
+            CharSequence textTitle = res.getText(_mTitle);
+            CharSequence textDesc = res.getText(_mDesc);
 
             Intent intent = new Intent(Utils.getAppContext(), NotiManager.NotiIntentReceiver.class);
             intent.setAction(NOTI_INTENT_DELETE_ACTION);
@@ -102,7 +102,7 @@ UnexpectedExceptionHandler.TrackedModule {
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
             PendingIntent piContent = PendingIntent.getActivity(Utils.getAppContext(), 0, intent, 0);
             Notification.Builder nbldr = new Notification.Builder(Utils.getAppContext());
-            nbldr.setSmallIcon(icon)
+            nbldr.setSmallIcon(_mIcon)
                  .setTicker(textTitle)
                  .setContentTitle(textTitle)
                  .setContentText(textDesc)
@@ -120,15 +120,15 @@ UnexpectedExceptionHandler.TrackedModule {
             return null;
         }
 
-        NotiType(boolean aSticky, int aIcon, int aTitle, int aDesc) {
-            sticky  = aSticky;
-            icon   = aIcon;
-            title  = aTitle;
-            desc   = aDesc;
+        NotiType(boolean sticky, int icon, int title, int desc) {
+            _mSticky  = sticky;
+            _mIcon   = icon;
+            _mTitle  = title;
+            _mDesc   = desc;
 
             // Unique Identification Number for the Notification.
             // 'title' doens't have any meaning except for random unique number.
-            notiId = title;
+            _mNotiId = title;
 
             // NOTE
             // THIS IS REALLY STRANGE! BUT returning 'noti' doesn't work as expected.
@@ -146,11 +146,11 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         boolean isSticky() {
-            return sticky;
+            return _mSticky;
         }
 
         int getNotiId() {
-            return notiId;
+            return _mNotiId;
         }
 
         Notification getNotification() {
@@ -158,9 +158,9 @@ UnexpectedExceptionHandler.TrackedModule {
             // Instead of building notification at the constructor,
             //   delaying building notification as much as possible - on demand.
             //return buildNotification();
-            if (null == noti)
-                noti = buildNotification();
-            return noti;
+            if (null == _mNoti)
+                _mNoti = buildNotification();
+            return _mNoti;
         }
     }
 
@@ -180,20 +180,20 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private class PostNewItemChecker implements Runnable {
-        private final boolean newItemExist;
-        PostNewItemChecker(boolean aNewItemExist) {
-            newItemExist = aNewItemExist;
+        private final boolean _mNewItemExist;
+        PostNewItemChecker(boolean newItemExist) {
+            _mNewItemExist = newItemExist;
         }
 
         @Override
         public void
         run() {
             eAssert(Utils.isUiThread());
-            if (anset.contains(NotiType.NEWITEM)) {
-                if (!newItemExist)
+            if (mAnset.contains(NotiType.NEWITEM)) {
+                if (!_mNewItemExist)
                     removeNotification(NotiType.NEWITEM);
             } else {
-                if (newItemExist)
+                if (_mNewItemExist)
                     addNotification(NotiType.NEWITEM);
             }
         }
@@ -202,24 +202,24 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class NewItemChecker implements Runnable {
         // Channels that have new items.
-        private final long[]            cids;
-        private final NewItemCheckCmd   cmd;
+        private final long[]            _mCids;
+        private final NewItemCheckCmd   _mCmd;
 
-        NewItemChecker(long[] aCids, NewItemCheckCmd aCmd) {
-            cids = aCids;
-            cmd = aCmd;
+        NewItemChecker(long[] cids, NewItemCheckCmd cmd) {
+            _mCids = cids;
+            _mCmd = cmd;
         }
 
         @Override
         public void
         run() {
-            // To avoid race-condition regarding newItemChannSet.
+            // To avoid race-condition regarding mNewItemChannSet.
             // This should be only run at bgWorker thread.
             //
             // NOTE
             // Why Mutex or Synchronization is NOT used?
             // I may design this module like follows.
-            //   - 'newItemChannSet' is also accessed by other thread (usually UI thread).
+            //   - 'mNewItemChannSet' is also accessed by other thread (usually UI thread).
             //   - Mutex or Synchronization is used.
             // But, above case there is one critical disadvantage.
             // UI thread may wait for lock released by bgWorker thread.
@@ -228,8 +228,8 @@ UnexpectedExceptionHandler.TrackedModule {
             // In addition, we cannot run below checker code in UI thread because,
             //   this requires DB access and accessing DB is very very slow in heavy-DB-access-period
             //   (ex. updating channel)
-            eAssert(Thread.currentThread() == bgWorkHandler.getLooper().getThread());
-            switch(cmd) {
+            eAssert(Thread.currentThread() == mBgWorkHandler.getLooper().getThread());
+            switch(_mCmd) {
             case SCAN: {
                 // cids are not used in this case
                 DBPolicy dbp = DBPolicy.get();
@@ -237,23 +237,23 @@ UnexpectedExceptionHandler.TrackedModule {
                     long oldLast = dbp.getChannelInfoLong(cid, ColumnChannel.OLDLAST_ITEMID);
                     long max     = dbp.getItemInfoMaxId(cid);
                     if (oldLast < max)
-                        newItemChannSet.add(cid);
+                        mNewItemChannSet.add(cid);
                     else
-                        newItemChannSet.remove(cid);
+                        mNewItemChannSet.remove(cid);
                 }
-                Utils.getUiHandler().post(new PostNewItemChecker(!newItemChannSet.isEmpty()));
+                Utils.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
             } break;
 
             case NEW:
-                for (Long cid : cids)
-                    newItemChannSet.add(cid);
+                for (Long cid : _mCids)
+                    mNewItemChannSet.add(cid);
                 Utils.getUiHandler().post(new PostNewItemChecker(true));
                 break;
 
             case READ:
-                for (Long cid : cids)
-                    newItemChannSet.remove(cid);
-                Utils.getUiHandler().post(new PostNewItemChecker(!newItemChannSet.isEmpty()));
+                for (Long cid : _mCids)
+                    mNewItemChannSet.remove(cid);
+                Utils.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
                 break;
             }
         }
@@ -262,24 +262,24 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
     private class TaskQListener implements RTTask.OnTaskQueueChangedListener {
-        private int nrUpdate    = 0;
-        private int nrDownload  = 0;
+        private int _mNrUpdate    = 0;
+        private int _mNrDownload  = 0;
         @Override
         public void
         onEnQ(BGTask task, long id, Action act) {
             if (Action.UPDATE == act) {
-                nrUpdate++;
+                _mNrUpdate++;
                 // notification may be deleted by user in the middle.
                 // So, checking with only 'nrUpdate' is not enough.
-                // 'anset' should be checked too!
-                if (!anset.contains(NotiType.UPDATE))
+                // 'mAnset' should be checked too!
+                if (!mAnset.contains(NotiType.UPDATE))
                     addNotification(NotiType.UPDATE);
             }
 
             if (Action.DOWNLOAD == act) {
-                nrDownload++;
+                _mNrDownload++;
                 // See comments above regarding 'UPDATE'
-                if (!anset.contains(NotiType.DOWNLOAD))
+                if (!mAnset.contains(NotiType.DOWNLOAD))
                     addNotification(NotiType.DOWNLOAD);
             }
         }
@@ -288,14 +288,14 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onDeQ(BGTask task, long id, Action act) {
             if (Action.UPDATE == act) {
-                if (0 == --nrUpdate
-                    && anset.contains(NotiType.UPDATE))
+                if (0 == --_mNrUpdate
+                    && mAnset.contains(NotiType.UPDATE))
                     removeNotification(NotiType.UPDATE);
             }
 
             if (Action.DOWNLOAD == act) {
-                if (0 == --nrDownload
-                    && anset.contains(NotiType.DOWNLOAD))
+                if (0 == --_mNrDownload
+                    && mAnset.contains(NotiType.DOWNLOAD))
                     removeNotification(NotiType.DOWNLOAD);
             }
         }
@@ -306,59 +306,59 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onNewItemsUpdated(long cid, int nrNewItems) {
             //logI("NotiManager : NewItemsUpdated");
-            bgWorkHandler.post(new NewItemChecker(new long[] { cid }, NewItemCheckCmd.NEW));
+            mBgWorkHandler.post(new NewItemChecker(new long[] { cid }, NewItemCheckCmd.NEW));
         }
 
         @Override
         public void
         onLastItemIdUpdated(long[] cids) {
             //logI("NotiManager : LastItemIdUpdated");
-            bgWorkHandler.post(new NewItemChecker(cids, NewItemCheckCmd.READ));
+            mBgWorkHandler.post(new NewItemChecker(cids, NewItemCheckCmd.READ));
         }
     }
 
     private NotiManager() {
-        DBPolicy.get().registerChannelUpdatedListener(this, channUpdatedListener);
-        RTTask.get().registerTaskQChangedListener(this, taskQListener);
+        DBPolicy.get().registerChannelUpdatedListener(this, mChannUpdatedListener);
+        RTTask.get().registerTaskQChangedListener(this, mTaskQListener);
         HandlerThread hThread = new HandlerThread("NotiManager",Process.THREAD_PRIORITY_BACKGROUND);
         hThread.start();
-        bgWorkHandler = new Handler(hThread.getLooper());
-        bgWorkHandler.post(new NewItemChecker(null, NewItemCheckCmd.SCAN));
+        mBgWorkHandler = new Handler(hThread.getLooper());
+        mBgWorkHandler.post(new NewItemChecker(null, NewItemCheckCmd.SCAN));
     }
 
     private void
     addNotification(NotiType type) {
         // To avoid unexpected race-condition.
         eAssert(Utils.isUiThread());
-        if (anset.contains(type))
+        if (mAnset.contains(type))
             return; // notification is already notified. Nothing to do.
 
         if (NotiType.NEWITEM == type
             && !Utils.isPrefNewmsgNoti())
             return;
 
-        anset.add(type);
+        mAnset.add(type);
         // Set event time.
         Notification n = type.getNotification();
         n.when = System.currentTimeMillis();
-        nm.notify(type.getNotiId(), n);
+        mNm.notify(type.getNotiId(), n);
     }
 
     private void
     removeNotification(NotiType type) {
         // To avoid unexpected race-condition.
         eAssert(Utils.isUiThread());
-        if (anset.contains(type)) {
-            anset.remove(type);
-            nm.cancel(type.getNotiId());
+        if (mAnset.contains(type)) {
+            mAnset.remove(type);
+            mNm.cancel(type.getNotiId());
         }
     }
 
     public static NotiManager
     get() {
-        if (null == instance)
-            instance = new NotiManager();
-        return instance;
+        if (null == sInstance)
+            sInstance = new NotiManager();
+        return sInstance;
     }
 
     public void

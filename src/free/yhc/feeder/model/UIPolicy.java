@@ -43,13 +43,13 @@ UnexpectedExceptionHandler.TrackedModule {
     // UIPolicy shouldn't includes DBPolicy at it's constructor!
     // And in terms of design, UI policy SHOULD NOT have dependency on DB policy
     // See 'init' routine at FeederApp
-    private static UIPolicy instance = null;
+    private static UIPolicy sInstance = null;
 
-    private String appRootDir;
-    private File   appTempDirFile;
-    private File   appLogDirFile;
-    private File   appErrLogFile;
-    private File   appUsageLogFile;
+    private String mAppRootDir;
+    private File   mAppTempDirFile;
+    private File   mAppLogDirFile;
+    private File   mAppErrLogFile;
+    private File   mAppUsageLogFile;
 
     private UIPolicy() {
         // Dependency on only following modules are allowed
@@ -65,20 +65,20 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static UIPolicy
     get() {
-        if (null == instance)
-            instance = new UIPolicy();
-        return instance;
+        if (null == sInstance)
+            sInstance = new UIPolicy();
+        return sInstance;
     }
 
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         return "[ UIPolicy ]"
-               + "App root dir  : " + appRootDir + "\n"
-               + "App temp dir  : " + appTempDirFile.getAbsolutePath() + "\n"
-               + "App log dir   : " + appLogDirFile.getAbsolutePath() + "\n"
-               + "App err file  : " + appErrLogFile.getAbsolutePath() + "\n"
-               + "App usage file: " + appUsageLogFile.getAbsolutePath() + "\n";
+               + "App root dir  : " + mAppRootDir + "\n"
+               + "App temp dir  : " + mAppTempDirFile.getAbsolutePath() + "\n"
+               + "App log dir   : " + mAppLogDirFile.getAbsolutePath() + "\n"
+               + "App err file  : " + mAppErrLogFile.getAbsolutePath() + "\n"
+               + "App usage file: " + mAppUsageLogFile.getAbsolutePath() + "\n";
     }
     /**
      * Guessing default action type from Feed data.
@@ -163,22 +163,22 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     setAppDirectories(String root) {
-        appRootDir = root;
-        new File(appRootDir).mkdirs();
+        mAppRootDir = root;
+        new File(mAppRootDir).mkdirs();
         if (!root.endsWith("/"))
-            appRootDir += "/";
+            mAppRootDir += "/";
 
-        appTempDirFile = new File(appRootDir + "temp/");
-        appTempDirFile.mkdirs();
-        appLogDirFile = new File(appRootDir + "log/");
-        appLogDirFile.mkdirs();
-        appErrLogFile = new File(appLogDirFile.getAbsoluteFile() + "/last_error");
-        appUsageLogFile = new File(appLogDirFile.getAbsoluteFile() + "/usage_file");
+        mAppTempDirFile = new File(mAppRootDir + "temp/");
+        mAppTempDirFile.mkdirs();
+        mAppLogDirFile = new File(mAppRootDir + "log/");
+        mAppLogDirFile.mkdirs();
+        mAppErrLogFile = new File(mAppLogDirFile.getAbsoluteFile() + "/last_error");
+        mAppUsageLogFile = new File(mAppLogDirFile.getAbsoluteFile() + "/usage_file");
     }
 
     public String
     getAppRootDirectoryPath() {
-        return appRootDir;
+        return mAppRootDir;
     }
 
     public String
@@ -200,7 +200,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public boolean
     makeChannelDir(long cid) {
-        File f = new File(appRootDir + cid);
+        File f = new File(mAppRootDir + cid);
         if (f.exists())
             Utils.removeFileRecursive(f, true);
         return f.mkdir();
@@ -213,36 +213,36 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public boolean
     removeChannelDir(long cid) {
-        return Utils.removeFileRecursive(new File(appRootDir + cid), true);
+        return Utils.removeFileRecursive(new File(mAppRootDir + cid), true);
     }
 
     public boolean
     cleanChannelDir(long cid) {
-        return Utils.removeFileRecursive(new File(appRootDir + cid), false);
+        return Utils.removeFileRecursive(new File(mAppRootDir + cid), false);
     }
 
     public File
     getNewTempFile() {
         File ret = null;
         try {
-            ret = File.createTempFile("free.yhc.feeder", null, appTempDirFile);
+            ret = File.createTempFile("free.yhc.feeder", null, mAppTempDirFile);
         } catch (IOException e){}
         return ret;
     }
 
     public void
     cleanTempFiles() {
-        Utils.removeFileRecursive(appTempDirFile, false);
+        Utils.removeFileRecursive(mAppTempDirFile, false);
     }
 
     public File
     getErrLogFile() {
-        return appErrLogFile;
+        return mAppErrLogFile;
     }
 
     public File
     getUsageLogFile() {
-        return appUsageLogFile;
+        return mAppUsageLogFile;
     }
 
     /**

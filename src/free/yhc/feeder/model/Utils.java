@@ -71,26 +71,26 @@ public class Utils {
     private static final String TAG = "[Feeder]";
 
     // This is only for debugging.
-    private static boolean  initialized = false;
+    private static boolean  sInitialized = false;
 
     // Even if these two varaibles are not 'final', those should be handled like 'final'
     //   because those are set only at init() function, and SHOULD NOT be changed.
-    private static Context  appContext  = null;
-    private static Handler  uiHandler   = null;
-    private static SharedPreferences prefs = null;
+    private static Context  sAppContext  = null;
+    private static Handler  sUiHandler   = null;
+    private static SharedPreferences sPrefs = null;
 
     // To enable logging to file - NOT LOGCAT
     // These are for debugging purpose
     private static final boolean ENABLE_LOGF= false;
     private static final String  LOGF       = "/sdcard/feeder.log";
     private static final String  LOGF_LAST  = LOGF + "-last";
-    private static FileWriter    logout     = null;
+    private static FileWriter    sLogout     = null;
 
     // Format of nString (Number String)
     // <number>/<number>/ ... '/' is delimiter between number.
     private static final String NSTRING_DELIMITER = "/";
     // Characters that is not allowed as filename in Android.
-    private static final char[] noFileNameChars = new char[] {
+    private static final char[] sNoFileNameChars = new char[] {
         '/', '?', '"', '\'', '`', ':', ';', '*', '|', '\\', '<', '>'
     };
 
@@ -100,7 +100,7 @@ public class Utils {
     private static final int EXT2MIME_OFFSET_EXT = 0;
     private static final int EXT2MIME_OFFSET_MIME = 1;
     private static final int EXT2MIME_OFFSET_SZ = 2;
-    private static String[] ext2mimeMap = {
+    private static String[] mExt2mimeMap = {
             // Image
             "gif",           "image/gif",
             "jpeg",          "image/jpeg",
@@ -124,7 +124,7 @@ public class Utils {
             "xml",           "text/xml",
     };
 
-    private static String[] mimeTypes = {
+    private static String[] mMimeTypes = {
             "application",
             "audio",
             "image",
@@ -141,7 +141,7 @@ public class Utils {
      *  So, we need to tune this array.
      *  (How many format will be supported?)
      */
-    private static final String[] dateFormats = new String[] {
+    private static final String[] sDateFormats = new String[] {
             org.apache.http.impl.cookie.DateUtils.PATTERN_RFC1036,
             org.apache.http.impl.cookie.DateUtils.PATTERN_RFC1123,
             // Variation of RFC1036
@@ -193,7 +193,7 @@ public class Utils {
                 File logfLast = new File(LOGF_LAST);
                 logfLast.delete();
                 logf.renameTo(logfLast);
-                logout = new FileWriter(logf);
+                sLogout = new FileWriter(logf);
             } catch (IOException e) {
                 eAssert(false);
             }
@@ -228,8 +228,8 @@ public class Utils {
 
         if (ENABLE_LOGF) {
             try {
-                logout.write(lv.pref + " " + msg + "\n");
-                logout.flush();
+                sLogout.write(lv.pref + " " + msg + "\n");
+                sLogout.flush();
             } catch (IOException e) {}
         } else {
             switch(lv) {
@@ -250,13 +250,13 @@ public class Utils {
     init(Context aAppContext) {
         // This is called first for module initialization.
         // So, ANY DEPENDENCY to other module is NOT allowed
-        eAssert(!initialized);
-        if (!initialized)
-            initialized = true;
+        eAssert(!sInitialized);
+        if (!sInitialized)
+            sInitialized = true;
 
-        appContext = aAppContext;
-        uiHandler = new Handler();
-        prefs = PreferenceManager.getDefaultSharedPreferences(getAppContext());
+        sAppContext = aAppContext;
+        sUiHandler = new Handler();
+        sPrefs = PreferenceManager.getDefaultSharedPreferences(getAppContext());
     }
 
     // Assert
@@ -299,17 +299,17 @@ public class Utils {
     // ------------------------------------------------------
     public static Context
     getAppContext() {
-        return appContext;
+        return sAppContext;
     }
 
     public static boolean
     isUiThread() {
-        return Thread.currentThread() == uiHandler.getLooper().getThread();
+        return Thread.currentThread() == sUiHandler.getLooper().getThread();
     }
 
     public static Handler
     getUiHandler() {
-        return uiHandler;
+        return sUiHandler;
     }
 
     // Bit mask handling
@@ -425,7 +425,7 @@ public class Utils {
         Date date = null;
         try {
             // instead of using android's DateUtils, apache's DateUtils is used because it is faster.
-            date = DateUtils.parseDate(dateString, dateFormats);
+            date = DateUtils.parseDate(dateString, sDateFormats);
         } catch (DateParseException e) { }
         return (null == date)? -1: date.getTime();
     }
@@ -667,9 +667,9 @@ public class Utils {
         if (null == ext)
             return null;
 
-        for (int i = 0; i < ext2mimeMap.length; i += EXT2MIME_OFFSET_SZ)
-            if (ext2mimeMap[EXT2MIME_OFFSET_EXT].equalsIgnoreCase(ext))
-                return ext2mimeMap[EXT2MIME_OFFSET_MIME];
+        for (int i = 0; i < mExt2mimeMap.length; i += EXT2MIME_OFFSET_SZ)
+            if (mExt2mimeMap[EXT2MIME_OFFSET_EXT].equalsIgnoreCase(ext))
+                return mExt2mimeMap[EXT2MIME_OFFSET_MIME];
 
         return null;
         */
@@ -697,7 +697,7 @@ public class Utils {
             return false;
 
         String type = str.substring(0, idx);
-        for (String t : mimeTypes)
+        for (String t : mMimeTypes)
             if (type.equalsIgnoreCase(t))
                 return true;
 
@@ -718,7 +718,7 @@ public class Utils {
         //   except for ('/' and 'null').
         // But android shell doens't allows some characters.
         // So, we need to handle those...
-        for (char c : noFileNameChars)
+        for (char c : sNoFileNameChars)
             str = str.replace(c, '~');
         return str;
     }
@@ -781,7 +781,7 @@ public class Utils {
     // ------------------------------------------------------------------------
     public static boolean
     isPrefNewmsgNoti() {
-        return prefs.getString("newmsg_noti", "yes").equals("yes");
+        return sPrefs.getString("newmsg_noti", "yes").equals("yes");
     }
 
     // ================================================

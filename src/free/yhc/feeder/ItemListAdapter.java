@@ -47,27 +47,28 @@ import free.yhc.feeder.model.Utils;
 
 public class ItemListAdapter extends AsyncCursorAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    private final DBPolicy  dbp = DBPolicy.get();
-    private final RTTask    rtt = RTTask.get();
+    private final DBPolicy  mDbp = DBPolicy.get();
+    private final RTTask    mRtt = RTTask.get();
 
-    private final OnActionListener  actionListener;
-    // To avoid using mutex in "DownloadProgressListener", dummyTextView is used.
+    private final OnActionListener  mActionListener;
+    // To avoid using mutex in "DownloadProgressListener", mDummyTextView is used.
     // See "DownloadProgressListener" for details
-    private final TextView  dummyTextView;
-    private final View.OnClickListener favOnClick;
+    private final TextView  mDummyTextView;
+    private final View.OnClickListener mFavOnClick;
 
     public static class ProgressTextView extends TextView {
-        private DownloadProgressListener listener = null;
+        private DownloadProgressListener _mListener = null;
 
         public ProgressTextView(Context context, AttributeSet attrs) {
             super(context, attrs);
         }
 
-        void changeListener(DownloadProgressListener newListener) {
-            if (null != listener)
-                listener.setTextView(null);
-            listener = newListener;
-            listener.setTextView(this);
+        void
+        changeListener(DownloadProgressListener newListener) {
+            if (null != _mListener)
+                _mListener.setTextView(null);
+            _mListener = newListener;
+            _mListener.setTextView(this);
         }
     }
 
@@ -88,7 +89,7 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     private class DownloadProgressListener implements BGTask.OnEventListener<BGTaskDownloadToFile.Arg, Object> {
-        // dummyTextView is used for default 'tv' value.
+        // mDummyTextView is used for default 'tv' value.
         // If not, 'null' should be used.
         // In this case, code in 'onProgress' should be like below
         //     if (null != tv)
@@ -96,17 +97,18 @@ AsyncCursorAdapter.ItemBuilder {
         // Then, above two line of code should be preserved with mutex or 'synchronized'
         // Why?
         // 'tv' value can be changed after (null != tv) comparison.
-        // To avoid this synchronization, dummyTextView is used.
+        // To avoid this synchronization, mDummyTextView is used.
         // Keep in mind that assigning reference is atomic operation in Java.
-        private volatile TextView tv = dummyTextView;
+        private volatile TextView tv = mDummyTextView;
 
         DownloadProgressListener(TextView tv) {
             this.tv = tv;
         }
 
-        void setTextView(TextView tv) {
+        void
+        setTextView(TextView tv) {
             if (null == tv)
-                this.tv = dummyTextView;
+                this.tv = mDummyTextView;
             else
                 this.tv = tv;
         }
@@ -118,7 +120,8 @@ AsyncCursorAdapter.ItemBuilder {
         @Override
         public void onCancel(BGTask task, Object param) {}
         @Override
-        public void onProgress(BGTask task, long progress) {
+        public void
+        onProgress(BGTask task, long progress) {
             if (0 > progress) // Fail to get progress.
                 tv.setText("??%");
             else
@@ -171,15 +174,15 @@ AsyncCursorAdapter.ItemBuilder {
         super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
         setItemBuilder(this);
         UnexpectedExceptionHandler.get().registerModule(this);
-        dummyTextView = new TextView(context);
-        actionListener = listener;
-        favOnClick = new View.OnClickListener() {
+        mDummyTextView = new TextView(context);
+        mActionListener = listener;
+        mFavOnClick = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null == actionListener)
+                if (null == mActionListener)
                     return;
                 ImageViewFavorite iv = (ImageViewFavorite)v;
-                actionListener.onFavoriteClick(ItemListAdapter.this, iv, iv.position, iv.id, iv.state);
+                mActionListener.onFavoriteClick(ItemListAdapter.this, iv, iv.position, iv.id, iv.state);
             }
         };
     }
@@ -248,7 +251,7 @@ AsyncCursorAdapter.ItemBuilder {
         ItemInfo i = new ItemInfo();
         try {
             i.id = getCursorLong(c, DB.ColumnItem.ID);
-            i.state = dbp.getItemInfoLong(i.id, DB.ColumnItem.STATE);
+            i.state = mDbp.getItemInfoLong(i.id, DB.ColumnItem.STATE);
             i.title = getCursorString(c, DB.ColumnChannel.TITLE);
             i.desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
             i.pubDate = getCursorString(c, DB.ColumnItem.PUBDATE);
@@ -258,14 +261,14 @@ AsyncCursorAdapter.ItemBuilder {
             // This runs on background thread.
             // So, assert on this thread doesn't stop application and reporting bug.
             // Therefore, this should be endurable for unexpected result.
-            File df = dbp.getItemInfoDataFile(i.id);
+            File df = mDbp.getItemInfoDataFile(i.id);
             i.hasDnFile = null != df && df.exists();
 
             int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
             i.bChannel = (0 <= cidx);
             if (i.bChannel) {
                 i.cid = c.getLong(cidx);
-                i.cTitle = dbp.getChannelInfoString(i.cid, DB.ColumnChannel.TITLE);
+                i.cTitle = mDbp.getChannelInfoString(i.cid, DB.ColumnChannel.TITLE);
             }
 
         } catch (StaleDataException e) {
@@ -287,10 +290,10 @@ AsyncCursorAdapter.ItemBuilder {
         // Override to use "delayed item update"
         int ret;
         try {
-            dbp.getDelayedChannelUpdate();
+            mDbp.getDelayedChannelUpdate();
             ret = super.requestData(adapter, priv, nrseq, from, sz);
         } finally {
-            dbp.putDelayedChannelUpdate();
+            mDbp.putDelayedChannelUpdate();
         }
         return ret;
     }
@@ -320,7 +323,7 @@ AsyncCursorAdapter.ItemBuilder {
         favImgv.id = ii.id;
         favImgv.state = ii.state;
         favImgv.position = position;
-        favImgv.setOnClickListener(favOnClick);
+        favImgv.setOnClickListener(mFavOnClick);
 
         if (favorite)
             favImgv.setImageResource(R.drawable.favorite_on);
@@ -350,7 +353,7 @@ AsyncCursorAdapter.ItemBuilder {
         if (ii.hasDnFile) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
-            RTTask.TaskState dnState = rtt.getState(ii.id, RTTask.Action.DOWNLOAD);
+            RTTask.TaskState dnState = mRtt.getState(ii.id, RTTask.Action.DOWNLOAD);
             switch(dnState) {
             case IDLE:
                 imgv.setImageResource(R.drawable.download_anim0);
@@ -392,8 +395,8 @@ AsyncCursorAdapter.ItemBuilder {
                 // bind event listener to show progress
                 DownloadProgressListener listener = new DownloadProgressListener(progressv);
                 progressv.changeListener(listener);
-                rtt.unbind(progressv);
-                rtt.bind(ii.id, RTTask.Action.DOWNLOAD, progressv, listener);
+                mRtt.unbind(progressv);
+                mRtt.bind(ii.id, RTTask.Action.DOWNLOAD, progressv, listener);
                 progressv.setVisibility(View.VISIBLE);
                 break;
 
@@ -418,7 +421,8 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     @Override
-    protected void finalize() throws Throwable {
+    protected void
+    finalize() throws Throwable {
         UnexpectedExceptionHandler.get().unregisterModule(this);
         super.finalize();
     }
