@@ -94,6 +94,7 @@
     <string name="rename_category">Rename category</string>
     <string name="delete_channel">Delete channel</string>
     <string name="mark_as_unopened">Mark as unopened</string>
+    <string name="wait_cancel_msg">Waiting for canceling.</string>
     <string name="delete_channel_msg">Are you sure to delete this channel?</string>
     <string name="delete_category_msg">Are you sure to delete this category? All channels in this category are move to default category.</string>
     <string name="delete_downloaded_file_msg">Are you sure to delete download file of this item?</string>

@@ -177,10 +177,10 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        SpinAsyncTask.Worker exportWork = new SpinAsyncTask.Worker() {
+        DiagAsyncTask.Worker exportWork = new DiagAsyncTask.Worker() {
             @Override
             public Err
-            doBackgroundWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(DiagAsyncTask task) {
                 try {
                     FileInputStream fis = new FileInputStream(new File(mInDBFilePath));
                     FileOutputStream fos = new FileOutputStream(new File(mExDBFilePath));
@@ -195,7 +195,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             @Override
             public void
-            onPostExecute(SpinAsyncTask task, Err result) {
+            onPostExecute(DiagAsyncTask task, Err result) {
                 if (result != Err.NO_ERR)
                     mLnf.showTextToast(DBManagerActivity.this, result.getMsgId());
 
@@ -203,13 +203,17 @@ UnexpectedExceptionHandler.TrackedModule {
             }
 
             @Override
-            public void onCancel(SpinAsyncTask task) {
+            public void
+            onCancelled(DiagAsyncTask task) {
                 putExclusiveDBAccess();
             }
         };
 
-        SpinAsyncTask task = new SpinAsyncTask(this, exportWork, R.string.exporting, false);
-        task.execute((Object)null);
+        DiagAsyncTask task = new DiagAsyncTask(this,
+                                               exportWork,
+                                               DiagAsyncTask.Style.SPIN,
+                                               R.string.exporting);
+        task.run();
     }
 
     private void
@@ -267,10 +271,10 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        SpinAsyncTask.Worker importWork = new SpinAsyncTask.Worker() {
+        DiagAsyncTask.Worker importWork = new DiagAsyncTask.Worker() {
             @Override
             public Err
-            doBackgroundWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(DiagAsyncTask task) {
                 try {
                     FileInputStream fis = new FileInputStream(exDbf);
                     FileOutputStream fos = new FileOutputStream(inDbf);
@@ -288,7 +292,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             @Override
             public void
-            onPostExecute(SpinAsyncTask task, Err result) {
+            onPostExecute(DiagAsyncTask task, Err result) {
                 if (result == Err.NO_ERR) {
                     // All are done successfully!
                     // Delete useless backup file!
@@ -304,13 +308,17 @@ UnexpectedExceptionHandler.TrackedModule {
             }
 
             @Override
-            public void onCancel(SpinAsyncTask task) {
+            public void
+            onCancelled(DiagAsyncTask task) {
                 putExclusiveDBAccess();
             }
         };
 
-        SpinAsyncTask task = new SpinAsyncTask(this, importWork, R.string.importing, false);
-        task.execute((Object)null);
+        DiagAsyncTask task = new DiagAsyncTask(this,
+                                               importWork,
+                                               DiagAsyncTask.Style.SPIN,
+                                               R.string.importing);
+        task.run();
     }
 
     private void
@@ -333,30 +341,33 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     shrinkItemsAsync(final long cid, final int percent) {
-        SpinAsyncTask.Worker shrinkWork = new SpinAsyncTask.Worker() {
+        DiagAsyncTask.Worker shrinkWork = new DiagAsyncTask.Worker() {
             private int nr = 0;
             @Override
             public Err
-            doBackgroundWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(DiagAsyncTask task) {
                 nr = mDbp.deleteOldItems(cid, percent);
                 return Err.NO_ERR;
             }
 
             @Override
             public void
-            onPostExecute(SpinAsyncTask task, Err result) {
+            onPostExecute(DiagAsyncTask task, Err result) {
                 mLnf.showTextToast(DBManagerActivity.this, nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
                 onDBChanged(cid, nr);
             }
 
             @Override
             public void
-            onCancel(SpinAsyncTask task) {
+            onCancel(DiagAsyncTask task) {
                 eAssert(false);
             }
         };
-        SpinAsyncTask task = new SpinAsyncTask(this, shrinkWork, R.string.deleting, false);
-        task.execute((Object)null);
+        DiagAsyncTask task = new DiagAsyncTask(this,
+                                               shrinkWork,
+                                               DiagAsyncTask.Style.SPIN,
+                                               R.string.deleting);
+        task.run();
     }
 
     /**
@@ -395,10 +406,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     loadChannInfoListAsync() {
-        SpinAsyncTask.Worker loadDBInfoWork = new SpinAsyncTask.Worker() {
+        DiagAsyncTask.Worker loadDBInfoWork = new DiagAsyncTask.Worker() {
             @Override
             public Err
-            doBackgroundWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(DiagAsyncTask task) {
                 // Load 'used channel information'
                 Cursor c = mDbp.queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
                                                                               DB.ColumnChannel.TITLE });
@@ -421,7 +432,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             @Override
             public void
-            onPostExecute(SpinAsyncTask task, Err result) {
+            onPostExecute(DiagAsyncTask task, Err result) {
                 activateChannelInfoListView(true);
                 ListView lv = (ListView)DBManagerActivity.this.findViewById(R.id.list);
                 ChannInfoAdapter adapter = new ChannInfoAdapter(DBManagerActivity.this, R.layout.db_manager_channel_row, mDbInfo.channs);
@@ -434,12 +445,12 @@ UnexpectedExceptionHandler.TrackedModule {
                     }
                 });
             }
-
-            @Override
-            public void onCancel(SpinAsyncTask task) {}
         };
-        SpinAsyncTask task = new SpinAsyncTask(this, loadDBInfoWork, R.string.analyzing_db, false);
-        task.execute((Object)null);
+        DiagAsyncTask task = new DiagAsyncTask(this,
+                                               loadDBInfoWork,
+                                               DiagAsyncTask.Style.SPIN,
+                                               R.string.analyzing_db);
+        task.run();
     }
 
     /**

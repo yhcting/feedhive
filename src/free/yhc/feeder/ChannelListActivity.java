@@ -371,19 +371,23 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class PickIconWorker implements SpinAsyncTask.Worker {
-        private long    cid = -1;
-        private Bitmap  bm = null;
+    private class PickIconWorker extends DiagAsyncTask.Worker {
+        private long        _mCid = -1;
+        private Bitmap      _mBm = null;
+        private final Uri   _mImageUri;
+
+        PickIconWorker(Uri uri) {
+            _mImageUri = uri;
+        }
+
         @Override
         public Err
-        doBackgroundWork(SpinAsyncTask task, Object... objs) {
-            Intent data = (Intent)objs[0];
-            Uri selectedImage = data.getData();
+        doBackgroundWork(DiagAsyncTask task) {
             String[] filePathColumn = {MediaColumns.DATA};
 
-            cid = mCidPickImage;
+            _mCid = mCidPickImage;
 
-            Cursor c = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
+            Cursor c = getContentResolver().query(_mImageUri, filePathColumn, null, null, null);
             if (!c.moveToFirst()) {
                 c.close();
                 return Err.GET_MEDIA;
@@ -396,8 +400,8 @@ UnexpectedExceptionHandler.TrackedModule {
             //logI("Pick Icon : file [" + filePath + "]");
 
             // Make url string from file path
-            bm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
-            byte[] imageData = Utils.compressBitmap(bm);
+            _mBm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
+            byte[] imageData = Utils.compressBitmap(_mBm);
 
             if (null == imageData)
                 return Err.CODEC_DECODE;
@@ -414,22 +418,18 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onPostExecute(SpinAsyncTask task, Err result) {
+        onPostExecute(DiagAsyncTask task, Err result) {
             if (Err.NO_ERR == result)
-                getCurrentListAdapter().setChannelIcon(cid, bm);
+                getCurrentListAdapter().setChannelIcon(_mCid, _mBm);
             else
                 mLnf.showTextToast(ChannelListActivity.this, result.getMsgId());
         }
-
-        @Override
-        public void
-        onCancel(SpinAsyncTask task) {}
     }
 
-    private class DeleteAllDnfilesWorker implements SpinAsyncTask.Worker {
+    private class DeleteAllDnfilesWorker extends DiagAsyncTask.Worker {
         @Override
         public Err
-        doBackgroundWork(SpinAsyncTask task, Object... objs) {
+        doBackgroundWork(DiagAsyncTask task) {
             Cursor c = mDbp.queryChannel(DB.ColumnChannel.ID);
             if (!c.moveToFirst()) {
                 c.close();
@@ -446,39 +446,32 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onPostExecute(SpinAsyncTask task, Err result) {
+        onPostExecute(DiagAsyncTask task, Err result) {
             if (Err.NO_ERR != result)
                 mLnf.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
         }
-
-        @Override
-        public void
-        onCancel(SpinAsyncTask task) {}
     }
 
-    private class DeleteChannelWorker implements SpinAsyncTask.Worker {
-        private long nrDelItems    = -1;
+    private class DeleteChannelWorker extends DiagAsyncTask.Worker {
+        private final long[]  _mCids;
+        private long    _mNrDelItems    = -1;
+
+        DeleteChannelWorker(long[] cids) {
+            _mCids = cids;
+        }
+
         @Override
         public Err
-        doBackgroundWork(SpinAsyncTask task, Object... objs) {
-            long[] cids = new long[objs.length];
-            for (int i = 0; i < objs.length; i++)
-                cids[i] = (Long)objs[i];
-
-            nrDelItems = mDbp.deleteChannel(cids);
+        doBackgroundWork(DiagAsyncTask task) {
+            _mNrDelItems = mDbp.deleteChannel(_mCids);
             return Err.NO_ERR;
         }
 
         @Override
         public void
-        onCancel(SpinAsyncTask task) {
-        }
-
-        @Override
-        public void
-        onPostExecute(SpinAsyncTask task, Err result) {
+        onPostExecute(DiagAsyncTask task, Err result) {
             mLnf.showTextToast(ChannelListActivity.this,
-                                      nrDelItems + getResources().getString(R.string.channel_deleted_msg));
+                               _mNrDelItems + getResources().getString(R.string.channel_deleted_msg));
             refreshListAsync(mAb.getSelectedTab());
             ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
         }
@@ -809,10 +802,11 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     deleteChannel(Tab tab, long cid) {
         eAssert(null != tab);
-        SpinAsyncTask task = new SpinAsyncTask(this,
-                                               new DeleteChannelWorker(),
+        DiagAsyncTask task = new DiagAsyncTask(this,
+                                               new DeleteChannelWorker(new long[] { cid }),
+                                               DiagAsyncTask.Style.SPIN,
                                                R.string.deleting_channel_msg);
-        task.execute(new Long(cid));
+        task.run();
     }
 
     private void
@@ -1058,10 +1052,11 @@ UnexpectedExceptionHandler.TrackedModule {
         ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
-                SpinAsyncTask task = new SpinAsyncTask(ChannelListActivity.this,
+                DiagAsyncTask task = new DiagAsyncTask(ChannelListActivity.this,
                                                        new DeleteAllDnfilesWorker(),
+                                                       DiagAsyncTask.Style.SPIN,
                                                        R.string.delete_all_downloaded_file);
-                task.execute((Object)null); // just pass dummy object;
+                task.run();
             }
         };
 
@@ -1279,7 +1274,11 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         // this may takes quite long time (if image size is big!).
         // So, let's do it in background.
-        new SpinAsyncTask(this, new PickIconWorker(), R.string.pick_icon_progress).execute(data);
+        new DiagAsyncTask(this,
+                          new PickIconWorker(data.getData()),
+                          DiagAsyncTask.Style.SPIN,
+                          R.string.pick_icon_progress)
+            .run();
     }
 
     private void

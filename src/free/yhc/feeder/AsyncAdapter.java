@@ -75,7 +75,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // Read/Write operation to java primitive/reference is atomic!
     // So, use with 'volatile'
     private volatile boolean mDpDone    = false;
-    private SpinAsyncTask    mDpTask    = null;
+    private DiagAsyncTask    mDpTask    = null;
 
     /**
      * provide data to this adapter asynchronously
@@ -320,27 +320,29 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null != mDpTask)
             mDpTask.cancel(true);
 
-        SpinAsyncTask.Worker bgRun = new SpinAsyncTask.Worker() {
+        DiagAsyncTask.Worker bgRun = new DiagAsyncTask.Worker() {
             @Override
-            public void onPostExecute(SpinAsyncTask task, Err result) {
+            public void
+            onPostExecute(DiagAsyncTask task, Err result) {
                 if (null != onProvided)
                     onProvided.onDataProvided(AsyncAdapter.this);
             }
             @Override
             public Err
-            doBackgroundWork(SpinAsyncTask task, Object... objs) {
+            doBackgroundWork(DiagAsyncTask task) {
                 //logI(">>> async request RUN - START: from " + from + ", # " + sz);
                 mDp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, sz);
                 waitDpDone(reqSeq, 50, (int)Utils.MIN_IN_MS * 3); // timeout 3 minutes.
                 //logI(">>> async request RUN - END: from " + from + ", # " + sz);
                 return Err.NO_ERR;
             }
-            @Override
-            public void onCancel(SpinAsyncTask task) {}
         };
-        mDpTask = new SpinAsyncTask(mContext, bgRun, R.string.plz_wait, false);
+        mDpTask = new DiagAsyncTask(mContext,
+                                    bgRun,
+                                    DiagAsyncTask.Style.SPIN,
+                                    R.string.plz_wait);
         mDpTask.setName("Asyn request : " + from + " #" + sz);
-        mDpTask.execute(null, null);
+        mDpTask.run();
     }
 
     /**
