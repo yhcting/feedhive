@@ -58,6 +58,7 @@ import android.widget.Spinner;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
+import free.yhc.feeder.model.BaseBGTask;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
@@ -415,7 +416,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    public class UpdateBGTaskListener implements BGTask.OnEventListener<Long, Object> {
+    public class UpdateBGTaskListener extends BaseBGTask.OnEventListener {
         private long chid = -1;
         UpdateBGTaskListener(long chid) {
             this.chid = chid;
@@ -423,12 +424,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onProgress(BGTask task, long progress) {
-        }
-
-        @Override
-        public void
-        onCancel(BGTask task, Object param) {
+        onCancelled(BaseBGTask task, Object param) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
@@ -438,13 +434,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onPreRun(BGTask task) {
+        onPreRun(BaseBGTask task) {
             requestSetUpdateButton();
         }
 
         @Override
         public void
-        onPostRun(BGTask task, Err result) {
+        onPostRun(BaseBGTask task, Err result) {
             // WHY below code is required?
             // Even if activity is already in 'pause', 'stop' or 'destroy' state,
             //   corresponding callback is run on UI Thread.
@@ -471,46 +467,41 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class DownloadDataBGTaskListener implements BGTask.OnEventListener<Object, Object> {
-        private long id = -1;
+    private class DownloadDataBGTaskListener extends BaseBGTask.OnEventListener {
+        private long _mId = -1;
         DownloadDataBGTaskListener(long id) {
-            this.id = id;
+            _mId = id;
         }
 
         @Override
         public void
-        onProgress(BGTask task, long progress) {
-        }
-
-        @Override
-        public void
-        onCancel(BGTask task, Object param) {
+        onCancelled(BaseBGTask task, Object param) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
-            dataSetChanged(id);
+            dataSetChanged(_mId);
         }
 
         @Override
         public void
-        onPreRun(BGTask task) {
+        onPreRun(BaseBGTask task) {
             // icon should be changed from 'ready' to 'running'
-            dataSetChanged(id);
+            dataSetChanged(_mId);
         }
 
         @Override
         public void
-        onPostRun(BGTask task, Err result) {
+        onPostRun(BaseBGTask task, Err result) {
             //logI("+++ Item Activity DownloadData PostRun");
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
             if (Err.NO_ERR == result)
-                getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
+                getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(_mId), true);
 
-            dataSetChanged(id);
+            dataSetChanged(_mId);
         }
     }
 

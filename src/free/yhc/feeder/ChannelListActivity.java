@@ -71,6 +71,7 @@ import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
 import free.yhc.feeder.LookAndFeel.EditTextDialogAction;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
+import free.yhc.feeder.model.BaseBGTask;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
@@ -282,40 +283,36 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class UpdateBGTaskListener implements BGTask.OnEventListener {
-        private long    cid = -1;
+    private class UpdateBGTaskListener extends BaseBGTask.OnEventListener {
+        private long    _mCid = -1;
 
         UpdateBGTaskListener(long cid) {
-            this.cid = cid;
+            _mCid = cid;
         }
 
         @Override
         public void
-        onProgress(BGTask task, long progress) {}
-
-        @Override
-        public void
-        onCancel(BGTask task, Object param) {
-            eAssert(cid >= 0);
+        onCancelled(BaseBGTask task, Object param) {
+            eAssert(_mCid >= 0);
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
             // NOTE : refresh??? just 'notifying' is enough?
             // In current DB policy, sometimes DB may be updated even if updating is cancelled!
-            refreshListItem(getMyTab(cid), cid);
+            refreshListItem(getMyTab(_mCid), _mCid);
         }
 
         @Override
         public void
-        onPreRun(BGTask task) {
+        onPreRun(BaseBGTask task) {
             // NOTE : refresh??? just 'notifying' is enough?
-            dataSetChanged(getListView(getMyTab(cid)), cid);
+            dataSetChanged(getListView(getMyTab(_mCid)), _mCid);
         }
 
         @Override
         public void
-        onPostRun(BGTask task, Err result) {
+        onPostRun(BaseBGTask task, Err result) {
             eAssert(Err.USER_CANCELLED != result);
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
@@ -329,45 +326,37 @@ UnexpectedExceptionHandler.TrackedModule {
             // NOTE : refresh??? just 'notifying' is enough?
             // It should be 'refresh' due to after successful update,
             //   some channel information in DB may be changed.
-            refreshListItem(getMyTab(cid), cid);
+            refreshListItem(getMyTab(_mCid), _mCid);
         }
     }
 
 
-    private class DownloadBGTaskListener implements BGTask.OnEventListener {
-        private long    cid = -1;
+    private class DownloadBGTaskListener extends BaseBGTask.OnEventListener {
+        private long    _mCid = -1;
         DownloadBGTaskListener(long cid) {
-            this.cid = cid;
+            _mCid = cid;
         }
 
         @Override
         public void
-        onProgress(BGTask task, long progress) {}
-
-        @Override
-        public void
-        onCancel(BGTask task, Object param) {
+        onCancelled(BaseBGTask task, Object param) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
-            if (0 == mRtt.getItemsDownloading(cid).length)
-                dataSetChanged(getListView(getMyTab(cid)), cid);
+            if (0 == mRtt.getItemsDownloading(_mCid).length)
+                dataSetChanged(getListView(getMyTab(_mCid)), _mCid);
         }
 
         @Override
         public void
-        onPreRun(BGTask task) {}
-
-        @Override
-        public void
-        onPostRun(BGTask task, Err result) {
+        onPostRun(BaseBGTask task, Err result) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
-            if (0 == mRtt.getItemsDownloading(cid).length)
-                dataSetChanged(getListView(getMyTab(cid)), cid);
+            if (0 == mRtt.getItemsDownloading(_mCid).length)
+                dataSetChanged(getListView(getMyTab(_mCid)), _mCid);
         }
     }
 
@@ -1354,6 +1343,16 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void onClick(View v) {
                 onOpt_information(v);
+                /* For scheduled update test.
+                Cursor c = mDbp.queryChannel(DB.ColumnChannel.ID);
+                c.moveToFirst();
+                Calendar calNow = Calendar.getInstance();
+                long dayms = calNow.getTimeInMillis() - Utils.dayBaseMs(calNow);
+                dayms += 5000; // after 5 sec
+                mDbp.updateChannel_schedUpdate(c.getLong(0), new long[] { dayms/1000 });
+                c.close();
+                ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
+                */
             }
         });
     }

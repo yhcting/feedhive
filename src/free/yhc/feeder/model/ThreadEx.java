@@ -59,7 +59,7 @@ public abstract class ThreadEx<R> {
     public static final int PRIORITY_MIDLOW = 3;
     public static final int PRIORITY_MIDHIGH= 7;
 
-    private static final String DEFAULT_THREAD_NAME = "BGTask";
+    private static final String DEFAULT_THREAD_NAME = "ThreadEx";
 
     private final Thread            mThread;
     private final Handler           mOwner;
@@ -75,11 +75,6 @@ public abstract class ThreadEx<R> {
         DONE,
         // background job and according post processing is completely finished.
         TERMINATED
-    }
-
-    private boolean
-    isCurrentOwnerThread() {
-        return Thread.currentThread() == mOwner.getLooper().getThread();
     }
 
     private void
@@ -189,19 +184,29 @@ public abstract class ThreadEx<R> {
         this(DEFAULT_THREAD_NAME, Utils.getUiHandler(), PRIORITY_MIDLOW);
     }
 
-    public String
+    public final String
     getName() {
         return mThread.getName();
     }
 
-    public void
+    public final void
     setName(String name) {
         mThread.setName(name);
     }
 
-    public State
+    public final State
     getState() {
         return mState.get();
+    }
+
+    public final Handler
+    getOwner() {
+        return mOwner;
+    }
+
+    public final boolean
+    isOwnerThread(Thread thread) {
+        return thread == mOwner.getLooper().getThread();
     }
 
     public final boolean
@@ -214,7 +219,7 @@ public abstract class ThreadEx<R> {
         return mThread.isInterrupted();
     }
 
-    public void
+    public final void
     publishProgress(final int prog) {
         mOwner.post(new Runnable() {
             @Override
@@ -242,7 +247,7 @@ public abstract class ThreadEx<R> {
         return true;
     }
 
-    public void
+    public final void
     run() {
         eAssert(State.READY == mState.get());
         mOwner.post(new Runnable() {

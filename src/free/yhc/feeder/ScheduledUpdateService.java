@@ -39,8 +39,8 @@ import android.database.Cursor;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.PowerManager;
-import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
+import free.yhc.feeder.model.BaseBGTask;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
@@ -139,10 +139,35 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class UpdateBGTask extends BGTaskUpdateChannel implements
-    BGTask.OnEventListener {
-        private long    mCid = -1;
-        private int     mStartId = -1;
+    private class UpdateBGTask extends BGTaskUpdateChannel {
+        private final EventListener   mListener = new EventListener();
+        private long            mCid = -1;
+        private int             mStartId = -1;
+
+        private class EventListener extends BaseBGTask.OnEventListener {
+            @Override
+            public void
+            onCancelled(BaseBGTask task, Object param) {
+                //logI("ScheduledUpdateService(onCancel) : " + cid);
+                synchronized (mTaskset) {
+                    mTaskset.remove(mCid);
+                    //logI("    mTaskset size : " + mTaskset.size());
+                    if (mTaskset.isEmpty())
+                        stopSelf();
+                }
+            }
+
+            @Override
+            public void
+            onPostRun(BaseBGTask task, Err result) {
+                //logI("ScheduledUpdateService(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
+                synchronized (mTaskset) {
+                    mTaskset.remove(mCid);
+                    if (mTaskset.isEmpty())
+                        stopSelf();
+                }
+            }
+        }
 
         UpdateBGTask(long cid, int startId, BGTaskUpdateChannel.Arg arg) {
             super(arg);
@@ -150,37 +175,9 @@ UnexpectedExceptionHandler.TrackedModule {
             mStartId = startId;
         }
 
-        @Override
-        public void
-        onProgress(BGTask task, long progress) {
-        }
-
-        @Override
-        public void
-        onCancel(BGTask task, Object param) {
-            //logI("ScheduledUpdateService(onCancel) : " + cid);
-            synchronized (mTaskset) {
-                mTaskset.remove(mCid);
-                //logI("    mTaskset size : " + mTaskset.size());
-                if (mTaskset.isEmpty())
-                    stopSelf();
-            }
-        }
-
-        @Override
-        public void
-        onPreRun(BGTask task) {
-        }
-
-        @Override
-        public void
-        onPostRun(BGTask task, Err result) {
-            //logI("ScheduledUpdateService(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
-            synchronized (mTaskset) {
-                mTaskset.remove(mCid);
-                if (mTaskset.isEmpty())
-                    stopSelf();
-            }
+        BaseBGTask.OnEventListener
+        getTaskEventListener() {
+            return mListener;
         }
     }
 
@@ -490,7 +487,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
                 mRtt.register(cid, RTTask.Action.UPDATE, task);
-                mRtt.bind(cid, RTTask.Action.UPDATE, this, task);
+                mRtt.bind(cid, RTTask.Action.UPDATE, this, task.getTaskEventListener());
                 //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
                 synchronized (mTaskset) {
                     if (!mTaskset.add(cid)) {

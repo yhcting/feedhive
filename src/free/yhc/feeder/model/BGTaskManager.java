@@ -37,7 +37,7 @@ UnexpectedExceptionHandler.TrackedModule {
         BGTask          task   = null;
         TaskMapElem(BGTask aTask, String taskId) {
             task = aTask;
-            task.setNick(taskId);
+            task.setName(taskId);
         }
     }
 
@@ -112,7 +112,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @return
      */
     BGTask
-    bind(String taskId, Object key, BGTask.OnEventListener listener, boolean hasPriority) {
+    bind(String taskId, Object key, BaseBGTask.OnEventListener listener, boolean hasPriority) {
         //logI("BGTM : bind : " + taskId + " : " + onEvent.toString());
         TaskMapElem v = mMap.get(taskId);
         if (null == v)
@@ -164,7 +164,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == v)
             return false;
 
-        v.task.start();
+        v.task.run();
         return true;
     }
 
@@ -187,7 +187,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     String
     getTaskId(BGTask task) {
-        return task.getNick();
+        return task.getName();
     }
 
     /**

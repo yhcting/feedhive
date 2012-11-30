@@ -104,11 +104,9 @@ OnSharedPreferenceChangeListener {
         }
     }
 
-    private class RunningBGTaskListener implements BGTask.OnEventListener {
+    private class RunningBGTaskListener extends BaseBGTask.OnEventListener {
         private void
         onEnd(BGTask task) {
-            eAssert(!task.isAlive());
-
             // NOTE
             // Handling race condition with 'start()' function is very important!
             // Order of these codes are deeply related with avoiding unexpected race-condition.
@@ -133,24 +131,14 @@ OnSharedPreferenceChangeListener {
 
         @Override
         public void
-        onProgress(BGTask task, long progress) {
+        onCancelled(BaseBGTask task, Object param) {
+            onEnd((BGTask)task);
         }
 
         @Override
         public void
-        onCancel(BGTask task, Object param) {
-            onEnd(task);
-        }
-
-        @Override
-        public void
-        onPreRun(BGTask task) {
-        }
-
-        @Override
-        public void
-        onPostRun(BGTask task, Err result) {
-            onEnd(task);
+        onPostRun(BaseBGTask task, Err result) {
+            onEnd((BGTask)task);
         }
     }
 
@@ -213,7 +201,7 @@ OnSharedPreferenceChangeListener {
             if (mRunQ.contains(task) || mReadyQ.contains(task))
                 return true;
         }
-        eAssert(!task.isAlive());
+        eAssert(ThreadEx.State.RUNNING != task.getState());
         return false;
     }
 
@@ -407,7 +395,7 @@ OnSharedPreferenceChangeListener {
      * @return
      */
     public BGTask
-    bind(long id, Action act, Object key, BGTask.OnEventListener listener) {
+    bind(long id, Action act, Object key, BaseBGTask.OnEventListener listener) {
         synchronized (mBgtm) {
             return mBgtm.bind(tid(act, id), key, listener, false);
         }

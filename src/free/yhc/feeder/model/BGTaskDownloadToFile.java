@@ -24,7 +24,7 @@ import java.io.File;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
     private volatile NetLoader      mLoader   = null;
-    private volatile long           mProgress = 0;
+    private volatile int            mProgress = 0;
 
     public static class Arg {
         final String url;
@@ -46,7 +46,6 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
     public
     BGTaskDownloadToFile(Arg arg) {
         super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
-        setPriority(UIPolicy.get().getPrefBGTaskPriority());
     }
 
     @Override
@@ -58,7 +57,7 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
 
     @Override
     protected Err
-    doBGTask(Arg arg) {
+    doBgTask(Arg arg) {
         //logI("* Start background Job : DownloadToFileTask\n" +
         //     "    Url : " + arg.url);
         mLoader = new NetLoader();
@@ -72,8 +71,8 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
                 @Override
                 public void
                 onProgress(NetLoader loader, long prog) {
-                    mProgress = prog;
-                    publishProgress(prog);
+                    mProgress = (int)prog;
+                    publishProgress(mProgress);
                 }
             });
         } catch (FeederException e) {

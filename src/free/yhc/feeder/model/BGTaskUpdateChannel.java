@@ -42,12 +42,11 @@ public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object>
     public
     BGTaskUpdateChannel(Arg arg) {
         super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
-        setPriority(UIPolicy.get().getPrefBGTaskPriority());
     }
 
     @Override
     protected Err
-    doBGTask(Arg arg) {
+    doBgTask(Arg arg) {
         try {
             mLoader = new NetLoader();
             if (null == arg.customIconref)

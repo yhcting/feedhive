@@ -35,11 +35,9 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BGTaskDownloadToFile;
+import free.yhc.feeder.model.BaseBGTask;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
-import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -88,7 +86,7 @@ AsyncCursorAdapter.ItemBuilder {
         String      enclosureType   = "";
     }
 
-    private class DownloadProgressListener implements BGTask.OnEventListener<BGTaskDownloadToFile.Arg, Object> {
+    private class DownloadProgressListener extends BaseBGTask.OnEventListener {
         // mDummyTextView is used for default 'tv' value.
         // If not, 'null' should be used.
         // In this case, code in 'onProgress' should be like below
@@ -114,14 +112,8 @@ AsyncCursorAdapter.ItemBuilder {
         }
 
         @Override
-        public void onPreRun(BGTask task) {}
-        @Override
-        public void onPostRun(BGTask task, Err result) {}
-        @Override
-        public void onCancel(BGTask task, Object param) {}
-        @Override
         public void
-        onProgress(BGTask task, long progress) {
+        onProgress(BaseBGTask task, int progress) {
             if (0 > progress) // Fail to get progress.
                 tv.setText("??%");
             else

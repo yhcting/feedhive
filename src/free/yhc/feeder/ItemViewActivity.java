@@ -43,6 +43,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
+import free.yhc.feeder.model.BaseBGTask;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
@@ -113,26 +114,22 @@ UnexpectedExceptionHandler.TrackedModule {
         public void onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
-    private class DownloadBGTaskListener implements BGTask.OnEventListener<BGTaskDownloadToFile.Arg, Object> {
+    private class DownloadBGTaskListener extends BaseBGTask.OnEventListener {
         @Override
         public void
-        onProgress(BGTask task, long progress) { }
-
-        @Override
-        public void
-        onCancel(BGTask task, Object param) {
+        onCancelled(BaseBGTask task, Object param) {
             postSetupLayout();
         }
 
         @Override
         public void
-        onPreRun(BGTask task) {
+        onPreRun(BaseBGTask task) {
             postSetupLayout();
         }
 
         @Override
         public void
-        onPostRun(BGTask task, Err result) {
+        onPostRun(BaseBGTask task, Err result) {
             logI("ItemViewActivity : DownloadToDBBGTaskListener : onPostRun");
             Intent i = new Intent();
             i.putExtra("id", mId);
