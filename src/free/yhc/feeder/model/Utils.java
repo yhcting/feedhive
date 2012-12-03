@@ -53,7 +53,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.TextView;
 
 public class Utils {
-    public static final boolean DBG = false;
+    public static final boolean DBG = true;
 
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).

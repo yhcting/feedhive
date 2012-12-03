@@ -99,12 +99,12 @@
                 />
         </LinearLayout>
     </HorizontalScrollView>
-    <ViewFlipper
-        android:id="@+id/flipper"
+    <android.support.v4.view.ViewPager
+        android:id="@+id/pager"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_alignParentTop="true"
         android:layout_above="@id/toolbutton"
         >
-    </ViewFlipper>
+    </android.support.v4.view.ViewPager>
 </RelativeLayout>

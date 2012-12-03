@@ -489,7 +489,8 @@ UnexpectedExceptionHandler.TrackedModule {
      *   number of items that is loaded to array.(NOT real count.)
      */
     @Override
-    public int getCount() {
+    public int
+    getCount() {
         eAssert(Utils.isUiThread());
         //Log.i(TAG, ">>> getCount");
         return mItems.length;
@@ -517,7 +518,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View
+    getView(int position, View convertView, ViewGroup parent) {
         //Log.i(TAG, ">>> getView : " + position);
 
         if (!initalLoaded()) {
