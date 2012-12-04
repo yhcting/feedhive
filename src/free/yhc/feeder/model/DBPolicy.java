@@ -979,6 +979,14 @@ UnexpectedExceptionHandler.TrackedModule {
         notifyLastItemIdUpdated(cids);
     }
 
+    public int
+    getChannelCount() {
+        Cursor c = queryChannel(ColumnChannel.ID);
+        int cnt = c.getCount();
+        c.close();
+        return cnt;
+    }
+
     /**
      * Query USED channel column those are belonging to given category.
      * (unused channels are not selected.)

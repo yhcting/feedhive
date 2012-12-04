@@ -8,8 +8,8 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="2dip"
-        android:layout_marginRight="2dip"
+        android:layout_marginLeft="2dp"
+        android:layout_marginRight="2dp"
         android:layout_gravity="center_vertical"
         >
         <TextView
@@ -22,15 +22,15 @@
             android:id="@+id/sp_category"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip"
+            android:layout_marginLeft="5dp"
             />
     </LinearLayout>
 	<LinearLayout
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="2dip"
-        android:layout_marginRight="2dip"
+        android:layout_marginLeft="2dp"
+        android:layout_marginRight="2dp"
         android:layout_gravity="center_vertical"
         >
         <TextView
@@ -43,16 +43,16 @@
             android:id="@+id/editbox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip"
+            android:layout_marginLeft="5dp"
             android:singleLine="true"
             />
     </LinearLayout>
     <ImageView
         android:layout_width="fill_parent"
-        android:layout_height="1dip"
+        android:layout_height="1dp"
         android:layout_marginLeft="@dimen/divider_horizonal_margin"
         android:layout_marginRight="@dimen/divider_horizonal_margin"
-        android:layout_marginTop="1dip"
+        android:layout_marginTop="1dp"
         android:scaleType="fitXY"
         android:src="@drawable/divider_horizontal_bright"
         />    
@@ -60,6 +60,6 @@
         android:id="@+id/list"
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
-        android:layout_marginTop="1dip"
+        android:layout_marginTop="1dp"
         />
 </LinearLayout>

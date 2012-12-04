@@ -234,9 +234,11 @@ UnexpectedExceptionHandler.TrackedModule {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
-            public void prepare(Dialog dialog, EditText edit) {}
+            public void
+            prepare(Dialog dialog, EditText edit) {}
             @Override
-            public void onOk(Dialog dialog, EditText edit) {
+            public void
+            onOk(Dialog dialog, EditText edit) {
                 switch (item.getItemId()) {
                 case R.id.uploader:
                     addChannel(Utils.buildYoutubeFeedUrl_uploader(edit.getText().toString()), null);
@@ -258,7 +260,8 @@ UnexpectedExceptionHandler.TrackedModule {
         popup.getMenuInflater().inflate(R.menu.popup_addchannel_youtube, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
-            public boolean onMenuItemClick(MenuItem item) {
+            public boolean
+            onMenuItemClick(MenuItem item) {
                 onOpt_addChannel_youtubeEditDiag(item);
                 return true;
             }
@@ -272,7 +275,8 @@ UnexpectedExceptionHandler.TrackedModule {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
-            public void prepare(Dialog dialog, EditText edit) {
+            public void
+            prepare(Dialog dialog, EditText edit) {
                 // start edit box with 'http://'
                 final String prefix = "http://";
                 edit.setText(prefix);
@@ -280,7 +284,8 @@ UnexpectedExceptionHandler.TrackedModule {
             }
 
             @Override
-            public void onOk(Dialog dialog, EditText edit) {
+            public void
+            onOk(Dialog dialog, EditText edit) {
                 String url = edit.getText().toString();
                 if (!url.matches("http\\:\\/\\/\\s*")) {
                     addChannel(url, null);
@@ -320,7 +325,8 @@ UnexpectedExceptionHandler.TrackedModule {
         popup.getMenuInflater().inflate(R.menu.popup_addchannel, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
-            public boolean onMenuItemClick(MenuItem item) {
+            public boolean
+            onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                 case R.id.predefined:
                     onOpt_addChannel_predefined(anchor);
@@ -345,11 +351,13 @@ UnexpectedExceptionHandler.TrackedModule {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
-            public void prepare(Dialog dialog, EditText edit) {
+            public void
+            prepare(Dialog dialog, EditText edit) {
                 edit.setHint(R.string.enter_name);
             }
             @Override
-            public void onOk(Dialog dialog, EditText edit) {
+            public void
+            onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
                 if (mDbp.isDuplicatedCategoryName(name)) {
                     mLnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
@@ -372,11 +380,13 @@ UnexpectedExceptionHandler.TrackedModule {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
-            public void prepare(Dialog dialog, EditText edit) {
+            public void
+            prepare(Dialog dialog, EditText edit) {
                 edit.setHint(R.string.enter_name);
             }
             @Override
-            public void onOk(Dialog dialog, EditText edit) {
+            public void
+            onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
                 if (mDbp.isDuplicatedCategoryName(name)) {
                     mLnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
@@ -402,7 +412,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
-            public void onOk(Dialog dialog) {
+            public void
+            onOk(Dialog dialog) {
                 deleteCategory(categoryid);
             }
         };
@@ -415,7 +426,8 @@ UnexpectedExceptionHandler.TrackedModule {
         popup.getMenuInflater().inflate(R.menu.popup_category, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
-            public boolean onMenuItemClick(MenuItem item) {
+            public boolean
+            onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                 case R.id.add:
                     onOpt_category_add(anchor);
@@ -471,7 +483,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         ConfirmDialogAction action = new ConfirmDialogAction() {
             @Override
-            public void onOk(Dialog dialog) {
+            public void
+            onOk(Dialog dialog) {
                 DiagAsyncTask task = new DiagAsyncTask(ChannelListActivity.this,
                                                        new DeleteAllDnfilesWorker(),
                                                        DiagAsyncTask.Style.SPIN,
@@ -510,7 +523,8 @@ UnexpectedExceptionHandler.TrackedModule {
         popup.getMenuInflater().inflate(R.menu.popup_management, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
-            public boolean onMenuItemClick(MenuItem item) {
+            public boolean
+            onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                 case R.id.media_delete_all:
                     onOpt_management_deleteAllDnFiles(anchor);
@@ -569,7 +583,8 @@ UnexpectedExceptionHandler.TrackedModule {
         // Without using 'post', user may feel bad ui response.
         Utils.getUiHandler().post(new Runnable() {
             @Override
-            public void run() {
+            public void
+            run() {
                 addChannel(url, iconurl);
             }
         });
@@ -579,56 +594,64 @@ UnexpectedExceptionHandler.TrackedModule {
     setupToolButtons() {
         findViewById(R.id.btn_items_favorite).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_itemsFavorite(v);
             }
         });
 
         findViewById(R.id.btn_items_category).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_itemsCategory(v);
             }
         });
 
         findViewById(R.id.btn_items_all).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_itemsAll(v);
             }
         });
 
         findViewById(R.id.btn_add_channel).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_addChannel(v);
             }
         });
 
         findViewById(R.id.btn_category).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_category(v);
             }
         });
 
         findViewById(R.id.btn_management).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_management(v);
             }
         });
 
         findViewById(R.id.btn_setting).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_setting(v);
             }
         });
 
         findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 onOpt_information(v);
                 /* For scheduled update test.
                 Cursor c = mDbp.queryChannel(DB.ColumnChannel.ID);

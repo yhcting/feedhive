@@ -8,8 +8,8 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="2dip"
-        android:layout_marginRight="2dip"
+        android:layout_marginLeft="2dp"
+        android:layout_marginRight="2dp"
         android:layout_gravity="center_vertical"
         >
         <TextView
@@ -22,7 +22,7 @@
             android:id="@+id/search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip"
+            android:layout_marginLeft="5dp"
             android:singleLine="true"
             />
     </LinearLayout>
@@ -30,25 +30,25 @@
         android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dip"
+        android:layout_marginLeft="5dp"
         android:layout_gravity="left"
         >
         <Spinner
             android:id="@+id/sp_year0"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="2dip"
+            android:layout_marginLeft="2dp"
             />
         <Spinner
             android:id="@+id/sp_month0"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="2dip"
+            android:layout_marginLeft="2dp"
             />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="3dip"
+            android:layout_marginLeft="3dp"
             android:text="~"
             android:textAppearance="?android:attr/textAppearanceLarge"
             />
@@ -57,20 +57,20 @@
         android:orientation="horizontal"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginRight="5dip"
+        android:layout_marginRight="5dp"
         android:layout_gravity="right"
         >
         <Spinner
             android:id="@+id/sp_year1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="2dip"
+            android:layout_marginLeft="2dp"
             />
         <Spinner
             android:id="@+id/sp_month1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="2dip"
+            android:layout_marginLeft="2dp"
             />
     </LinearLayout>
 </LinearLayout>

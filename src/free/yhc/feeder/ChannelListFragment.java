@@ -47,8 +47,8 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListFragment extends Fragment implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final int DATA_ARR_MAX       = 100;
     private static final int DATA_REQ_SZ        = 20;
-    private static final int DATA_ARR_MAX       = 200;
     private static final int REQC_PICK_IMAGE    = 0;
 
 
@@ -320,17 +320,6 @@ UnexpectedExceptionHandler.TrackedModule {
         getAdapter().notifyDataSetChanged();
     }
 
-    private Cursor
-    adapterCursorQuery() {
-        return mDbp.queryChannel(mCatId, new DB.ColumnChannel[] {
-                    DB.ColumnChannel.ID, // Mandatory.
-                    DB.ColumnChannel.TITLE,
-                    DB.ColumnChannel.DESCRIPTION,
-                    DB.ColumnChannel.LASTUPDATE,
-                    DB.ColumnChannel.IMAGEBLOB,
-                    DB.ColumnChannel.URL });
-    }
-
     private int
     getPosition(long cid) {
         ChannelListAdapter adapter = getAdapter();
@@ -503,8 +492,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     refreshListItem(long[] cids) {
-        Cursor newCursor = adapterCursorQuery();
         ChannelListAdapter adapter = getAdapter();
+        Cursor newCursor = ChannelListAdapter.getQueryCursor(mCatId);
         adapter.changeCursor(newCursor);
         int[] ids = new int[cids.length];
         for (int i = 0; i < ids.length; i++)
@@ -524,9 +513,9 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     refreshListAsync() {
-        Cursor newCursor = adapterCursorQuery();
+        Cursor newCursor = ChannelListAdapter.getQueryCursor(mCatId);
         getAdapter().changeCursor(newCursor);
-        getAdapter().reloadDataSetAsync(null);
+        getAdapter().reloadDataSetAsync();
     }
 
     public void
@@ -562,7 +551,6 @@ UnexpectedExceptionHandler.TrackedModule {
             return false;
 
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
-
         long dbId = getAdapter().getItemInfo_cid(info.position);
         switch (mItem.getItemId()) {
         case R.id.delete:
@@ -593,8 +581,11 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(mActive);
         MenuInflater inflater = getActivity().getMenuInflater();
         inflater.inflate(R.menu.channel_context, menu);
-        AdapterContextMenuInfo mInfo = (AdapterContextMenuInfo)menuInfo;
-        long dbId = getAdapter().getItemInfo_cid(mInfo.position);
+        AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
+        if (getAdapter().isLoadingItem(info.position))
+            return;
+
+        long dbId = getAdapter().getItemInfo_cid(info.position);
         RTTask.TaskState updateState = mRtt.getState(dbId, RTTask.Action.UPDATE);
 
         if (RTTask.TaskState.RUNNING == updateState
@@ -660,8 +651,7 @@ UnexpectedExceptionHandler.TrackedModule {
         mListView = (ListView)ll.findViewById(R.id.list);
         eAssert(null != mListView);
         mListView.setAdapter(new ChannelListAdapter(getActivity(),
-                                                    adapterCursorQuery(),
-                                                    R.layout.channel_row,
+                                                    ChannelListAdapter.getQueryCursor(mCatId),
                                                     mListView,
                                                     DATA_REQ_SZ,
                                                     DATA_ARR_MAX,
@@ -670,6 +660,9 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
+                if (getAdapter().isLoadingItem(position))
+                    return;
+
                 Intent intent = new Intent(getActivity(), ItemListActivity.class);
                 intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_CHANNEL);
                 intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);

@@ -161,7 +161,8 @@ UnexpectedExceptionHandler.TrackedModule {
         getAdapterActionHandler() {
             return new ItemListAdapter.OnActionListener() {
                 @Override
-                public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
+                public void
+                onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MSTAT_FAV;
                     mDbp.updateItemAsync_state(id, state);
@@ -335,7 +336,8 @@ UnexpectedExceptionHandler.TrackedModule {
         getAdapterActionHandler() {
             return new ItemListAdapter.OnActionListener() {
                 @Override
-                public void onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
+                public void
+                onFavoriteClick(ItemListAdapter adapter, ImageView ibtn, int position, long id, long state) {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MSTAT_FAV;
                     mDbp.updateItemAsync_state(id, state);
@@ -371,19 +373,22 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        long[] getCids() {
+        long[]
+        getCids() {
             return mCids;
         }
 
         @Override
-        void onCreate() {
+        void
+        onCreate() {
             super.onCreate();
             setTitle(getResources().getString(R.string.all_items));
 
             _mBgtaskRunning = true;
             AsyncTask.execute(new Runnable() {
                 @Override
-                public void run() {
+                public void
+                run() {
                     try {
                         mDbp.getDelayedChannelUpdate();
                         mDbp.updateChannel_lastItemIds(mCids);
@@ -397,7 +402,8 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        void onResume() {
+        void
+        onResume() {
             super.onResume();
             // Bind downloading tasks
             long[] ids = mRtt.getItemsDownloading();
@@ -406,12 +412,14 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        Cursor query() {
+        Cursor
+        query() {
             return mDbp.queryItem(_mQueryProjection, _mSearch, _mFromPubtime, _mToPubtime);
         }
 
         @Override
-        long minPubtime() {
+        long
+        minPubtime() {
             return mDbp.getItemMinPubtime();
         }
     }
@@ -598,14 +606,15 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, we don't need to think about async. loading.
         Cursor newCursor = mOpMode.query();
         getListAdapter().changeCursor(newCursor);
-        getListAdapter().reloadDataSetAsync(null);
+        getListAdapter().reloadDataSetAsync();
     }
 
     private void
     setOnClick_startUpdate(final ImageView btn) {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 ItemListActivity.this.updateItems();
                 requestSetUpdateButton();
             }
@@ -616,7 +625,8 @@ UnexpectedExceptionHandler.TrackedModule {
     setOnClick_cancelUpdate(final ImageView btn) {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 // Update is supported only at channel item list.
                 eAssert(mOpMode instanceof OpModeChannel);
                 mRtt.cancel(mOpMode.getCids()[0], RTTask.Action.UPDATE, null);
@@ -629,7 +639,8 @@ UnexpectedExceptionHandler.TrackedModule {
     setOnClick_notification(final ImageView btn, final int msg) {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 mLnf.showTextToast(ItemListActivity.this, msg);
             }
         });
@@ -639,7 +650,8 @@ UnexpectedExceptionHandler.TrackedModule {
     setOnClick_errResult(final ImageView btn, final Err result) {
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 // Update is supported only at channel item list.
                 eAssert(mOpMode instanceof OpModeChannel);
                 mLnf.showTextToast(ItemListActivity.this, result.getMsgId());
@@ -934,6 +946,9 @@ UnexpectedExceptionHandler.TrackedModule {
     onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
+        if (getListAdapter().isLoadingItem(info.position))
+            return;
+
         long dbId = getListAdapter().getItemInfo_id(info.position);
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.item_context, menu);
@@ -1167,6 +1182,8 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onItemClick (AdapterView<?> parent, View view, int position, long itemId) {
+                if (getListAdapter().isLoadingItem(position))
+                    return;
                 long dbId = getListAdapter().getItemInfo_id(position);
                 long cid = getListAdapter().getItemInfo_cid(position);
                 long act = mDbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
@@ -1187,7 +1204,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
         mList.setAdapter(new ItemListAdapter(ItemListActivity.this,
                                             mOpMode.query(),
-                                            R.layout.item_row,
                                             mList,
                                             DATA_REQ_SZ,
                                             DATA_ARR_MAX,

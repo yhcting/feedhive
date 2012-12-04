@@ -12,19 +12,19 @@
             android:id="@+id/sched_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip"
-            android:layout_marginTop="5dip"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="5dp"
             android:text="@string/setting_scheduled_update"
             android:textAppearance="?android:attr/textAppearanceLarge"
             />
         <ImageView
             android:id="@+id/add_sched"
-            android:layout_width="30dip"
-            android:layout_height="0dip"
+            android:layout_width="30dp"
+            android:layout_height="0dp"
             android:layout_alignTop="@id/sched_title"
             android:layout_alignBottom="@id/sched_title"
             android:layout_alignParentRight="true"
-            android:layout_marginRight="5dip"
+            android:layout_marginRight="5dp"
             android:scaleType="fitCenter"
             android:clickable="true"
             android:src="@drawable/ic_add"
@@ -34,8 +34,8 @@
         android:id="@+id/sched_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="25dip"
-        android:layout_marginRight="5dip"
+        android:layout_marginLeft="25dp"
+        android:layout_marginRight="5dp"
         android:orientation="vertical"
         >
     </LinearLayout>
@@ -43,8 +43,8 @@
         android:id="@+id/updatemode_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dip"
-        android:layout_marginTop="10dip"
+        android:layout_marginLeft="5dp"
+        android:layout_marginTop="10dp"
         android:layout_gravity="center_vertical"
         android:orientation="horizontal"
         >
@@ -57,16 +57,16 @@
         <Spinner
             android:id="@+id/sp_updatemode"
             android:layout_width="fill_parent"
-            android:layout_height="40dip"
-            android:layout_marginLeft="5dip"
+            android:layout_height="40dp"
+            android:layout_marginLeft="5dp"
             />
     </LinearLayout>
     <LinearLayout
         android:id="@+id/browser_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="5dip"
-        android:layout_marginTop="10dip"
+        android:layout_marginLeft="5dp"
+        android:layout_marginTop="10dp"
         android:layout_gravity="center_vertical"
         android:orientation="horizontal"
         >
@@ -79,8 +79,8 @@
         <Spinner
             android:id="@+id/sp_browser"
             android:layout_width="fill_parent"
-            android:layout_height="40dip"
-            android:layout_marginLeft="5dip"
+            android:layout_height="40dp"
+            android:layout_marginLeft="5dp"
             />
     </LinearLayout>
 </LinearLayout>

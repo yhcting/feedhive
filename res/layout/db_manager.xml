@@ -39,7 +39,7 @@
     </LinearLayout>
     <Button
         android:id="@+id/per_chann_mgmt"
-        android:layout_marginTop="5dip"
+        android:layout_marginTop="5dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/per_chann_mgmt"
@@ -48,7 +48,7 @@
         android:id="@+id/channinfo_list"
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
-        android:layout_marginTop="5dip"
+        android:layout_marginTop="5dp"
         android:visibility="gone"
         android:orientation="vertical" >
         <TextView
@@ -60,11 +60,11 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dip"
+            android:layout_marginTop="2dp"
             android:weightSum="1.0"
             android:orientation="horizontal" >
             <TextView
-                android:layout_width="0dip"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:gravity="center"
@@ -72,7 +72,7 @@
                 android:text="@string/channel_name"
                 />
             <TextView
-                android:layout_width="80dip"
+                android:layout_width="80dp"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceMedium"
                 android:gravity="center"

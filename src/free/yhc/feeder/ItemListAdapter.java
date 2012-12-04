@@ -43,7 +43,7 @@ import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
-public class ItemListAdapter extends AsyncCursorAdapter implements
+public class ItemListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
     private final DBPolicy  mDbp = DBPolicy.get();
     private final RTTask    mRtt = RTTask.get();
@@ -158,12 +158,19 @@ AsyncCursorAdapter.ItemBuilder {
     public
     ItemListAdapter(Context             context,
                     Cursor              cursor,
-                    int                 rowLayout,
                     ListView            lv,
                     final int           dataReqSz,
                     final int           maxArrSz,
                     OnActionListener    listener) {
-        super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
+        super(context,
+              cursor,
+              null,
+              R.layout.item_row,
+              lv,
+              new ItemInfo(),
+              dataReqSz,
+              maxArrSz,
+              false);
         setItemBuilder(this);
         UnexpectedExceptionHandler.get().registerModule(this);
         mDummyTextView = new TextView(context);
@@ -293,6 +300,9 @@ AsyncCursorAdapter.ItemBuilder {
     @Override
     public void
     bindView(View v, final Context context, int position)  {
+        if (!preBindView(v, context, position))
+            return;
+
         ItemInfo ii = (ItemInfo)getItem(position);
 
         final boolean           favorite    = Feed.Item.isStatFavOn(ii.state);
@@ -337,7 +347,7 @@ AsyncCursorAdapter.ItemBuilder {
         Animation anim = imgv.getAnimation();
         if (null != anim) {
             anim.cancel();
-            anim.reset();
+            imgv.setAnimation(null);
         }
         imgv.setAlpha(1.0f);
         progressv.setVisibility(View.GONE);

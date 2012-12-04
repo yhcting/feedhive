@@ -23,7 +23,6 @@ package free.yhc.feeder;
 import static free.yhc.feeder.model.Utils.eAssert;
 import android.content.Context;
 import android.database.Cursor;
-import android.widget.ListView;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 
@@ -43,11 +42,14 @@ AsyncAdapter.DataProvider {
                        Cursor         cursor,
                        ItemBuilder    bldr,
                        int            rowLayout,
-                       ListView       lv,
-                       Object         dummyItem,
                        final int      dataReqSz,
-                       final int      maxArrSz) {
-        super(context, rowLayout, lv, dummyItem, dataReqSz, maxArrSz);
+                       final int      maxArrSz,
+                       boolean        hasLimit) {
+        super(context,
+              rowLayout,
+              dataReqSz,
+              maxArrSz,
+              hasLimit);
         mCur = cursor;
         mIbldr = bldr;
         setDataProvider(this);

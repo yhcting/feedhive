@@ -41,7 +41,7 @@ import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
-public class ChannelListAdapter extends AsyncCursorAdapter implements
+public class ChannelListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
     private static final Date sDummyDate = new Date();
 
@@ -52,6 +52,7 @@ AsyncCursorAdapter.ItemBuilder {
     private final View.OnClickListener mChIconOnClick;
     private final View.OnClickListener mPosUpOnClick;
     private final View.OnClickListener mPosDnOnClick;
+
 
     interface OnActionListener {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -77,12 +78,19 @@ AsyncCursorAdapter.ItemBuilder {
 
     ChannelListAdapter(Context          context,
                        Cursor           cursor,
-                       int              rowLayout,
                        ListView         lv,
                        final int        dataReqSz,
                        final int        maxArrSz,
                        OnActionListener listener) {
-        super(context, cursor, null, rowLayout, lv, new ItemInfo(), dataReqSz, maxArrSz);
+        super(context,
+              cursor,
+              null,
+              R.layout.channel_row,
+              lv,
+              new ItemInfo(),
+              dataReqSz,
+              maxArrSz,
+              false);
         setItemBuilder(this);
         UnexpectedExceptionHandler.get().registerModule(this);
         mActionListener = listener;
@@ -113,6 +121,17 @@ AsyncCursorAdapter.ItemBuilder {
                 mActionListener.onMoveDownClick((ImageView)v, (long)(Long)v.getTag());
             }
         };
+    }
+
+    public static Cursor
+    getQueryCursor(long catId) {
+        return DBPolicy.get().queryChannel(catId, new DB.ColumnChannel[] {
+                    DB.ColumnChannel.ID, // Mandatory.
+                    DB.ColumnChannel.TITLE,
+                    DB.ColumnChannel.DESCRIPTION,
+                    DB.ColumnChannel.LASTUPDATE,
+                    DB.ColumnChannel.IMAGEBLOB,
+                    DB.ColumnChannel.URL });
     }
 
     public int
@@ -225,6 +244,9 @@ AsyncCursorAdapter.ItemBuilder {
     @Override
     protected void
     bindView(View v, final Context context, int position)  {
+        if (!preBindView(v, context, position))
+            return;
+
         ItemInfo ii = ((ItemInfo)getItem(position));
 
         long nrNew = ii.maxItemId - ii.oldLastItemId;

@@ -28,6 +28,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.ThreadEx;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -35,13 +36,18 @@ public class AsyncAdapter extends BaseAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
     // Variables to store information - not changed in dynamic
     protected final Context       mContext;
-    private   final ListView      mLv;
     private   final int           mDataReqSz;
     private   final int           mMaxArrSz; // max array size of items
+    private   final boolean       mHasLimit;
     private   final int           mRowLayout;
-    private   final Object        mDummyItem;
-    private   final View          mFirstDummyView;
     private   final int           mFirstLDahead;
+
+    // Variables set at init() function
+    private   ListView      mLv = null;
+    private   DataProvideStateListener mDpsListener = null;
+    private   Object        mDummyItem = null;
+    private   View          mFirstLoadingView = null;
+
 
     private   DataProvider mDp          = null;
 
@@ -75,7 +81,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // Read/Write operation to java primitive/reference is atomic!
     // So, use with 'volatile'
     private volatile boolean mDpDone    = false;
-    private DiagAsyncTask    mDpTask    = null;
+    private ThreadEx<Err>    mDpTask    = null;
 
     /**
      * provide data to this adapter asynchronously
@@ -108,16 +114,23 @@ UnexpectedExceptionHandler.TrackedModule {
         void destroyData(AsyncAdapter adapter, Object data);
     }
 
-    interface OnDataProvided{
+    interface DataProvideStateListener {
+        /**
+         * Called before starting async data provider.
+         * @param adapter
+         */
+        void onPreDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq);
         /**
          * called after data is provided and before notifying dataSetChanged on UI Thread context
          * @param adapter
-         * @param nrseq
-         * @param from
-         * @param sz
          */
-        void onDataProvided(AsyncAdapter adapter);
+        void onPostDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq);
 
+        /**
+         * called when dataProvide is cancelled
+         * @param adapter
+         */
+        void onCancelledDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq);
     }
 
     private enum LDType {
@@ -135,30 +148,42 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param dummyItem
      *   {@link DataProvider#destroyData(AsyncAdapter, Object)} will not be called for dummyItem.
      * @param dataReqSz
+     *
      * @param maxArrSz
+     *   if hasLimit == false than
+     *     this value SHOULD BE LARGER than number of items that can be shown at one-screen!
+     * @param hasLimit
      */
     protected
     AsyncAdapter(Context        context,
                  int            rowLayout,
-                 ListView       lv,
-                 Object         dummyItem, // dummy item for first load
                  final int      dataReqSz,
-                 final int      maxArrSz) {
+                 final int      maxArrSz,
+                 boolean        hasLimit) {
         eAssert(dataReqSz < maxArrSz);
         UnexpectedExceptionHandler.get().registerModule(this);
 
         mContext     = context;
         mRowLayout   = rowLayout;
-        mLv          = lv;
-        mDummyItem   = dummyItem;
         mDataReqSz   = dataReqSz;
         mMaxArrSz    = maxArrSz;
+        mHasLimit    = hasLimit;
         // NOTE
         // This is policy.
         // When reload data, some of previous data would better to be loaded.
         // 1/3 of dataReqSz is reloaded together.
         mFirstLDahead = mDataReqSz/ 3;
-        mFirstDummyView = new View(mContext);
+    }
+
+    protected void
+    init(View       firstLoadingView,
+         ListView   lv,
+         DataProvideStateListener dpsListener,
+         Object     dummyItem) { // dummy item for first load
+        mLv          = lv;
+        mDpsListener = dpsListener;
+        mFirstLoadingView = firstLoadingView;
+        mDummyItem   = dummyItem;
         mItems = new Object[] { mDummyItem };
     }
 
@@ -308,11 +333,18 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    requestDataAsync(final LDType ldtype, final int from, final int sz,
-                     final OnDataProvided onProvided) {
+    requestDataAsync(final LDType ldtype,
+                     final int from, int sz) {
         //logI("Data request UI : from " + from + ", # " + sz);
 
         eAssert(Utils.isUiThread());
+
+        if (mHasLimit
+            && from + sz > mMaxArrSz)
+            sz = mMaxArrSz - from;
+
+        if (sz <= 0)
+            return; // nothing to do.
 
         final long reqSeq = ++mNrseq;
         mDpDone = false;
@@ -320,27 +352,62 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null != mDpTask)
             mDpTask.cancel(true);
 
-        DiagAsyncTask.Worker bgRun = new DiagAsyncTask.Worker() {
+        final int szToReq = sz;
+        int anchorPos;
+        switch (ldtype) {
+        case INIT:
+        case RELOAD:
+        case NEXT:
+            anchorPos = from - mPosTop - 1;
+            if (anchorPos < 0)
+                anchorPos = 0;
+            break;
+
+        case PREV:
+            anchorPos = from + sz - mPosTop;
+            break;
+
+        default:
+            anchorPos = 0;
+            eAssert(false);
+        }
+
+        // NOTE
+        // DO NOT call below callback at 'onPreRun' in ThreadEx.
+        // 'onPreDataProvide' SHOULD be called BEFORE bindView().
+        // See getView() for details.
+        if (null != mDpsListener)
+            mDpsListener.onPreDataProvide(AsyncAdapter.this, anchorPos, reqSeq);
+
+        final int anchorItemPos = anchorPos;
+        mDpTask = new ThreadEx<Err>() {
             @Override
-            public void
-            onPostExecute(DiagAsyncTask task, Err result) {
-                if (null != onProvided)
-                    onProvided.onDataProvided(AsyncAdapter.this);
+            protected void
+            onPostRun(Err result) {
+                if (null != mDpsListener)
+                    mDpsListener.onPostDataProvide(AsyncAdapter.this, anchorItemPos, reqSeq);
+                notifyDataSetChanged();
             }
+
             @Override
-            public Err
-            doBackgroundWork(DiagAsyncTask task) {
+            protected void
+            onCancelled() {
+                if (null != mDpsListener)
+                    mDpsListener.onCancelledDataProvide(AsyncAdapter.this, anchorItemPos, reqSeq);
+                notifyDataSetChanged();
+            }
+
+            @Override
+            protected Err
+            doAsyncTask() {
                 //logI(">>> async request RUN - START: from " + from + ", # " + sz);
-                mDp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, sz);
+                mDp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, szToReq);
                 waitDpDone(reqSeq, 50, (int)Utils.MIN_IN_MS * 3); // timeout 3 minutes.
                 //logI(">>> async request RUN - END: from " + from + ", # " + sz);
                 return Err.NO_ERR;
             }
         };
-        mDpTask = new DiagAsyncTask(mContext,
-                                    bgRun,
-                                    DiagAsyncTask.Style.SPIN,
-                                    R.string.plz_wait);
+
         mDpTask.setName("Asyn request : " + from + " #" + sz);
         mDpTask.run();
     }
@@ -351,13 +418,13 @@ UnexpectedExceptionHandler.TrackedModule {
      *   - lots of change in item order (ex. one of item in the middle is deleted etc)
      */
     public void
-    reloadDataSetAsync(OnDataProvided onProvided) {
+    reloadDataSetAsync(DataProvideStateListener dpsListener) {
         eAssert(Utils.isUiThread());
         int from = mPosTop + mLv.getFirstVisiblePosition() - mFirstLDahead;
         from = from < 0? 0: from;
         // dataset may be changed. So, reset mDataCnt to 'unknown'
         mDataCnt = -1;
-        requestDataAsync(LDType.RELOAD, from, mDataReqSz, onProvided);
+        requestDataAsync(LDType.RELOAD, from, mDataReqSz);
     }
 
     /**
@@ -421,8 +488,15 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 // Check that there is already new request or not.
                 // This is run on UI thread. So, synchronization is not needed to be worried about.
+                // NOTE
+                // Below check is really required? I don't think so,
+                // especially, in case that there should be more than one data request to fill one screen,
+                //   below check issues unexpected bug!
+                // Let's comment out and monitor it...
+                /*
                 if (reqSeq != mNrseq)
                     return;
+                */
 
                 // 'posTop' is changed in 'buildNewItemsArray'.
                 // So backup it before building new mItems array.
@@ -460,7 +534,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 // So, we don't need to worry about race-condition.
                 int posDelta = mPosTop - posTopSv;
 
-                notifyDataSetChanged();
+                // NOTE
+                // Below code is move to requestDataAsync().
+                // Are there any side effects??? I'm not sure about it until now.
+                //notifyDataSetChanged();
                 // Restore list view's previous location.
                 int pos = firstVisiblePos - posDelta;
                 pos = pos < 0? 0: pos;
@@ -526,17 +603,15 @@ UnexpectedExceptionHandler.TrackedModule {
             // reload some of previous item too.
             int from = mPosTop + mLv.getFirstVisiblePosition() - mFirstLDahead;
             from = from < 0? 0: from;
-            requestDataAsync(LDType.INIT, from, mDataReqSz, null);
-            return mFirstDummyView;
+            requestDataAsync(LDType.INIT, from, mDataReqSz);
+            return mFirstLoadingView;
         }
 
         View v = convertView;
-        if (null == convertView || convertView == mFirstDummyView) {
+        if (null == convertView || convertView == mFirstLoadingView) {
             LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             v = inflater.inflate(mRowLayout, null);
         }
-
-        bindView(v, mContext, position);
 
         // At bindView, functions like 'getItem' 'getItemId' may be used.
         // And these members are at risk of race-condition
@@ -544,12 +619,15 @@ UnexpectedExceptionHandler.TrackedModule {
         if (position == 0 && mPosTop > 0) {
             int szReq = (mPosTop > mDataReqSz)? mDataReqSz: mPosTop;
             // This is first item
-            requestDataAsync(LDType.PREV, mPosTop - szReq, szReq, null);
+            requestDataAsync(LDType.PREV, mPosTop - szReq, szReq);
         } else if (mItems.length - 1 == position
                    && (mDataCnt < 0 || mPosTop + mItems.length < mDataCnt)) {
             // This is last item
-            requestDataAsync(LDType.NEXT, mPosTop + position + 1, mDataReqSz, null);
+            requestDataAsync(LDType.NEXT, mPosTop + position + 1, mDataReqSz);
         }
+
+        bindView(v, mContext, position);
+
         return v;
     }
 
