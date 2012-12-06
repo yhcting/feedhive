@@ -53,6 +53,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import android.os.Handler;
 
 public abstract class ThreadEx<R> {
+    private static final Utils.Logger P = new Utils.Logger(ThreadEx.class);
+
     public static final int PRIORITY_MIN    = Thread.MIN_PRIORITY;  // 1
     public static final int PRIORITY_MAX    = Thread.MAX_PRIORITY;  // 10
     public static final int PRIORITY_NORM   = Thread.NORM_PRIORITY; // 5

@@ -34,9 +34,12 @@ import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.Toast;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class LookAndFeel implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(LookAndFeel.class);
+
     // Even if LookAndFeel looks like suitable for static class,
     //   singleton is used because multiple instance may be used with high possibility at future.
     private static LookAndFeel sInstance = null;

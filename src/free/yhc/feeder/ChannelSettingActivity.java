@@ -47,6 +47,8 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelSettingActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(ChannelSettingActivity.class);
+
     // match string-array 'strarr_updatemode_setting'
     private static final int SPPOS_UPDATEMODE_NORMAL    = 0;
     private static final int SPPOS_UPDATEMODE_DOWNLOAD  = 1;

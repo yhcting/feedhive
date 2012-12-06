@@ -33,6 +33,8 @@ import android.content.pm.PackageManager.NameNotFoundException;
 
 public class UnexpectedExceptionHandler implements
 UncaughtExceptionHandler {
+    private static final Utils.Logger P = new Utils.Logger(UnexpectedExceptionHandler.class);
+
     private static final String UNKNOWN = "unknown";
 
     private static UnexpectedExceptionHandler sInstance = null;

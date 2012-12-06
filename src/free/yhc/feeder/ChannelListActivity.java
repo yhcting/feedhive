@@ -20,9 +20,8 @@
 
 package free.yhc.feeder;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
-import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Calendar;
 
@@ -63,6 +62,8 @@ import free.yhc.feeder.model.Utils;
 public class ChannelListActivity extends FragmentActivity implements
 ActionBar.TabListener,
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(ChannelListActivity.class);
+
     // Request codes.
     private static final int REQC_PICK_PREDEFINED_CHANNEL  = 1;
 
@@ -77,7 +78,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private ViewPager                   mPager          = null;
 
 
-    private ViewPager.OnPageChangeListener mPCListener = new OnPageViewChange();
+    private final ViewPager.OnPageChangeListener mPCListener = new OnPageViewChange();
 
     private static class TabTag {
         long         categoryid;
@@ -87,20 +88,18 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPageSelected(int arg0) {
-            logI("OnPageViewChange : onPageSelected : " + arg0);
+            if (DBG) P.v("OnPageViewChange : onPageSelected : " + arg0);
             mAb.setSelectedNavigationItem(arg0);
         }
 
         @Override
         public void
-        onPageScrolled(int arg0, float arg1, int arg2) {
-            //logI("OnPageViewChange : onPageScrolled : " + arg0 + "/" + arg1 + "/" + arg2);
-        }
+        onPageScrolled(int arg0, float arg1, int arg2) { }
 
         @Override
         public void
         onPageScrollStateChanged(int arg0) {
-            logI("OnPageViewChange : onPageScrollStateChanged : " + arg0);
+            if (DBG) P.v("OnPageViewChange : onPageScrollStateChanged : " + arg0);
         }
     }
 
@@ -764,7 +763,6 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onStart() {
         super.onStart();
-        //logI("==> ChannelListActivity : onStart");
     }
 
     @Override
@@ -782,7 +780,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (null == mAb) {
-            logW("ChannelListActivity : mAb(action bar) is NULL");
+            if (DBG) P.w("mAb(action bar) is NULL");
             mAb = getActionBar();
         }
 
@@ -805,15 +803,12 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onStop() {
-        //logI("==> ChannelListActivity : onStop");
-        //uilc.onStop();
         super.onStop();
     }
 
     @Override
     protected void
     onDestroy() {
-        //logI("==> ChannelListActivity : onDestroy");
         super.onDestroy();
         UnexpectedExceptionHandler.get().unregisterModule(this);
     }

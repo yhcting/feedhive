@@ -27,8 +27,11 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import free.yhc.feeder.model.Utils;
 
 public class FeederActivity extends Activity {
+    private static final Utils.Logger P = new Utils.Logger(FeederActivity.class);
+
     @Override
     public void
     onCreate(Bundle savedInstanceState) {

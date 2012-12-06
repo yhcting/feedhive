@@ -20,8 +20,8 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,6 +34,8 @@ import android.database.sqlite.SQLiteException;
 // NOTE
 // This module is NOT THREAD SAFE!
 public class AssetSQLiteHelper {
+    private static final Utils.Logger P = new Utils.Logger(AssetSQLiteHelper.class);
+
     // Constructing arguments
     private String  mDbName;
     private String  mAssetDBFile;
@@ -73,7 +75,7 @@ public class AssetSQLiteHelper {
             }
 
             mDb = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
-            logI("AssetSQLiteHelper : App DB version: " + mVersion + " / current DB version: " + mDb.getVersion());
+            if (DBG) P.d("AssetSQLiteHelper : App DB version: " + mVersion + " / current DB version: " + mDb.getVersion());
             if (mVersion > mDb.getVersion()) {
                 // need to overwrite old db with new asset db.
                 mDb.close();

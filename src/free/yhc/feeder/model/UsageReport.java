@@ -36,6 +36,8 @@ import free.yhc.feeder.R;
 public class UsageReport implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
+    private static final Utils.Logger P = new Utils.Logger(UsageReport.class);
+
     public  static final String REPORT_RECEIVER         = "yhcting77@gmail.com";
     public  static final String FEEDBACK_REPORT_SUBJECT = "[FeedHive] Feedback Report.";
 

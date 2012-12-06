@@ -1,6 +1,6 @@
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.logI;
+import static free.yhc.feeder.model.Utils.DBG;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -8,8 +8,11 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.view.ViewGroup;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.Utils;
 
 public class ChannelListPagerAdapter extends FragmentPagerAdapter {
+    private static final Utils.Logger P = new Utils.Logger(ChannelListPagerAdapter.class);
+
     private final DBPolicy          mDbp = DBPolicy.get();
     private long[]                  mCatIds;
     private ChannelListFragment[]   mFragments;
@@ -48,14 +51,14 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapter {
 
     public void
     refreshDataSet() {
-        logI("PagerAdapter : refreshDataSet");
+        if (DBG) P.v("refreshDataSet");
         reset(mDbp.getCategories());
         super.notifyDataSetChanged();
     }
 
     public void
     newCategoryAdded(long newCatId) {
-        logI("PagerAdapter : newCategoryAdded : " + newCatId);
+        if (DBG) P.v("newCategoryAdded : " + newCatId);
         long[] newCatIds = new long[mCatIds.length + 1];
         System.arraycopy(mCatIds, 0, newCatIds, 0, mCatIds.length);
         newCatIds[mCatIds.length] = newCatId;
@@ -69,7 +72,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapter {
 
     public void
     categoryDeleted(long catId) {
-        logI("PagerAdapter : categoryDeleted : " + catId);
+        if (DBG) P.v("categoryDeleted : " + catId);
         long[] newCatIds = new long[mCatIds.length - 1];
         ChannelListFragment[] newFragments = new ChannelListFragment[newCatIds.length];
         try {
@@ -123,7 +126,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapter {
     @Override
     public Fragment
     getItem(int position) {
-        logI("ChannelListPagerAdapter : getItem : " + position);
+        if (DBG) P.v("getItem : " + position);
         if (null == mFragments[position])
             mFragments[position] = ChannelListFragment.newInstance(this, mCatIds[position]);
 
@@ -140,42 +143,42 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapter {
     @Override
     public Parcelable
     saveState() {
-        logI("PagerAdapter : saveState()");
+        if (DBG) P.v("saveState()");
         return super.saveState();
     }
 
     @Override
     public void
     restoreState(Parcelable state, ClassLoader loader) {
-        logI("PagerAdapter : restoreState");
+        if (DBG) P.v("restoreState");
         super.restoreState(state, loader);
     }
 
     @Override
     public void
     startUpdate(ViewGroup container) {
-        //logI("PagerAdapter : startUpdate");
+        //if (DBG) P.v("startUpdate");
         super.startUpdate(container);
     }
 
     @Override
     public void
     finishUpdate(ViewGroup container) {
-        //logI("PagerAdapter : finishUpdate");
+        //if (DBG) P.v("finishUpdate");
         super.finishUpdate(container);
     }
 
     @Override
     public Object
     instantiateItem(ViewGroup container, int position) {
-        logI("PagerAdapter : instantiateItem : " + position);
+        if (DBG) P.v("instantiateItem : " + position);
         return super.instantiateItem(container, position);
     }
 
     @Override
     public void
     destroyItem(ViewGroup container, int position, Object object) {
-        logI("PagerAdapter : destroyItem : " + position);
+        if (DBG) P.v("destroyItem : " + position);
         super.destroyItem(container, position, object);
     }
 

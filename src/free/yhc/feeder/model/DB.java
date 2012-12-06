@@ -20,8 +20,8 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -38,6 +38,8 @@ import android.provider.BaseColumns;
 // This is singleton
 public final class DB extends SQLiteOpenHelper implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(DB.class);
+
     private static DB sInstance = null;
 
     /**************************************
@@ -373,7 +375,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         sql += ");";
         sql = sql.replace(", );", ");");
-        logI("SQL Cmd : " + sql + "\n");
+        if (DBG) P.v("SQL Cmd : " + sql + "\n");
         return sql;
     }
 

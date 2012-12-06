@@ -30,6 +30,8 @@ import java.util.HashMap;
 // This should be THREAD-SAFE
 class BGTaskManager implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(BGTaskManager.class);
+
     private final HashMap<String, TaskMapElem> mMap = new HashMap<String, TaskMapElem>();
 
     // TaskMap Value

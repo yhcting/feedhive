@@ -20,8 +20,8 @@
 
 package free.yhc.feeder;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
 import java.io.File;
 
@@ -50,9 +50,12 @@ import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class ItemViewActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(ItemViewActivity.class);
+
     public static final int RESULT_DOWNLOAD = 1;
 
     private final UIPolicy      mUip = UIPolicy.get();
@@ -97,7 +100,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
                                              WebStorage.QuotaUpdater quotaUpdater) {
-            logI("ItemViewActivity : WebView : ReachedMaxAppCacheSize : " + spaceNeeded);
+            if (DBG) P.d("ReachedMaxAppCacheSize : " + spaceNeeded);
             quotaUpdater.updateQuota(spaceNeeded * 2);
         }
     }
@@ -130,7 +133,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BaseBGTask task, Err result) {
-            logI("ItemViewActivity : DownloadToDBBGTaskListener : onPostRun");
+            if (DBG) P.v("DownloadToDBBGTaskListener : onPostRun");
             Intent i = new Intent();
             i.putExtra("id", mId);
             setResult(RESULT_DOWNLOAD, i);
@@ -183,7 +186,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         RTTask.TaskState state = mRtt.getState(mId, RTTask.Action.DOWNLOAD);
-        logI("ItemViewActivity : setupLayout : state : " + state.name());
+        if (DBG) P.v("setupLayout : state : " + state.name());
         switch(state) {
         case IDLE:
             if (mCurUrl.equals(mFileUrl)) {
@@ -319,7 +322,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onPause() {
-        //logI("==> ItemListActivity : onPause");
+        //if (DBG) P.v("onPause");
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
         mRtt.unregisterRegisterEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
@@ -330,7 +333,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onStop() {
-        //logI("==> ItemListActivity : onStop");
+        //if (DBG) P.v("onStop");
         super.onStop();
     }
 

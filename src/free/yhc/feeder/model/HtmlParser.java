@@ -27,6 +27,8 @@ import android.text.Html;
 // Private implementation is NOT used.
 // Now this is just wrapper of predefined Html class of Android.
 class HtmlParser {
+    private static final Utils.Logger P = new Utils.Logger(HtmlParser.class);
+
     private static final String[] sTagsRegex = new String[] {
         "\\!\\-\\-",
         "\\!DOCTYPE",

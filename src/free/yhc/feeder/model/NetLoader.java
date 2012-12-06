@@ -20,8 +20,8 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logW;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -46,6 +46,8 @@ import org.xml.sax.SAXException;
 import android.graphics.Bitmap;
 
 public class NetLoader {
+    private static final Utils.Logger P = new Utils.Logger(NetLoader.class);
+
     private static final int NET_RETRY = 3;
     private static final int NET_CONN_TIMEOUT = 5000;
 
@@ -226,7 +228,7 @@ public class NetLoader {
                    throw new FeederException(Err.USER_CANCELLED);
                else {
                    e.printStackTrace();
-                   logW(e.getMessage());
+                   if (DBG) P.w(e.getMessage());
                    throw new FeederException(Err.IO_NET);
                }
            } finally {

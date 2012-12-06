@@ -45,6 +45,8 @@ import free.yhc.feeder.model.Utils;
 
 public class ItemListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
+    private static final Utils.Logger P = new Utils.Logger(ItemListAdapter.class);
+
     private final DBPolicy  mDbp = DBPolicy.get();
     private final RTTask    mRtt = RTTask.get();
 

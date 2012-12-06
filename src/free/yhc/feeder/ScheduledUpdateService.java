@@ -20,8 +20,8 @@
 
 package free.yhc.feeder;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logW;
 
 import java.util.Calendar;
 import java.util.Comparator;
@@ -54,6 +54,8 @@ import free.yhc.feeder.model.Utils;
 // (See channelListAdapter for 'age' time)
 public class ScheduledUpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(ScheduledUpdateService.class);
+
     // Should match manifest's intent filter
     private static final String SCHEDUPDATE_INTENT_ACTION = "feeder.intent.action.SCHEDULED_UPDATE";
     // Wakelock
@@ -421,9 +423,9 @@ UnexpectedExceptionHandler.TrackedModule {
         if (schedTime < 0 // something wrong!!
             || calNow.getTimeInMillis() < schedTime // scheduled too early
             || calNow.getTimeInMillis() > schedTime + Utils.HOUR_IN_MS) { // scheduled too late
-            logW("WARN : ScheduledUpdateService : weired scheduling!!!\n" +
-                 "    scheduled time(ms) : " + schedTime + "\n" +
-                 "    current time(ms)   : " + calNow.getTimeInMillis());
+            if (DBG) P.w("WARN : ScheduledUpdateService : weired scheduling!!!\n" +
+                         "    scheduled time(ms) : " + schedTime + "\n" +
+                         "    current time(ms)   : " + calNow.getTimeInMillis());
             scheduleNextUpdate(calNow);
             return;
         }
@@ -491,7 +493,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
                 synchronized (mTaskset) {
                     if (!mTaskset.add(cid)) {
-                        logW("doCmdAlarm : starts duplicated update! : " + cid);
+                        if (DBG) P.w("doCmdAlarm : starts duplicated update! : " + cid);
                     }
                 }
                 mRtt.start(cid, RTTask.Action.UPDATE);

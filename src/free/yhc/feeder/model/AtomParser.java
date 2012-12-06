@@ -31,6 +31,8 @@ import org.w3c.dom.Node;
 
 public class AtomParser extends FeedParser implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(AtomParser.class);
+
     // parsing priority of namespace supported (larger number has priority)
     private static final short PRI_DEFAULT = 3;
     private static final short PRI_MEDIA   = 2;

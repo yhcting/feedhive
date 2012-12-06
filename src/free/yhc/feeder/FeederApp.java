@@ -31,6 +31,8 @@ import free.yhc.feeder.model.UsageReport;
 import free.yhc.feeder.model.Utils;
 
 public class FeederApp extends Application {
+    private static final Utils.Logger P = new Utils.Logger(FeederApp.class);
+
     @Override
     public void
     onConfigurationChanged(Configuration newConfig) {

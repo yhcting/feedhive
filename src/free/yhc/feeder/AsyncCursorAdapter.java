@@ -25,9 +25,12 @@ import android.content.Context;
 import android.database.Cursor;
 import free.yhc.feeder.model.DB;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class AsyncCursorAdapter extends AsyncAdapter implements
 AsyncAdapter.DataProvider {
+    private static final Utils.Logger P = new Utils.Logger(AsyncCursorAdapter.class);
+
     private final Object    mCurlock = new Object();
 
     private Cursor          mCur;

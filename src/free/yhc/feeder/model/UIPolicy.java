@@ -35,6 +35,8 @@ import android.preference.PreferenceManager;
  */
 public class UIPolicy implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(UIPolicy.class);
+
     public static final String  PREF_KEY_APP_ROOT = "app_root";
     public static final long    USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
 

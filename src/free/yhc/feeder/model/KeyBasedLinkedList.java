@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 public class KeyBasedLinkedList<T> {
+    private static final Utils.Logger P = new Utils.Logger(KeyBasedLinkedList.class);
+
     private LinkedList<Elem> mL = new LinkedList<Elem>();
 
     private static class Elem {

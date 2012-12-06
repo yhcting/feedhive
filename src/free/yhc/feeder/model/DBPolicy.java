@@ -20,9 +20,8 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
-import static free.yhc.feeder.model.Utils.logW;
 
 import java.io.File;
 import java.util.Date;
@@ -56,6 +55,8 @@ import free.yhc.feeder.model.DB.ColumnItem;
 // Singleton
 public class DBPolicy implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(DBPolicy.class);
+
     // Checking duplication inside whole DB is very very inefficient.
     // It requires extremely frequent and heavy DB access.
     // So, instead of comparing with whole DB, just compare with enough large number of
@@ -577,7 +578,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public Err
     getNewItems(long cid, Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
         eAssert(null != items);
-        logI("UpdateChannel DB Section Start : cid[" + cid + "]");
+        if (DBG) P.v("UpdateChannel DB Section Start : cid[" + cid + "]");
 
         if (0 == items.length)
             return Err.NO_ERR;
@@ -646,8 +647,8 @@ UnexpectedExceptionHandler.TrackedModule {
         nrscope = (nrscope < DUP_SCOPE_MIN)? DUP_SCOPE_MIN: nrscope;
 
         if (nrscope > DUP_SCOPE_WARNING)
-            logW("DB Update : Number of scope to check duplication is unexpectedly big! : " + nrscope + "\n" +
-                 "    OOM is concerned!!");
+            if (DBG) P.w("DB Update : Number of scope to check duplication is unexpectedly big! : " + nrscope + "\n" +
+                         "    OOM is concerned!!");
 
         final int idI        = 0;
         final int linkI      = 1;
@@ -697,9 +698,9 @@ UnexpectedExceptionHandler.TrackedModule {
                                                 c.getString(linkI),
                                                 c.getString(enclosureI)));
                     } else {
-                        logW("Duplicated Item in DB - This is unexpected but not harmful.\n" +
-                             "    main key : " + mainKey + "\n" +
-                             "    sub key  : " + subKey + "\n");
+                        if (DBG) P.w("Duplicated Item in DB - This is unexpected but not harmful.\n" +
+                                     "    main key : " + mainKey + "\n" +
+                                     "    sub key  : " + subKey + "\n");
                     }
                     checkDelayedChannelUpdate();
                     checkInterrupted();
@@ -757,9 +758,9 @@ UnexpectedExceptionHandler.TrackedModule {
                         !(item.link.equals(iurls.link)
                             && item.enclosureUrl.equals(iurls.enclosure))) {
                         if (iurls.id < 0) {
-                            logW("Channel includes same title/pubDate but different link or enclosure url!\n" +
-                                 "    title " + mainKey + "\n" +
-                                 "    pubDate" + subKey + "\n");
+                            if (DBG) P.w("Channel includes same title/pubDate but different link or enclosure url!\n" +
+                                         "    title " + mainKey + "\n" +
+                                         "    pubDate" + subKey + "\n");
                         } else {
                             // Item information is updated with different value.
                             // Let's update DB!
@@ -795,7 +796,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public int
     updateChannel(long cid, Feed.Channel.ParD ch, LinkedList<Feed.Item.ParD> newItems, ItemDataOpInterface idop)
             throws FeederException {
-        logI("UpdateChannel DB Section Start : " + cid);
+        if (DBG) P.v("UpdateChannel DB Section Start : " + cid);
 
         String oldTitle = getChannelInfoString(cid, ColumnChannel.TITLE);
         if (!oldTitle.equals(ch.title)) {
@@ -871,13 +872,13 @@ UnexpectedExceptionHandler.TrackedModule {
             checkDelayedChannelUpdate();
             checkInterrupted();
         }
-        logI("DBPolicy : new " + newItems.size() + " items are inserted");
+        if (DBG) P.v("DBPolicy : new " + newItems.size() + " items are inserted");
         mDb.updateChannel(cid, ColumnChannel.LASTUPDATE, new Date().getTime());
 
         if (newItems.size() > 0)
             notifyNewItemsUpdated(cid, newItems.size());
 
-        logI("UpdateChannel DB Section End");
+        if (DBG) P.v("UpdateChannel DB Section End");
         return 0;
     }
 

@@ -33,6 +33,7 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.http.impl.cookie.DateParseException;
@@ -53,8 +54,21 @@ import android.webkit.MimeTypeMap;
 import android.widget.TextView;
 
 public class Utils {
-    public static final boolean DBG = true;
+    private static final Logger P = new Logger(Utils.class);
 
+    // ========================================================================
+    // FOR LOGGING
+    // ========================================================================
+    public static final boolean DBG = false;
+    private static HashSet<Class> sLoggingClassMap = new HashSet<Class>();
+    // Empty sLoggingClasses means "Full Log".
+    private static Class[] sLoggingClasses = new Class[] {
+
+    };
+
+    // ========================================================================
+    //
+    // ========================================================================
     // ext2, ext3, ext4 allows 255 bytes for filename.
     // but 'char' type in java is 2byte (16-bit unicode).
     // So, maximum character for filename in java on extN is 127.
@@ -66,9 +80,6 @@ public class Utils {
     public static final long   DAY_IN_MS    = 24 * HOUR_IN_MS;
     public static final int    HOUR_IN_SEC  = 60 * 60;
     public static final int    DAY_IN_SEC   = 24 * HOUR_IN_SEC;
-
-
-    private static final String TAG = "[Feeder]";
 
     // This is only for debugging.
     private static boolean  sInitialized = false;
@@ -183,10 +194,28 @@ public class Utils {
         }
     }
 
+    public static class Logger {
+        private final Class _mCls;
+        public Logger(Class cls) {
+            _mCls = cls;
+        }
+        // For logging
+        public void v(String msg) { log(_mCls, LogLV.V, msg); }
+        public void d(String msg) { log(_mCls, LogLV.D, msg); }
+        public void i(String msg) { log(_mCls, LogLV.I, msg); }
+        public void w(String msg) { log(_mCls, LogLV.W, msg); }
+        public void e(String msg) { log(_mCls, LogLV.E, msg); }
+        public void f(String msg) { log(_mCls, LogLV.F, msg); }
+    }
+
     // =======================
     // Private
     // =======================
     static {
+        if (DBG) {
+            for (Class c : sLoggingClasses)
+                sLoggingClassMap.add(c);
+        }
         if (ENABLE_LOGF) {
             try {
                 File logf = new File(LOGF);
@@ -222,8 +251,10 @@ public class Utils {
     }
 
     private static void
-    log(LogLV lv, String msg) {
-        if (!DBG || null == msg)
+    log(Class cls, LogLV lv, String msg) {
+        eAssert(DBG);
+
+        if (null == msg)
             return;
 
         if (ENABLE_LOGF) {
@@ -232,13 +263,17 @@ public class Utils {
                 sLogout.flush();
             } catch (IOException e) {}
         } else {
+            if (!sLoggingClassMap.isEmpty()
+                && !sLoggingClassMap.contains(cls))
+                return;
+
             switch(lv) {
-            case V: Log.v(TAG, msg); break;
-            case D: Log.d(TAG, msg); break;
-            case I: Log.i(TAG, msg); break;
-            case W: Log.w(TAG, msg); break;
-            case E: Log.e(TAG, msg); break;
-            case F: Log.wtf(TAG, msg); break;
+            case V: Log.v(cls.getSimpleName(), msg); break;
+            case D: Log.d(cls.getSimpleName(), msg); break;
+            case I: Log.i(cls.getSimpleName(), msg); break;
+            case W: Log.w(cls.getSimpleName(), msg); break;
+            case E: Log.e(cls.getSimpleName(), msg); break;
+            case F: Log.wtf(cls.getSimpleName(), msg); break;
             }
         }
     }
@@ -265,14 +300,6 @@ public class Utils {
         if (!cond)
             throw new AssertionError();
     }
-
-    // For logging
-    public static void logV(String msg) { log(LogLV.V, msg); }
-    public static void logD(String msg) { log(LogLV.D, msg); }
-    public static void logI(String msg) { log(LogLV.I, msg); }
-    public static void logW(String msg) { log(LogLV.W, msg); }
-    public static void logE(String msg) { log(LogLV.E, msg); }
-    public static void logF(String msg) { log(LogLV.F, msg); }
 
     // ------------------------------------------------------
     // To handle generic array
@@ -388,7 +415,7 @@ public class Utils {
             for (int i = 0; i < times.length; i++)
                 times[i] = Long.parseLong(timestrs[i]);
         } catch (NumberFormatException e) {
-            logW("Invalid time string! [" + timeString + "]");
+            if (DBG) P.w("Invalid time string! [" + timeString + "]");
             eAssert(false);
         }
         return times;
@@ -560,7 +587,7 @@ public class Utils {
         long time = System.currentTimeMillis();
         ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
         bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);
-        logI("TIME: Compress Image : " + (System.currentTimeMillis() - time));
+        if (DBG) P.v("TIME: Compress Image : " + (System.currentTimeMillis() - time));
         return baos.toByteArray();
     }
 

@@ -7,8 +7,11 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ListView;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class AsyncCursorListAdapter extends AsyncCursorAdapter {
+    private static final Utils.Logger P = new Utils.Logger(AsyncCursorListAdapter.class);
+
     private static final int INVALID_POS = -1;
     private static final DataProvideStateHandler   sDpsHandler = new DataProvideStateHandler();
 

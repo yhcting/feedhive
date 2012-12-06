@@ -30,10 +30,13 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 public class FeederPreferenceActivity extends PreferenceActivity implements
 SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(FeederPreferenceActivity.class);
+
     private final UIPolicy      mUip = UIPolicy.get();
     private final LookAndFeel   mLnf = LookAndFeel.get();
 

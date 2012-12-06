@@ -21,7 +21,10 @@
 package free.yhc.feeder.model;
 
 
+
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
+    private static final Utils.Logger P = new Utils.Logger(BGTaskUpdateChannel.class);
+
     private volatile NetLoader mLoader = null;
 
     public static class Arg {

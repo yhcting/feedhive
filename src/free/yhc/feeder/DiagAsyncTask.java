@@ -37,6 +37,8 @@ public class DiagAsyncTask extends ThreadEx<Err> implements
 UnexpectedExceptionHandler.TrackedModule,
 DialogInterface.OnDismissListener,
 View.OnClickListener {
+    private static final Utils.Logger P = new Utils.Logger(DiagAsyncTask.class);
+
     private Context         mContext        = null;
     private ProgressDialog  mDialog         = null;
     private CharSequence    mTitle          = null;

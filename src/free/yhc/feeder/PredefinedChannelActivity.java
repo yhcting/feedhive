@@ -54,6 +54,8 @@ import free.yhc.feeder.model.Utils;
 
 public class PredefinedChannelActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(PredefinedChannelActivity.class);
+
     // ========================================================================
     //
     // Constants for DB

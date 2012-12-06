@@ -20,8 +20,8 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,6 +30,8 @@ import org.w3c.dom.Node;
 import android.text.Html;
 
 public abstract class FeedParser {
+    private static final Utils.Logger P = new Utils.Logger(FeedParser.class);
+
     // Result data format from parse.
     static class Result {
         Feed.Channel.ParD channel = new Feed.Channel.ParD();
@@ -204,7 +206,7 @@ public abstract class FeedParser {
             msg = msg + " / " + n.getNodeName();
             n = n.getNextSibling();
         }
-        logI(msg + "\n");
+        if (DBG) P.d(msg + "\n");
     }
 
     protected final void

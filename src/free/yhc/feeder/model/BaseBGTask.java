@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 public abstract class BaseBGTask extends ThreadEx<Err> {
+    private static final Utils.Logger P = new Utils.Logger(BaseBGTask.class);
+
     // Event if this is KeyBasedLinkedList, DO NOT USE KeyBasedLinkedList.
     // Using KeyBasedLinkedList here just increases code complexity.
     // Accessed only on 'Owner's thread context'.

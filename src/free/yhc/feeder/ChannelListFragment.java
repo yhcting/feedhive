@@ -1,7 +1,7 @@
 package free.yhc.feeder;
 
+import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.logI;
 
 import java.util.Calendar;
 import java.util.HashSet;
@@ -47,6 +47,8 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListFragment extends Fragment implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final Utils.Logger P = new Utils.Logger(ChannelListFragment.class);
+
     private static final int DATA_ARR_MAX       = 100;
     private static final int DATA_REQ_SZ        = 20;
     private static final int REQC_PICK_IMAGE    = 0;
@@ -69,7 +71,6 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onUpdateClick(ImageView ibtn, long cid) {
-            //logI("ChannelList : update cid : " + cid);
             onContextBtn_channelUpdate(ibtn, cid);
         }
 
@@ -239,8 +240,6 @@ UnexpectedExceptionHandler.TrackedModule {
             String filePath = c.getString(columnIndex);
             c.close();
 
-            //logI("Pick Icon : file [" + filePath + "]");
-
             // Make url string from file path
             _mBm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
             byte[] imageData = Utils.compressBitmap(_mBm);
@@ -359,7 +358,7 @@ UnexpectedExceptionHandler.TrackedModule {
         RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
         switch (state) {
         case IDLE: {
-            //logI("ChannelList : update : " + cid);
+            //if (DBG) P.v("update : " + cid);
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
             mRtt.register(cid, RTTask.Action.UPDATE, task);
             mRtt.start(cid, RTTask.Action.UPDATE);
@@ -368,7 +367,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         case RUNNING:
         case READY:
-            //logI("ChannelList : cancel : " + cid);
+            //if (DBG) P.v("cancel : " + cid);
             mRtt.cancel(cid, RTTask.Action.UPDATE, null);
             // to change icon into "canceling"
             dataSetChanged(cid);
@@ -694,7 +693,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onStart() {
         super.onStart();
-        logI("Fragment : onStart");
+        if (DBG) P.v("Fragment : onStart");
     }
 
     @Override
@@ -788,7 +787,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onStop() {
-        logI("Fragment : onStop");
+        if (DBG) P.v("Fragment : onStop");
         super.onStop();
     }
     @Override
