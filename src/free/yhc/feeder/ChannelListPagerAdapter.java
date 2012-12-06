@@ -127,9 +127,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapter {
     public Fragment
     getItem(int position) {
         if (DBG) P.v("getItem : " + position);
-        if (null == mFragments[position])
-            mFragments[position] = ChannelListFragment.newInstance(this, mCatIds[position]);
-
+        mFragments[position] = ChannelListFragment.newInstance(this, mCatIds[position]);
         mFragments[position].setToActive(mActive == position);
         return mFragments[position];
     }
