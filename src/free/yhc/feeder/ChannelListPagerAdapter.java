@@ -4,19 +4,19 @@ import static free.yhc.feeder.model.Utils.DBG;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.util.Log;
 import android.view.ViewGroup;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.Utils;
 
-public class ChannelListPagerAdapter extends FragmentPagerAdapter {
+public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     private static final Utils.Logger P = new Utils.Logger(ChannelListPagerAdapter.class);
 
     private final DBPolicy          mDbp = DBPolicy.get();
     private long[]                  mCatIds;
     private ChannelListFragment[]   mFragments;
-    private int                     mActive = -1;
+    private int                     mPrimary = -1;
 
     private void
     reset(Feed.Category[] cats) {
@@ -90,31 +90,29 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapter {
     }
 
     public ChannelListFragment
-    getFragment(long catId) {
-        int i = getPosition(catId);
-        if (i < 0)
-            return null;
+    getPrimaryFragment() {
+        return (ChannelListFragment) super.getCurrentPrimaryFragment();
+    }
 
-        return mFragments[i];
+    public ChannelListFragment
+    getFragment(long catId) {
+        String fragmentName = super.getFragmentName(getPosition(catId));
+        return (ChannelListFragment)getFragmentManager().findFragmentByTag(fragmentName);
     }
 
     @Override
     public void
     setPrimaryItem(ViewGroup container, int position, Object object) {
-        int oldi = mActive;
-        int newi = position;
-        if (oldi != newi) {
-            try {
-                if (null != mFragments[oldi])
-                    mFragments[oldi].setToActive(false);
-            } catch (ArrayIndexOutOfBoundsException ignored) { }
-            mActive = newi;
-            try {
-                if (null != mFragments[newi])
-                    mFragments[newi].setToActive(true);
-            } catch (ArrayIndexOutOfBoundsException ignored) { }
-        }
+        Log.d(this.getClass().getSimpleName(), "setPrimaryItem : " + position);
+        ChannelListFragment oldf = getPrimaryFragment();
         super.setPrimaryItem(container, position, object);
+        ChannelListFragment newf = getPrimaryFragment();
+        if (oldf != newf) {
+            if (null != oldf)
+                oldf.setToPrimary(false);
+            if (null != newf)
+                newf.setToPrimary(true);
+        }
     }
 
     @Override
@@ -127,9 +125,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapter {
     public Fragment
     getItem(int position) {
         if (DBG) P.v("getItem : " + position);
-        mFragments[position] = ChannelListFragment.newInstance(this, mCatIds[position]);
-        mFragments[position].setToActive(mActive == position);
-        return mFragments[position];
+        return ChannelListFragment.newInstance(this, mCatIds[position]);
     }
 
     @Override

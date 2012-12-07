@@ -59,7 +59,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private final RTTask        mRtt = RTTask.get();
     private final UIPolicy      mUip = UIPolicy.get();
 
-    private boolean mActive = false;
+    private boolean mPrimary = false;
     private ChannelListPagerAdapter mPagerAdapter = null;
     private long    mCatId  =   0;
 
@@ -278,6 +278,11 @@ UnexpectedExceptionHandler.TrackedModule {
         public void onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
+    private ChannelListActivity
+    getMyActivity() {
+        return (ChannelListActivity)getActivity();
+    }
+
 
     private ChannelListAdapter
     getAdapter() {
@@ -348,7 +353,9 @@ UnexpectedExceptionHandler.TrackedModule {
     changeCategory(long cid, long catTo) {
         mDbp.updateChannel(cid, DB.ColumnChannel.CATEGORYID, catTo);
         getAdapter().removeItem(getAdapter().findPosition(cid));
-        mPagerAdapter.getFragment(catTo).refreshListAsync();
+        ChannelListFragment fragmentTo = mPagerAdapter.getFragment(catTo);
+        if (null != fragmentTo)
+            fragmentTo.refreshListAsync();
         dataSetChanged();
         return true;
     }
@@ -518,11 +525,11 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     public void
-    setToActive(boolean active) {
-        mActive = active;
+    setToPrimary(boolean primary) {
+        mPrimary = primary;
         if (null != getActivity()
             && null != mListView) {
-            if (active)
+            if (primary)
                 getActivity().registerForContextMenu(mListView);
             else
                 getActivity().unregisterForContextMenu(mListView);
@@ -543,10 +550,16 @@ UnexpectedExceptionHandler.TrackedModule {
             .run();
     }
 
+    public long
+    getCategoryId() {
+        return mCatId;
+    }
+
     @Override
     public boolean
     onContextItemSelected(MenuItem mItem) {
-        if (!mActive)
+        if (!mPrimary
+            || !getMyActivity().isContextMenuOwner(this))
             return false;
 
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)mItem.getMenuInfo();
@@ -577,7 +590,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public void
     onCreateContextMenu2(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-        eAssert(mActive);
+        eAssert(mPrimary);
         MenuInflater inflater = getActivity().getMenuInflater();
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
@@ -671,7 +684,7 @@ UnexpectedExceptionHandler.TrackedModule {
         });
         ScrollView sv = (ScrollView)ll.findViewById(R.id.empty_list);
         mListView.setEmptyView(sv);
-        setToActive(mActive);
+        setToPrimary(mPrimary);
         return ll;
     }
 

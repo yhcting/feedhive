@@ -74,9 +74,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private final LookAndFeel   mLnf = LookAndFeel.get();
 
     private ActionBar                   mAb             = null;
-    private ChannelListPagerAdapter     mPagerAdapter   = null;;
     private ViewPager                   mPager          = null;
-
+    private ChannelListFragment         mContextMenuOwner = null;
 
     private final ViewPager.OnPageChangeListener mPCListener = new OnPageViewChange();
 
@@ -100,6 +99,8 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPageScrollStateChanged(int arg0) {
             if (DBG) P.v("OnPageViewChange : onPageScrollStateChanged : " + arg0);
+            // Fragment is changed. So, context menu is no more valid.
+            ChannelListActivity.this.closeContextMenu();
         }
     }
 
@@ -134,6 +135,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return (TabTag)tab.getTag();
     }
 
+    private ChannelListPagerAdapter
+    getPagerAdapter() {
+        if (null != mPager)
+            return (ChannelListPagerAdapter)mPager.getAdapter();
+        return null;
+    }
+
     private void
     selectDefaultAsSelected() {
         // 0 is index of default tab
@@ -147,7 +155,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private long
     getCurrentCategoryId() {
-        return getCategoryId(mAb.getSelectedTab());
+        return getPagerAdapter().getPrimaryFragment().getCategoryId();
     }
 
     private Tab
@@ -170,8 +178,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         tab.setTag(tag);
         mAb.addTab(tab, false);
-        if (null != mPagerAdapter)
-            mPagerAdapter.newCategoryAdded(cat.id);
+        if (null != getPagerAdapter())
+            getPagerAdapter().newCategoryAdded(cat.id);
         return tab;
     }
 
@@ -185,8 +193,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         Tab curTab = mAb.getSelectedTab();
         mAb.removeTab(curTab);
-        if (null != mPagerAdapter)
-            mPagerAdapter.categoryDeleted(categoryid);
+        if (null != getPagerAdapter())
+            getPagerAdapter().categoryDeleted(categoryid);
         selectDefaultAsSelected();
     }
 
@@ -224,7 +232,7 @@ UnexpectedExceptionHandler.TrackedModule {
         mRtt.start(cid, RTTask.Action.UPDATE);
         ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
 
-        mPagerAdapter.getFragment(getCurrentCategoryId()).refreshListAsync();
+        getPagerAdapter().getPrimaryFragment().refreshListAsync();
     }
 
 
@@ -400,7 +408,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_category_delete(final View anchor) {
-        final long categoryid = getCategoryId(mAb.getSelectedTab());
+        final long categoryid = getCurrentCategoryId();
         if (mDbp.isDefaultCategoryId(categoryid)) {
             mLnf.showTextToast(this, R.string.warn_delete_default_category);
             return;
@@ -666,6 +674,11 @@ UnexpectedExceptionHandler.TrackedModule {
         });
     }
 
+    public boolean
+    isContextMenuOwner(ChannelListFragment fragment) {
+        return fragment == mContextMenuOwner;
+    }
+
     @Override
     public void
     onTabSelected(Tab tab, FragmentTransaction ft) {
@@ -680,7 +693,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onTabReselected(Tab tab, FragmentTransaction ft) {
-        mPager.setCurrentItem(mPagerAdapter.getPosition(getTag(tab).categoryid));
+        mPager.setCurrentItem(getPagerAdapter().getPosition(getTag(tab).categoryid));
     }
 
     @Override
@@ -705,7 +718,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        mPagerAdapter.getFragment(getCurrentCategoryId()).onCreateContextMenu2(menu, v, menuInfo);
+        mContextMenuOwner = getPagerAdapter().getPrimaryFragment();;
+        mContextMenuOwner.onCreateContextMenu2(menu, v, menuInfo);
     }
 
     @Override
@@ -745,9 +759,9 @@ UnexpectedExceptionHandler.TrackedModule {
             addCategory(cat);
 
         mPager = (ViewPager)findViewById(R.id.pager);
-        mPagerAdapter = new ChannelListPagerAdapter(getSupportFragmentManager(),
-                                                    cats);
-        mPager.setAdapter(mPagerAdapter);
+        ChannelListPagerAdapter adapter = new ChannelListPagerAdapter(getSupportFragmentManager(),
+                                                                      cats);
+        mPager.setAdapter(adapter);
 
         selectDefaultAsSelected();
 
