@@ -679,6 +679,13 @@ UnexpectedExceptionHandler.TrackedModule {
         return fragment == mContextMenuOwner;
     }
 
+    public void
+    categoryDataSetChanged(long catId) {
+        ChannelListFragment fragmentTo = getPagerAdapter().getFragment(catId);
+        if (null != fragmentTo)
+            fragmentTo.refreshListAsync();
+    }
+
     @Override
     public void
     onTabSelected(Tab tab, FragmentTransaction ft) {

@@ -53,6 +53,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final int DATA_REQ_SZ        = 20;
     private static final int REQC_PICK_IMAGE    = 0;
 
+    private static final String KEY_CATID       = "categoryid";
+    private static final String KEY_PRIMARY     = "primary";
+
 
     private final LookAndFeel   mLnf = LookAndFeel.get();
     private final DBPolicy      mDbp = DBPolicy.get();
@@ -60,8 +63,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private final UIPolicy      mUip = UIPolicy.get();
 
     private boolean mPrimary = false;
-    private ChannelListPagerAdapter mPagerAdapter = null;
-    private long    mCatId  =   0;
+    private long    mCatId  =   -1;
 
     private ListView    mListView = null;
     // Saved cid for Async execution.
@@ -353,9 +355,7 @@ UnexpectedExceptionHandler.TrackedModule {
     changeCategory(long cid, long catTo) {
         mDbp.updateChannel(cid, DB.ColumnChannel.CATEGORYID, catTo);
         getAdapter().removeItem(getAdapter().findPosition(cid));
-        ChannelListFragment fragmentTo = mPagerAdapter.getFragment(catTo);
-        if (null != fragmentTo)
-            fragmentTo.refreshListAsync();
+        getMyActivity().categoryDataSetChanged(catTo);
         dataSetChanged();
         return true;
     }
@@ -475,25 +475,6 @@ UnexpectedExceptionHandler.TrackedModule {
             mLnf.showTextToast(getActivity(), R.string.warn_find_gallery_app);
             return;
         }
-    }
-
-
-    static ChannelListFragment
-    newInstance(ChannelListPagerAdapter pagerAdapter, long catId) {
-        ChannelListFragment frag = new ChannelListFragment();
-        frag.setCategoryId(catId);
-        frag.setPagerAdapter(pagerAdapter);
-        return frag;
-    }
-
-    private void
-    setCategoryId(long catId) {
-        mCatId = catId;
-    }
-
-    private void
-    setPagerAdapter(ChannelListPagerAdapter pagerAdapter) {
-        mPagerAdapter = pagerAdapter;
     }
 
     private void
@@ -642,6 +623,18 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    public static ChannelListFragment
+    newInstance(long catId) {
+        ChannelListFragment f = new ChannelListFragment();
+        f.initialize(catId);
+        return f;
+    }
+
+    public void
+    initialize(long catId) {
+        mCatId = catId;
+    }
+
     @Override
     public void
     onAttach(Activity activity) {
@@ -651,8 +644,31 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
+    onSaveInstanceState(Bundle outState) {
+        outState.putLong(KEY_CATID, mCatId);
+        outState.putBoolean(KEY_PRIMARY, mPrimary);
+    }
+
+    private void
+    restoreInstanceState(Bundle data) {
+        if (null == data)
+            return;
+
+        mCatId = data.getLong(KEY_CATID, mCatId);
+        mPrimary = data.getBoolean(KEY_PRIMARY, mPrimary);
+    }
+
+    @Override
+    public void
+    onViewStateRestored(Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+    }
+
+    @Override
+    public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        restoreInstanceState(savedInstanceState);
     }
 
     @Override
@@ -693,14 +709,6 @@ UnexpectedExceptionHandler.TrackedModule {
     onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
     }
-
-    /* requires api level 17
-    @Override
-    public void
-    onViewStateRestored(Bundle savedInstanceState) {
-
-    }
-    */
 
     @Override
     public void

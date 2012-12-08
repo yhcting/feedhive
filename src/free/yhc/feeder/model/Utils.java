@@ -63,7 +63,6 @@ public class Utils {
     private static HashSet<Class> sLoggingClassMap = new HashSet<Class>();
     // Empty sLoggingClasses means "Full Log".
     private static Class[] sLoggingClasses = new Class[] {
-
     };
 
     // ========================================================================

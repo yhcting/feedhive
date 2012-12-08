@@ -9,8 +9,11 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.PagerAdapter;
 import android.view.View;
 import android.view.ViewGroup;
+import free.yhc.feeder.model.Utils;
 
 public abstract class FragmentPagerAdapterEx extends PagerAdapter {
+    private static final Utils.Logger P = new Utils.Logger(FragmentPagerAdapterEx.class);
+
     private static final AtomicInteger sId = new AtomicInteger(0);
 
     private final int mId;
@@ -56,17 +59,20 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
     @Override
     public Object
     instantiateItem(ViewGroup container, int position) {
-        if (mCurTransaction == null) {
+        if (mCurTransaction == null)
             mCurTransaction = mFragmentManager.beginTransaction();
-        }
 
         // Do we already have this fragment?
         String name = getFragmentName(position);
         Fragment fragment = mFragmentManager.findFragmentByTag(name);
-        if (fragment != null)
+        if (fragment != null) {
             mCurTransaction.attach(fragment);
-        else {
+            P.d("instanciateItem : fragment reused(" + fragment.toString()
+                    + ") : position(" + position + "), name(" + name + ")");
+        } else {
             fragment = getItem(position);
+            P.d("instanciateItem : fragment by getItem(" + fragment.toString()
+                    + ": position(" + position + "), name(" + name + ")");
             mCurTransaction.add(container.getId(),
                                 fragment,
                                 getFragmentName(position));
@@ -85,6 +91,8 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
     destroyItem(ViewGroup container, int position, Object object) {
         if (mCurTransaction == null)
             mCurTransaction = mFragmentManager.beginTransaction();
+        String name = getFragmentName(position);
+        P.d("destroyItem : position(" + position + "), name(" + name + ")");
         mCurTransaction.detach((Fragment)object);
         mCurTransaction.remove((Fragment)object);
     }
@@ -125,10 +133,12 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
     @Override
     public Parcelable
     saveState() {
-        return null;
+        return super.saveState();
     }
 
     @Override
     public void
-    restoreState(Parcelable state, ClassLoader loader) { }
+    restoreState(Parcelable state, ClassLoader loader) {
+        super.restoreState(state, loader);
+    }
 }

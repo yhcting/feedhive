@@ -4,7 +4,6 @@ import static free.yhc.feeder.model.Utils.DBG;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.util.Log;
 import android.view.ViewGroup;
 import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Feed;
@@ -16,7 +15,6 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     private final DBPolicy          mDbp = DBPolicy.get();
     private long[]                  mCatIds;
     private ChannelListFragment[]   mFragments;
-    private int                     mPrimary = -1;
 
     private void
     reset(Feed.Category[] cats) {
@@ -103,7 +101,6 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     @Override
     public void
     setPrimaryItem(ViewGroup container, int position, Object object) {
-        Log.d(this.getClass().getSimpleName(), "setPrimaryItem : " + position);
         ChannelListFragment oldf = getPrimaryFragment();
         super.setPrimaryItem(container, position, object);
         ChannelListFragment newf = getPrimaryFragment();
@@ -125,12 +122,14 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     public Fragment
     getItem(int position) {
         if (DBG) P.v("getItem : " + position);
-        return ChannelListFragment.newInstance(this, mCatIds[position]);
+        return ChannelListFragment.newInstance(mCatIds[position]);
+
     }
 
     @Override
     public long
     getItemId(int position) {
+        if (DBG) P.v("getItemId : " + position + "/" + mCatIds[position]);
         return mCatIds[position];
     }
 
