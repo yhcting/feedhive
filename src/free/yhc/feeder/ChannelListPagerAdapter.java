@@ -1,7 +1,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.DBG;
-import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.view.ViewGroup;
@@ -131,20 +130,6 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     getItemId(int position) {
         if (DBG) P.v("getItemId : " + position + "/" + mCatIds[position]);
         return mCatIds[position];
-    }
-
-    @Override
-    public Parcelable
-    saveState() {
-        if (DBG) P.v("saveState()");
-        return super.saveState();
-    }
-
-    @Override
-    public void
-    restoreState(Parcelable state, ClassLoader loader) {
-        if (DBG) P.v("restoreState");
-        super.restoreState(state, loader);
     }
 
     @Override

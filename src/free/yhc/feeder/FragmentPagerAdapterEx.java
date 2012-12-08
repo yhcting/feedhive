@@ -2,6 +2,7 @@ package free.yhc.feeder;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -15,6 +16,8 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
     private static final Utils.Logger P = new Utils.Logger(FragmentPagerAdapterEx.class);
 
     private static final AtomicInteger sId = new AtomicInteger(0);
+
+    private static final String KEY_PARENT_STATE = "FragmentPagerAdapterEx:parent_state";
 
     private final int mId;
     private final FragmentManager mFragmentManager;
@@ -67,12 +70,8 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
         Fragment fragment = mFragmentManager.findFragmentByTag(name);
         if (fragment != null) {
             mCurTransaction.attach(fragment);
-            P.d("instanciateItem : fragment reused(" + fragment.toString()
-                    + ") : position(" + position + "), name(" + name + ")");
         } else {
             fragment = getItem(position);
-            P.d("instanciateItem : fragment by getItem(" + fragment.toString()
-                    + ": position(" + position + "), name(" + name + ")");
             mCurTransaction.add(container.getId(),
                                 fragment,
                                 getFragmentName(position));
@@ -130,15 +129,26 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
         return ((Fragment)object).getView() == view;
     }
 
+    protected void
+    onSaveInstanceState(Bundle outState) { }
+
+    protected void
+    onRestoreInstanceState(Bundle inState) { }
+
     @Override
-    public Parcelable
+    public final Parcelable
     saveState() {
-        return super.saveState();
+        Bundle data = new Bundle();
+        data.putParcelable(KEY_PARENT_STATE, super.saveState());
+        onSaveInstanceState(data);
+        return data;
     }
 
     @Override
-    public void
+    public final void
     restoreState(Parcelable state, ClassLoader loader) {
-        super.restoreState(state, loader);
+        Bundle data = (Bundle)state;
+        super.restoreState((null == data)? null: data.getParcelable(KEY_PARENT_STATE), loader);
+        onRestoreInstanceState(data);
     }
 }
