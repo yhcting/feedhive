@@ -1,5 +1,6 @@
 package free.yhc.feeder;
 
+import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.view.ViewGroup;
@@ -160,4 +161,15 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
         super.destroyItem(container, position, object);
     }
 
+    @Override
+    protected void
+    onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void
+    onRestoreInstanceState(Bundle inState) {
+        super.onRestoreInstanceState(inState);
+    }
 }
