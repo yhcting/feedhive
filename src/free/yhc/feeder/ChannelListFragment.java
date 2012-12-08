@@ -1,6 +1,5 @@
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.util.Calendar;
@@ -47,6 +46,7 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListFragment extends Fragment implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelListFragment.class);
 
     private static final int DATA_ARR_MAX       = 100;

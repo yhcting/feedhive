@@ -20,7 +20,6 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.lang.reflect.Method;
@@ -38,6 +37,7 @@ import android.provider.BaseColumns;
 // This is singleton
 public final class DB extends SQLiteOpenHelper implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(DB.class);
 
     private static DB sInstance = null;

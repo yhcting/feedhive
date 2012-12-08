@@ -33,7 +33,6 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 
 import org.apache.http.impl.cookie.DateParseException;
@@ -54,16 +53,12 @@ import android.webkit.MimeTypeMap;
 import android.widget.TextView;
 
 public class Utils {
+    private static final boolean DBG = false;
     private static final Logger P = new Logger(Utils.class);
 
     // ========================================================================
     // FOR LOGGING
     // ========================================================================
-    public static final boolean DBG = false;
-    private static HashSet<Class> sLoggingClassMap = new HashSet<Class>();
-    // Empty sLoggingClasses means "Full Log".
-    private static Class[] sLoggingClasses = new Class[] {
-    };
 
     // ========================================================================
     //
@@ -211,10 +206,6 @@ public class Utils {
     // Private
     // =======================
     static {
-        if (DBG) {
-            for (Class c : sLoggingClasses)
-                sLoggingClassMap.add(c);
-        }
         if (ENABLE_LOGF) {
             try {
                 File logf = new File(LOGF);
@@ -251,8 +242,6 @@ public class Utils {
 
     private static void
     log(Class cls, LogLV lv, String msg) {
-        eAssert(DBG);
-
         if (null == msg)
             return;
 
@@ -262,10 +251,6 @@ public class Utils {
                 sLogout.flush();
             } catch (IOException e) {}
         } else {
-            if (!sLoggingClassMap.isEmpty()
-                && !sLoggingClassMap.contains(cls))
-                return;
-
             switch(lv) {
             case V: Log.v(cls.getSimpleName(), msg); break;
             case D: Log.d(cls.getSimpleName(), msg); break;

@@ -20,7 +20,6 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.io.File;
@@ -55,6 +54,7 @@ import free.yhc.feeder.model.DB.ColumnItem;
 // Singleton
 public class DBPolicy implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(DBPolicy.class);
 
     // Checking duplication inside whole DB is very very inefficient.

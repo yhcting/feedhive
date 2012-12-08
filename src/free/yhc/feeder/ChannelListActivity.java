@@ -20,7 +20,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.util.Calendar;
@@ -62,6 +61,7 @@ import free.yhc.feeder.model.Utils;
 public class ChannelListActivity extends FragmentActivity implements
 ActionBar.TabListener,
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelListActivity.class);
 
     // Request codes.

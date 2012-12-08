@@ -20,7 +20,6 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import org.w3c.dom.Document;
@@ -30,6 +29,7 @@ import org.w3c.dom.Node;
 import android.text.Html;
 
 public abstract class FeedParser {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FeedParser.class);
 
     // Result data format from parse.

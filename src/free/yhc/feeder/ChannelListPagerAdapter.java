@@ -1,6 +1,5 @@
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.view.ViewGroup;
@@ -9,6 +8,7 @@ import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.Utils;
 
 public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelListPagerAdapter.class);
 
     private final DBPolicy          mDbp = DBPolicy.get();

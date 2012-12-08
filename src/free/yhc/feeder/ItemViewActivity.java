@@ -20,7 +20,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.io.File;
@@ -54,6 +53,7 @@ import free.yhc.feeder.model.Utils;
 
 public class ItemViewActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ItemViewActivity.class);
 
     public static final int RESULT_DOWNLOAD = 1;

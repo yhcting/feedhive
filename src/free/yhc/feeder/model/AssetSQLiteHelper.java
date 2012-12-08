@@ -20,7 +20,6 @@
 
 package free.yhc.feeder.model;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.io.File;
@@ -34,6 +33,7 @@ import android.database.sqlite.SQLiteException;
 // NOTE
 // This module is NOT THREAD SAFE!
 public class AssetSQLiteHelper {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(AssetSQLiteHelper.class);
 
     // Constructing arguments

@@ -20,7 +20,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.DBG;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.util.Calendar;
@@ -54,6 +53,7 @@ import free.yhc.feeder.model.Utils;
 // (See channelListAdapter for 'age' time)
 public class ScheduledUpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ScheduledUpdateService.class);
 
     // Should match manifest's intent filter
