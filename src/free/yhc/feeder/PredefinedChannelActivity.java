@@ -62,7 +62,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // These values SHOULD MATCH asset DB.
     //
     // ========================================================================
-    private static final int    DB_VERSION      = 5;
+    private static final int    DB_VERSION      = 6;
 
     private static final String DB_NAME         = "predefined_channels.db";
     private static final String DB_ASSET        = "channels.db";

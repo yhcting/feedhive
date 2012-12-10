@@ -550,6 +550,8 @@ INSERT INTO channels VALUES (!<#>, "간미연의 친한친구", "", "!<pref>1002
 INSERT INTO channels VALUES (!<#>, "FM 음악도시 성시경입니다", "", "!<pref>1002600100000100000", "", "라디오", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "푸른밤 정엽입니다", "", "!<pref>1000578100000100000", "", "라디오", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "이주연의 영화음악", "", "!<pref>1000580100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "유세윤 뮤지의 친한친구", "", "!<pref>1002413100000100000", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "오후의 발견 스윗소로우입니다", "", "!<pref>1002782100000100000", "", "라디오", "", "", "", "", "kor", 0);
 
 
 
@@ -611,6 +613,7 @@ INSERT INTO channels VALUES (!<#>, "황정민의 FM대행진", "", "!<pref>105.x
 INSERT INTO channels VALUES (!<#>, "다큐멘터리 역사를 찾아서", "", "!<pref>230.xml", "", "라디오", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "KBS무대", "", "!<pref>229.xml", "", "라디오", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "재주소년 유상봉의 밤소풍", "", "!<pref>207.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "장윤주의 옥탑방 라디오(iTunes)", "", "!<pref>269.xml", "", "라디오", "", "", "", "", "kor", 0);
 
 
 
@@ -1003,7 +1006,7 @@ INSERT INTO channels VALUES (!<#>, "TED Talks (HD)", "", "!<feedburner>TedtalksH
 -- iblug is better than youtube! (to avoid duplication)
 -- INSERT INTO channels VALUES (!<#>, "뉴스타파", "", "http://newstapa.com/rss", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "영어 중상급자를 위한 방송", "", "http://practicus.co.kr/podcastgen/feed.xml", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "저공비행 (노회찬, 유시민)", "", "http://test.handypia.org/radio/jugong.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "저공비행 (노회찬, 유시민)", "", "http://www.iblug.com/xml/itunes/lowflying.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "라디오 반민특위", "", "http://www.615tv.net/podcastbanmin/jkbsbanmin.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "망치부인 시사수다방", "", "http://nemo.podics.com/131192848437", "", "시사", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 의사다", "", "http://www.docdocdoc.co.kr/podcast/iam_doctors.xml", "", "기술/과학", "팟캐스트", "", "", "", "kor", 0);
@@ -1024,3 +1027,8 @@ INSERT INTO channels VALUES (!<#>, "이동진의 빨간 책가방", "", "http://
 INSERT INTO channels VALUES (!<#>, "대한민국 직업이야기 잡수다", "", "!<feedburner>libsyn/jobsooda", "", "교양", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "티엔티엔 생활중국어회화", "", "http://www.jrchina.com/jrchina/podcast/tiantian.xml", "", "외국어", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "이박사와 이작가의 이이제이", "", "http://pod.ssenhosting.com/rss/vamp666.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "특허받았음 김샘영어", "", "http://www.iblug.com/xml/itunes/johnykim.xml", "", "팟캐스트", "외국어", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "나는 호구다", "", "http://movie.betanews.net/pod_hogu/hogu.xml", "", "팟캐스트", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "서영석 김용민의 정치토크", "", "http://www.iblug.com/podcastxml/seokimtalk", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "이철희의 이쑤시게", "", "http://www.iblug.com/xml/itunes/pressian.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+
