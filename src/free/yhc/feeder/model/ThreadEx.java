@@ -65,6 +65,7 @@ public abstract class ThreadEx<R> {
 
     private final Thread            mThread;
     private final Handler           mOwner;
+    private final Object            mPostRunKeeperLock = new Object();
     private final AtomicBoolean     mCancelled = new AtomicBoolean(false);
     private final AtomicReference<State>    mState  = new AtomicReference<State>(State.READY);
 
@@ -103,22 +104,21 @@ public abstract class ThreadEx<R> {
 
     private void
     bgRun() {
-        if (mCancelled.get()) {
-            postOnCancelled();
-            return;
-        }
-
-        mState.set(State.RUNNING);
         R r = null;
         try {
+            mState.set(State.RUNNING);
+            if (mCancelled.get())
+                return;
+
             r = doAsyncTask();
         } finally {
-            mState.set(State.DONE);
-
-            if (mCancelled.get())
-                postOnCancelled();
-            else
-                postOnPostRun(r);
+            synchronized (mPostRunKeeperLock) {
+                mState.set(State.DONE);
+                if (mCancelled.get())
+                    postOnCancelled();
+                else
+                    postOnPostRun(r);
+            }
         }
     }
 
@@ -234,16 +234,18 @@ public abstract class ThreadEx<R> {
     public final boolean
     cancel(final boolean interrupt) {
         if (mCancelled.getAndSet(true)
-            || State.READY == mState.get()
-            || State.TERMINATED == mState.get())
+            || State.RUNNING != mState.get())
             return false;
 
         mOwner.post(new Runnable() {
             @Override
             public void run() {
                 onCancel();
-                if (interrupt)
-                    mThread.interrupt();
+                synchronized(mPostRunKeeperLock) {
+                    if (interrupt
+                        && State.RUNNING == mState.get())
+                        mThread.interrupt();
+                }
             }
         });
         return true;
