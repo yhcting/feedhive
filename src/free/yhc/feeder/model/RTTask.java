@@ -38,6 +38,7 @@ import android.preference.PreferenceManager;
 public class RTTask implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(RTTask.class);
 
     private static RTTask   sInstance = null;

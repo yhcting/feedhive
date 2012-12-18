@@ -38,6 +38,7 @@ import free.yhc.feeder.model.Utils;
 
 public class LookAndFeel implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(LookAndFeel.class);
 
     // Even if LookAndFeel looks like suitable for static class,

@@ -34,6 +34,7 @@ import free.yhc.feeder.model.Utils;
 
 public class AsyncAdapter extends BaseAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(AsyncAdapter.class);
 
     // Variables to store information - not changed in dynamic

@@ -43,6 +43,7 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelListAdapter.class);
 
     private static final Date sDummyDate = new Date();

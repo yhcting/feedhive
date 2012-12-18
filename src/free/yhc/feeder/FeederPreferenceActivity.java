@@ -35,6 +35,7 @@ import free.yhc.feeder.model.Utils;
 public class FeederPreferenceActivity extends PreferenceActivity implements
 SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FeederPreferenceActivity.class);
 
     private final UIPolicy      mUip = UIPolicy.get();

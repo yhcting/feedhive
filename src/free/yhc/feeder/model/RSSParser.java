@@ -29,6 +29,7 @@ import org.w3c.dom.Node;
 
 public class RSSParser extends FeedParser implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(RSSParser.class);
 
     // parsing priority of namespace supported (larger number has priority)

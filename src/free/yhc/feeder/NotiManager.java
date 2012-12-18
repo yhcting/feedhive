@@ -45,6 +45,7 @@ import free.yhc.feeder.model.Utils;
 
 public class NotiManager implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(NotiManager.class);
 
     private static final String NOTI_INTENT_DELETE_ACTION = "feeder.intent.action.NOTIFICATION_DELETE";

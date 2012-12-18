@@ -29,6 +29,7 @@ import free.yhc.feeder.model.Utils;
 
 public class AsyncCursorAdapter extends AsyncAdapter implements
 AsyncAdapter.DataProvider {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(AsyncCursorAdapter.class);
 
     private final Object    mCurlock = new Object();

@@ -22,6 +22,7 @@ package free.yhc.feeder.model;
 
 
 public class FeederException extends Exception {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FeederException.class);
 
     private Err err;

@@ -26,6 +26,7 @@ import static free.yhc.feeder.model.Utils.bitIsSet;
 //   F[flag name][value name] : 'F' => Flag
 //   M[flag_name][value name] : 'M' => Mask
 public class Feed {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(Feed.class);
 
     public static final long FINVALID = ~0;

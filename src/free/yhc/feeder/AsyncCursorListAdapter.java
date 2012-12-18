@@ -10,6 +10,7 @@ import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
 public class AsyncCursorListAdapter extends AsyncCursorAdapter {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(AsyncCursorListAdapter.class);
 
     private static final int INVALID_POS = -1;

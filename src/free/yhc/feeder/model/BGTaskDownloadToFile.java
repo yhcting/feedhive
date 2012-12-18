@@ -23,6 +23,7 @@ package free.yhc.feeder.model;
 import java.io.File;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(BGTaskDownloadToFile.class);
 
     private volatile NetLoader      mLoader   = null;

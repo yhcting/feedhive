@@ -35,6 +35,7 @@ import android.preference.PreferenceManager;
  */
 public class UIPolicy implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(UIPolicy.class);
 
     public static final String  PREF_KEY_APP_ROOT = "app_root";

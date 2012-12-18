@@ -33,6 +33,7 @@ import android.view.ViewGroup;
 import free.yhc.feeder.model.Utils;
 
 public abstract class FragmentPagerAdapterEx extends PagerAdapter {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FragmentPagerAdapterEx.class);
 
     private static final AtomicInteger sId = new AtomicInteger(0);

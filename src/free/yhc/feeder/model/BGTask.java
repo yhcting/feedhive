@@ -26,6 +26,7 @@ import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 
 public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(BGTask.class);
 
     public static final int OPT_WAKELOCK  = 0x01;

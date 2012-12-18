@@ -46,21 +46,25 @@
                   android:theme="@android:style/Theme.NoTitleBar"
                   />
         <service android:name=".ScheduledUpdateService"
-				 />
+                  />
+        <provider android:name=".DBContentProvider"
+                  android:authorities="free.yhc.feeder"
+                  android:exported="false"
+                  />
         <receiver android:name=".ScheduledUpdateService$AlarmReceiver">
-			<intent-filter>
-				<action android:name="feeder.intent.action.SCHEDULED_UPDATE" />
-			</intent-filter>
+            <intent-filter>
+                <action android:name="feeder.intent.action.SCHEDULED_UPDATE" />
+            </intent-filter>
         </receiver>
         <receiver android:name=".ScheduledUpdateService$DateChangedReceiver">
-			<intent-filter>
-				<action android:name="android.intent.action.TIME_SET" />
-			</intent-filter>
-		</receiver>
+            <intent-filter>
+                <action android:name="android.intent.action.TIME_SET" />
+            </intent-filter>
+        </receiver>
         <receiver android:name=".NotiManager$NotiIntentReceiver">
-			<intent-filter>
-				<action android:name="feeder.intent.action.NOTIFICATION_DELETE" />
-			</intent-filter>
+            <intent-filter>
+                <action android:name="feeder.intent.action.NOTIFICATION_DELETE" />
+            </intent-filter>
         </receiver>
 	</application>
 </manifest>

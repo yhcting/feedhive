@@ -47,6 +47,7 @@ import free.yhc.feeder.model.Utils;
 
 public class ChannelSettingActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelSettingActivity.class);
 
     // match string-array 'strarr_updatemode_setting'

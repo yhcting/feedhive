@@ -30,6 +30,7 @@ import android.os.Bundle;
 import free.yhc.feeder.model.Utils;
 
 public class FeederActivity extends Activity {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FeederActivity.class);
 
     @Override

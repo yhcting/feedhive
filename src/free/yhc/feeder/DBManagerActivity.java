@@ -57,6 +57,7 @@ import free.yhc.feeder.model.Utils;
 
 public class DBManagerActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(DBManagerActivity.class);
 
     public static final String KEY_DB_UPDATED = "dbUpdated";
