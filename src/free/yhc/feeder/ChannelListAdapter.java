@@ -182,7 +182,8 @@ AsyncCursorAdapter.ItemBuilder {
         eAssert(Utils.isUiThread());
         ItemInfo ii = (ItemInfo)getItem(findPosition(cid));
         if (null != ii) {
-            if (null != ii.bm)
+            if (null != ii.bm
+                && bm != ii.bm)
                 ii.bm.recycle();
             ii.bm = bm;
         }
@@ -226,8 +227,10 @@ AsyncCursorAdapter.ItemBuilder {
         // But, we cannot control when GC is triggered.
         // Actually, sometimes I experienced OutOfMeory error.
         // To avoid OOM, bm.recycle() is needed to be called in manual whenever item is no-longer used.
-        if (null != ii.bm)
+        if (null != ii.bm) {
             ii.bm.recycle();
+            ii.bm = null;
+        }
     }
 
     @Override

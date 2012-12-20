@@ -21,6 +21,9 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.util.LinkedList;
+
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,6 +47,10 @@ UnexpectedExceptionHandler.TrackedModule {
     private   final boolean       mHasLimit;
     private   final int           mRowLayout;
     private   final int           mFirstLDahead;
+    // We cannot control the moment of GC is triggered.
+    // So, to GC memory used for items ASAP, below list is used.
+    private   final LinkedList<Object>  mGarbageIteml = new LinkedList<Object>();
+
 
     // Variables set at init() function
     private   ListView      mLv = null;
@@ -294,7 +301,7 @@ UnexpectedExceptionHandler.TrackedModule {
             newItems = new Object[sz];
             mPosTop = from;
             for (Object o : mItems)
-                destroyItem(o);
+                mGarbageIteml.add(o);
         } else if (LDType.NEXT == ldtype) {
             int sz2grow = sz;
             int sz2shrink = mItems.length + sz2grow - mMaxArrSz;
@@ -302,7 +309,7 @@ UnexpectedExceptionHandler.TrackedModule {
             newItems = new Object[mItems.length + sz2grow - sz2shrink];
             System.arraycopy(mItems, sz2shrink, newItems, 0, mItems.length - sz2shrink);
             for (int i = 0; i < sz2shrink; i++)
-                destroyItem(mItems[i]);
+                mGarbageIteml.add(mItems[i]);
             mPosTop += sz2shrink;
         } else if (LDType.PREV == ldtype) {
             eAssert(0 < mPosTop && sz <= mPosTop);
@@ -316,7 +323,7 @@ UnexpectedExceptionHandler.TrackedModule {
             newItems = new Object[mItems.length + sz2grow - sz2shrink];
             System.arraycopy(mItems, 0, newItems, sz2grow, mItems.length - sz2shrink);
             for (int i = mItems.length - sz2shrink; i < mItems.length; i++)
-                destroyItem(mItems[i]);
+                mGarbageIteml.add(mItems[i]);
             mPosTop -= sz2grow;
         } else
             eAssert(false);
@@ -384,12 +391,19 @@ UnexpectedExceptionHandler.TrackedModule {
 
         final int anchorItemPos = anchorPos;
         mDpTask = new ThreadEx<Err>() {
+            private void
+            onFinished() {
+                notifyDataSetChanged();
+                while (!mGarbageIteml.isEmpty())
+                    destroyItem(mGarbageIteml.removeFirst());
+            }
+
             @Override
             protected void
             onPostRun(Err result) {
                 if (null != mDpsListener)
                     mDpsListener.onPostDataProvide(AsyncAdapter.this, anchorItemPos, reqSeq);
-                notifyDataSetChanged();
+                onFinished();
             }
 
             @Override
@@ -397,7 +411,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onCancelled() {
                 if (null != mDpsListener)
                     mDpsListener.onCancelledDataProvide(AsyncAdapter.this, anchorItemPos, reqSeq);
-                notifyDataSetChanged();
+                onFinished();
             }
 
             @Override
