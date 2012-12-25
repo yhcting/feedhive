@@ -89,7 +89,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @return
      *   Feed.Channel.FActxxxx
      */
-    long
+    public long
     decideActionType(long action, Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
         long    actFlag;
 
@@ -131,7 +131,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param item
      * @return
      */
-    boolean
+    public boolean
     verifyConstraints(Feed.Item.ParD item) {
         // 'title' is mandatory!!!
         if (!isValidValue(item.title))
@@ -151,7 +151,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param ch
      * @return
      */
-    boolean
+    public boolean
     verifyConstraints(Feed.Channel.ParD ch) {
         if (!isValidValue(ch.title))
             return false;

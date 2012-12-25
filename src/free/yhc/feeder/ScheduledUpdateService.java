@@ -38,10 +38,10 @@ import android.database.Cursor;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.PowerManager;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -362,7 +362,7 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(dayms <= Utils.DAY_IN_MS);
 
         // If we get killed, after returning from here, restart
-        Cursor c = DBPolicy.get().queryChannel(DB.ColumnChannel.SCHEDUPDATETIME);
+        Cursor c = DBPolicy.get().queryChannel(ColumnChannel.SCHEDUPDATETIME);
         if (!c.moveToFirst()) {
             c.close();
             return; // There is no channel.
@@ -431,9 +431,9 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // If we get killed, after returning from here, restart
-        Cursor c = mDbp.queryChannel(new DB.ColumnChannel[] {
-                DB.ColumnChannel.ID,
-                DB.ColumnChannel.SCHEDUPDATETIME });
+        Cursor c = mDbp.queryChannel(new ColumnChannel[] {
+                ColumnChannel.ID,
+                ColumnChannel.SCHEDUPDATETIME });
         // below values are 'Column Index' for above query.
         final int iId   = 0;
         final int iTime = 1;
@@ -547,7 +547,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    public void onCreate() {
+    public void
+    onCreate() {
         super.onCreate();
         UnexpectedExceptionHandler.get().registerModule(this);
 

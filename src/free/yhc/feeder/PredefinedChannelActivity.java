@@ -45,9 +45,9 @@ import android.widget.ListView;
 import android.widget.ResourceCursorAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
+import free.yhc.feeder.db.DB;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.AssetSQLiteHelper;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 

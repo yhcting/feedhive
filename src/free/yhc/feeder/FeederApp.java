@@ -22,8 +22,8 @@ package free.yhc.feeder;
 
 import android.app.Application;
 import android.content.res.Configuration;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.db.DB;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;

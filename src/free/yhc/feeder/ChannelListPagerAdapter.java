@@ -24,7 +24,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.view.ViewGroup;
-import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.Utils;
 

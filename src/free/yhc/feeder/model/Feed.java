@@ -60,20 +60,20 @@ public class Feed {
         }
 
          // Information from parsing.
-        static class ParD {
-            String title        = "";
-            String link         = "";
-            String description  = "";
-            String pubDate      = "";
-            String enclosureUrl = "";
-            String enclosureLength = "";
-            String enclosureType = "";
+        public static class ParD {
+            public String title        = "";
+            public String link         = "";
+            public String description  = "";
+            public String pubDate      = "";
+            public String enclosureUrl = "";
+            public String enclosureLength = "";
+            public String enclosureType = "";
         }
 
         // DB related data
-        static class DbD {
-            long   id  = -1;
-            long   cid = -1; // channel id
+        public static class DbD {
+            public long   id  = -1;
+            public long   cid = -1; // channel id
         }
     }
 
@@ -123,7 +123,7 @@ public class Feed {
         // ==================
         // Feed Type
         // ==================
-        enum Type {
+        public enum Type {
             NORMAL,
             EMBEDDED_MEDIA;
         }
@@ -133,26 +133,26 @@ public class Feed {
         public static final int ICON_MAX_HEIGHT = 100;
 
         // Profile data.
-        static class ProfD {
-            String url          = ""; // channel url.
+        public static class ProfD {
+            public String url   = ""; // channel url.
         }
 
         // Information from parsing.
-        static class ParD {
+        public static class ParD {
             // Type is usually determined by which namespace is used at XML.
             // For example.
             //   xmlns:itunes -> Media
-            Type     type         = Type.NORMAL;
-            String   title        = "";
-            String   description  = "";
-            String   imageref     = "";
+            public Type     type         = Type.NORMAL;
+            public String   title        = "";
+            public String   description  = "";
+            public String   imageref     = "";
         }
 
         // DB related data
-        static class DbD {
-            long   id           = -1;
-            long   categoryid   = -1;
-            long   lastupdate   = 0; // date when item DB is updated lastly
+        public static class DbD {
+            public long   id           = -1;
+            public long   categoryid   = -1;
+            public long   lastupdate   = 0; // date when item DB is updated lastly
         }
 
         // ==================
@@ -188,8 +188,8 @@ public class Feed {
         public long     id      = -1;
         public String   name    = ""; // category name
         public Category() {}
-        public Category(String name) {
-            this.name = name;
+        public Category(String aName) {
+            name = aName;
         }
     }
 }

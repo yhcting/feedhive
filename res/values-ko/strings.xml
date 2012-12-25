@@ -19,6 +19,7 @@
     <string name="infinite">무제한</string>
     <string name="delete">삭제</string>
     <string name="deleting">삭제 중....</string>
+    <string name="loading">로드 중</string>
     <string name="all">전체</string>
     <string name="favorite_items">관심 피드</string>
     <string name="all_items">전체 피드</string>
