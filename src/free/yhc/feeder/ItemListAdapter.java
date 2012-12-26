@@ -373,29 +373,26 @@ AsyncCursorAdapter.ItemBuilder {
                 // Why "post runnable and start animation?"
                 // In Android 4.0.3 (ICS)
                 //   putting "((AnimationDrawable)img.getDrawable()).start();" is enough.
-                //   So, below code works well enough.
-                // But in case of using UILifecycle below code doesn't work as expected just like
-                //   the case of Android 3.2(HC).
-                // ((AnimationDrawable)imgv.getDrawable()).start(); // <- this is not enough
-                // =>> IT'S ANDROID PLATFORM'S BUG!!
                 //
                 // In Android 3.2 (HC)
                 //   without using 'post', animation doesn't start when start itemListActivity.
                 //   It's definitely HC bug.
                 //   In this case, below code works.
                 //
-                // This program's target platform is ICS
-                //
                 // Another interesting point is, using 'imgv.post' doesn't work.
                 // But, in case of using handler, it works.
                 // I think it's definitely Android platform's BUG!
-                // So, below code is just workaround of platform BUG!
+                //
+                // This program's target platform is ICS
+                /*
                 Utils.getUiHandler().post(new Runnable() {
                     @Override
                     public void run() {
                         ((AnimationDrawable)imgv.getDrawable()).start();
                     }
                 });
+                */
+                ((AnimationDrawable)imgv.getDrawable()).start();
 
                 // bind event listener to show progress
                 DownloadProgressListener listener = new DownloadProgressListener(progressv);
