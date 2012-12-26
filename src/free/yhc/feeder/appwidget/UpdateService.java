@@ -18,7 +18,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-package free.yhc.feeder;
+package free.yhc.feeder.appwidget;
 
 import android.app.PendingIntent;
 import android.app.Service;
@@ -29,15 +29,17 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.widget.RemoteViews;
+import free.yhc.feeder.FeederActivity;
+import free.yhc.feeder.R;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.ThreadEx;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
-public class UpdateAppWidgetService extends Service implements
+public class UpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = true;
-    private static final Utils.Logger P = new Utils.Logger(UpdateAppWidgetService.class);
+    private static final Utils.Logger P = new Utils.Logger(UpdateService.class);
 
     private static final String APPWIDGET_PREF_FILE = "appWidgetPref";
 
@@ -119,26 +121,26 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
     public static void
-    updateAppWidget(Context context, int[] appWidgetIds) {
+    update(Context context, int[] appWidgetIds) {
         // Build the intent to call the service
-        Intent intent = new Intent(Utils.getAppContext(), UpdateAppWidgetService.class);
+        Intent intent = new Intent(Utils.getAppContext(), UpdateService.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         // Update the widgets via the service
         context.startService(intent);
     }
 
     public static void
-    updateAppWidgetAll(Context context) {
+    updateAll(Context context) {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(Utils.getAppContext());
-        ComponentName widget = new ComponentName(Utils.getAppContext(), HomeScreenAppWidgetProvider.class);
+        ComponentName widget = new ComponentName(Utils.getAppContext(), Provider.class);
         int[] appWidgetIds = appWidgetManager.getAppWidgetIds(widget);
-        updateAppWidget(context, appWidgetIds);
+        update(context, appWidgetIds);
     }
 
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ UpdateAppWidgetService ]";
+        return "[ .appwidget.UpdateService ]";
     }
 
     @Override

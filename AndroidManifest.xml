@@ -46,10 +46,13 @@
                   android:theme="@android:style/Theme.NoTitleBar"
                   />
         <service android:name=".ScheduledUpdateService"
-                  />
-        <service android:name=".UpdateAppWidgetService"
-                  />
-        <receiver android:name="HomeScreenAppWidgetProvider" >
+                 />
+        <service android:name=".appwidget.UpdateService"
+                 />
+        <service android:name=".appwidget.ViewsService"
+                 android:permission="android.permission.BIND_REMOTEVIEWS"
+                 />
+        <receiver android:name=".appwidget.Provider" >
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="android.appwidget.action.APPWIDGET_DELETED" />

@@ -18,7 +18,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-package free.yhc.feeder;
+package free.yhc.feeder.appwidget;
 
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
@@ -27,12 +27,12 @@ import android.content.Intent;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
-public class HomeScreenAppWidgetProvider extends AppWidgetProvider implements
+public class Provider extends AppWidgetProvider implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = true;
-    private static final Utils.Logger P = new Utils.Logger(HomeScreenAppWidgetProvider.class);
+    private static final Utils.Logger P = new Utils.Logger(Provider.class);
 
-    public HomeScreenAppWidgetProvider() {
+    public Provider() {
         super();
         UnexpectedExceptionHandler.get().registerModule(this);
     }
@@ -47,7 +47,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ HomeScreenAppWidgetProvider ]";
+        return "[ .appwidget.Provider ]";
     }
 
     /* API level 16
@@ -90,6 +90,6 @@ UnexpectedExceptionHandler.TrackedModule {
     onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
         if (DBG) P.v("onUpdate");
-        UpdateAppWidgetService.updateAppWidget(context, appWidgetIds);
+        UpdateService.update(context, appWidgetIds);
     }
 }
