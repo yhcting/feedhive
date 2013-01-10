@@ -45,8 +45,27 @@
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   android:theme="@android:style/Theme.NoTitleBar"
                   />
-        <service android:name=".ScheduledUpdateService"
+        <activity android:name=".AppWidgetCategoryChooserActivity"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  android:theme="@android:style/Theme.Dialog"
                   />
+        <service android:name=".ScheduledUpdateService"
+                 />
+        <service android:name=".appwidget.UpdateService"
+                 />
+        <service android:name=".appwidget.ViewsService"
+                 android:permission="android.permission.BIND_REMOTEVIEWS"
+                 />
+        <receiver android:name=".appwidget.Provider" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.appwidget.action.APPWIDGET_DELETED" />
+                <action android:name="android.appwidget.action.APPWIDGET_DISABLED" />
+                <action android:name="android.appwidget.action.APPWIDGET_ENABLED" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                       android:resource="@xml/appwidget_info" />
+        </receiver>
         <receiver android:name=".ScheduledUpdateService$AlarmReceiver">
             <intent-filter>
                 <action android:name="feeder.intent.action.SCHEDULED_UPDATE" />
@@ -62,5 +81,10 @@
                 <action android:name="feeder.intent.action.NOTIFICATION_DELETE" />
             </intent-filter>
         </receiver>
-	</application>
+        <receiver android:name=".appwidget.ViewsService$ListPendingIntentReceiver">
+            <intent-filter>
+                <action android:name="feeder.intent.action.LIST_PENDING_INTENT" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>

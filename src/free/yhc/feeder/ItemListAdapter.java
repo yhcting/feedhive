@@ -35,9 +35,10 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.ColumnItem;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -252,25 +253,25 @@ AsyncCursorAdapter.ItemBuilder {
         //logI("ChannelListAdapter : buildItem - START");
         ItemInfo i = new ItemInfo();
         try {
-            i.id = getCursorLong(c, DB.ColumnItem.ID);
-            i.state = mDbp.getItemInfoLong(i.id, DB.ColumnItem.STATE);
-            i.title = getCursorString(c, DB.ColumnChannel.TITLE);
-            i.desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
-            i.pubDate = getCursorString(c, DB.ColumnItem.PUBDATE);
-            i.enclosureLen = getCursorString(c, DB.ColumnItem.ENCLOSURE_LENGTH);
-            i.enclosureUrl = getCursorString(c, DB.ColumnItem.ENCLOSURE_URL);
-            i.link = getCursorString(c, DB.ColumnItem.LINK);
+            i.id = getCursorLong(c, ColumnItem.ID);
+            i.state = mDbp.getItemInfoLong(i.id, ColumnItem.STATE);
+            i.title = getCursorString(c, ColumnChannel.TITLE);
+            i.desc = getCursorString(c, ColumnChannel.DESCRIPTION);
+            i.pubDate = getCursorString(c, ColumnItem.PUBDATE);
+            i.enclosureLen = getCursorString(c, ColumnItem.ENCLOSURE_LENGTH);
+            i.enclosureUrl = getCursorString(c, ColumnItem.ENCLOSURE_URL);
+            i.link = getCursorString(c, ColumnItem.LINK);
             // This runs on background thread.
             // So, assert on this thread doesn't stop application and reporting bug.
             // Therefore, this should be endurable for unexpected result.
             File df = mDbp.getItemInfoDataFile(i.id);
             i.hasDnFile = null != df && df.exists();
 
-            int cidx = c.getColumnIndex(DB.ColumnItem.CHANNELID.getName());
+            int cidx = c.getColumnIndex(ColumnItem.CHANNELID.getName());
             i.bChannel = (0 <= cidx);
             if (i.bChannel) {
                 i.cid = c.getLong(cidx);
-                i.cTitle = mDbp.getChannelInfoString(i.cid, DB.ColumnChannel.TITLE);
+                i.cTitle = mDbp.getChannelInfoString(i.cid, ColumnChannel.TITLE);
             }
 
         } catch (StaleDataException e) {

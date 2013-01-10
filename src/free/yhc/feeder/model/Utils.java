@@ -356,6 +356,22 @@ public class Utils {
         return L;
     }
 
+    public static int[]
+    convertArrayIntegerToint(Integer[] I) {
+        int[] i = new int[I.length];
+        for (int j = 0; j < I.length; j++)
+            i[j] = I[j];
+        return i;
+    }
+
+    public static Integer[]
+    convertArrayintToInteger(int[] i) {
+        Integer[] I = new Integer[i.length];
+        for (int j = 0; j < i.length; j++)
+            I[j] = i[j];
+        return I;
+    }
+
     /**
      * Is is valid string?
      * Valid means "Not NULL and Not empty".
@@ -414,6 +430,18 @@ public class Utils {
      */
     public static String
     nrsToNString(long[] nrs) {
+        String nrstr = "";
+        if (nrs.length < 1)
+            return "";
+
+        for (int i = 0; i < nrs.length - 1; i ++)
+            nrstr += nrs[i] + NSTRING_DELIMITER;
+        nrstr += nrs[nrs.length - 1];
+        return nrstr;
+    }
+
+    public static String
+    nrsToNString(int[] nrs) {
         String nrstr = "";
         if (nrs.length < 1)
             return "";

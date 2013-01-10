@@ -34,9 +34,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DB.ColumnChannel;
-import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
@@ -128,13 +127,13 @@ AsyncCursorAdapter.ItemBuilder {
 
     public static Cursor
     getQueryCursor(long catId) {
-        return DBPolicy.get().queryChannel(catId, new DB.ColumnChannel[] {
-                    DB.ColumnChannel.ID, // Mandatory.
-                    DB.ColumnChannel.TITLE,
-                    DB.ColumnChannel.DESCRIPTION,
-                    DB.ColumnChannel.LASTUPDATE,
-                    DB.ColumnChannel.IMAGEBLOB,
-                    DB.ColumnChannel.URL });
+        return DBPolicy.get().queryChannel(catId, new ColumnChannel[] {
+                    ColumnChannel.ID, // Mandatory.
+                    ColumnChannel.TITLE,
+                    ColumnChannel.DESCRIPTION,
+                    ColumnChannel.LASTUPDATE,
+                    ColumnChannel.IMAGEBLOB,
+                    ColumnChannel.URL });
     }
 
     public int
@@ -201,14 +200,14 @@ AsyncCursorAdapter.ItemBuilder {
         //logI("ChannelListAdapter : buildItem - START");
         ItemInfo i = new ItemInfo();
         try {
-            i.cid = getCursorLong(c, DB.ColumnChannel.ID);
-            i.title = getCursorString(c, DB.ColumnChannel.TITLE);
-            i.desc = getCursorString(c, DB.ColumnChannel.DESCRIPTION);
-            i.lastUpdate = new Date(getCursorLong(c, DB.ColumnChannel.LASTUPDATE));
+            i.cid = getCursorLong(c, ColumnChannel.ID);
+            i.title = getCursorString(c, ColumnChannel.TITLE);
+            i.desc = getCursorString(c, ColumnChannel.DESCRIPTION);
+            i.lastUpdate = new Date(getCursorLong(c, ColumnChannel.LASTUPDATE));
             i.maxItemId = mDbp.getItemInfoMaxId(i.cid);
             i.oldLastItemId = mDbp.getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
             i.bm = null;
-            byte[] imgRaw = getCursorBlob(c, DB.ColumnChannel.IMAGEBLOB);
+            byte[] imgRaw = getCursorBlob(c, ColumnChannel.IMAGEBLOB);
             if (imgRaw.length > 0)
                 i.bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
         } catch (StaleDataException e) {

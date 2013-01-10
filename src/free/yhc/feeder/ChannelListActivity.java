@@ -46,9 +46,9 @@ import android.widget.EditText;
 import android.widget.PopupMenu;
 import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
 import free.yhc.feeder.LookAndFeel.EditTextDialogAction;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.FeederException;
@@ -108,7 +108,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public Err
         doBackgroundWork(DiagAsyncTask task) {
-            Cursor c = mDbp.queryChannel(DB.ColumnChannel.ID);
+            Cursor c = mDbp.queryChannel(ColumnChannel.ID);
             if (!c.moveToFirst()) {
                 c.close();
                 return Err.NO_ERR;

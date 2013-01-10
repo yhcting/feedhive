@@ -47,8 +47,9 @@ import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
 import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DB;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
@@ -414,8 +415,8 @@ UnexpectedExceptionHandler.TrackedModule {
             public Err
             doBackgroundWork(DiagAsyncTask task) {
                 // Load 'used channel information'
-                Cursor c = mDbp.queryChannel(new DB.ColumnChannel[] { DB.ColumnChannel.ID,
-                                                                              DB.ColumnChannel.TITLE });
+                Cursor c = mDbp.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
+                                                                   ColumnChannel.TITLE });
 
                 mDbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
                 c.moveToFirst();

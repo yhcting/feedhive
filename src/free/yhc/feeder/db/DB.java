@@ -18,7 +18,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.db;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
@@ -32,7 +32,10 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.provider.BaseColumns;
+import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 // This is singleton
 public final class DB extends SQLiteOpenHelper implements
@@ -40,7 +43,33 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(DB.class);
 
+    public static final long INVALID_ITEM_ID    = -1;
+
     private static DB sInstance = null;
+
+    /**************************************
+     *
+     * Database design
+     * ---------------
+     *  - table for items per each channel.
+     *  - naming for item-table
+     *      <prefix string> + channel-id
+     *
+     **************************************/
+    static final String TABLE_CATEGORY  = "category";
+    static final String TABLE_CHANNEL   = "channel";
+    static final String TABLE_ITEM      = "item";
+
+    // NOTE
+    // Oops... mistake on spelling - 'feeder.db' is right.
+    // But, software is already released and this is not big problem...
+    // So, let's ignore it until real DB structure is needed to be changed.
+    // => this can be resolved by 'DB Upgrade operation'.
+    private static final String NAME            = "feader.db";
+    private static final int    VERSION         = 3;
+
+    private static final String ITEM_QUERY_DEFAULT_ORDER = ColumnItem.PUBTIME.getName() + " DESC";
+    private static final String CHANNEL_QUERY_DEFAULT_ORDER = ColumnChannel.POSITION.getName() + " ASC";
 
     /**************************************
      * Members
@@ -57,154 +86,12 @@ UnexpectedExceptionHandler.TrackedModule {
     // Marker whether category table size is changed or not by insert or delete
     private final HashMap<Object, Boolean>       mCatTblMark = new HashMap<Object, Boolean>();
 
-    /**************************************
-     *
-     * Database design
-     * ---------------
-     *  - table for items per each channel.
-     *  - naming for item-table
-     *      <prefix string> + channel-id
-     *
-     **************************************/
-    // NOTE
-    // Oops... mistake on spelling - 'feeder.db' is right.
-    // But, software is already released and this is not big problem...
-    // So, let's ignore it until real DB structure is needed to be changed.
-    // => this can be resolved by 'DB Upgrade operation'.
-    private static final String NAME            = "feader.db";
-    private static final int    VERSION         = 2;
-
-    private static final String TABLE_CATEGORY  = "category";
-    private static final String TABLE_CHANNEL   = "channel";
-    private static final String TABLE_ITEM      = "item";
-
-    private static final String ITEM_QUERY_DEFAULT_ORDER = ColumnItem.PUBTIME.getName() + " DESC";
-    private static final String CHANNEL_QUERY_DEFAULT_ORDER = ColumnChannel.POSITION.getName() + " ASC";
 
     public interface Column {
         String getName();
         String getType();
         String getConstraint();
     }
-
-    public static enum ColumnCategory implements Column {
-        NAME            ("name",            "text",     "not null"), // channel url of this rss.
-        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement");
-
-        private final String name;
-        private final String type;
-        private final String constraint;
-
-        ColumnCategory(String aName, String aType, String aConstraint) {
-            name = aName;
-            type = aType;
-            constraint = aConstraint;
-        }
-        @Override
-        public String getName() { return name; }
-        @Override
-        public String getType() { return type; }
-        @Override
-        public String getConstraint() { return constraint; }
-    }
-
-    public static enum ColumnChannel implements Column {
-        // Required Channel Elements
-        TITLE           ("title",           "text",     "not null"),
-        DESCRIPTION     ("description",     "text",     "not null"),
-
-        // Columns for internal use.
-        IMAGEBLOB       ("imageblob",       "blob",     "not null"), // image from channel tag.
-        LASTUPDATE      ("lastupdate",      "integer",  "not null"), // time when channel is updated, lastly
-        // For fast/simple comparison, flag of 'long' type is used instead of text.
-        ACTION          ("action",          "integer",  "not null"),
-        UPDATEMODE      ("updatemode",      "integer",  "not null"),
-        // state of this channel : used / unused etc.
-        // Why this is required?
-        // When delete channel, deleting all items that are stored at DB, doesn't make sense.
-        // Deleting channel means "I don't want to get feed anymore".
-        // (This doesn't mean "I don't want to delete all items too.")
-        // In this case, items of deleted channel still has foreign key to channel id.
-        // So, deleting channel from DB leads to DB corruption - foreign key constraints is broken!
-        // To avoid this, we can mark channel as 'unused' and keep in DB.
-        // This can preserve DB constraints.
-        // When, channel is re-used, we can do it by marking it as 'used'.
-        STATE           ("state",           "integer",  "not null"),
-        // time string of SECONDS OF DAY (0 - 23:59:59). ex. "3600/7200" => update 1 and 2 hour every day
-        SCHEDUPDATETIME ("schedupdatetime", "text",     "not null"),
-        // old last item id.
-        // This is usually, last item id before update.
-        // This will be updated to current last item id when user recognizes newly update items.
-        // NOTE (WARNING)
-        //   Recently inserted items SHOULD NOT be removed!
-        //   (item ID indicated by 'OLDLAST_ITEMID' should be valid!)
-        //   So, implement 'delete items' should be consider this constraints!
-        OLDLAST_ITEMID  ("oldlastitemid",   "integer",  "not null"),
-        // number of items to keep in item table.
-        // This is not hard-limit but soft-limit!
-        // (There is no reason to support hard-limit. Soft-limit is enough!)
-        //
-        // NOT USED YET! For future use.
-        NRITEMS_SOFTMAX ("nritemssoftmax",  "integer",  "not null"),
-        URL             ("url",             "text",     "not null"), // channel url of this rss.
-        CATEGORYID      ("categoryid",      "integer",  ""),
-        POSITION        ("position",        "integer",  "not null"), // position order used by UI.
-        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
-                + "FOREIGN KEY(categoryid) REFERENCES " + TABLE_CATEGORY + "(" + ColumnCategory.ID.getName() + ")");
-
-
-        private final String name;
-        private final String type;
-        private final String constraint;
-
-        ColumnChannel(String aName, String aType, String aConstraint) {
-            name = aName;
-            type = aType;
-            constraint = aConstraint;
-        }
-        @Override
-        public String getName() { return name; }
-        @Override
-        public String getType() { return type; }
-        @Override
-        public String getConstraint() { return constraint; }
-    }
-
-    public static enum ColumnItem implements Column {
-        TITLE           ("title",           "text",     "not null"),
-        DESCRIPTION     ("description",     "text",     "not null"),
-        LINK            ("link",            "text",     "not null"),
-        ENCLOSURE_URL   ("enclosureurl",    "text",     "not null"),
-        ENCLOSURE_LENGTH("enclosurelength", "text",     "not null"),
-        ENCLOSURE_TYPE  ("enclosuretype",   "text",     "not null"),
-        PUBDATE         ("pubdate",         "text",     "not null"),
-
-        // Columns for internal use.
-        STATE           ("state",           "integer",  "not null"), // new, read etc
-        // time when this item is inserted.(milliseconds since 1970.1.1....)
-        PUBTIME         ("pubtime",         "integer",  "not null"),
-        CHANNELID       ("channelid",       "integer",  ""),
-        ID              (BaseColumns._ID,   "integer",  "primary key autoincrement, "
-                // Add additional : foreign key
-                + "FOREIGN KEY(channelid) REFERENCES " + TABLE_CHANNEL + "(" + ColumnChannel.ID.getName() + ")");
-
-        private final String name;
-        private final String type;
-        private final String constraint;
-
-        ColumnItem(String aName, String aType, String aConstraint) {
-            name = aName;
-            type = aType;
-            constraint = aConstraint;
-        }
-        @Override
-        public String getName() { return name; }
-        @Override
-        public String getType() { return type; }
-        @Override
-        public String getConstraint() { return constraint; }
-    }
-
 
     // =====================================================
     // Helper function for generating query
@@ -408,6 +295,13 @@ UnexpectedExceptionHandler.TrackedModule {
      * DB UPGRADE
      *
      **************************************/
+    /*
+    private static String
+    buildAddColumnSQL(String table, Column col) {
+        //return "ALTER TABLE " + table + " ADD COLUMN "
+    }
+    */
+
     private void
     upgradeTo2(SQLiteDatabase db) {
         // New constraints is introduced.
@@ -436,6 +330,10 @@ UnexpectedExceptionHandler.TrackedModule {
         c.close();
     }
 
+    private void
+    upgradeTo3(SQLiteDatabase db) {
+
+    }
     /**************************************
      * Overriding.
      **************************************/
@@ -1065,13 +963,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         Long[] cids = new Long[c.getCount()];
-        DB.ColumnItem[] cols = new DB.ColumnItem[cids.length];
+        ColumnItem[] cols = new ColumnItem[cids.length];
 
         int i = 0;
         do {
             cids[i] = c.getLong(0);
             markChannelChanged(cids[i]);
-            cols[i] = DB.ColumnItem.CHANNELID;
+            cols[i] = ColumnItem.CHANNELID;
             i++;
         } while (c.moveToNext());
 

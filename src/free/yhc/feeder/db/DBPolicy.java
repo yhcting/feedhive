@@ -18,7 +18,7 @@
  *    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.db;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
@@ -33,9 +33,13 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.os.Handler;
 import android.os.HandlerThread;
-import free.yhc.feeder.model.DB.ColumnCategory;
-import free.yhc.feeder.model.DB.ColumnChannel;
-import free.yhc.feeder.model.DB.ColumnItem;
+import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.FeederException;
+import free.yhc.feeder.model.KeyBasedLinkedList;
+import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.model.Utils;
 
 //
 // DB synchronizing concept.
@@ -108,12 +112,12 @@ UnexpectedExceptionHandler.TrackedModule {
         void onLastItemIdUpdated(long[] cids);
     }
 
-    enum ItemDataType {
+    public enum ItemDataType {
         RAW,
         FILE
     }
 
-    interface ItemDataOpInterface {
+    public interface ItemDataOpInterface {
         File   getFile(Feed.Item.ParD parD) throws FeederException;
     }
 
@@ -486,7 +490,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //  => channel has category id as one of it's foreign key.)
         long[] cids = getChannelIds(id);
         for (long cid : cids)
-            updateChannel(cid, DB.ColumnChannel.CATEGORYID, DB.getDefaultCategoryId());
+            updateChannel(cid, ColumnChannel.CATEGORYID, DB.getDefaultCategoryId());
         return (1 == mDb.deleteCategory(id))? 0: -1;
     }
 
@@ -1270,7 +1274,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     getItemMinPubtime(long[] cids) {
         long v = -1;
-        Cursor c = mDb.queryItemMinMax(cids, DB.ColumnItem.PUBTIME, false);
+        Cursor c = mDb.queryItemMinMax(cids, ColumnItem.PUBTIME, false);
         if (c.moveToFirst())
             v = c.getLong(0);
         c.close();
@@ -1288,7 +1292,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     getItemMinPubtime(ColumnItem where, long mask, long value) {
         long v = -1;
-        Cursor c = mDb.queryItemMinMax(where, mask, value, DB.ColumnItem.PUBTIME, false);
+        Cursor c = mDb.queryItemMinMax(where, mask, value, ColumnItem.PUBTIME, false);
         if (c.moveToFirst())
             v = c.getLong(0);
         c.close();
@@ -1379,22 +1383,22 @@ UnexpectedExceptionHandler.TrackedModule {
     public File
     getItemInfoDataFile(long id, long cid, String title, String url) {
         if (cid < 0)
-            cid = getItemInfoLong(id, DB.ColumnItem.CHANNELID);
+            cid = getItemInfoLong(id, ColumnItem.CHANNELID);
 
         if (!Utils.isValidValue(title))
-            title = getItemInfoString(id, DB.ColumnItem.TITLE);
+            title = getItemInfoString(id, ColumnItem.TITLE);
 
         if (!Utils.isValidValue(url)) {
-            long action = getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
-            String link = getItemInfoString(id, DB.ColumnItem.LINK);
-            String enclosure = getItemInfoString(id, DB.ColumnItem.ENCLOSURE_URL);
+            long action = getChannelInfoLong(cid, ColumnChannel.ACTION);
+            String link = getItemInfoString(id, ColumnItem.LINK);
+            String enclosure = getItemInfoString(id, ColumnItem.ENCLOSURE_URL);
             url = mUip.getDynamicActionTargetUrl(action, link, enclosure);
         }
 
         // we don't need to create valid filename with empty url value.
         if (!Utils.isValidValue(url)) {
             synchronized (mWiredChannl) {
-                mWiredChannl.add(getChannelInfoString(cid, DB.ColumnChannel.URL));
+                mWiredChannl.add(getChannelInfoString(cid, ColumnChannel.URL));
             }
             return null;
         }
@@ -1490,7 +1494,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                cols,
                                null != cids? Utils.convertArraylongToLong(cids): null,
                                new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
-                               new String[] { search, search },
+                               null == search? null: new String[] { search, search },
                                fromPubtime, toPubtime,
                                0, true);
     }

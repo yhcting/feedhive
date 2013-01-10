@@ -40,11 +40,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import free.yhc.feeder.db.ColumnItem;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
@@ -298,7 +298,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // There is no use case that 'null == f' here!
         File f = mDbp.getItemInfoDataFile(mId);
         eAssert(null != f);
-        mNetUrl = mDbp.getItemInfoString(mId, DB.ColumnItem.LINK);
+        mNetUrl = mDbp.getItemInfoString(mId, ColumnItem.LINK);
         mFileUrl = "file:///" + f.getAbsolutePath();
         mCurUrl = f.exists()? mFileUrl: mNetUrl;
         mWv.loadUrl(mCurUrl);

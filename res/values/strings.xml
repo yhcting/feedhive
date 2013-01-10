@@ -19,6 +19,7 @@
     <string name="infinite">infinite</string>
     <string name="delete">Delete</string>
     <string name="deleting">Deleting</string>
+    <string name="loading">Loading</string>
     <string name="all">All</string>
     <string name="favorite_items">Favorite items</string>
     <string name="all_items">All items</string>

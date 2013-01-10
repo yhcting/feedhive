@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
+import free.yhc.feeder.db.ColumnItem;
+import free.yhc.feeder.db.DBPolicy;
 
 // Singleton
 // Runtime Data
@@ -623,7 +625,7 @@ OnSharedPreferenceChangeListener {
         try {
             mDbp.getDelayedChannelUpdate();
             for (long dnid : dnids)
-                if (set.contains(mDbp.getItemInfoLong(dnid, DB.ColumnItem.CHANNELID)))
+                if (set.contains(mDbp.getItemInfoLong(dnid, ColumnItem.CHANNELID)))
                     l.add(dnid);
         } finally {
             mDbp.putDelayedChannelUpdate();

@@ -43,6 +43,8 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import android.graphics.Bitmap;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DBPolicy;
 
 public class NetLoader {
     private static final boolean DBG = false;
@@ -311,7 +313,7 @@ public class NetLoader {
     private void
     update(long cid, String imageref)
             throws FeederException {
-        String url = mDbp.getChannelInfoString(cid, DB.ColumnChannel.URL);
+        String url = mDbp.getChannelInfoString(cid, ColumnChannel.URL);
         eAssert(null != url);
 
         //logI("Loading Items: " + url);
@@ -326,12 +328,12 @@ public class NetLoader {
         // Actually deciding only once is enough in general case.
         // But, rarely whole channel item type may be changed and requires different action.
         // So, whenever update is executed try to adjust 'action' type.
-        long oldAction = mDbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+        long oldAction = mDbp.getChannelInfoLong(cid, ColumnChannel.ACTION);
         long action = mUip.decideActionType(oldAction,
                                             parD.channel,
                                             parD.items.length > 0? parD.items[0]: null);
         if (action != oldAction)
-            mDbp.updateChannel(cid, DB.ColumnChannel.ACTION, action);
+            mDbp.updateChannel(cid, ColumnChannel.ACTION, action);
 
         byte[] imageblob = mDbp.getChannelInfoImageblob(cid);
         if (imageblob.length <= 0) {
@@ -358,7 +360,7 @@ public class NetLoader {
                 imageblob = Utils.compressBitmap(bm);
                 bm.recycle();
                 if (null != imageblob)
-                    mDbp.updateChannel(cid, DB.ColumnChannel.IMAGEBLOB, imageblob);
+                    mDbp.updateChannel(cid, ColumnChannel.IMAGEBLOB, imageblob);
             }
             //logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
             checkInterrupted();
@@ -374,7 +376,7 @@ public class NetLoader {
         // Information in "ch.dynD" is not available in case update.
         // ('imageblob' and 'action' is exception case controlled with argument.)
         // This is dynamically assigned variable.
-        long updateMode = mDbp.getChannelInfoLong(cid, DB.ColumnChannel.UPDATEMODE);
+        long updateMode = mDbp.getChannelInfoLong(cid, ColumnChannel.UPDATEMODE);
         if (Feed.Channel.isUpdDn(updateMode)) {
             final long chact = action;
             idop = new DBPolicy.ItemDataOpInterface() {

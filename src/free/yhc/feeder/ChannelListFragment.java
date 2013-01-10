@@ -26,10 +26,8 @@ import java.util.Calendar;
 import java.util.HashSet;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -46,17 +44,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
@@ -273,7 +270,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 eAssert(false);
                 return Err.UNKNOWN; // something evil!!!
             } else {
-                mDbp.updateChannel(mCidPickImage, DB.ColumnChannel.IMAGEBLOB, imageData);
+                mDbp.updateChannel(mCidPickImage, ColumnChannel.IMAGEBLOB, imageData);
                 mCidPickImage = -1;
             }
             return Err.NO_ERR;
@@ -373,7 +370,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private boolean
     changeCategory(long cid, long catTo) {
-        mDbp.updateChannel(cid, DB.ColumnChannel.CATEGORYID, catTo);
+        mDbp.updateChannel(cid, ColumnChannel.CATEGORYID, catTo);
         getAdapter().removeItem(getAdapter().findPosition(cid));
         getMyActivity().categoryDataSetChanged(catTo);
         dataSetChanged();
@@ -443,36 +440,20 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContext_changeCategory(final long cid) {
-        // Create Adapter for list and set it.
-        Feed.Category[] cats = mDbp.getCategories();
-        final String[] menus = new String[cats.length - 1];
-        final long[] catIds = new long[cats.length - 1];
-        int i = 0;
-        for (Feed.Category cat : cats) {
-            if (cat.id != mCatId) {
-                if (!Utils.isValidValue(cat.name)
-                    && mDbp.isDefaultCategoryId(cat.id))
-                    menus[i] = getActivity().getResources().getText(R.string.default_category_name).toString();
-                else
-                    menus[i] = cat.name;
-
-                catIds[i++] = cat.id;
-            }
-        }
-
-        AlertDialog.Builder bldr = new AlertDialog.Builder(getActivity());
-        ArrayAdapter<String> adapter
-            = new ArrayAdapter<String>(getActivity(), android.R.layout.select_dialog_item, menus);
-        bldr.setAdapter(adapter, new DialogInterface.OnClickListener() {
+        UiUtils.OnCategorySelectedListener action = new UiUtils.OnCategorySelectedListener() {
             @Override
             public void
-            onClick(DialogInterface dialog, int which) {
-                changeCategory(cid, catIds[which]);
+            onSelected(long category, Object user) {
+                changeCategory(cid, category);
             }
-        });
+        };
 
-        bldr.setTitle(R.string.select_category);
-        bldr.create().show();
+        UiUtils.selectCategoryDialog(getActivity(),
+                                     R.string.select_category,
+                                     action,
+                                     mCatId,
+                                     null)
+               .show();
     }
 
     private void
@@ -765,7 +746,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // See comments in 'onPause()'
         try {
             mDbp.getDelayedChannelUpdate();
-            Cursor c = mDbp.queryChannel(mCatId, DB.ColumnChannel.ID);
+            Cursor c = mDbp.queryChannel(mCatId, ColumnChannel.ID);
             if (c.moveToFirst()) {
                 do {
                     long cid = c.getLong(0);

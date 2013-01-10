@@ -55,12 +55,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.ColumnItem;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
@@ -113,16 +114,16 @@ UnexpectedExceptionHandler.TrackedModule {
         //   whenever item state is changed.
         // But it's big overhead.
         // So, in case STATE, it didn't included in list cursor, but read from DB if needed.
-        protected final DB.ColumnItem[] _mQueryProjection = new DB.ColumnItem[] {
-                    DB.ColumnItem.ID, // Mandatory.
-                    DB.ColumnItem.CHANNELID,
-                    DB.ColumnItem.TITLE,
-                    DB.ColumnItem.DESCRIPTION,
-                    DB.ColumnItem.ENCLOSURE_LENGTH,
-                    DB.ColumnItem.ENCLOSURE_URL,
-                    DB.ColumnItem.ENCLOSURE_TYPE,
-                    DB.ColumnItem.PUBDATE,
-                    DB.ColumnItem.LINK };
+        protected final ColumnItem[] _mQueryProjection = new ColumnItem[] {
+                    ColumnItem.ID, // Mandatory.
+                    ColumnItem.CHANNELID,
+                    ColumnItem.TITLE,
+                    ColumnItem.DESCRIPTION,
+                    ColumnItem.ENCLOSURE_LENGTH,
+                    ColumnItem.ENCLOSURE_URL,
+                    ColumnItem.ENCLOSURE_TYPE,
+                    ColumnItem.PUBDATE,
+                    ColumnItem.LINK };
 
         protected String _mSearch = "";
         protected long   _mFromPubtime = -1;
@@ -194,7 +195,7 @@ UnexpectedExceptionHandler.TrackedModule {
         void
         onCreate() {
             super.onCreate();
-            setTitle(mDbp.getChannelInfoString(_mCid, DB.ColumnChannel.TITLE));
+            setTitle(mDbp.getChannelInfoString(_mCid, ColumnChannel.TITLE));
             // TODO
             //   How to use custom view + default option menu ???
             //
@@ -327,7 +328,7 @@ UnexpectedExceptionHandler.TrackedModule {
             try {
                 mDbp.getDelayedChannelUpdate();
                 for (long id : ids)
-                    if (Feed.Item.isStatFavOn(mDbp.getItemInfoLong(id, DB.ColumnItem.STATE)))
+                    if (Feed.Item.isStatFavOn(mDbp.getItemInfoLong(id, ColumnItem.STATE)))
                         mRtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
             } finally {
                 mDbp.putDelayedChannelUpdate();
@@ -354,7 +355,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         Cursor
         query() {
-            return mDbp.queryItemMask(_mQueryProjection, DB.ColumnItem.STATE,
+            return mDbp.queryItemMask(_mQueryProjection, ColumnItem.STATE,
                                       Feed.Item.MSTAT_FAV, Feed.Item.FSTAT_FAV_ON,
                                       _mSearch, _mFromPubtime, _mToPubtime);
         }
@@ -362,7 +363,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         long
         minPubtime() {
-            return mDbp.getItemMinPubtime(DB.ColumnItem.STATE,
+            return mDbp.getItemMinPubtime(ColumnItem.STATE,
                                           Feed.Item.MSTAT_FAV,
                                           Feed.Item.FSTAT_FAV_ON);
         }
@@ -667,7 +668,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private boolean
     changeItemState_opened(long id, int position) {
         // change state as 'opened' at this moment.
-        long state = mDbp.getItemInfoLong(id, DB.ColumnItem.STATE);
+        long state = mDbp.getItemInfoLong(id, ColumnItem.STATE);
         if (Feed.Item.isStateOpenNew(state)) {
             state = Utils.bitSet(state, Feed.Item.FSTAT_OPEN_OPENED, Feed.Item.MSTAT_OPEN);
             mDbp.updateItemAsync_state(id, state);
@@ -1189,7 +1190,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     return;
                 long dbId = getListAdapter().getItemInfo_id(position);
                 long cid = getListAdapter().getItemInfo_cid(position);
-                long act = mDbp.getChannelInfoLong(cid, DB.ColumnChannel.ACTION);
+                long act = mDbp.getChannelInfoLong(cid, ColumnChannel.ACTION);
                 onAction(act, view, dbId, position);
             }
         });

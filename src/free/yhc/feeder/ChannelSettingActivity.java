@@ -39,8 +39,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
-import free.yhc.feeder.model.DB;
-import free.yhc.feeder.model.DBPolicy;
+import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
@@ -63,7 +63,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     updateSchedUpdateSetting() {
-        String oldSchedUpdate = mDbp.getChannelInfoString(mCid, DB.ColumnChannel.SCHEDUPDATETIME);
+        String oldSchedUpdate = mDbp.getChannelInfoString(mCid, ColumnChannel.SCHEDUPDATETIME);
 
         LinearLayout schedlo = (LinearLayout)findViewById(R.id.sched_layout);
         // sodhs : Seconds Of Day HashSet
@@ -89,7 +89,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     updateUpdateModeSetting() {
         Spinner sp = (Spinner)findViewById(R.id.sp_updatemode);
-        long old_updmode = mDbp.getChannelInfoLong(mCid, DB.ColumnChannel.UPDATEMODE);
+        long old_updmode = mDbp.getChannelInfoLong(mCid, ColumnChannel.UPDATEMODE);
         long updmode = old_updmode;
         switch (sp.getSelectedItemPosition()) {
         case SPPOS_UPDATEMODE_NORMAL:
@@ -103,12 +103,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (old_updmode != updmode)
-            mDbp.updateChannel(mCid, DB.ColumnChannel.UPDATEMODE, updmode);
+            mDbp.updateChannel(mCid, ColumnChannel.UPDATEMODE, updmode);
     }
 
     private void
     updateBrowserSetting() {
-        long old_action = mDbp.getChannelInfoLong(mCid, DB.ColumnChannel.ACTION);
+        long old_action = mDbp.getChannelInfoLong(mCid, ColumnChannel.ACTION);
         long action = old_action;
 
         if (Feed.Channel.FACT_TYPE_DYNAMIC != Feed.Channel.getActType(action))
@@ -129,7 +129,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (old_action != action)
-            mDbp.updateChannel(mCid, DB.ColumnChannel.ACTION, action);
+            mDbp.updateChannel(mCid, ColumnChannel.ACTION, action);
     }
 
     private void
@@ -179,7 +179,7 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(mCid >= 0);
 
         ActionBar ab = getActionBar();
-        setTitle(mDbp.getChannelInfoString(mCid, DB.ColumnChannel.TITLE));
+        setTitle(mDbp.getChannelInfoString(mCid, ColumnChannel.TITLE));
         ab.setDisplayShowHomeEnabled(false);
 
         setContentView(R.layout.channel_setting);
@@ -194,7 +194,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        String schedtime = mDbp.getChannelInfoString(mCid, DB.ColumnChannel.SCHEDUPDATETIME);
+        String schedtime = mDbp.getChannelInfoString(mCid, ColumnChannel.SCHEDUPDATETIME);
         long[] secs = Utils.nStringToNrs(schedtime);
         for (long s : secs) {
             eAssert(0 <= s && s < Utils.DAY_IN_SEC);
@@ -208,7 +208,7 @@ UnexpectedExceptionHandler.TrackedModule {
         spadapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(spadapter);
 
-        long uptype = mDbp.getChannelInfoLong(mCid, DB.ColumnChannel.UPDATEMODE);
+        long uptype = mDbp.getChannelInfoLong(mCid, ColumnChannel.UPDATEMODE);
         if (Feed.Channel.isUpdLink(uptype))
             sp.setSelection(SPPOS_UPDATEMODE_NORMAL); // 'Normal' is position 0
         else if (Feed.Channel.isUpdDn(uptype))
@@ -217,7 +217,7 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(false);
 
         // Setup Browser
-        long action = mDbp.getChannelInfoLong(mCid, DB.ColumnChannel.ACTION);
+        long action = mDbp.getChannelInfoLong(mCid, ColumnChannel.ACTION);
         long actionType = Feed.Channel.getActType(action);
         if (actionType == Feed.Channel.FACT_TYPE_DYNAMIC) {
             sp = (Spinner)findViewById(R.id.sp_browser);

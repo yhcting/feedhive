@@ -23,7 +23,7 @@ package free.yhc.feeder;
 import static free.yhc.feeder.model.Utils.eAssert;
 import android.content.Context;
 import android.database.Cursor;
-import free.yhc.feeder.model.DB;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
