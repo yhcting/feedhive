@@ -27,6 +27,7 @@ import android.app.Service;
 import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.IBinder;
 import android.widget.RemoteViews;
 import free.yhc.feeder.FeederActivity;
@@ -92,6 +93,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 Intent intent = new Intent(Utils.getAppContext(),
                                            ViewsService.class);
                 intent.setAction(AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
+                intent.setData(Uri.fromParts("content", String.valueOf(catid), null));
                 intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
                 rv.setRemoteAdapter(R.id.list, intent);
 

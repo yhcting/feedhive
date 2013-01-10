@@ -156,7 +156,9 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDataSetChanged() {
-
+        if (null != mCursor)
+            mCursor.close();
+        mCursor = getCursor();
     }
 
     @Override
