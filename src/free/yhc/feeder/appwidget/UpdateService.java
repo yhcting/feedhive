@@ -20,17 +20,18 @@
 
 package free.yhc.feeder.appwidget;
 
+import java.util.ArrayList;
+
 import android.app.PendingIntent;
 import android.app.Service;
 import android.appwidget.AppWidgetManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.widget.RemoteViews;
 import free.yhc.feeder.FeederActivity;
 import free.yhc.feeder.R;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.ThreadEx;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -41,14 +42,10 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = true;
     private static final Utils.Logger P = new Utils.Logger(UpdateService.class);
 
-    private static final String APPWIDGET_PREF_FILE = "appWidgetPref";
-
-    private boolean mUpdateRunning = false;
-    private SharedPreferences mWidgetCatMapPref = null;
-
     private class AppWidgetUpdater extends ThreadEx<Err> {
-        private final AppWidgetManager mAwm;
-        private final int[] mAppWidgetIds;
+        private final AppWidgetManager  _mAwm;
+        private final int[]             _mAppWidgetIds;
+        private final int               _mStartId;
 
         private PendingIntent
         getAppLauncherPendingIntent() {
@@ -63,19 +60,21 @@ UnexpectedExceptionHandler.TrackedModule {
             return pIntent;
         }
 
-        AppWidgetUpdater(int[] appWidgetIds) {
-            mAppWidgetIds = appWidgetIds;
-            mAwm = AppWidgetManager.getInstance(getApplicationContext());
+        AppWidgetUpdater(int[] appWidgetIds, int startId) {
+            _mAppWidgetIds = appWidgetIds;
+            _mStartId = startId;
+            _mAwm = AppWidgetManager.getInstance(getApplicationContext());
         }
 
         @Override
         protected void
         onPreRun() {
             if (DBG) P.v("Update onPreRun");
-            for (int awid : mAppWidgetIds) {
+            for (int awid : _mAppWidgetIds) {
                 RemoteViews rv = new RemoteViews(getApplicationContext().getPackageName(),
                                                  R.layout.appwidget_loading);
-                mAwm.updateAppWidget(awid, rv);
+                if (DBG) P.v("Update widget - Loading : " + awid);
+                _mAwm.updateAppWidget(awid, rv);
             }
         }
 
@@ -83,17 +82,30 @@ UnexpectedExceptionHandler.TrackedModule {
         protected void
         onPostRun(Err result) {
             if (DBG) P.v("Update onPostRun");
-            for (int awid : mAppWidgetIds) {
+            for (int awid : _mAppWidgetIds) {
                 RemoteViews rv = new RemoteViews(getApplicationContext().getPackageName(),
-                                                 R.layout.appwidget_loading);
-                rv.setImageViewResource(R.id.image, R.drawable.search_up);
-                /*
-                remoteViews.setOnClickPendingIntent(R.id.list, pIntent);
-                appWidgetManager.updateAppWidget(widgetId, rv);
-                */
-                mAwm.updateAppWidget(awid, rv);
+                                                 R.layout.appwidget);
+                long catid = AppWidgetUtils.getWidgetCategory(awid);
+                if (DB.INVALID_ITEM_ID == catid)
+                    continue;
+
+                Intent intent = new Intent(Utils.getAppContext(),
+                                           ViewsService.class);
+                intent.setAction(AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
+                intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
+                rv.setRemoteAdapter(R.id.list, intent);
+
+                intent = new Intent(Utils.getAppContext(),
+                                    ViewsService.ListPendingIntentReceiver.class);
+                intent.setAction(AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
+                intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
+                PendingIntent pi = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent, 0);
+                rv.setPendingIntentTemplate(R.id.list, pi);
+
+                if (DBG) P.v("Update widget : " + awid);
+                _mAwm.updateAppWidget(awid, rv);
             }
-            stopSelf();
+            stopSelf(_mStartId);
         }
 
         @Override
@@ -113,7 +125,7 @@ UnexpectedExceptionHandler.TrackedModule {
         doAsyncTask() {
             if (DBG) P.v("Update AsyncTask");
             try {
-                Thread.sleep(5000);
+                //Thread.sleep(5000);
             } catch (Exception ignored) { }
             return Err.NO_ERR;
         }
@@ -122,6 +134,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static void
     update(Context context, int[] appWidgetIds) {
+        if (DBG) P.v("Update Widgets : Widget Ids : " + Utils.nrsToNString(appWidgetIds));
         // Build the intent to call the service
         Intent intent = new Intent(Utils.getAppContext(), UpdateService.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
@@ -130,11 +143,20 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     public static void
+    update(Context context, long[] cats) {
+        if (DBG) P.v("Update Widgets : Category Ids : " + Utils.nrsToNString(cats));
+        ArrayList<Integer> al = new ArrayList<Integer>(cats.length);
+        for (long cat : cats) {
+            int awid = AppWidgetUtils.getCategoryWidget(cat);
+            if (AppWidgetUtils.INVALID_APPWIDGETID != awid)
+                al.add(awid);
+        }
+        update(context, Utils.convertArrayIntegerToint(al.toArray(new Integer[0])));
+    }
+
+    public static void
     updateAll(Context context) {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(Utils.getAppContext());
-        ComponentName widget = new ComponentName(Utils.getAppContext(), Provider.class);
-        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(widget);
-        update(context, appWidgetIds);
+        update(context, AppWidgetUtils.getAppWidgetIds());
     }
 
     @Override
@@ -148,7 +170,6 @@ UnexpectedExceptionHandler.TrackedModule {
     onCreate() {
         super.onCreate();
         UnexpectedExceptionHandler.get().registerModule(this);
-        mWidgetCatMapPref = getSharedPreferences(APPWIDGET_PREF_FILE, MODE_PRIVATE);
     }
 
     @Override
@@ -156,12 +177,8 @@ UnexpectedExceptionHandler.TrackedModule {
     onStartCommand(Intent intent, int flags, int startId) {
         if (DBG) P.v("onStartCommand : " + startId);
         // DO NOT anything for additional update request if there is already running update.
-        if (mUpdateRunning)
-            return START_NOT_STICKY;
-        mUpdateRunning = true;
-
         int[] appWidgetIds = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS);
-        new AppWidgetUpdater(appWidgetIds).run();
+        new AppWidgetUpdater(appWidgetIds, startId).run();
         return START_NOT_STICKY;
     }
 

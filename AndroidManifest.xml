@@ -45,6 +45,10 @@
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   android:theme="@android:style/Theme.NoTitleBar"
                   />
+        <activity android:name=".AppWidgetCategoryChooserActivity"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  android:theme="@android:style/Theme.Dialog"
+                  />
         <service android:name=".ScheduledUpdateService"
                  />
         <service android:name=".appwidget.UpdateService"
@@ -77,5 +81,10 @@
                 <action android:name="feeder.intent.action.NOTIFICATION_DELETE" />
             </intent-filter>
         </receiver>
-	</application>
+        <receiver android:name=".appwidget.ViewsService$ListPendingIntentReceiver">
+            <intent-filter>
+                <action android:name="feeder.intent.action.LIST_PENDING_INTENT" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>

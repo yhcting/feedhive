@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/item_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -18,7 +19,6 @@
             android:id="@+id/channel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
             android:textSize="@dimen/misc_text_size"
             android:singleLine="true"
             android:ellipsize="end"
@@ -28,7 +28,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textSize="@dimen/title_text_size"
-            android:maxLines="1"
+            android:textColor="@color/title_color_new"
+            android:singleLine="true"
             android:ellipsize="end"
             />
         <TextView
@@ -36,7 +37,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:textSize="@dimen/desc_text_size"
-            android:maxLines="1"
+            android:singleLine="true"
             android:ellipsize="end"
             />
     </LinearLayout>

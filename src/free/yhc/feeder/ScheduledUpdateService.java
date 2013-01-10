@@ -123,7 +123,8 @@ UnexpectedExceptionHandler.TrackedModule {
         // NOTE:
         //   broadcast receiver is run on main ui thread (same as service).
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public void
+        onReceive(Context context, Intent intent) {
             //logI("AlarmReceiver : onReceive");
 
             long time = intent.getLongExtra("time", -1);

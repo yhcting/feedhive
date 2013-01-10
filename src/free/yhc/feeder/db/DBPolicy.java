@@ -1494,7 +1494,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                cols,
                                null != cids? Utils.convertArraylongToLong(cids): null,
                                new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
-                               new String[] { search, search },
+                               null == search? null: new String[] { search, search },
                                fromPubtime, toPubtime,
                                0, true);
     }

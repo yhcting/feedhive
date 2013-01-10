@@ -20,8 +20,15 @@
 
 package free.yhc.feeder.appwidget;
 
+import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.util.HashMap;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViewsService;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -29,6 +36,45 @@ public class ViewsService extends RemoteViewsService implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = true;
     private static final Utils.Logger P = new Utils.Logger(ViewsService.class);
+
+    private static HashMap<Long, ViewsFactory> sViewsFactoryMap
+        = new HashMap<Long, ViewsFactory>();
+
+    public static class ListPendingIntentReceiver extends BroadcastReceiver {
+        @Override
+        public void
+        onReceive(Context context, Intent intent) {
+            if (DBG) P.v("ListPendingIntentReceiver : onReceive.");
+            if (!AppWidgetUtils.ACTION_LIST_PENDING_INTENT.equals(intent.getAction()))
+                return; // unexpected intent.
+
+            final long catid = intent.getLongExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, DB.INVALID_ITEM_ID);
+            if (DB.INVALID_ITEM_ID == catid) {
+                if (DBG) P.w("Unexpected List Pending Intent...");
+                return;
+            }
+
+            if (DBG) P.v("List Pending Intent receives");
+            final int pos = intent.getIntExtra(AppWidgetUtils.MAP_KEY_POSITION, AppWidgetUtils.INVALID_POSITION);
+            Utils.getUiHandler().post(new Runnable() {
+                @Override
+                public void
+                run() {
+                    ViewsFactory vf = getViewsFactory(catid);
+                    if (null == vf) {
+                        if (DBG) P.w("Unexpected List Pending Intent : category(" + catid + ")");
+                        return;
+                    }
+                    vf.onItemClick(pos);
+                }
+            });
+        }
+    }
+
+    static ViewsFactory
+    getViewsFactory(long catid) {
+        return sViewsFactoryMap.get(catid);
+    }
 
     @Override
     public String
@@ -39,6 +85,11 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public RemoteViewsFactory
     onGetViewFactory(Intent intent) {
-        return null;
+        long catid = intent.getLongExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, DB.INVALID_ITEM_ID);
+        eAssert(DB.INVALID_ITEM_ID != catid);
+        if (DBG) P.v("onGetViewFactory : category(" + catid + ")");
+        ViewsFactory vf = new ViewsFactory(catid);
+        sViewsFactoryMap.put(catid, vf);
+        return vf;
     }
 }

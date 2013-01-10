@@ -43,6 +43,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(DB.class);
 
+    public static final long INVALID_ITEM_ID    = -1;
+
     private static DB sInstance = null;
 
     /**************************************

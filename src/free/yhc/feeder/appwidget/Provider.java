@@ -20,10 +20,14 @@
 
 package free.yhc.feeder.appwidget;
 
+import java.util.ArrayList;
+
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
+import free.yhc.feeder.AppWidgetCategoryChooserActivity;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -31,6 +35,7 @@ public class Provider extends AppWidgetProvider implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = true;
     private static final Utils.Logger P = new Utils.Logger(Provider.class);
+
 
     public Provider() {
         super();
@@ -61,7 +66,10 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onDeleted(Context context, int[] appWidgetIds) {
         super.onDeleted(context, appWidgetIds);
+        for (int id : appWidgetIds)
+            AppWidgetUtils.deleteWidgetToCategoryMap(id);
         if (DBG) P.v("onDeleted");
+
     }
 
     @Override
@@ -89,7 +97,30 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
-        if (DBG) P.v("onUpdate");
-        UpdateService.update(context, appWidgetIds);
+        if (DBG) {
+            String idstr = "";
+            for (int id : appWidgetIds)
+                idstr += id + "/";
+            P.v("onUpdate : " + idstr);
+        }
+
+        ArrayList<Integer> oldWidgets = new ArrayList<Integer>(appWidgetIds.length);
+        ArrayList<Integer> newWidgets = new ArrayList<Integer>(appWidgetIds.length);
+        for (int awid : appWidgetIds) {
+            long catid = AppWidgetUtils.getWidgetCategory(awid);
+            if (DB.INVALID_ITEM_ID == catid)
+                newWidgets.add(awid);
+            else
+                oldWidgets.add(awid);
+        }
+        UpdateService.update(context, Utils.convertArrayIntegerToint(oldWidgets.toArray(new Integer[0])));
+
+        for (Integer i : newWidgets.toArray(new Integer[0])) {
+            Intent intent = new Intent(context, AppWidgetCategoryChooserActivity.class);
+            intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, i);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(intent);
+        }
     }
 }

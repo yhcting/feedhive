@@ -26,10 +26,8 @@ import java.util.Calendar;
 import java.util.HashSet;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -46,7 +44,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -443,36 +440,20 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContext_changeCategory(final long cid) {
-        // Create Adapter for list and set it.
-        Feed.Category[] cats = mDbp.getCategories();
-        final String[] menus = new String[cats.length - 1];
-        final long[] catIds = new long[cats.length - 1];
-        int i = 0;
-        for (Feed.Category cat : cats) {
-            if (cat.id != mCatId) {
-                if (!Utils.isValidValue(cat.name)
-                    && mDbp.isDefaultCategoryId(cat.id))
-                    menus[i] = getActivity().getResources().getText(R.string.default_category_name).toString();
-                else
-                    menus[i] = cat.name;
-
-                catIds[i++] = cat.id;
-            }
-        }
-
-        AlertDialog.Builder bldr = new AlertDialog.Builder(getActivity());
-        ArrayAdapter<String> adapter
-            = new ArrayAdapter<String>(getActivity(), android.R.layout.select_dialog_item, menus);
-        bldr.setAdapter(adapter, new DialogInterface.OnClickListener() {
+        UiUtils.OnCategorySelectedListener action = new UiUtils.OnCategorySelectedListener() {
             @Override
             public void
-            onClick(DialogInterface dialog, int which) {
-                changeCategory(cid, catIds[which]);
+            onSelected(long category, Object user) {
+                changeCategory(cid, category);
             }
-        });
+        };
 
-        bldr.setTitle(R.string.select_category);
-        bldr.create().show();
+        UiUtils.selectCategoryDialog(getActivity(),
+                                     R.string.select_category,
+                                     action,
+                                     mCatId,
+                                     null)
+               .show();
     }
 
     private void
