@@ -24,6 +24,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.io.File;
 import java.util.Calendar;
+import java.util.HashSet;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -57,6 +58,7 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskDownloadToFile;
@@ -105,8 +107,70 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private final RTTaskQChangedListener    mRttqcl = new RTTaskQChangedListener();
 
+    private DBWatcher   mDbWatcher  = null;
     private OpMode      mOpMode  = null;
     private ListView    mList    = null;
+
+
+    private static class DBWatcher implements DB.OnDBUpdateListener {
+        private final HashSet<Long> _mUpdatedChannelSet = new HashSet<Long>();
+        // NOTE
+        // initial value should be 'true' because we don't know what happened to DB
+        //   while this activity instance DOESN'T exist!
+        private boolean             _mItemTableUpdated  = true;
+
+        void
+        register() {
+            DBPolicy.get().registerUpdateListener(this,
+                                                  DB.UpdateType.CHANNEL_DATA.flag()
+                                                  | DB.UpdateType.ITEM_TABLE.flag());
+        }
+
+        void
+        unregister() {
+            DBPolicy.get().unregisterUpdateListener(this);
+        }
+
+        void
+        reset() {
+            _mUpdatedChannelSet.clear();
+            _mItemTableUpdated = false;
+        }
+
+        boolean
+        isItemTableUpdated() {
+            return _mItemTableUpdated;
+        }
+
+        long[]
+        getUpdatedChannels() {
+            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[0]));
+        }
+
+        @Override
+        protected void
+        finalize() throws Throwable {
+            super.finalize();
+            unregister();
+        }
+
+        @Override
+        public void
+        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+            switch (type) {
+            case CHANNEL_DATA:
+                _mUpdatedChannelSet.add((Long)arg0);
+                break;
+
+            case ITEM_TABLE:
+                _mItemTableUpdated = true;
+                break;
+
+            default:
+                eAssert(false);
+            }
+        }
+    }
 
     private class OpMode {
         // 'State' of item may be changed often dynamically (ex. when open item)
@@ -1212,6 +1276,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                             DATA_REQ_SZ,
                                             DATA_ARR_MAX,
                                             mOpMode.getAdapterActionHandler()));
+        mDbWatcher = new DBWatcher();
     }
 
     @Override
@@ -1245,18 +1310,12 @@ UnexpectedExceptionHandler.TrackedModule {
         // How to check it!
         // If one of channel that are belongs to current item list, is changed
         //   and item table is changed, than I can decide that current viewing items are updated.
-        long[] watchCids = new long[0];
-        if (mDbp.isChannelWatcherRegistered(this))
-            watchCids = mDbp.getChannelWatcherUpdated(this);
-
+        long[] watchCids = mDbWatcher.getUpdatedChannels();
         // default is 'full-refreshing'
-        boolean itemTableWatcherUpdated = true;
+        boolean itemTableWatcherUpdated = mDbWatcher.isItemTableUpdated();
 
-        if (mDbp.isItemTableWatcherRegistered(this))
-            itemTableWatcherUpdated = mDbp.isItemTableWatcherUpdated(this);
-
-        mDbp.unregisterChannelWatcher(this);
-        mDbp.unregisterItemTableWatcher(this);
+        mDbWatcher.unregister();
+        mDbWatcher.reset();
 
         long[] mCids = mOpMode.getCids();
 
@@ -1283,8 +1342,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onPause() {
         //logI("==> ItemListActivity : onPause");
-        mDbp.registerChannelWatcher(this);
-        mDbp.registerItemTableWatcher(this);
+        mDbWatcher.register();
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
         mRtt.unregisterRegisterEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
@@ -1305,6 +1363,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onDestroy() {
         //logI("==> ItemListActivity : onDestroy");
         super.onDestroy();
+        mDbWatcher.unregister();
         UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 

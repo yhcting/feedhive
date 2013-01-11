@@ -248,6 +248,14 @@ UnexpectedExceptionHandler.TrackedModule {
         return null;
     }
 
+    private Cursor
+    getEmptyCursor() {
+        // empty cids... So, return empty cursor
+        return mDb.queryCategory(ColumnCategory.ID,
+                                 ColumnCategory.ID,
+                                 DB.INVALID_ITEM_ID);
+    }
+
     /**
      * Find channel
      * @param state
@@ -1486,6 +1494,9 @@ UnexpectedExceptionHandler.TrackedModule {
               String search, long fromPubtime, long toPubtime) {
         ColumnItem[] cols = null;
         if (null != cids) {
+            if (0 == cids.length)
+                return getEmptyCursor();
+
             cols = new ColumnItem[cids.length];
             for (int i = 0; i < cols.length; i++)
                 cols[i] = ColumnItem.CHANNELID;
@@ -1604,98 +1615,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // ===============================================
     //
-    // DB Watcher (Just delegation)
+    // DB Listener (Just delegation)
     //
     // ===============================================
-    /**
-     * watcher is updated if channel information is updated in DB.
-     * So, to check whether  DB is updated
-     * @param key
-     */
     public void
-    registerChannelWatcher(Object key) {
-        mDb.registerChannelWatcher(key);
-    }
-
-    public boolean
-    isChannelWatcherRegistered(Object key) {
-        return mDb.isChannelWatcherRegistered(key);
+    registerUpdateListener(DB.OnDBUpdateListener listener, int flag) {
+        mDb.registerUpdateListener(listener, flag);
     }
 
     public void
-    unregisterChannelWatcher(Object key) {
-        mDb.unregisterChannelWatcher(key);
-    }
-
-    public boolean
-    isChannelWatcherUpdated(Object key, long cid) {
-        return mDb.isChannelWatcherUpdated(key, cid);
-    }
-
-    public long[]
-    getChannelWatcherUpdated(Object key) {
-        return mDb.getChannelWatcherUpdated(key);
-    }
-
-    // -------------- Item Table ------------------
-    public void
-    registerItemTableWatcher(Object key) {
-        mDb.registerItemTableWatcher(key);
-    }
-
-    public boolean
-    isItemTableWatcherRegistered(Object key) {
-        return mDb.isItemTableWatcherRegistered(key);
-    }
-
-    public void
-    unregisterItemTableWatcher(Object key) {
-        mDb.unregisterItemTableWatcher(key);
-    }
-
-    public boolean
-    isItemTableWatcherUpdated(Object key) {
-        return mDb.isItemTableWatcherUpdated(key);
-    }
-
-    // -------------- Channel Table ------------------
-    public void
-    registerChannelTableWatcher(Object key) {
-        mDb.registerChannelTableWatcher(key);
-    }
-
-    public boolean
-    isChannelTableWatcherRegistered(Object key) {
-        return mDb.isChannelTableWatcherRegistered(key);
-    }
-
-    public void
-    unregisterChannelTableWatcher(Object key) {
-        mDb.unregisterChannelTableWatcher(key);
-    }
-
-    public boolean
-    isChannelTableWatcherUpdated(Object key) {
-        return mDb.isChannelTableWatcherUpdated(key);
-    }
-    // -------------- Category Table ------------------
-    public void
-    registerCategoryTableWatcher(Object key) {
-        mDb.registerCategoryTableWatcher(key);
-    }
-
-    public boolean
-    isCategoryTableWatcherRegistered(Object key) {
-        return mDb.isCategoryTableWatcherRegistered(key);
-    }
-
-    public void
-    unregisterCategoryTableWatcher(Object key) {
-        mDb.unregisterCategoryTableWatcher(key);
-    }
-
-    public boolean
-    isCategoryTableWatcherUpdated(Object key) {
-        return mDb.isCategoryTableWatcherUpdated(key);
+    unregisterUpdateListener(DB.OnDBUpdateListener listener) {
+        mDb.unregisterUpdateListener(listener);
     }
 }

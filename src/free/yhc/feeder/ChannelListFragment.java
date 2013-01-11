@@ -50,6 +50,7 @@ import android.widget.ListView;
 import android.widget.ScrollView;
 import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
@@ -79,12 +80,73 @@ UnexpectedExceptionHandler.TrackedModule {
     private final RTTask        mRtt = RTTask.get();
     private final UIPolicy      mUip = UIPolicy.get();
 
+    private DBWatcher mDbWatcher = null;
     private boolean mPrimary = false;
     private long    mCatId  =   -1;
 
     private ListView    mListView = null;
     // Saved cid for Async execution.
     private long        mCidPickImage = -1;
+
+    private static class DBWatcher implements DB.OnDBUpdateListener {
+        // NOTE
+        // initial value should be 'true' because we don't know what happened to DB
+        //   while this fragment instance DOESN'T exist!
+        private boolean             _mChannelTableUpdated = true;
+        private final HashSet<Long> _mUpdatedChannelSet   = new HashSet<Long>();
+
+        void
+        register() {
+            DBPolicy.get().registerUpdateListener(this,
+                                                  DB.UpdateType.CATEGORY_TABLE.flag()
+                                                  | DB.UpdateType.CHANNEL_DATA.flag());
+        }
+
+        void
+        unregister() {
+            DBPolicy.get().unregisterUpdateListener(this);
+        }
+
+        void
+        reset() {
+            _mChannelTableUpdated = false;
+            _mUpdatedChannelSet.clear();
+        }
+
+        long[]
+        getUpdatedChannels() {
+            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[0]));
+        }
+
+        boolean
+        isChannelTableUpdated() {
+            return _mChannelTableUpdated;
+        }
+
+        @Override
+        protected void
+        finalize() throws Throwable {
+            super.finalize();
+            unregister();
+        }
+
+        @Override
+        public void
+        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+            switch (type) {
+            case CHANNEL_TABLE:
+                _mChannelTableUpdated = true;
+                break;
+
+            case CHANNEL_DATA:
+                _mUpdatedChannelSet.add((Long)arg0);
+                break;
+
+            default:
+                eAssert(false);
+            }
+        }
+    }
 
     private class AdapterActionListener implements ChannelListAdapter.OnActionListener {
         @Override
@@ -638,13 +700,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onAttach(Activity activity) {
-        super.onAttach(activity);
-    }
-
-
-    @Override
-    public void
     onSaveInstanceState(Bundle outState) {
         outState.putLong(KEY_CATID, mCatId);
         outState.putBoolean(KEY_PRIMARY, mPrimary);
@@ -667,9 +722,17 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
+    onAttach(Activity activity) {
+        super.onAttach(activity);
+    }
+
+    @Override
+    public void
     onCreate(Bundle savedInstanceState) {
+        UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
         restoreInstanceState(savedInstanceState);
+        mDbWatcher = new DBWatcher();
     }
 
     @Override
@@ -735,10 +798,8 @@ UnexpectedExceptionHandler.TrackedModule {
         mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
 
         HashSet<Long> updatedCids = new HashSet<Long>();
-        if (mDbp.isChannelWatcherRegistered(this)) {
-            for (long cid : mDbp.getChannelWatcherUpdated(this))
-                updatedCids.add(cid);
-        }
+        for (long cid : mDbWatcher.getUpdatedChannels())
+            updatedCids.add(cid);
 
         HashSet<Long> myUpdatedCids = new HashSet<Long>();
         // Check channel state and bind it.
@@ -769,8 +830,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Channel may be added or deleted.
         // And channel operation is only allowed on current selected list
         //   according to use case.
-        if (mDbp.isChannelTableWatcherRegistered(this)
-            && mDbp.isChannelTableWatcherUpdated(this)
+        if (mDbWatcher.isChannelTableUpdated()
             && myUpdatedCids.size() > 0) {
             refreshListAsync();
         } else
@@ -780,16 +840,15 @@ UnexpectedExceptionHandler.TrackedModule {
         // Because, if item is newly inserted, that means some of channel is updated.
         // And that channel will be updated according to DB changes.
 
-        mDbp.unregisterChannelWatcher(this);
-        mDbp.unregisterChannelTableWatcher(this);
+        mDbWatcher.unregister();
+        mDbWatcher.reset();
     }
 
     @Override
     public void
     onPause() {
         //logI("==> ChannelListActivity : onPause");
-        mDbp.registerChannelWatcher(this);
-        mDbp.registerChannelTableWatcher(this);
+        mDbWatcher.register();
         mRtt.unregisterRegisterEventListener(this);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
@@ -822,6 +881,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onDestroy() {
         super.onDestroy();
+        mDbWatcher.unregister();
+        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 
     @Override

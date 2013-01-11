@@ -34,11 +34,11 @@ import free.yhc.feeder.model.Utils;
 
 public class ViewsService extends RemoteViewsService implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ViewsService.class);
 
-    private static HashMap<Long, ViewsFactory> sViewsFactoryMap
-        = new HashMap<Long, ViewsFactory>();
+    private static HashMap<Integer, ViewsFactory> sViewsFactoryMap
+        = new HashMap<Integer, ViewsFactory>();
 
     public static class ListPendingIntentReceiver extends BroadcastReceiver {
         @Override
@@ -48,8 +48,9 @@ UnexpectedExceptionHandler.TrackedModule {
             if (!AppWidgetUtils.ACTION_LIST_PENDING_INTENT.equals(intent.getAction()))
                 return; // unexpected intent.
 
-            final long catid = intent.getLongExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, DB.INVALID_ITEM_ID);
-            if (DB.INVALID_ITEM_ID == catid) {
+            final int awid = intent.getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID,
+                                                AppWidgetUtils.INVALID_APPWIDGETID);
+            if (AppWidgetUtils.INVALID_APPWIDGETID == awid) {
                 if (DBG) P.w("Unexpected List Pending Intent...");
                 return;
             }
@@ -60,9 +61,9 @@ UnexpectedExceptionHandler.TrackedModule {
                 @Override
                 public void
                 run() {
-                    ViewsFactory vf = getViewsFactory(catid);
+                    ViewsFactory vf = getViewsFactory(awid);
                     if (null == vf) {
-                        if (DBG) P.w("Unexpected List Pending Intent : category(" + catid + ")");
+                        if (DBG) P.w("Unexpected List Pending Intent : appWidget(" + awid + ")");
                         return;
                     }
                     vf.onItemClick(pos);
@@ -72,8 +73,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     static ViewsFactory
-    getViewsFactory(long catid) {
-        return sViewsFactoryMap.get(catid);
+    getViewsFactory(int appWidgetId) {
+        return sViewsFactoryMap.get(appWidgetId);
     }
 
     @Override
@@ -86,10 +87,12 @@ UnexpectedExceptionHandler.TrackedModule {
     public RemoteViewsFactory
     onGetViewFactory(Intent intent) {
         long catid = intent.getLongExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, DB.INVALID_ITEM_ID);
-        eAssert(DB.INVALID_ITEM_ID != catid);
-        if (DBG) P.v("onGetViewFactory : category(" + catid + ")");
-        ViewsFactory vf = new ViewsFactory(catid);
-        sViewsFactoryMap.put(catid, vf);
+        int awid = intent.getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, AppWidgetUtils.INVALID_APPWIDGETID);
+        eAssert(DB.INVALID_ITEM_ID != catid
+                && AppWidgetUtils.INVALID_APPWIDGETID != awid);
+        if (DBG) P.v("onGetViewFactory : category(" + catid + ")" + " appwidget(" + awid + ")");
+        ViewsFactory vf = new ViewsFactory(catid, awid);
+        sViewsFactoryMap.put(awid, vf);
         return vf;
     }
 }

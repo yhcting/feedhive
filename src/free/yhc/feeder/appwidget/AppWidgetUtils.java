@@ -29,7 +29,7 @@ import free.yhc.feeder.model.Utils;
 import free.yhc.feeder.model.Utils.Logger;
 
 public class AppWidgetUtils {
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
     private static final Logger P = new Logger(AppWidgetUtils.class);
 
     public static final int    INVALID_APPWIDGETID = -1;

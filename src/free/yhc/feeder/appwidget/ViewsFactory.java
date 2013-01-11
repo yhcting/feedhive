@@ -20,6 +20,11 @@
 
 package free.yhc.feeder.appwidget;
 
+import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.util.HashSet;
+
+import android.appwidget.AppWidgetManager;
 import android.content.Intent;
 import android.database.Cursor;
 import android.widget.RemoteViews;
@@ -27,6 +32,7 @@ import android.widget.RemoteViewsService;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
@@ -62,17 +68,98 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private final DBPolicy  mDbp = DBPolicy.get();
     private final long      mCategoryId;
+    private final int       mAppWidgetId;
+
+    private long[]          mCids = null;
     private Cursor          mCursor = null;
+    private DBWatcher       mDbWatcher = null;
+
+    private class DBWatcher implements
+    DB.OnDBUpdateListener,
+    DBPolicy.OnChannelUpdatedListener {
+        private final HashSet<Long> _mCidSet = new HashSet<Long>();
+
+        private boolean
+        isInCategory(long cid) {
+            return _mCidSet.contains(cid);
+        }
+
+        void
+        register() {
+            mDbp.registerUpdateListener(this, DB.UpdateType.CHANNEL_DATA.flag());
+            mDbp.registerChannelUpdatedListener(this, this);
+        }
+
+        void
+        unregister() {
+            mDbp.unregisterUpdateListener(this);
+            mDbp.unregisterChannelUpdatedListener(this);
+        }
+
+        void
+        updateCategoryChannels(long[] cids) {
+            _mCidSet.clear();
+            for (long cid : cids)
+                _mCidSet.add(cid);
+        }
+
+        @Override
+        protected void
+        finalize() throws Throwable {
+            super.finalize();
+            unregister();
+        }
+
+        @Override
+        public void
+        onNewItemsUpdated(long cid, int nrNewItems) {
+            if (isInCategory(cid)
+                && nrNewItems > 0)
+                refreshItemList();
+        }
+
+        @Override
+        public void
+        onLastItemIdUpdated(long[] cids) {
+            // ignore...
+        }
+
+        @Override
+        public void
+        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+            if (DB.UpdateType.CHANNEL_DATA != type)
+                eAssert(false);
+            long cid = (Long)arg0;
+            // Check that number of channels in the category is changed.
+            long catid = mDbp.getChannelInfoLong(cid, ColumnChannel.CATEGORYID);
+            if (DBG) P.v("onDbUpdate : " + type.name() + " : "
+                                         + mAppWidgetId + ", "
+                                         +  mCategoryId + ", " + catid + ", " + cid);
+            if ((!isInCategory(cid) && catid == mCategoryId) // channel is newly inserted to this category.
+                || (isInCategory(cid) && catid != mCategoryId)) { // channel is removed from this category.
+                refreshItemList();
+            }
+        }
+    }
 
     private Cursor
     getCursor() {
-        long[] cids = mDbp.getChannelIds(mCategoryId);
-        if (DBG) P.v("getCursor : Channels : " + Utils.nrsToNString(cids));
-        return mDbp.queryItem(cids, sQueryProjection);
+        mCids = mDbp.getChannelIds(mCategoryId);
+        mDbWatcher.updateCategoryChannels(mCids);
+        if (DBG) P.v("getCursor : Channels : " + Utils.nrsToNString(mCids));
+        return mDbp.queryItem(mCids, sQueryProjection);
     }
 
-    public ViewsFactory(long categoryId) {
+    private void
+    refreshItemList() {
+        if (DBG) P.v("WidgetDataChanged : " + mAppWidgetId);
+        AppWidgetManager awm = AppWidgetManager.getInstance(Utils.getAppContext());
+        awm.notifyAppWidgetViewDataChanged(mAppWidgetId, R.id.list);
+    }
+
+    public ViewsFactory(long categoryId, int appWidgetId) {
         mCategoryId = categoryId;
+        mAppWidgetId = appWidgetId;
     }
 
     void
@@ -115,7 +202,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public RemoteViews
     getViewAt(int position) {
-        if (DBG) P.v("getViewAt : " + position);
+        //if (DBG) P.v("getViewAt : " + position);
         mCursor.moveToPosition(position);
         RemoteViews rv = new RemoteViews(Utils.getAppContext().getPackageName(),
                                          R.layout.appwidget_row);
@@ -146,8 +233,10 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onCreate() {
-        if (DBG) P.v("onCreate");
+        if (DBG) P.v("onCreate : " + mAppWidgetId + " / " + mCategoryId);
+        mDbWatcher = new DBWatcher();
         mCursor = getCursor();
+        mDbWatcher.register();
         // Doing time-consuming job in advance.
         mCursor.getCount();
         mCursor.moveToFirst();
@@ -166,6 +255,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onDestroy() {
         if (null != mCursor)
             mCursor.close();
+        mDbWatcher.unregister();
         if (DBG) P.v("onDestroy");
     }
 }

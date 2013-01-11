@@ -40,7 +40,7 @@ import free.yhc.feeder.model.Utils;
 
 public class UpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(UpdateService.class);
 
     private class AppWidgetUpdater extends ThreadEx<Err> {
@@ -92,15 +92,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 Intent intent = new Intent(Utils.getAppContext(),
                                            ViewsService.class);
-                intent.setAction(AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
-                intent.setData(Uri.fromParts("content", String.valueOf(catid), null));
+                intent.setData(Uri.fromParts("content", String.valueOf(awid), null));
                 intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
+                intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
                 rv.setRemoteAdapter(R.id.list, intent);
 
                 intent = new Intent(Utils.getAppContext(),
                                     ViewsService.ListPendingIntentReceiver.class);
                 intent.setAction(AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
                 intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
+                intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
                 PendingIntent pi = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent, 0);
                 rv.setPendingIntentTemplate(R.id.list, pi);
 

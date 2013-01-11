@@ -24,8 +24,8 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -44,9 +44,6 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Utils.Logger P = new Utils.Logger(DB.class);
 
     public static final long INVALID_ITEM_ID    = -1;
-
-    private static DB sInstance = null;
-
     /**************************************
      *
      * Database design
@@ -68,29 +65,58 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String NAME            = "feader.db";
     private static final int    VERSION         = 3;
 
+    private static final int FLAG_CATEGORY_TABLE = 0x1;
+    private static final int FLAG_CHANNEL_TABLE  = 0x10;
+    private static final int FLAG_CHANNEL_DATA   = 0x20;
+    private static final int FLAG_ITEM_TABLE     = 0x100;
+
     private static final String ITEM_QUERY_DEFAULT_ORDER = ColumnItem.PUBTIME.getName() + " DESC";
     private static final String CHANNEL_QUERY_DEFAULT_ORDER = ColumnChannel.POSITION.getName() + " ASC";
+
+    private static DB sInstance = null;
 
     /**************************************
      * Members
      **************************************/
     private SQLiteDatabase mDb = null;
 
-    // below two vars are used to improve app performance to check some DB data are changed or not.
-    // These are NOT functionality purpose BUT performance.
-    private final HashMap<Object, HashSet<Long>> mChMark = new HashMap<Object, HashSet<Long>>();
-    // Marker whether item table size is changed or not by insert or delete
-    private final HashMap<Object, Boolean>       mItmTblMark = new HashMap<Object, Boolean>();
-    // Marker whether channel table size is changed or not by insert or delete
-    private final HashMap<Object, Boolean>       mChTblMark = new HashMap<Object, Boolean>();
-    // Marker whether category table size is changed or not by insert or delete
-    private final HashMap<Object, Boolean>       mCatTblMark = new HashMap<Object, Boolean>();
+    private final LinkedList<UpdateListener> mUpdateListenerl = new LinkedList<UpdateListener>();
 
+    public enum UpdateType {
+        CATEGORY_TABLE  (FLAG_CATEGORY_TABLE),
+        CHANNEL_TABLE   (FLAG_CHANNEL_TABLE),
+        CHANNEL_DATA    (FLAG_CHANNEL_DATA), // arg0 : <Long> channel id.
+        ITEM_TABLE      (FLAG_ITEM_TABLE);
+
+        private final int _mFlag;
+
+        private UpdateType(int flag) {
+            _mFlag = flag;
+        }
+
+        public int
+        flag() {
+            return _mFlag;
+        }
+    }
+
+    public interface OnDBUpdateListener {
+        void onDbUpdate(UpdateType type, Object arg0, Object arg1);
+    }
 
     public interface Column {
         String getName();
         String getType();
         String getConstraint();
+    }
+
+    private static class UpdateListener {
+        int flag;
+        OnDBUpdateListener  listener;
+        UpdateListener(OnDBUpdateListener aListener, int aFlag) {
+            listener = aListener;
+            flag = aFlag;
+        }
     }
 
     // =====================================================
@@ -406,210 +432,51 @@ UnexpectedExceptionHandler.TrackedModule {
     /**************************************
      * DB monitoring
      **************************************/
-
-
-    // =======================================
-    // INTERNAL - HashSet Marker
-    // =======================================
     private void
-    markHashSetChanged(HashMap<Object, HashSet<Long>> hm, long id) {
-        synchronized (hm) {
-            Iterator<Object> itr = hm.keySet().iterator();
-            while (itr.hasNext())
-                hm.get(itr.next()).add(id);
+    notifyUpdate(UpdateType type, Object arg0, Object arg1) {
+        Iterator<UpdateListener> iter = mUpdateListenerl.iterator();
+        while (iter.hasNext()) {
+            UpdateListener ul = iter.next();
+            if (0 != (ul.flag & type.flag()))
+                ul.listener.onDbUpdate(type, arg0, arg1);
         }
     }
 
     private void
-    registerToHashSetMarker(HashMap<Object, HashSet<Long>> hm, Object key) {
-        synchronized (hm) {
-            hm.put(key, new HashSet<Long>());
-        }
-    }
-
-    private boolean
-    isRegisteredToHashSetMarker(HashMap<Object, HashSet<Long>> hm, Object key) {
-        synchronized (hm) {
-            return (null != hm.get(key));
-        }
+    notifyUpdate(final UpdateType type, final Object arg0) {
+        notifyUpdate(type, arg0, null);
     }
 
     private void
-    unregisterToHashSetMarker(HashMap<Object, HashSet<Long>> hm, Object key) {
-        synchronized (hm) {
-            hm.put(key, new HashSet<Long>());
-        }
-    }
-
-    private boolean
-    isHashSetMarkerUpdated(HashMap<Object, HashSet<Long>> hm, Object key, long id) {
-        synchronized (hm) {
-            return hm.get(key).contains(id);
-        }
-    }
-
-    private long[]
-    getHashSetMarkerUpdated(HashMap<Object, HashSet<Long>> hm, Object key) {
-        synchronized (hm) {
-            return Utils.convertArrayLongTolong(hm.get(key).toArray(new Long[0]));
-        }
-    }
-
-    // =======================================
-    // INTERNAL - Boolean Marker
-    // =======================================
-    private void
-    markBooleanChanged(HashMap<Object, Boolean> hm) {
-        synchronized (hm) {
-            Iterator<Object> itr = hm.keySet().iterator();
-            while (itr.hasNext())
-                hm.put(itr.next(), true);
-        }
-    }
-
-    private void
-    registerToBooleanMarker(HashMap<Object, Boolean> hm, Object key) {
-        synchronized (hm) {
-            hm.put(key, false);
-        }
-    }
-
-    private boolean
-    isRegisteredToBooleanMarker(HashMap<Object, Boolean> hm, Object key) {
-        synchronized (hm) {
-            return (null != hm.get(key));
-        }
-    }
-
-    private void
-    unregisterToBooleanMarker(HashMap<Object, Boolean> hm, Object key) {
-        synchronized (hm) {
-            hm.remove(key);
-        }
-    }
-
-    private boolean
-    isBooleanMarkerUpdated(HashMap<Object, Boolean> hm, Object key) {
-        synchronized (hm) {
-            return hm.get(key);
-        }
-    }
-
-    // =======================================
-    // Channel Watcher
-    // =======================================
-    private void
-    markChannelChanged(long cid) {
-        markHashSetChanged(mChMark, cid);
+    notifyUpdate(final UpdateType type) {
+        notifyUpdate(type, null);
     }
 
     void
-    registerChannelWatcher(Object key) {
-        registerToHashSetMarker(mChMark, key);
-    }
-
-    boolean
-    isChannelWatcherRegistered(Object key) {
-        return isRegisteredToHashSetMarker(mChMark, key);
-    }
-
-    void
-    unregisterChannelWatcher(Object key) {
-        unregisterToHashSetMarker(mChMark, key);
-    }
-
-    boolean
-    isChannelWatcherUpdated(Object key, long cid) {
-        return isHashSetMarkerUpdated(mChMark, key, cid);
-    }
-
-    long[]
-    getChannelWatcherUpdated(Object key) {
-        return getHashSetMarkerUpdated(mChMark, key);
-    }
-
-    // =======================================
-    // Item Table Watcher
-    // =======================================
-    private void
-    markItemTableChanged() {
-        markBooleanChanged(mItmTblMark);
+    registerUpdateListener(OnDBUpdateListener listener, int flag) {
+        Iterator<UpdateListener> iter = mUpdateListenerl.iterator();
+        while (iter.hasNext()) {
+            UpdateListener ul = iter.next();
+            if (listener == ul.listener) {
+                // already registered.
+                // just updating flag is enough.
+                ul.flag = flag;
+                return;
+            }
+        }
+        mUpdateListenerl.add(new UpdateListener(listener,flag));
     }
 
     void
-    registerItemTableWatcher(Object key) {
-        registerToBooleanMarker(mItmTblMark, key);
-    }
-
-    boolean
-    isItemTableWatcherRegistered(Object key) {
-        return isRegisteredToBooleanMarker(mItmTblMark, key);
-    }
-
-    void
-    unregisterItemTableWatcher(Object key) {
-        unregisterToBooleanMarker(mItmTblMark, key);
-    }
-
-    boolean
-    isItemTableWatcherUpdated(Object key) {
-        return isBooleanMarkerUpdated(mItmTblMark, key);
-    }
-
-    // =======================================
-    // Channel Table Watcher
-    // =======================================
-    private void
-    markChannelTableChanged() {
-        markBooleanChanged(mChTblMark);
-    }
-
-    void
-    registerChannelTableWatcher(Object key) {
-        registerToBooleanMarker(mChTblMark, key);
-    }
-
-    boolean
-    isChannelTableWatcherRegistered(Object key) {
-        return isRegisteredToBooleanMarker(mChTblMark, key);
-    }
-
-    void
-    unregisterChannelTableWatcher(Object key) {
-        unregisterToBooleanMarker(mChTblMark, key);
-    }
-
-    boolean
-    isChannelTableWatcherUpdated(Object key) {
-        return isBooleanMarkerUpdated(mChTblMark, key);
-    }
-
-    // =======================================
-    // Category Table Watcher
-    // =======================================
-    private void
-    markCategoryTableChanged() {
-        markBooleanChanged(mCatTblMark);
-    }
-
-    void
-    registerCategoryTableWatcher(Object key) {
-        registerToBooleanMarker(mCatTblMark, key);
-    }
-
-    boolean
-    isCategoryTableWatcherRegistered(Object key) {
-        return isRegisteredToBooleanMarker(mCatTblMark, key);
-    }
-
-    void
-    unregisterCategoryTableWatcher(Object key) {
-        unregisterToBooleanMarker(mCatTblMark, key);
-    }
-
-    boolean
-    isCategoryTableWatcherUpdated(Object key) {
-        return isBooleanMarkerUpdated(mCatTblMark, key);
+    unregisterUpdateListener(OnDBUpdateListener listener) {
+        Iterator<UpdateListener> iter = mUpdateListenerl.iterator();
+        while (iter.hasNext()) {
+            UpdateListener ul = iter.next();
+            if (listener == ul.listener) {
+                iter.remove();
+                return;
+            }
+        }
     }
 
     /**************************************
@@ -626,9 +493,9 @@ UnexpectedExceptionHandler.TrackedModule {
         open();
 
         // All DB information is changed now!.
-        markChannelTableChanged();
-        markItemTableChanged();
-        markCategoryTableChanged();
+        notifyUpdate(UpdateType.CATEGORY_TABLE);
+        notifyUpdate(UpdateType.CHANNEL_TABLE);
+        notifyUpdate(UpdateType.ITEM_TABLE);
 
         // Mark as all channel is changed
         Cursor c = mDb.query(TABLE_CHANNEL,
@@ -636,7 +503,7 @@ UnexpectedExceptionHandler.TrackedModule {
                              null, null, null, null, null);
         if (c.moveToFirst()) {
             do {
-                markChannelChanged(c.getLong(0));
+                notifyUpdate(UpdateType.CHANNEL_DATA, c.getLong(0));
             } while (c.moveToNext());
         }
         c.close();
@@ -672,24 +539,30 @@ UnexpectedExceptionHandler.TrackedModule {
     insertCategory(Feed.Category category) {
         ContentValues values = new ContentValues();
         values.put(ColumnCategory.NAME.getName(), category.name);
-        markCategoryTableChanged();
-        return mDb.insert(TABLE_CATEGORY, null, values);
+        long catid = mDb.insert(TABLE_CATEGORY, null, values);
+        if (catid > 0)
+            notifyUpdate(UpdateType.CATEGORY_TABLE);
+        return catid;
     }
 
     long
     deleteCategory(long id) {
-        markCategoryTableChanged();
-        return mDb.delete(TABLE_CATEGORY,
-                          ColumnCategory.ID.getName() + " = " + id,
-                          null);
+        int nr =  mDb.delete(TABLE_CATEGORY,
+                             ColumnCategory.ID.getName() + " = " + id,
+                             null);
+        if (nr > 0)
+            notifyUpdate(UpdateType.CATEGORY_TABLE);
+        return nr;
     }
 
     long
     deleteCategory(String name) {
-        markCategoryTableChanged();
-        return mDb.delete(TABLE_CATEGORY,
-                          ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
-                          null);
+        int nr =  mDb.delete(TABLE_CATEGORY,
+                              ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
+                              null);
+        if (nr > 0)
+            notifyUpdate(UpdateType.CATEGORY_TABLE);
+        return nr;
     }
 
     /**
@@ -758,8 +631,10 @@ UnexpectedExceptionHandler.TrackedModule {
     long
     insertChannel(ContentValues values) {
         long cid = mDb.insert(TABLE_CHANNEL, null, values);
-        markChannelChanged(cid);
-        markChannelTableChanged();
+        if (cid > 0) {
+            notifyUpdate(UpdateType.CHANNEL_TABLE);
+            notifyUpdate(UpdateType.CHANNEL_DATA, cid);
+        }
         return cid;
     }
 
@@ -773,11 +648,13 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     updateChannel(long cid, ContentValues values) {
-        markChannelChanged(cid);
-        return mDb.update(TABLE_CHANNEL,
-                values,
-                ColumnChannel.ID.getName() + " = " + cid,
-                null);
+        int nr = mDb.update(TABLE_CHANNEL,
+                            values,
+                            ColumnChannel.ID.getName() + " = " + cid,
+                            null);
+        if (nr > 0)
+            notifyUpdate(UpdateType.CHANNEL_DATA, cid);
+        return nr;
     }
 
     /**
@@ -790,7 +667,6 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     updateChannel(long cid, ColumnChannel field, Object v) {
-        markChannelChanged(cid);
         ContentValues cvs = new ContentValues();
         try {
             Method m = cvs.getClass().getMethod("put", String.class, v.getClass());
@@ -828,11 +704,6 @@ UnexpectedExceptionHandler.TrackedModule {
         if (targetValues.length <= 0)
             return;
 
-        if (where.equals(ColumnChannel.ID)) {
-            for (Object o : whereValues)
-                markChannelChanged((Long)o);
-        }
-
         StringBuilder sbldr = new StringBuilder();
         sbldr.append("UPDATE " + TABLE_CHANNEL + " ")
              .append(" SET " + target.getName() + " = CASE " + where.getName());
@@ -848,6 +719,11 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         sbldr.append(");");
         mDb.execSQL(sbldr.toString());
+
+        if (where.equals(ColumnChannel.ID)) {
+            for (Object o : whereValues)
+                notifyUpdate(UpdateType.CHANNEL_DATA, o);
+        }
     }
 
     /**
@@ -965,23 +841,25 @@ UnexpectedExceptionHandler.TrackedModule {
         Long[] cids = new Long[c.getCount()];
         ColumnItem[] cols = new ColumnItem[cids.length];
 
-        int i = 0;
-        do {
-            cids[i] = c.getLong(0);
-            markChannelChanged(cids[i]);
-            cols[i] = ColumnItem.CHANNELID;
-            i++;
-        } while (c.moveToNext());
-
         String wh = buildSQLWhere(cols, cids, "=", "OR");
         // delete items first
         long nrItems = mDb.delete(TABLE_ITEM,
                                   wh.isEmpty()? null: wh,
                                   null);
-        markItemTableChanged();
+        if (nrItems > 0)
+            notifyUpdate(UpdateType.ITEM_TABLE);
         // then delete channel.
-        mDb.delete(TABLE_CHANNEL, chWhereStr, null);
-        markChannelTableChanged();
+        int nr = mDb.delete(TABLE_CHANNEL, chWhereStr, null);
+        if (nr > 0) {
+            notifyUpdate(UpdateType.CHANNEL_TABLE);
+            int i = 0;
+            do {
+                cids[i] = c.getLong(0);
+                notifyUpdate(UpdateType.CHANNEL_DATA, cids[i]);
+                cols[i] = ColumnItem.CHANNELID;
+                i++;
+            } while (c.moveToNext());
+        }
         return nrItems;
     }
 
@@ -999,8 +877,10 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     insertItem(ContentValues values) {
-        markItemTableChanged();
-        return mDb.insert(TABLE_ITEM, null, values);
+        long id = mDb.insert(TABLE_ITEM, null, values);
+        if (id > 0)
+            notifyUpdate(UpdateType.ITEM_TABLE);
+        return id;
     }
 
     /**
@@ -1204,11 +1084,13 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
-        markItemTableChanged();
         String wh = buildSQLWhere(wheres, values, "=", "OR");
-        return mDb.delete(TABLE_ITEM,
-                          wh.isEmpty()? null: wh,
-                          null);
+        int nr = mDb.delete(TABLE_ITEM,
+                            wh.isEmpty()? null: wh,
+                            null);
+        if (nr > 0)
+            notifyUpdate(UpdateType.ITEM_TABLE);
+        return nr;
     }
 
     // ========================================================================
@@ -1337,7 +1219,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 wh = ColumnItem.CHANNELID.getName() + " = " + cid + " AND ";
             wh += ColumnItem.PUBTIME.getName() + " < " + putTimeFrom;
         }
-        int ret = mDb.delete(TABLE_ITEM, wh, null);
+        int nr = mDb.delete(TABLE_ITEM, wh, null);
 
         // NOTE
         // Important fact that should be considered here is,
@@ -1345,9 +1227,10 @@ UnexpectedExceptionHandler.TrackedModule {
         // Even if item is deleted, item ID is auto incrementing value.
         // So, OLDLAST_ITEMID of channel doesn't affected by this deleting work.
         // And any other channel value is not changed too.
-        // So, I don't need to mark that "channel is changed" by using 'markChannelChanged()'
-        markItemTableChanged();
+        // So, DB doesn't need to notify that "channel is changed".
+        if (nr > 0)
+            notifyUpdate(UpdateType.ITEM_TABLE);
 
-        return ret;
+        return nr;
     }
 }

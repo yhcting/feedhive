@@ -33,7 +33,7 @@ import free.yhc.feeder.model.Utils;
 
 public class Provider extends AppWidgetProvider implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(Provider.class);
 
 
@@ -97,12 +97,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
-        if (DBG) {
-            String idstr = "";
-            for (int id : appWidgetIds)
-                idstr += id + "/";
-            P.v("onUpdate : " + idstr);
-        }
+        if (DBG) P.v("onUpdate : " + Utils.nrsToNString(appWidgetIds));
 
         ArrayList<Integer> oldWidgets = new ArrayList<Integer>(appWidgetIds.length);
         ArrayList<Integer> newWidgets = new ArrayList<Integer>(appWidgetIds.length);

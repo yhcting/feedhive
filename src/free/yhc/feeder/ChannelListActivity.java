@@ -47,6 +47,7 @@ import android.widget.PopupMenu;
 import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
 import free.yhc.feeder.LookAndFeel.EditTextDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.Err;
@@ -76,11 +77,58 @@ UnexpectedExceptionHandler.TrackedModule {
     private ActionBar                   mAb             = null;
     private ViewPager                   mPager          = null;
     private ChannelListFragment         mContextMenuOwner = null;
+    private DBWatcher                   mDbWatcher      = null;
 
     private final ViewPager.OnPageChangeListener mPCListener = new OnPageViewChange();
 
     private static class TabTag {
         long         categoryid;
+    }
+
+    private static class DBWatcher implements DB.OnDBUpdateListener {
+        // NOTE
+        // Comparing with "ChannelListFragment" and "ItemListActivity", initial value of
+        //   _mCategoryTableUpdated is 'false'
+        // Why?
+        // Please see 'onResume'.
+        // Even if this looses consistency... but... fair enough.
+        private boolean _mCategoryTableUpdated = false;
+
+        void
+        register() {
+            DBPolicy.get().registerUpdateListener(this, DB.UpdateType.CATEGORY_TABLE.flag());
+        }
+
+        void
+        unregister() {
+            DBPolicy.get().unregisterUpdateListener(this);
+        }
+
+        void
+        reset() {
+            _mCategoryTableUpdated = false;
+        }
+
+        boolean
+        isCategoryTableUpdated() {
+            return _mCategoryTableUpdated;
+        }
+
+        @Override
+        protected void
+        finalize() throws Throwable {
+            super.finalize();
+            unregister();
+        }
+
+        @Override
+        public void
+        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+            if (DB.UpdateType.CATEGORY_TABLE == type)
+                _mCategoryTableUpdated = true;
+            else
+                eAssert(false);
+        }
     }
 
     private class OnPageViewChange implements ViewPager.OnPageChangeListener {
@@ -773,10 +821,7 @@ UnexpectedExceptionHandler.TrackedModule {
         selectDefaultAsSelected();
 
         mPager.setOnPageChangeListener(mPCListener);
-
-        // To avoid duplicated refreshing list at onResume().
-        mDbp.registerChannelWatcher(this);
-        mDbp.registerChannelTableWatcher(this);
+        mDbWatcher = new DBWatcher();
     }
 
 
@@ -790,8 +835,11 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onResume() {
         super.onResume();
-        if (mDbp.isCategoryTableWatcherRegistered(this)
-            && mDbp.isCategoryTableWatcherUpdated(this)) {
+
+        mDbWatcher.unregister();
+        boolean needReload = mDbWatcher.isCategoryTableUpdated();
+        mDbWatcher.reset();
+        if (needReload) {
             // category table is changed outside of this activity.
             // restarting is required!!
             Intent intent = new Intent(this, ChannelListActivity.class);
@@ -817,7 +865,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onPause() {
-        mDbp.registerCategoryTableWatcher(this);
+        mDbWatcher.register();
         super.onPause();
     }
 
@@ -831,6 +879,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onDestroy() {
         super.onDestroy();
+        mDbWatcher.unregister();
         UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 
