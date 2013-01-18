@@ -165,7 +165,6 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     setAppDirectories(String root) {
-        root = "/tmp";
         mAppRootDir = root;
         new File(mAppRootDir).mkdirs();
         if (!root.endsWith("/"))
