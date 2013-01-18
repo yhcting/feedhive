@@ -121,6 +121,7 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
     public void
     setPrimaryItem(ViewGroup container, int position, Object object) {
         Fragment fragment = (Fragment)object;
+        //if (DBG) P.v("setPrimaryItem : position(" + position + ") tag(" + fragment.getTag() + ")");
         if (fragment != mCurrentPrimaryItem) {
             if (mCurrentPrimaryItem != null) {
                 mCurrentPrimaryItem.setMenuVisibility(false);

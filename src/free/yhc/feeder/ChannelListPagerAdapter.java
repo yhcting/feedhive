@@ -109,7 +109,9 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
 
     public ChannelListFragment
     getPrimaryFragment() {
-        return (ChannelListFragment) super.getCurrentPrimaryFragment();
+        ChannelListFragment clf = (ChannelListFragment)super.getCurrentPrimaryFragment();
+        //if (DBG) P.v("getPrimaryFragment : tag(" + (null == clf? "<null>": clf.getTag()) + ")");
+        return clf;
     }
 
     public ChannelListFragment

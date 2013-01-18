@@ -178,6 +178,15 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    private void
+    restartThisActivity() {
+        // category table is changed outside of this activity.
+        // restarting is required!!
+        Intent intent = new Intent(this, ChannelListActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
     private TabTag
     getTag(Tab tab) {
         return (TabTag)tab.getTag();
@@ -239,11 +248,18 @@ UnexpectedExceptionHandler.TrackedModule {
     deleteCategory(long categoryid) {
         mDbp.deleteCategory(categoryid);
 
+        // NOTE
+        // PagerView's working mechanism is NOT GOOD for deleting item in the middle.
+        // So, just restart channel list activity...to reload all!!!
+        restartThisActivity();
+        return;
+        /*
         Tab curTab = mAb.getSelectedTab();
         mAb.removeTab(curTab);
         if (null != getPagerAdapter())
             getPagerAdapter().categoryDeleted(categoryid);
         selectDefaultAsSelected();
+        */
     }
 
     private String
@@ -457,6 +473,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_category_delete(final View anchor) {
         final long categoryid = getCurrentCategoryId();
+        if (DBG) P.v("onOpt_category_delete : category(" + categoryid + ")");
         if (mDbp.isDefaultCategoryId(categoryid)) {
             mLnf.showTextToast(this, R.string.warn_delete_default_category);
             return;
@@ -842,9 +859,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (needReload) {
             // category table is changed outside of this activity.
             // restarting is required!!
-            Intent intent = new Intent(this, ChannelListActivity.class);
-            startActivity(intent);
-            finish();
+            restartThisActivity();
             return;
         }
 
