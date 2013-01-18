@@ -29,13 +29,11 @@ import java.util.HashSet;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ActivityNotFoundException;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.ContextMenu;
@@ -61,11 +59,11 @@ import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BGTaskDownloadToFile;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.ItemActionHandler;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -77,8 +75,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static final int DATA_REQ_SZ    = 20;
     private static final int DATA_ARR_MAX   = 500;
-
-    private static final int REQC_ITEM_VIEW = 0;
 
     // Keys for extra value of intent : IKey (Intent Key)
     public static final String IKEY_MODE    = "mode";  // mode
@@ -110,7 +106,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private DBWatcher   mDbWatcher  = null;
     private OpMode      mOpMode  = null;
     private ListView    mList    = null;
-
+    private ItemActionHandler mItemAction;
 
     private static class DBWatcher implements DB.OnDBUpdateListener {
         private final HashSet<Long> _mUpdatedChannelSet = new HashSet<Long>();
@@ -610,7 +606,22 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onUnregister(BGTask task, long id, RTTask.Action act) { }
+        public void
+        onUnregister(BGTask task, long id, RTTask.Action act) { }
+    }
+
+    private class ListAdapterBridge implements ItemActionHandler.AdapterBridge {
+        @Override
+        public void
+        updateItemState(int pos, long state) {
+            getListAdapter().updateItemState(pos, state);
+        }
+
+        @Override
+        public void
+        dataSetChanged(long id) {
+            ItemListActivity.this.dataSetChanged(id);
+        }
     }
 
     private boolean
@@ -729,20 +740,6 @@ UnexpectedExceptionHandler.TrackedModule {
         });
     }
 
-    private boolean
-    changeItemState_opened(long id, int position) {
-        // change state as 'opened' at this moment.
-        long state = mDbp.getItemInfoLong(id, ColumnItem.STATE);
-        if (Feed.Item.isStateOpenNew(state)) {
-            state = Utils.bitSet(state, Feed.Item.FSTAT_OPEN_OPENED, Feed.Item.MSTAT_OPEN);
-            mDbp.updateItemAsync_state(id, state);
-            getListAdapter().updateItemState(position, state);
-            dataSetChanged(id);
-            return true;
-        }
-        return false;
-    }
-
     private void
     updateItems() {
         // Update is supported only at channel item list.
@@ -752,152 +749,6 @@ UnexpectedExceptionHandler.TrackedModule {
         mRtt.register(cid, RTTask.Action.UPDATE, updateTask);
         mRtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
         mRtt.start(cid, RTTask.Action.UPDATE);
-    }
-
-    private void
-    onActionOpen_http(long action, View view, long id, int position, String url, String protocol) {
-        RTTask.TaskState state = mRtt.getState(id, RTTask.Action.DOWNLOAD);
-        if (RTTask.TaskState.FAILED == state) {
-            mLnf.showTextToast(this, mRtt.getErr(id, RTTask.Action.DOWNLOAD).getMsgId());
-            mRtt.consumeResult(id, RTTask.Action.DOWNLOAD);
-            dataSetChanged(id);
-            return;
-        }
-
-        if (Feed.Channel.isActProgIn(action)) {
-            Intent intent = new Intent(this, ItemViewActivity.class);
-            intent.putExtra("id", id);
-            startActivityForResult(intent, REQC_ITEM_VIEW);
-        } else if (Feed.Channel.isActProgEx(action)) {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            try {
-                startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                mLnf.showTextToast(this,
-                        getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
-                return;
-            }
-        } else
-            eAssert(false);
-
-        changeItemState_opened(id, position);
-    }
-
-    private void
-    onActionOpen_rtsp(long action, View view, long id, int position, String url, String protocol) {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        try {
-            startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            mLnf.showTextToast(this,
-                    getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
-            return;
-        }
-
-        changeItemState_opened(id, position);
-    }
-
-    private void
-    onActionOpen(long action, View view, long id, int position, String url) {
-        String protocol = url.substring(0, url.indexOf("://"));
-        if (protocol.equalsIgnoreCase("rtsp"))
-            onActionOpen_rtsp(action, view, id, position, url, protocol);
-        else // default : handle as http
-            onActionOpen_http(action, view, id, position, url, protocol);
-    }
-
-    private void
-    onActionDn(long action, View view, long id, int position, String url) {
-        // 'enclosure' is used.
-        File f = mDbp.getItemInfoDataFile(id);
-        eAssert(null != f);
-        if (f.exists()) {
-            // "RSS described media type" vs "mime type by guessing from file extention".
-            // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
-            String type = Utils.guessMimeTypeFromUrl(url);
-            if (null == type)
-                type = getListAdapter().getItemInfo_encType(position);
-
-            if (!Utils.isMimeType(type))
-                type = "text/plain"; // this is default.
-
-
-            // File is already exists. Do action with it!
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            if (null == type)
-                intent.setData(Uri.fromFile(f));
-            else
-                intent.setDataAndType(Uri.fromFile(f), type);
-
-            try {
-                startActivity(intent);
-            } catch (ActivityNotFoundException e) {
-                mLnf.showTextToast(this,
-                        getResources().getText(R.string.warn_find_app_to_open).toString() + " [" + type + "]");
-                return;
-            }
-            // change state as 'opened' at this moment.
-            changeItemState_opened(id, position);
-        } else {
-            RTTask.TaskState state = mRtt.getState(id, RTTask.Action.DOWNLOAD);
-            switch(state) {
-            case IDLE: {
-                BGTaskDownloadToFile.Arg arg
-                    = new BGTaskDownloadToFile.Arg(url, f, mUip.getNewTempFile());
-                BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(arg);
-                mRtt.register(id, RTTask.Action.DOWNLOAD, dnTask);
-                mRtt.start(id, RTTask.Action.DOWNLOAD);
-                dataSetChanged(id);
-            } break;
-
-            case RUNNING:
-            case READY:
-                mRtt.cancel(id, RTTask.Action.DOWNLOAD, null);
-                dataSetChanged(id);
-                break;
-
-            case CANCELING:
-                mLnf.showTextToast(this, R.string.wait_cancel);
-                break;
-
-            case FAILED: {
-                Err result = mRtt.getErr(id, RTTask.Action.DOWNLOAD);
-                mLnf.showTextToast(this, result.getMsgId());
-                mRtt.consumeResult(id, RTTask.Action.DOWNLOAD);
-                dataSetChanged(id);
-            } break;
-
-            default:
-                eAssert(false);
-            }
-        }
-    }
-
-    private void
-    onAction(long action, View view, long id, final int position) {
-        // NOTE
-        // This is very simple policy!
-        long actionType = Feed.Channel.getActType(action);
-        String link = getListAdapter().getItemInfo_link(position);
-        String enclosure = getListAdapter().getItemInfo_encUrl(position);
-
-        if (Feed.Channel.FACT_TYPE_DYNAMIC == actionType) {
-            String url = mUip.getDynamicActionTargetUrl(action, link, enclosure);
-            // NOTE
-            // Items that have both invalid link and enclosure url, SHOULD NOT be added to DB.
-            // Parser give those away in parsing phase.
-            // See RSSParser/AtomParser.
-            eAssert(null != url);
-            if (enclosure.equals(url))
-                onActionDn(action, view, id, position, url);
-            else
-                onActionOpen(action, view, id, position, url);
-        } else if (Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA == actionType) {
-            // In case of embedded media, external program should be used in force.
-            action = Utils.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
-            onActionOpen(action, view, id, position, enclosure);
-        } else
-            eAssert(false);
     }
 
     private void
@@ -1137,7 +988,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         diag.setButton(getResources().getText(R.string.ok), new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dia, int which) {
+            public void
+            onClick(DialogInterface dia, int which) {
                 int y0, y1, m0, m1;
                 Spinner sp = (Spinner)diagV.findViewById(R.id.sp_year0);
                 y0 = Integer.parseInt((String)sp.getSelectedItem());
@@ -1184,7 +1036,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         diag.setButton2(getResources().getText(R.string.cancel), new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void
+            onClick(DialogInterface dialog, int which) {
                 diag.dismiss();
             }
         });
@@ -1196,7 +1049,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onActivityResult(int requestCode, int resultCode, Intent data) {
         switch(requestCode) {
-        case REQC_ITEM_VIEW:
+        case ItemActionHandler.REQC_ITEM_VIEW:
             if (resultCode == ItemViewActivity.RESULT_DOWNLOAD) {
                 long id = data.getLongExtra("id", -1);
                 if (id > 0) {
@@ -1224,6 +1077,8 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         //logI("==> ItemListActivity : onCreate");
         getActionBar().show();
+
+        mItemAction = new ItemActionHandler(this, new ListAdapterBridge());
 
         int mode = getIntent().getIntExtra(IKEY_MODE, -1);
         eAssert(-1 != mode);
@@ -1255,14 +1110,20 @@ UnexpectedExceptionHandler.TrackedModule {
                 long dbId = getListAdapter().getItemInfo_id(position);
                 long cid = getListAdapter().getItemInfo_cid(position);
                 long act = mDbp.getChannelInfoLong(cid, ColumnChannel.ACTION);
-                onAction(act, view, dbId, position);
+                mItemAction.onAction(act,
+                                     dbId,
+                                     position,
+                                     getListAdapter().getItemInfo_link(position),
+                                     getListAdapter().getItemInfo_encUrl(position),
+                                     getListAdapter().getItemInfo_encType(position));
             }
         });
         registerForContextMenu(mList);
 
         ((ImageView)findViewById(R.id.searchbtn)).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
+            public void
+            onClick(View v) {
                 // TODO Auto-generated method stub
                 onSearchBtnClick();
             }

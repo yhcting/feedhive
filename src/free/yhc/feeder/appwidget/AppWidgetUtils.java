@@ -40,6 +40,7 @@ public class AppWidgetUtils {
     static final int    INVALID_POSITION    = -1;
 
     static final String MAP_KEY_CATEGORYID  = "categoryid";
+    static final String MAP_KEY_ITEMID      = "itemid";
     static final String MAP_KEY_POSITION    = "position";
 
     private static final String APPWIDGET_PREF_FILE = "appWidgetPref";

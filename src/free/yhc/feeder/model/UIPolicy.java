@@ -165,6 +165,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     setAppDirectories(String root) {
+        root = "/tmp";
         mAppRootDir = root;
         new File(mAppRootDir).mkdirs();
         if (!root.endsWith("/"))
@@ -228,7 +229,7 @@ UnexpectedExceptionHandler.TrackedModule {
         File ret = null;
         try {
             ret = File.createTempFile("free.yhc.feeder", null, mAppTempDirFile);
-        } catch (IOException e){}
+        } catch (IOException ignored){ }
         return ret;
     }
 

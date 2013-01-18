@@ -22,11 +22,13 @@ package free.yhc.feeder.appwidget;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
+import java.io.File;
 import java.util.HashSet;
 
 import android.appwidget.AppWidgetManager;
 import android.content.Intent;
 import android.database.Cursor;
+import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
 import free.yhc.feeder.R;
@@ -34,13 +36,18 @@ import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.model.BGTask;
+import free.yhc.feeder.model.BaseBGTask;
+import free.yhc.feeder.model.Err;
+import free.yhc.feeder.model.ItemActionHandler;
+import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
 public class ViewsFactory implements
 RemoteViewsService.RemoteViewsFactory,
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ViewsFactory.class);
 
     private static final int    MAX_LIST_ITEM_COUNT = 100;
@@ -67,12 +74,14 @@ UnexpectedExceptionHandler.TrackedModule {
             ColumnItem.LINK };
 
     private final DBPolicy  mDbp = DBPolicy.get();
+    private final RTTask    mRtt = RTTask.get();
     private final long      mCategoryId;
     private final int       mAppWidgetId;
 
     private long[]          mCids = null;
     private Cursor          mCursor = null;
     private DBWatcher       mDbWatcher = null;
+    private ItemActionHandler   mItemAction = null;
 
     private class DBWatcher implements
     DB.OnDBUpdateListener,
@@ -142,6 +151,60 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
+        @Override
+        public void
+        onRegister(BGTask task, long id, RTTask.Action act) {
+            if (RTTask.Action.DOWNLOAD == act
+                && isWidgetItem(id))
+                mRtt.bind(id, act, ViewsFactory.this, new DownloadDataBGTaskListener(id));
+        }
+
+        @Override
+        public void
+        onUnregister(BGTask task, long id, RTTask.Action act) { }
+    }
+
+    private class DownloadDataBGTaskListener extends BaseBGTask.OnEventListener {
+        private long _mId = -1;
+        DownloadDataBGTaskListener(long id) {
+            _mId = id;
+        }
+
+        @Override
+        public void
+        onCancelled(BaseBGTask task, Object param) {
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void
+        onPreRun(BaseBGTask task) {
+            // icon should be changed from 'ready' to 'running'
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void
+        onPostRun(BaseBGTask task, Err result) {
+            notifyDataSetChanged();
+        }
+    }
+
+    private class AdapterBridge implements ItemActionHandler.AdapterBridge {
+        @Override
+        public void
+        updateItemState(int pos, long state) {
+            // do nothing.
+        }
+
+        @Override
+        public void
+        dataSetChanged(long id) {
+            notifyDataSetChanged();
+        }
+    }
+
     private Cursor
     getCursor() {
         mCids = mDbp.getChannelIds(mCategoryId);
@@ -150,11 +213,34 @@ UnexpectedExceptionHandler.TrackedModule {
         return mDbp.queryItem(mCids, sQueryProjection);
     }
 
+    private boolean
+    isWidgetChannel(long cid) {
+        for (long i : mCids) {
+            if (i == cid)
+                return true;
+        }
+        return false;
+    }
+
+    private boolean
+    isWidgetItem(long id) {
+        long cid = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
+        return isWidgetChannel(cid);
+    }
+
+    private void
+    notifyDataSetChanged() {
+        AppWidgetManager awm = AppWidgetManager.getInstance(Utils.getAppContext());
+        awm.notifyAppWidgetViewDataChanged(mAppWidgetId, R.id.list);
+    }
+
     private void
     refreshItemList() {
         if (DBG) P.v("WidgetDataChanged : " + mAppWidgetId);
-        AppWidgetManager awm = AppWidgetManager.getInstance(Utils.getAppContext());
-        awm.notifyAppWidgetViewDataChanged(mAppWidgetId, R.id.list);
+        if (null != mCursor)
+            mCursor.close();
+        mCursor = getCursor();
+        notifyDataSetChanged();
     }
 
     public ViewsFactory(long categoryId, int appWidgetId) {
@@ -163,8 +249,20 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     void
-    onItemClick(int position) {
+    onItemClick(int position, long id) {
+        eAssert(Utils.isUiThread());
         if (DBG) P.v("OnItemClick : " + position);
+        long cid = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
+        long act = mDbp.getChannelInfoLong(cid, ColumnChannel.ACTION);
+        String[] strs = mDbp.getItemInfoStrings(id, new ColumnItem[] { ColumnItem.LINK,
+                                                                       ColumnItem.ENCLOSURE_URL,
+                                                                       ColumnItem.ENCLOSURE_TYPE });
+        mItemAction.onAction(act,
+                             id,
+                             position,
+                             strs[0], // link
+                             strs[1], // enclosure
+                             strs[2]);// type.
     }
 
     @Override
@@ -176,6 +274,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     getCount() {
+        // Called at binder thread
         int count = mCursor.getCount() > MAX_LIST_ITEM_COUNT?
                     MAX_LIST_ITEM_COUNT:
                     mCursor.getCount();
@@ -186,6 +285,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public long
     getItemId(int position) {
+        // Called at binder thread
         mCursor.moveToPosition(position);
         return mCursor.getLong(COLI_ID);
     }
@@ -193,6 +293,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public RemoteViews
     getLoadingView() {
+        // Called at binder thread
         // TODO
         // Loading view here.
         if (DBG) P.v("getLoadingView");
@@ -202,6 +303,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public RemoteViews
     getViewAt(int position) {
+        // Called at binder thread
         //if (DBG) P.v("getViewAt : " + position);
         mCursor.moveToPosition(position);
         RemoteViews rv = new RemoteViews(Utils.getAppContext().getPackageName(),
@@ -211,8 +313,43 @@ UnexpectedExceptionHandler.TrackedModule {
         rv.setTextViewText(R.id.title, mCursor.getString(COLI_TITLE));
         rv.setTextViewText(R.id.description, mCursor.getString(COLI_DESCRIPTION));
 
+        long iid = mCursor.getLong(COLI_ID);
+        File df = mDbp.getItemInfoDataFile(iid);
+        boolean hasDnFile = null != df && df.exists();
+        if (hasDnFile)
+            rv.setImageViewResource(R.id.image, R.drawable.ic_save);
+        else {
+            RTTask.TaskState dnState = mRtt.getState(iid, RTTask.Action.DOWNLOAD);
+            rv.setViewVisibility(R.id.image, View.VISIBLE);
+            switch(dnState) {
+            case IDLE:
+                rv.setViewVisibility(R.id.image, View.GONE);
+                break;
+
+            case READY:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_pause);
+                break;
+
+            case RUNNING:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_refresh);
+                break;
+
+            case FAILED:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_info);
+                break;
+
+            case CANCELING:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_block);
+                break;
+
+            default:
+                eAssert(false);
+            }
+        }
+
         Intent ei = new Intent();
         ei.putExtra(AppWidgetUtils.MAP_KEY_POSITION, position);
+        ei.putExtra(AppWidgetUtils.MAP_KEY_ITEMID, iid);
         rv.setOnClickFillInIntent(R.id.item_root, ei);
         return rv;
     }
@@ -240,14 +377,14 @@ UnexpectedExceptionHandler.TrackedModule {
         // Doing time-consuming job in advance.
         mCursor.getCount();
         mCursor.moveToFirst();
+        mItemAction = new ItemActionHandler(null, new AdapterBridge());
+        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
     }
 
     @Override
     public void
     onDataSetChanged() {
-        if (null != mCursor)
-            mCursor.close();
-        mCursor = getCursor();
+        // Called at binder thread
     }
 
     @Override

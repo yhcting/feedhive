@@ -20,6 +20,8 @@
 
 package free.yhc.feeder.model;
 
+import static free.yhc.feeder.model.Utils.eAssert;
+
 import java.io.File;
 
 public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
@@ -35,6 +37,7 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
         final File   tempFile;
 
         public Arg(String aUrl, File aToFile, File aTempFile) {
+            eAssert(null != aUrl && null != aToFile && null != aTempFile);
             url = aUrl;
             toFile = aToFile;
             tempFile = aTempFile;

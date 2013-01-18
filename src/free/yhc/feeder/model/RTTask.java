@@ -329,17 +329,23 @@ OnSharedPreferenceChangeListener {
      * @return
      */
     public boolean
-    register(long id, Action act, BGTask task) {
-        eAssert(Utils.isUiThread());
+    register(final long id, final Action act, final BGTask task) {
+        //eAssert(Utils.isUiThread());
         boolean r;
         synchronized (mBgtm) {
             r = mBgtm.register(tid(act, id), task);
         }
 
         if (r) {
-            Iterator<OnRegisterListener> itr = mRegisterListenerl.iterator();
-            while (itr.hasNext())
-                itr.next().onRegister(task, id, act);
+            Utils.getUiHandler().post(new Runnable() {
+                @Override
+                public void
+                run() {
+                    Iterator<OnRegisterListener> itr = mRegisterListenerl.iterator();
+                    while (itr.hasNext())
+                        itr.next().onRegister(task, id, act);
+                }
+            });
         }
         return r;
     }
@@ -356,12 +362,12 @@ OnSharedPreferenceChangeListener {
      *   true(success), false(fail)
      */
     public boolean
-    unregister(long id, Action act) {
-        eAssert(Utils.isUiThread());
+    unregister(final long id, final Action act) {
+        //eAssert(Utils.isUiThread());
         String taskId = tid(act, id);
 
         boolean r = false;
-        BGTask task;
+        final BGTask task;
         synchronized (mBgtm) {
             // remove from manager.
             task = mBgtm.peek(taskId);
@@ -371,10 +377,15 @@ OnSharedPreferenceChangeListener {
         if (!r || null == task)
             return false;
 
-        Iterator<OnRegisterListener> itr = mRegisterListenerl.iterator();
-        while (itr.hasNext())
-            itr.next().onUnregister(task, id, act);
-
+        Utils.getUiHandler().post(new Runnable() {
+            @Override
+            public void
+            run() {
+                Iterator<OnRegisterListener> itr = mRegisterListenerl.iterator();
+                while (itr.hasNext())
+                    itr.next().onUnregister(task, id, act);
+            }
+        });
         return true;
     }
 

@@ -30,7 +30,6 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.IBinder;
 import android.widget.RemoteViews;
-import free.yhc.feeder.FeederActivity;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.Err;
@@ -47,19 +46,6 @@ UnexpectedExceptionHandler.TrackedModule {
         private final AppWidgetManager  _mAwm;
         private final int[]             _mAppWidgetIds;
         private final int               _mStartId;
-
-        private PendingIntent
-        getAppLauncherPendingIntent() {
-            // Register an onClickListener
-            Intent intent = new Intent(Utils.getAppContext(), FeederActivity.class);
-            intent.setAction(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            PendingIntent pIntent = PendingIntent.getActivity(Utils.getAppContext(),
-                                                              0,
-                                                              intent,
-                                                              PendingIntent.FLAG_UPDATE_CURRENT);
-            return pIntent;
-        }
 
         AppWidgetUpdater(int[] appWidgetIds, int startId) {
             _mAppWidgetIds = appWidgetIds;
@@ -92,7 +78,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 Intent intent = new Intent(Utils.getAppContext(),
                                            ViewsService.class);
+                // To tell "This is different intent from previous one!"
                 intent.setData(Uri.fromParts("content", String.valueOf(awid), null));
+
                 intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
                 intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
                 rv.setRemoteAdapter(R.id.list, intent);
@@ -100,6 +88,9 @@ UnexpectedExceptionHandler.TrackedModule {
                 intent = new Intent(Utils.getAppContext(),
                                     ViewsService.ListPendingIntentReceiver.class);
                 intent.setAction(AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
+                // To tell "This is different intent from previous one!"
+                intent.setData(Uri.fromParts("content", String.valueOf(awid), null));
+
                 intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
                 intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
                 PendingIntent pi = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent, 0);
