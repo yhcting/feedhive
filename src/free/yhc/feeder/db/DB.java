@@ -840,26 +840,29 @@ UnexpectedExceptionHandler.TrackedModule {
 
         Long[] cids = new Long[c.getCount()];
         ColumnItem[] cols = new ColumnItem[cids.length];
+        int i = 0;
+        do {
+            cids[i] = c.getLong(0);
+            cols[i] = ColumnItem.CHANNELID;
+            i++;
+        } while (c.moveToNext());
 
         String wh = buildSQLWhere(cols, cids, "=", "OR");
         // delete items first
         long nrItems = mDb.delete(TABLE_ITEM,
                                   wh.isEmpty()? null: wh,
                                   null);
-        if (nrItems > 0)
+        if (nrItems > 0) {
+            for (long cid : cids)
+                notifyUpdate(UpdateType.CHANNEL_DATA, cid);
             notifyUpdate(UpdateType.ITEM_TABLE);
+        }
+
         // then delete channel.
         int nr = mDb.delete(TABLE_CHANNEL, chWhereStr, null);
-        if (nr > 0) {
+        if (nr > 0)
             notifyUpdate(UpdateType.CHANNEL_TABLE);
-            int i = 0;
-            do {
-                cids[i] = c.getLong(0);
-                notifyUpdate(UpdateType.CHANNEL_DATA, cids[i]);
-                cols[i] = ColumnItem.CHANNELID;
-                i++;
-            } while (c.moveToNext());
-        }
+
         return nrItems;
     }
 
