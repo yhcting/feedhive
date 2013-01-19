@@ -98,7 +98,7 @@ UnexpectedExceptionHandler.TrackedModule {
         void
         register() {
             DBPolicy.get().registerUpdateListener(this,
-                                                  DB.UpdateType.CATEGORY_TABLE.flag()
+                                                  DB.UpdateType.CHANNEL_TABLE.flag()
                                                   | DB.UpdateType.CHANNEL_DATA.flag());
         }
 
