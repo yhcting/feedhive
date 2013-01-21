@@ -141,11 +141,13 @@ UnexpectedExceptionHandler.TrackedModule {
         if (DBG) P.v("Update Widgets : Category Ids : " + Utils.nrsToNString(cats));
         ArrayList<Integer> al = new ArrayList<Integer>(cats.length);
         for (long cat : cats) {
-            int awid = AppWidgetUtils.getCategoryWidget(cat);
-            if (AppWidgetUtils.INVALID_APPWIDGETID != awid)
+            int[] awids = AppWidgetUtils.getCategoryWidget(cat);
+            for (int awid : awids)
                 al.add(awid);
         }
-        update(context, Utils.convertArrayIntegerToint(al.toArray(new Integer[0])));
+
+        if (al.size() > 0)
+            update(context, Utils.convertArrayIntegerToint(al.toArray(new Integer[0])));
     }
 
     public static void

@@ -20,6 +20,8 @@
 
 package free.yhc.feeder.appwidget;
 
+import java.util.ArrayList;
+
 import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -70,19 +72,19 @@ public class AppWidgetUtils {
         return sMapPref.getLong(String.valueOf(appWidgetId), DB.INVALID_ITEM_ID);
     }
 
-    static int
+    static int[]
     getCategoryWidget(long categoryid) {
-        int   ret = INVALID_APPWIDGETID;
+        ArrayList<Integer> al = new ArrayList<Integer>();
         int[] awids = AppWidgetUtils.getAppWidgetIds();
         for (int id : awids) {
             long catid = sMapPref.getLong(String.valueOf(id), DB.INVALID_ITEM_ID);
-            if (categoryid == catid) {
-                ret = id;
-                break;
-            }
+            if (categoryid == catid)
+                al.add(id);
         }
-        if (DBG) P.v("<GET> Category->Widget Map : category:" + categoryid + " -> widget:" + ret);
-        return ret;
+        int[] rets = Utils.convertArrayIntegerToint(al.toArray(new Integer[0]));
+        if (DBG) P.v("<GET> Category->Widget Map : category:" + categoryid +
+                     " -> widget:" + Utils.nrsToNString(rets));
+        return rets;
     }
 
     public static void
