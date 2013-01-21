@@ -77,11 +77,11 @@ UnexpectedExceptionHandler.TrackedModule {
     private final RTTask    mRtt = RTTask.get();
     private final long      mCategoryId;
     private final int       mAppWidgetId;
+    private final DBWatcher         mDbWatcher;
+    private final ItemActionHandler mItemAction;
 
     private long[]          mCids = null;
     private Cursor          mCursor = null;
-    private DBWatcher       mDbWatcher = null;
-    private ItemActionHandler   mItemAction = null;
 
     private class DBWatcher implements
     DB.OnDBUpdateListener,
@@ -246,6 +246,17 @@ UnexpectedExceptionHandler.TrackedModule {
     public ViewsFactory(long categoryId, int appWidgetId) {
         mCategoryId = categoryId;
         mAppWidgetId = appWidgetId;
+
+        mDbWatcher = new DBWatcher();
+        mDbWatcher.register();
+
+        mCursor = getCursor();
+        // Doing time-consuming job in advance.
+        mCursor.getCount();
+        mCursor.moveToFirst();
+
+        mItemAction = new ItemActionHandler(null, new AdapterBridge());
+        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
     }
 
     void
@@ -371,14 +382,6 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onCreate() {
         if (DBG) P.v("onCreate : " + mAppWidgetId + " / " + mCategoryId);
-        mDbWatcher = new DBWatcher();
-        mCursor = getCursor();
-        mDbWatcher.register();
-        // Doing time-consuming job in advance.
-        mCursor.getCount();
-        mCursor.moveToFirst();
-        mItemAction = new ItemActionHandler(null, new AdapterBridge());
-        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
     }
 
     @Override
@@ -390,9 +393,16 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDestroy() {
+        if (DBG) P.v("onDestroy");
+    }
+
+    @Override
+    protected void
+    finalize() throws Throwable {
+        super.finalize();
         if (null != mCursor)
             mCursor.close();
         mDbWatcher.unregister();
-        if (DBG) P.v("onDestroy");
+        mRtt.unregisterRegisterEventListener(this);
     }
 }

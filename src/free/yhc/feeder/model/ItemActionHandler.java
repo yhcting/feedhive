@@ -171,12 +171,17 @@ public class ItemActionHandler {
             RTTask.TaskState state = mRtt.getState(id, RTTask.Action.DOWNLOAD);
             switch(state) {
             case IDLE: {
-                BGTaskDownloadToFile.Arg arg
-                    = new BGTaskDownloadToFile.Arg(url, f, mUip.getNewTempFile());
-                BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(arg);
-                mRtt.register(id, RTTask.Action.DOWNLOAD, dnTask);
-                mRtt.start(id, RTTask.Action.DOWNLOAD);
-                mABridge.dataSetChanged(id);
+                File tmpf = mUip.getNewTempFile();
+                if (null == tmpf)
+                    LookAndFeel.get().showTextToast(mContext, R.string.err_iofile);
+                else {
+                    BGTaskDownloadToFile.Arg arg
+                        = new BGTaskDownloadToFile.Arg(url, f, tmpf);
+                    BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(arg);
+                    mRtt.register(id, RTTask.Action.DOWNLOAD, dnTask);
+                    mRtt.start(id, RTTask.Action.DOWNLOAD);
+                    mABridge.dataSetChanged(id);
+                }
             } break;
 
             case RUNNING:
