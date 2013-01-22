@@ -726,11 +726,11 @@ UnexpectedExceptionHandler.TrackedModule {
             onClick(View v) {
                 onOpt_information(v);
                 /* For scheduled update test.
-                Cursor c = mDbp.queryChannel(DB.ColumnChannel.ID);
+                Cursor c = mDbp.queryChannel(ColumnChannel.ID);
                 c.moveToFirst();
                 Calendar calNow = Calendar.getInstance();
                 long dayms = calNow.getTimeInMillis() - Utils.dayBaseMs(calNow);
-                dayms += 5000; // after 5 sec
+                dayms += 10000; // after 10 sec
                 mDbp.updateChannel_schedUpdate(c.getLong(0), new long[] { dayms/1000 });
                 c.close();
                 ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());

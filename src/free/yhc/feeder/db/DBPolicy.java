@@ -450,6 +450,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return cid >= 0;
     }
 
+    public boolean
+    isValidCategoryId(long categoryid) {
+        String name = getCategoryName(categoryid);
+        return name != null;
+    }
+
     public long
     getDefaultCategoryId() {
         return DB.getDefaultCategoryId();

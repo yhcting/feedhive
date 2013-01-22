@@ -29,6 +29,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViewsService;
 import free.yhc.feeder.db.DB;
+import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -85,9 +86,20 @@ UnexpectedExceptionHandler.TrackedModule {
         if (DB.INVALID_ITEM_ID == catid)
             return null;
 
+        if (!DBPolicy.get().isValidCategoryId(catid)) {
+            AppWidgetUtils.deleteWidgetToCategoryMap(appWidgetId);
+            return null;
+        }
+
         vf = new ViewsFactory(catid, appWidgetId);
         sViewsFactoryMap.put(appWidgetId, vf);
         return vf;
+    }
+
+    public static void
+    instantiateViewsFactories() {
+        for (int awid : AppWidgetUtils.getAppWidgetIds())
+            getViewsFactory(awid);
     }
 
     @Override

@@ -22,6 +22,7 @@ package free.yhc.feeder;
 
 import android.app.Application;
 import android.content.res.Configuration;
+import free.yhc.feeder.appwidget.ViewsService;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.RTTask;
@@ -63,6 +64,9 @@ public class FeederApp extends Application {
         UsageReport.get();
         LookAndFeel.get();
         NotiManager.get();
+
+        // To connect to app widgets
+        ViewsService.instantiateViewsFactories();
     }
 
     @Override

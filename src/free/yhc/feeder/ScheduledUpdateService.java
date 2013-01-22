@@ -35,6 +35,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -126,7 +127,6 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onReceive(Context context, Intent intent) {
             //logI("AlarmReceiver : onReceive");
-
             long time = intent.getLongExtra("time", -1);
             if (time < 0) {
                 eAssert(false);
@@ -315,6 +315,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static void
     putWakeLock() {
+        if (mWlcnt <= 0)
+            return; // nothing to put!
+
         eAssert(mWlcnt > 0);
         mWlcnt--;
         //logI("ScheduledUpdateService(PUT) : current WakeLock count: " + mWlcnt);
@@ -399,6 +402,7 @@ UnexpectedExceptionHandler.TrackedModule {
             Intent intent = new Intent(Utils.getAppContext(), AlarmReceiver.class);
             intent.setAction(SCHEDUPDATE_INTENT_ACTION);
             intent.putExtra("time", nearestNext);
+            intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             PendingIntent pIntent = PendingIntent.getBroadcast(Utils.getAppContext(),
                                                                0,
                                                                intent,
@@ -406,6 +410,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // Get the AlarmManager service
             AlarmManager am = (AlarmManager)Utils.getAppContext().getSystemService(ALARM_SERVICE);
             am.set(AlarmManager.RTC_WAKEUP, nearestNext, pIntent);
+            if (DBG) P.v("New nearest scheduled update is set! " + (nearestNext / 1000) + " sec.");
         }
     }
 
@@ -417,6 +422,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     doCmdAlarm(int startId, long schedTime) {
+        if (DBG) P.v("DO scheduled update!! : " + startId);
         Calendar calNow = Calendar.getInstance();
         long daybase = Utils.dayBaseMs(calNow);
         long dayms = calNow.getTimeInMillis() - daybase;
@@ -515,25 +521,16 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     runStartCommand(Intent intent, int flags, int startId) {
         String cmd = intent.getStringExtra("cmd");
-
         //logI("ScheduledUpdate : runStartCommand : " + cmd);
-        try {
-            // 'cmd' can be null.
-            // So, DO NOT use "cmd.equals()"...
-            if (CMD_RESCHED.equals(cmd))
-                doCmdResched(startId);
-            else if (CMD_ALARM.equals(cmd)) {
-                long schedTime = intent.getLongExtra("time", -1);
-                doCmdAlarm(startId, schedTime);
-            } else
-                eAssert(false);
-        } finally {
-            // At any case wakelock should be released.
-            // BGTask itself will manage wakelock for the background tasking.
-            // We don't need to worry about update jobs.
-            // Just release wakelock for this command.
-            putWakeLock();
-        }
+        // 'cmd' can be null.
+        // So, DO NOT use "cmd.equals()"...
+        if (CMD_RESCHED.equals(cmd))
+            doCmdResched(startId);
+        else if (CMD_ALARM.equals(cmd)) {
+            long schedTime = intent.getLongExtra("time", -1);
+            doCmdAlarm(startId, schedTime);
+        } else
+            eAssert(false);
 
         synchronized (mTaskset) {
             if (mTaskset.isEmpty())
@@ -557,16 +554,25 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     // NOTE:
+    //   Starting service requires getting WakeLock!
     //   onStartCommand is run on main ui thread (same as onReceive).
     //   So, we don't need to concern about race-condition between these two.
     @Override
     public int
     onStartCommand(Intent intent, int flags, int startId) {
-        // try after some time again.
-        if (!ScheduledUpdateService.isEnabled())
-            Utils.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
-        else
-            runStartCommand(intent, flags, startId);
+        try {
+            // try after some time again.
+            if (!ScheduledUpdateService.isEnabled())
+                Utils.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
+            else
+                runStartCommand(intent, flags, startId);
+        } finally {
+            // At any case wakelock should be released.
+            // BGTask itself will manage wakelock for the background tasking.
+            // We don't need to worry about update jobs.
+            // Just release wakelock for this command.
+            putWakeLock();
+        }
         return START_NOT_STICKY;
     }
 
