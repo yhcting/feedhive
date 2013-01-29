@@ -1,5 +1,5 @@
 /*****************************************************************************
- *    Copyright (C) 2012 Younghyung Cho. <yhcting77@gmail.com>
+ *    Copyright (C) 2012, 2013 Younghyung Cho. <yhcting77@gmail.com>
  *
  *    This file is part of Feeder.
  *
@@ -19,8 +19,6 @@
  *****************************************************************************/
 
 package free.yhc.feeder.model;
-
-
 
 public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
     private static final boolean DBG = false;
