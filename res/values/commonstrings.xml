@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Strings that doens't need to be internationalization.
+(Usually, english...)
+-->
+<resources>
+    <string name="license_desc">
+---------------\n
+Lincese (Icons)\n
+---------------\n
+\n
+[ High Resolution Icon ]\n
+------------------------\n
+  * License: CC Attribution-Noncommercial 3.0\n
+     - http://www.iconarchive.com/show/social-user-icons-by-icontexto/rss-icon.html (IconTexto)\n
+\n
+[ Icons used in application ]\n
+-----------------------------\n
+  * License : the Apache License, Version 2.0\n
+     - Android SDK 4.0.3\n
+  * License : CC Attribution 3.0\n
+     - http://www.iconarchive.com/show/farm-fresh-icons-by-fatcow.html (Fatcow Web Hosting)\n
+    </string>
+</resources>

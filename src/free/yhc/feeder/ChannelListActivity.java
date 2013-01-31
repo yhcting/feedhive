@@ -35,6 +35,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.view.ViewPager;
@@ -44,6 +45,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
 import free.yhc.feeder.LookAndFeel.EditTextDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
@@ -623,7 +625,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_information(final View anchor) {
+    onOpt_information_about(final View anchor) {
         PackageManager pm = getPackageManager();
         PackageInfo pi = null;
         try {
@@ -641,6 +643,42 @@ UnexpectedExceptionHandler.TrackedModule {
                .append(getResources().getText(R.string.about_app_page)).append("\n");
         AlertDialog diag = mLnf.createAlertDialog(this, 0, title, strbldr.toString());
         diag.show();
+    }
+
+    private void
+    onOpt_information_license(final View anchor) {
+        View v = mLnf.inflateLayout(this, R.layout.info_dialog);
+        TextView tv = ((TextView)v.findViewById(R.id.text));
+        tv.setTypeface(Typeface.MONOSPACE);
+        tv.setText(R.string.license_desc);
+        AlertDialog.Builder bldr = new AlertDialog.Builder(this);
+        bldr.setView(v);
+        AlertDialog aDiag = bldr.create();
+        aDiag.show();
+    }
+
+    private void
+    onOpt_information(final View anchor) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        popup.getMenuInflater().inflate(R.menu.popup_information, popup.getMenu());
+        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean
+            onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                case R.id.about:
+                    onOpt_information_about(anchor);
+                    break;
+                case R.id.license:
+                    onOpt_information_license(anchor);
+                    break;
+                default:
+                    eAssert(false);
+                }
+                return true;
+            }
+        });
+        popup.show();
     }
 
     private void
