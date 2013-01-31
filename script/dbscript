@@ -6,7 +6,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 5;
+PRAGMA user_version = 7;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -511,6 +511,7 @@ INSERT INTO channels VALUES (!<#>, "나는 꼽사리다", "", "!<pref>ggobsari.x
 INSERT INTO channels VALUES (!<#>, "나는 딴따라다", "", "!<pref>ddanddara.xml", "", "시사", "팟캐스트", "문화", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "주진우의 현대사", "", "!<pref>drama.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "그것은 알기싫다", "", "!<pref>umcuw.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "벙커1 특강", "", "!<pref>bunker1.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
 
 
 
@@ -580,7 +581,9 @@ INSERT INTO channels VALUES (!<#>, "이성미의 이야기쇼", "", "!<pref>V000
 INSERT INTO channels VALUES (!<#>, "희망사항 변진섭입니다", "", "!<pref>V0000349388.xml", "", "라디오", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "안선영의 라디오가 좋다", "", "!<pref>V0000340869.xml", "", "라디오", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "여러분의 국민DJ 이예랑입니다", "", "!<pref>V0000362236.xml", "", "라디오", "", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "컬투쇼 레전드 사연 BEST 50", "", "!<pref>V0000364436.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "컬투쇼 레전드 사연 BEST", "", "!<pref>V0000364436.xml", "", "라디오", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "씨네타운나인틴", "", "!<pref>V0000365040.xml", "", "라디오", "문화", "교양", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "장기하의 대단한 라디오", "", "!<pref>V0000363536.xml", "", "라디오", "", "", "", "", "kor", 0);
 
 
 
@@ -927,6 +930,9 @@ INSERT INTO channels VALUES (!<#>, "Do it! 안드로이드 앱 프로그래밍",
 INSERT INTO channels VALUES (!<#>, "일빵빵 스토리가 있는 영어회화", "", "!<iblug>podcastxml/ilbangbang", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "게임 개발자 랩소디", "", "!<iblug>podcastxml/agebreak", "", "게임", "팟캐스트", "기술/과학", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "허재현의 현장일기", "", "!<feedburner>iblug/OCnu?format=xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "대한민국직업이야기 잡수다2", "", "!<iblug>xml/itunes/jobsooda.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "안하무인 연애상담", "", "!<iblug>xml/itunes/anhamooin.xml", "", "팟캐스트", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "남자를 말해주마, 순정마초", "", "!<iblug>podcastxml/macho", "", "팟캐스트", "", "", "", "", "kor", 0);
 
 
 
@@ -1031,4 +1037,9 @@ INSERT INTO channels VALUES (!<#>, "특허받았음 김샘영어", "", "http://w
 INSERT INTO channels VALUES (!<#>, "나는 호구다", "", "http://movie.betanews.net/pod_hogu/hogu.xml", "", "팟캐스트", "기술/과학", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "서영석 김용민의 정치토크", "", "http://www.iblug.com/podcastxml/seokimtalk", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "이철희의 이쑤시게", "", "http://www.iblug.com/xml/itunes/pressian.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
-
+INSERT INTO channels VALUES (!<#>, "CNN Student News", "", "http://rss.cnn.com/services/podcasting/studentnews/rss.xml", "", "팟캐스트", "외국어", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "원나잇 스탠드", "", "http://jayventura.godohosting.com/onenightstand.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "손미나의 여행사전", "", "http://pod.ssenhosting.com/rss/bbrcast.xml", "", "팟캐스트", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "왓더뻑", "", "http://jayventura2.godohosting.com/watdepuck.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "게무시", "", "http://pod.ssenhosting.com/rss/dalhoent/GEMUSI.xml", "", "팟캐스트", "게임", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "BBC Global News", "", "http://downloads.bbc.co.uk/podcasts/worldservice/globalnews/rss.xml", "", "팟캐스트", "언론", "", "", "", "kor", 0);
