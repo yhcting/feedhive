@@ -111,6 +111,13 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
     }
 
     @Override
+    protected void
+    onPostRun(Err result) {
+        mResult = result;
+        super.onPostRun(result);
+    }
+
+    @Override
     final protected Err
     doAsyncTask() {
         try {
