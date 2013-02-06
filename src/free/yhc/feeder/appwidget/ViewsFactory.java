@@ -332,37 +332,31 @@ UnexpectedExceptionHandler.TrackedModule {
         rv.setTextViewText(R.id.description, cur.getString(COLI_DESCRIPTION));
 
         long iid = cur.getLong(COLI_ID);
-        File df = mDbp.getItemInfoDataFile(iid);
-        boolean hasDnFile = null != df && df.exists();
-        if (hasDnFile)
-            rv.setImageViewResource(R.id.image, R.drawable.ic_save);
-        else {
-            RTTask.TaskState dnState = mRtt.getState(iid, RTTask.Action.DOWNLOAD);
-            rv.setViewVisibility(R.id.image, View.VISIBLE);
-            switch(dnState) {
-            case IDLE:
-                rv.setViewVisibility(R.id.image, View.GONE);
-                break;
+        RTTask.TaskState dnState = mRtt.getState(iid, RTTask.Action.DOWNLOAD);
+        rv.setViewVisibility(R.id.image, View.VISIBLE);
+        switch(dnState) {
+        case IDLE:
+            rv.setViewVisibility(R.id.image, View.GONE);
+            break;
 
-            case READY:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_pause);
-                break;
+        case READY:
+            rv.setImageViewResource(R.id.image, R.drawable.ic_pause);
+            break;
 
-            case RUNNING:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_refresh);
-                break;
+        case RUNNING:
+            rv.setImageViewResource(R.id.image, R.drawable.ic_refresh);
+            break;
 
-            case FAILED:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_info);
-                break;
+        case FAILED:
+            rv.setImageViewResource(R.id.image, R.drawable.ic_info);
+            break;
 
-            case CANCELING:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_block);
-                break;
+        case CANCELING:
+            rv.setImageViewResource(R.id.image, R.drawable.ic_block);
+            break;
 
-            default:
-                eAssert(false);
-            }
+        default:
+            eAssert(false);
         }
 
         Intent ei = new Intent();
