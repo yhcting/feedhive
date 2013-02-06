@@ -255,7 +255,17 @@ public class NetLoader {
                     time = System.currentTimeMillis();
                     URLConnection conn = new URL(url).openConnection();
                     conn.setReadTimeout(1000);
-                    mIstream = conn.getInputStream();
+                    try {
+                        mIstream = conn.getInputStream();
+                    } catch (NullPointerException e) {
+                        // NOTE : Workaround bug of getInputStream().
+                        // In case that url contains non-English characters,
+                        //   sometimes getInputStream() throws NullPointerExceptions.
+                        // This is definitely unexpected exception (Library shouldn't throw
+                        //   this kind of exception!).
+                        throw new FeederException(Err.INVALID_URL);
+                    }
+
                     Document dom = DocumentBuilderFactory
                                     .newInstance()
                                     .newDocumentBuilder()
