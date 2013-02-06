@@ -24,6 +24,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 import android.appwidget.AppWidgetManager;
 import android.content.Intent;
@@ -80,8 +81,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private final DBWatcher         mDbWatcher;
     private final ItemActionHandler mItemAction;
 
-    private long[]          mCids = null;
-    private Cursor          mCursor = null;
+    private long[]  mCids = null;
+    private AtomicReference<Cursor> mCursor = new AtomicReference<Cursor>(null);
 
     private class DBWatcher implements
     DB.OnDBUpdateListener,
@@ -237,10 +238,12 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     refreshItemList() {
         if (DBG) P.v("WidgetDataChanged : " + mAppWidgetId);
-        if (null != mCursor)
-            mCursor.close();
-        mCursor = getCursor();
+        Cursor newCur = getCursor();
+        Cursor cur = mCursor.get();
+        mCursor.set(newCur);
         notifyDataSetChanged();
+        if (null != cur)
+            cur.close();
     }
 
     public ViewsFactory(long categoryId, int appWidgetId) {
@@ -250,10 +253,11 @@ UnexpectedExceptionHandler.TrackedModule {
         mDbWatcher = new DBWatcher();
         mDbWatcher.register();
 
-        mCursor = getCursor();
+        Cursor cur = getCursor();
         // Doing time-consuming job in advance.
-        mCursor.getCount();
-        mCursor.moveToFirst();
+        cur.getCount();
+        cur.moveToFirst();
+        mCursor.set(cur);
 
         mItemAction = new ItemActionHandler(null, new AdapterBridge());
         mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
@@ -285,10 +289,11 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     getCount() {
+        Cursor cur = mCursor.get();
         // Called at binder thread
-        int count = mCursor.getCount() > MAX_LIST_ITEM_COUNT?
+        int count = cur.getCount() > MAX_LIST_ITEM_COUNT?
                     MAX_LIST_ITEM_COUNT:
-                    mCursor.getCount();
+                    cur.getCount();
         if (DBG) P.v("getCount : " + count);
         return count;
     }
@@ -296,9 +301,10 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public long
     getItemId(int position) {
+        Cursor cur = mCursor.get();
         // Called at binder thread
-        mCursor.moveToPosition(position);
-        return mCursor.getLong(COLI_ID);
+        cur.moveToPosition(position);
+        return cur.getLong(COLI_ID);
     }
 
     @Override
@@ -316,15 +322,16 @@ UnexpectedExceptionHandler.TrackedModule {
     getViewAt(int position) {
         // Called at binder thread
         //if (DBG) P.v("getViewAt : " + position);
-        mCursor.moveToPosition(position);
+        Cursor cur = mCursor.get();
+        cur.moveToPosition(position);
         RemoteViews rv = new RemoteViews(Utils.getAppContext().getPackageName(),
                                          R.layout.appwidget_row);
-        rv.setTextViewText(R.id.channel, mDbp.getChannelInfoString(mCursor.getLong(COLI_CHANNELID),
+        rv.setTextViewText(R.id.channel, mDbp.getChannelInfoString(cur.getLong(COLI_CHANNELID),
                                                                    ColumnChannel.TITLE));
-        rv.setTextViewText(R.id.title, mCursor.getString(COLI_TITLE));
-        rv.setTextViewText(R.id.description, mCursor.getString(COLI_DESCRIPTION));
+        rv.setTextViewText(R.id.title, cur.getString(COLI_TITLE));
+        rv.setTextViewText(R.id.description, cur.getString(COLI_DESCRIPTION));
 
-        long iid = mCursor.getLong(COLI_ID);
+        long iid = cur.getLong(COLI_ID);
         File df = mDbp.getItemInfoDataFile(iid);
         boolean hasDnFile = null != df && df.exists();
         if (hasDnFile)
@@ -393,6 +400,8 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDestroy() {
+        mDbWatcher.unregister();
+        mRtt.unregisterRegisterEventListener(this);
         if (DBG) P.v("onDestroy");
     }
 
@@ -400,9 +409,8 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     finalize() throws Throwable {
         super.finalize();
-        if (null != mCursor)
-            mCursor.close();
-        mDbWatcher.unregister();
-        mRtt.unregisterRegisterEventListener(this);
+        Cursor cur = mCursor.get();
+        if (null != cur)
+            cur.close();
     }
 }
