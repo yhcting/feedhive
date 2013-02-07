@@ -30,7 +30,6 @@ import android.view.View;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.ThreadEx;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.UnexpectedExceptionHandler.DumpLevel;
 import free.yhc.feeder.model.Utils;
 
 public class DiagAsyncTask extends ThreadEx<Err> implements
@@ -188,7 +187,7 @@ View.OnClickListener {
 
     @Override
     public String
-    dump(DumpLevel lvl) {
+    dump(UnexpectedExceptionHandler.DumpLevel lvl) {
         return "[ SpinAsyncTask : " + getName() + " ]";
     }
 

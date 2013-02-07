@@ -39,14 +39,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public Provider() {
         super();
-        UnexpectedExceptionHandler.get().registerModule(this);
-    }
-
-    @Override
-    protected void
-    finalize() throws Throwable {
-        UnexpectedExceptionHandler.get().unregisterModule(this);
-        super.finalize();
     }
 
     @Override

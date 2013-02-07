@@ -171,7 +171,6 @@ UnexpectedExceptionHandler.TrackedModule {
                  final int      maxArrSz,
                  boolean        hasLimit) {
         eAssert(dataReqSz < maxArrSz);
-        UnexpectedExceptionHandler.get().registerModule(this);
 
         mContext     = context;
         mRowLayout   = rowLayout;
@@ -663,6 +662,5 @@ UnexpectedExceptionHandler.TrackedModule {
             for (Object o : mItems)
                 destroyItem(o);
         }
-        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 }

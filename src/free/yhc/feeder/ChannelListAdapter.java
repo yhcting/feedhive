@@ -94,7 +94,6 @@ AsyncCursorAdapter.ItemBuilder {
               maxArrSz,
               false);
         setItemBuilder(this);
-        UnexpectedExceptionHandler.get().registerModule(this);
         mActionListener = listener;
 
         mChIconOnClick = new View.OnClickListener() {
@@ -331,12 +330,5 @@ AsyncCursorAdapter.ItemBuilder {
             msgImage.setVisibility(View.VISIBLE);
         else
             msgImage.setVisibility(View.GONE);
-    }
-
-    @Override
-    protected void
-    finalize() throws Throwable {
-        super.finalize();
-        UnexpectedExceptionHandler.get().unregisterModule(this);
     }
 }

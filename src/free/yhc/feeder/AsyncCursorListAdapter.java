@@ -70,8 +70,6 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
              lv,
              sDpsHandler,
              firstLoadingDummyItem);
-
-        UnexpectedExceptionHandler.get().registerModule(this);
     }
 
     private void

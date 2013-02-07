@@ -42,8 +42,8 @@ UncaughtExceptionHandler {
 
     // This module to capturing unexpected exception.
     // So this SHOULD have minimum set of code in constructor,
-    //   because this module SHOULD be instancicate as early as possible
-    //   before any other module is instanciated
+    //   because this module SHOULD be instantiate as early as possible
+    //   before any other module is instantiated
     //
     // Dependency on only following modules are allowed
     // - Utils

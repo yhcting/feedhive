@@ -176,7 +176,6 @@ AsyncCursorAdapter.ItemBuilder {
               maxArrSz,
               false);
         setItemBuilder(this);
-        UnexpectedExceptionHandler.get().registerModule(this);
         mDummyTextView = new TextView(context);
         mActionListener = listener;
         mFavOnClick = new View.OnClickListener() {
@@ -421,12 +420,5 @@ AsyncCursorAdapter.ItemBuilder {
         descv.setTextColor(context.getResources().getColor(getTextColor(ii.state)));
         datev.setTextColor(context.getResources().getColor(getTextColor(ii.state)));
         infov.setTextColor(context.getResources().getColor(getTextColor(ii.state)));
-    }
-
-    @Override
-    protected void
-    finalize() throws Throwable {
-        UnexpectedExceptionHandler.get().unregisterModule(this);
-        super.finalize();
     }
 }
