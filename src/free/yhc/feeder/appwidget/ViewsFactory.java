@@ -22,7 +22,6 @@ package free.yhc.feeder.appwidget;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
-import java.io.File;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -85,7 +84,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private AtomicReference<Cursor> mCursor = new AtomicReference<Cursor>(null);
 
     private class DBWatcher implements
-    DB.OnDBUpdateListener,
+    DB.OnDBUpdatedListener,
     DBPolicy.OnChannelUpdatedListener {
         private final HashSet<Long> _mCidSet = new HashSet<Long>();
 
@@ -96,13 +95,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         void
         register() {
-            mDbp.registerUpdateListener(this, DB.UpdateType.CHANNEL_DATA.flag());
+            mDbp.registerUpdatedListener(this, DB.UpdateType.CHANNEL_DATA.flag());
             mDbp.registerChannelUpdatedListener(this, this);
         }
 
         void
         unregister() {
-            mDbp.unregisterUpdateListener(this);
+            mDbp.unregisterUpdatedListener(this);
             mDbp.unregisterChannelUpdatedListener(this);
         }
 
@@ -136,7 +135,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
             if (DB.UpdateType.CHANNEL_DATA != type)
                 eAssert(false);
             long cid = (Long)arg0;

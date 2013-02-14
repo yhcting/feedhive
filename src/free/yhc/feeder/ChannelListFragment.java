@@ -88,7 +88,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // Saved cid for Async execution.
     private long        mCidPickImage = -1;
 
-    private static class DBWatcher implements DB.OnDBUpdateListener {
+    private static class DBWatcher implements DB.OnDBUpdatedListener {
         // NOTE
         // initial value should be 'true' because we don't know what happened to DB
         //   while this fragment instance DOESN'T exist!
@@ -97,14 +97,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
         void
         register() {
-            DBPolicy.get().registerUpdateListener(this,
+            DBPolicy.get().registerUpdatedListener(this,
                                                   DB.UpdateType.CHANNEL_TABLE.flag()
                                                   | DB.UpdateType.CHANNEL_DATA.flag());
         }
 
         void
         unregister() {
-            DBPolicy.get().unregisterUpdateListener(this);
+            DBPolicy.get().unregisterUpdatedListener(this);
         }
 
         void
@@ -132,7 +132,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
             switch (type) {
             case CHANNEL_TABLE:
                 _mChannelTableUpdated = true;

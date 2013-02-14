@@ -108,7 +108,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private ListView    mList    = null;
     private ItemActionHandler mItemAction;
 
-    private static class DBWatcher implements DB.OnDBUpdateListener {
+    private static class DBWatcher implements DB.OnDBUpdatedListener {
         private final HashSet<Long> _mUpdatedChannelSet = new HashSet<Long>();
         // NOTE
         // initial value should be 'true' because we don't know what happened to DB
@@ -117,14 +117,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
         void
         register() {
-            DBPolicy.get().registerUpdateListener(this,
+            DBPolicy.get().registerUpdatedListener(this,
                                                   DB.UpdateType.CHANNEL_DATA.flag()
                                                   | DB.UpdateType.ITEM_TABLE.flag());
         }
 
         void
         unregister() {
-            DBPolicy.get().unregisterUpdateListener(this);
+            DBPolicy.get().unregisterUpdatedListener(this);
         }
 
         void
@@ -152,7 +152,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
             switch (type) {
             case CHANNEL_DATA:
                 _mUpdatedChannelSet.add((Long)arg0);

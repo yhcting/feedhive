@@ -1625,12 +1625,12 @@ UnexpectedExceptionHandler.TrackedModule {
     //
     // ===============================================
     public void
-    registerUpdateListener(DB.OnDBUpdateListener listener, int flag) {
-        mDb.registerUpdateListener(listener, flag);
+    registerUpdatedListener(DB.OnDBUpdatedListener listener, int flag) {
+        mDb.registerUpdatedListener(listener, flag);
     }
 
     public void
-    unregisterUpdateListener(DB.OnDBUpdateListener listener) {
-        mDb.unregisterUpdateListener(listener);
+    unregisterUpdatedListener(DB.OnDBUpdatedListener listener) {
+        mDb.unregisterUpdatedListener(listener);
     }
 }

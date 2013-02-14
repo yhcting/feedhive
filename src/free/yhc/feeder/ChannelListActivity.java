@@ -87,7 +87,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long         categoryid;
     }
 
-    private static class DBWatcher implements DB.OnDBUpdateListener {
+    private static class DBWatcher implements DB.OnDBUpdatedListener {
         // NOTE
         // Comparing with "ChannelListFragment" and "ItemListActivity", initial value of
         //   _mCategoryTableUpdated is 'false'
@@ -98,12 +98,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
         void
         register() {
-            DBPolicy.get().registerUpdateListener(this, DB.UpdateType.CATEGORY_TABLE.flag());
+            DBPolicy.get().registerUpdatedListener(this, DB.UpdateType.CATEGORY_TABLE.flag());
         }
 
         void
         unregister() {
-            DBPolicy.get().unregisterUpdateListener(this);
+            DBPolicy.get().unregisterUpdatedListener(this);
         }
 
         void
@@ -125,7 +125,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onDbUpdate(DB.UpdateType type, Object arg0, Object arg1) {
+        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
             if (DB.UpdateType.CATEGORY_TABLE == type)
                 _mCategoryTableUpdated = true;
             else

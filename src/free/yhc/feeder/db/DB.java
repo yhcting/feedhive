@@ -80,7 +80,7 @@ UnexpectedExceptionHandler.TrackedModule {
      **************************************/
     private SQLiteDatabase mDb = null;
 
-    private final LinkedList<UpdateListener> mUpdateListenerl = new LinkedList<UpdateListener>();
+    private final LinkedList<UpdatedListener> mUpdatedListenerl = new LinkedList<UpdatedListener>();
 
     public enum UpdateType {
         CATEGORY_TABLE  (FLAG_CATEGORY_TABLE),
@@ -100,8 +100,8 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    public interface OnDBUpdateListener {
-        void onDbUpdate(UpdateType type, Object arg0, Object arg1);
+    public interface OnDBUpdatedListener {
+        void onDbUpdated(UpdateType type, Object arg0, Object arg1);
     }
 
     public interface Column {
@@ -110,10 +110,10 @@ UnexpectedExceptionHandler.TrackedModule {
         String getConstraint();
     }
 
-    private static class UpdateListener {
+    private static class UpdatedListener {
         int flag;
-        OnDBUpdateListener  listener;
-        UpdateListener(OnDBUpdateListener aListener, int aFlag) {
+        OnDBUpdatedListener  listener;
+        UpdatedListener(OnDBUpdatedListener aListener, int aFlag) {
             listener = aListener;
             flag = aFlag;
         }
@@ -433,30 +433,37 @@ UnexpectedExceptionHandler.TrackedModule {
      * DB monitoring
      **************************************/
     private void
-    notifyUpdate(UpdateType type, Object arg0, Object arg1) {
-        Iterator<UpdateListener> iter = mUpdateListenerl.iterator();
-        while (iter.hasNext()) {
-            UpdateListener ul = iter.next();
-            if (0 != (ul.flag & type.flag()))
-                ul.listener.onDbUpdate(type, arg0, arg1);
-        }
+    notifyUpdated(final UpdateType type, final Object arg0, final Object arg1) {
+        Utils.getUiHandler().post(new Runnable() {
+            @Override
+            public void
+            run() {
+                Iterator<UpdatedListener> iter = mUpdatedListenerl.iterator();
+                    while (iter.hasNext()) {
+                        UpdatedListener ul = iter.next();
+                        if (0 != (ul.flag & type.flag()))
+                            ul.listener.onDbUpdated(type, arg0, arg1);
+                    }
+            }
+        });
     }
 
     private void
-    notifyUpdate(final UpdateType type, final Object arg0) {
-        notifyUpdate(type, arg0, null);
+    notifyUpdated(final UpdateType type, final Object arg0) {
+        notifyUpdated(type, arg0, null);
     }
 
     private void
-    notifyUpdate(final UpdateType type) {
-        notifyUpdate(type, null);
+    notifyUpdated(final UpdateType type) {
+        notifyUpdated(type, null);
     }
 
     void
-    registerUpdateListener(OnDBUpdateListener listener, int flag) {
-        Iterator<UpdateListener> iter = mUpdateListenerl.iterator();
+    registerUpdatedListener(OnDBUpdatedListener listener, int flag) {
+        eAssert(Utils.isUiThread());
+        Iterator<UpdatedListener> iter = mUpdatedListenerl.iterator();
         while (iter.hasNext()) {
-            UpdateListener ul = iter.next();
+            UpdatedListener ul = iter.next();
             if (listener == ul.listener) {
                 // already registered.
                 // just updating flag is enough.
@@ -464,14 +471,15 @@ UnexpectedExceptionHandler.TrackedModule {
                 return;
             }
         }
-        mUpdateListenerl.add(new UpdateListener(listener,flag));
+        mUpdatedListenerl.add(new UpdatedListener(listener,flag));
     }
 
     void
-    unregisterUpdateListener(OnDBUpdateListener listener) {
-        Iterator<UpdateListener> iter = mUpdateListenerl.iterator();
+    unregisterUpdatedListener(OnDBUpdatedListener listener) {
+        eAssert(Utils.isUiThread());
+        Iterator<UpdatedListener> iter = mUpdatedListenerl.iterator();
         while (iter.hasNext()) {
-            UpdateListener ul = iter.next();
+            UpdatedListener ul = iter.next();
             if (listener == ul.listener) {
                 iter.remove();
                 return;
@@ -493,9 +501,9 @@ UnexpectedExceptionHandler.TrackedModule {
         open();
 
         // All DB information is changed now!.
-        notifyUpdate(UpdateType.CATEGORY_TABLE);
-        notifyUpdate(UpdateType.CHANNEL_TABLE);
-        notifyUpdate(UpdateType.ITEM_TABLE);
+        notifyUpdated(UpdateType.CATEGORY_TABLE);
+        notifyUpdated(UpdateType.CHANNEL_TABLE);
+        notifyUpdated(UpdateType.ITEM_TABLE);
 
         // Mark as all channel is changed
         Cursor c = mDb.query(TABLE_CHANNEL,
@@ -503,7 +511,7 @@ UnexpectedExceptionHandler.TrackedModule {
                              null, null, null, null, null);
         if (c.moveToFirst()) {
             do {
-                notifyUpdate(UpdateType.CHANNEL_DATA, c.getLong(0));
+                notifyUpdated(UpdateType.CHANNEL_DATA, c.getLong(0));
             } while (c.moveToNext());
         }
         c.close();
@@ -541,7 +549,7 @@ UnexpectedExceptionHandler.TrackedModule {
         values.put(ColumnCategory.NAME.getName(), category.name);
         long catid = mDb.insert(TABLE_CATEGORY, null, values);
         if (catid > 0)
-            notifyUpdate(UpdateType.CATEGORY_TABLE);
+            notifyUpdated(UpdateType.CATEGORY_TABLE);
         return catid;
     }
 
@@ -551,7 +559,7 @@ UnexpectedExceptionHandler.TrackedModule {
                              ColumnCategory.ID.getName() + " = " + id,
                              null);
         if (nr > 0)
-            notifyUpdate(UpdateType.CATEGORY_TABLE);
+            notifyUpdated(UpdateType.CATEGORY_TABLE);
         return nr;
     }
 
@@ -561,7 +569,7 @@ UnexpectedExceptionHandler.TrackedModule {
                               ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
                               null);
         if (nr > 0)
-            notifyUpdate(UpdateType.CATEGORY_TABLE);
+            notifyUpdated(UpdateType.CATEGORY_TABLE);
         return nr;
     }
 
@@ -632,8 +640,8 @@ UnexpectedExceptionHandler.TrackedModule {
     insertChannel(ContentValues values) {
         long cid = mDb.insert(TABLE_CHANNEL, null, values);
         if (cid > 0) {
-            notifyUpdate(UpdateType.CHANNEL_TABLE);
-            notifyUpdate(UpdateType.CHANNEL_DATA, cid);
+            notifyUpdated(UpdateType.CHANNEL_TABLE);
+            notifyUpdated(UpdateType.CHANNEL_DATA, cid);
         }
         return cid;
     }
@@ -653,7 +661,7 @@ UnexpectedExceptionHandler.TrackedModule {
                             ColumnChannel.ID.getName() + " = " + cid,
                             null);
         if (nr > 0)
-            notifyUpdate(UpdateType.CHANNEL_DATA, cid);
+            notifyUpdated(UpdateType.CHANNEL_DATA, cid);
         return nr;
     }
 
@@ -722,7 +730,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         if (where.equals(ColumnChannel.ID)) {
             for (Object o : whereValues)
-                notifyUpdate(UpdateType.CHANNEL_DATA, o);
+                notifyUpdated(UpdateType.CHANNEL_DATA, o);
         }
     }
 
@@ -854,14 +862,14 @@ UnexpectedExceptionHandler.TrackedModule {
                                   null);
         if (nrItems > 0) {
             for (long cid : cids)
-                notifyUpdate(UpdateType.CHANNEL_DATA, cid);
-            notifyUpdate(UpdateType.ITEM_TABLE);
+                notifyUpdated(UpdateType.CHANNEL_DATA, cid);
+            notifyUpdated(UpdateType.ITEM_TABLE);
         }
 
         // then delete channel.
         int nr = mDb.delete(TABLE_CHANNEL, chWhereStr, null);
         if (nr > 0)
-            notifyUpdate(UpdateType.CHANNEL_TABLE);
+            notifyUpdated(UpdateType.CHANNEL_TABLE);
 
         return nrItems;
     }
@@ -882,7 +890,7 @@ UnexpectedExceptionHandler.TrackedModule {
     insertItem(ContentValues values) {
         long id = mDb.insert(TABLE_ITEM, null, values);
         if (id > 0)
-            notifyUpdate(UpdateType.ITEM_TABLE);
+            notifyUpdated(UpdateType.ITEM_TABLE);
         return id;
     }
 
@@ -1092,7 +1100,7 @@ UnexpectedExceptionHandler.TrackedModule {
                             wh.isEmpty()? null: wh,
                             null);
         if (nr > 0)
-            notifyUpdate(UpdateType.ITEM_TABLE);
+            notifyUpdated(UpdateType.ITEM_TABLE);
         return nr;
     }
 
@@ -1232,7 +1240,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // And any other channel value is not changed too.
         // So, DB doesn't need to notify that "channel is changed".
         if (nr > 0)
-            notifyUpdate(UpdateType.ITEM_TABLE);
+            notifyUpdated(UpdateType.ITEM_TABLE);
 
         return nr;
     }
