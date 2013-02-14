@@ -25,7 +25,7 @@ public class FeederException extends Exception {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FeederException.class);
 
-    private Err err;
+    private Err err = Err.UNKNOWN; // default error value
 
     public FeederException() {
         super();

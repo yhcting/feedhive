@@ -113,6 +113,17 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
     @Override
     protected void
     onPostRun(Err result) {
+        eAssert(null != result);
+        // See ThreadEx.bgRun()
+        // result can be null in two cases
+        //   - doAsyncTask() returns 'null' -- (*1)
+        //   - doAsyncTask() doens't finished completely. -- (*2)
+        // In case of BaseBGTask, (*1) is unexpected case and SHOULD NOT happen.
+        // And (*2) is also definitely unexpected case (Runtime exception... or something...).
+        // So, set to Err.UNKNOWN for those two cases.
+        if (null == result)
+            result = Err.UNKNOWN;
+
         mResult = result;
         super.onPostRun(result);
     }
@@ -124,6 +135,8 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
             return doBgTask(mRunParam);
         } catch (FeederException e) {
             return e.getError();
+        } catch (Throwable e) {
+            return Err.UNKNOWN;
         }
     }
 

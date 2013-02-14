@@ -469,7 +469,7 @@ OnSharedPreferenceChangeListener {
         }
 
         if (Err.NO_ERR == task.getResult()
-                   || Err.USER_CANCELLED == task.getResult()) {
+            || Err.USER_CANCELLED == task.getResult()) {
             unregister(id, act);
             return TaskState.IDLE;
         }
