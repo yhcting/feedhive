@@ -564,12 +564,24 @@ OnSharedPreferenceChangeListener {
                 return true;
         }
 
+        boolean fromReadyQ;
         synchronized (mTaskQSync) {
-            mReadyQ.remove(t);
+            fromReadyQ = mReadyQ.remove(t);
         }
 
-        synchronized (mBgtm) {
-            return mBgtm.cancel(tid(act, id), arg);
+        if (fromReadyQ) {
+            // Not-started-task is cancelled.
+            // That means "onCancelled or onPostRun is not called".
+            // Therefore we should notify that task state is changed, at this moment.
+            synchronized (mBgtm) {
+                mBgtm.unregister(tid(act, id));
+            }
+            notifyTaskQChanged(t, false);
+            return true;
+        } else {
+            synchronized (mBgtm) {
+                return mBgtm.cancel(tid(act, id), arg);
+            }
         }
     }
 

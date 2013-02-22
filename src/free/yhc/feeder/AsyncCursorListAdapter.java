@@ -22,6 +22,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
         @Override
         public void
         onPreDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq) {
+            if (DBG) P.v("onPreDataProvide : anchorPos(" + anchorPos + ")");
             AsyncCursorListAdapter adpr = (AsyncCursorListAdapter)adapter;
             adpr.setAsyncLoadingAnchor(anchorPos);
         }
@@ -29,6 +30,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
         @Override
         public void
         onPostDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq) {
+            if (DBG) P.v("onPostDataProvide : anchorPos(" + anchorPos + ")");
             AsyncCursorListAdapter adpr = (AsyncCursorListAdapter)adapter;
             adpr.setAsyncLoadingAnchor(INVALID_POS);
         }
@@ -36,6 +38,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
         @Override
         public void
         onCancelledDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq) {
+            if (DBG) P.v("onCancelledDataProvide : anchorPos(" + anchorPos + ")");
             AsyncCursorListAdapter adpr = (AsyncCursorListAdapter)adapter;
             adpr.setAsyncLoadingAnchor(INVALID_POS);
         }
@@ -99,7 +102,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
     preBindView(View v, final Context context, int position)  {
         ImageView loadingIv = (ImageView)v.findViewById(R.id.loading);
         View contentv = v.findViewById(R.id.content);
-        if (position == mAsyncLoadingAnchor) {
+        if (isLoadingItem(position)) {
             loadingIv.setVisibility(View.VISIBLE);
             loadingIv.setImageResource(R.drawable.spinner_48);
             contentv.setVisibility(View.GONE);
