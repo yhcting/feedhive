@@ -26,9 +26,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
-import android.preference.PreferenceManager;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
 
@@ -38,8 +35,7 @@ import free.yhc.feeder.db.DBPolicy;
 //       but, need to be check in runtime.
 // Should be THREAD-SAFE
 public class RTTask implements
-UnexpectedExceptionHandler.TrackedModule,
-OnSharedPreferenceChangeListener {
+UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(RTTask.class);
 
@@ -75,7 +71,6 @@ OnSharedPreferenceChangeListener {
                     = new KeyBasedLinkedList<OnRegisterListener>();
     private final KeyBasedLinkedList<OnTaskQueueChangedListener> mTaskQChangedListenerl
                     = new KeyBasedLinkedList<OnTaskQueueChangedListener>();
-    private volatile int       mMaxConcurrent = 2; // temporally hard coding.
 
     public interface OnRegisterListener {
         void onRegister(BGTask task, long id, Action act);
@@ -150,9 +145,6 @@ OnSharedPreferenceChangeListener {
 
     private RTTask() {
         UnexpectedExceptionHandler.get().registerModule(this);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
-        prefs.registerOnSharedPreferenceChangeListener(this);
-        onSharedPreferenceChanged(prefs, "maxnr_bgtask");
     }
 
     // Get singleton instance,.
@@ -166,18 +158,6 @@ OnSharedPreferenceChangeListener {
     // ===============================
     // Privates
     // ===============================
-    /**
-     * Set number BG task that can be run concurrently.
-     * If number of BG task is larger than this value, than
-     *   only this number of tasks runs simultaneously and others are waiting.
-     * After one of running task is finished, next waiting BG task start to run.
-     * @param v
-     */
-    private void
-    setMaxConcurrent(int v) {
-        mMaxConcurrent = v;
-    }
-
     private String
     tid(Action act, long id) {
         return act.name() + "/" + id;
@@ -267,21 +247,6 @@ OnSharedPreferenceChangeListener {
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         return "[ RTTask ]";
-    }
-
-    @Override
-    public void
-    onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-        if ("maxnr_bgtask".equals(key)) {
-            String v = prefs.getString("maxnr_bgtask", "1");
-            int value = 1;
-            try {
-                value = Integer.parseInt(v);
-            } catch (NumberFormatException e) {
-                eAssert(false);
-            }
-            setMaxConcurrent(value);
-        }
     }
 
     /**
@@ -504,6 +469,8 @@ OnSharedPreferenceChangeListener {
      */
     public boolean
     start(long id, Action act) {
+        int maxConcurrent = Utils.getPrefMaxNrBgTask();
+
         String taskId = tid(act, id);
         BGTask t = null;
         synchronized (mBgtm) {
@@ -530,8 +497,9 @@ OnSharedPreferenceChangeListener {
                 mBgtm.bind(tid(act, id), this, new RunningBGTaskListener(), true);
             }
             // If there is no running task then start NOW!
-            if (mRunQ.size() < mMaxConcurrent) {
+            if (mRunQ.size() < maxConcurrent) {
                 bStartImmediate = true;
+                if (DBG) P.v("start : start immediately : runQ(" + mRunQ.size() + "), readyQ(" + mReadyQ.size() + ")");
                 mRunQ.addLast(t);
             } else
                 mReadyQ.addLast(t);

@@ -823,6 +823,18 @@ public class Utils {
         return sPrefs.getString("newmsg_noti", "yes").equals("yes");
     }
 
+    public static int
+    getPrefMaxNrBgTask() {
+        String v = sPrefs.getString("maxnr_bgtask", "2");
+        int value = 2;
+        try {
+            value = Integer.parseInt(v);
+        } catch (NumberFormatException e) {
+            eAssert(false);
+        }
+        return value;
+    }
+
     // ================================================
     //
     // Utility Functions for Date
