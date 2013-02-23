@@ -144,13 +144,6 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        protected void
-        finalize() throws Throwable {
-            super.finalize();
-            unregister();
-        }
-
-        @Override
         public void
         onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
             switch (type) {

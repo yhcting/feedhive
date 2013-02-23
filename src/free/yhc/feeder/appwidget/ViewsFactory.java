@@ -113,13 +113,6 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        protected void
-        finalize() throws Throwable {
-            super.finalize();
-            unregister();
-        }
-
-        @Override
         public void
         onNewItemsUpdated(long cid, int nrNewItems) {
             if (isInCategory(cid)
@@ -393,8 +386,16 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDestroy() {
-        mDbWatcher.unregister();
-        mRtt.unregisterRegisterEventListener(this);
+        // mDbWatcher.unregister SHOULD be called at UI context
+        // See unregisterUpdatedListener at DB.java for details.
+        Utils.getUiHandler().post(new Runnable() {
+            @Override
+            public void
+            run() {
+                mDbWatcher.unregister();
+                mRtt.unregisterRegisterEventListener(this);
+            }
+        });
         if (DBG) P.v("onDestroy");
     }
 
