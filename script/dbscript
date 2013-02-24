@@ -6,7 +6,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 7;
+PRAGMA user_version = 8;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -64,9 +64,13 @@ CREATE TABLE channels (_id INTEGER PRIMARY KEY, title TEXT NOT NULL, description
 -- 자동차
 -- 정치
 -- 지역
+-- 코미디
 -- 취업
 -- 팟캐스트
 -- ===========================================================================
+
+BEGIN TRANSACTION;
+-- vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
 --!#------------------------
 --!# Set popular url prefix
@@ -933,6 +937,17 @@ INSERT INTO channels VALUES (!<#>, "허재현의 현장일기", "", "!<feedburne
 INSERT INTO channels VALUES (!<#>, "대한민국직업이야기 잡수다2", "", "!<iblug>xml/itunes/jobsooda.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "안하무인 연애상담", "", "!<iblug>xml/itunes/anhamooin.xml", "", "팟캐스트", "사회", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "남자를 말해주마, 순정마초", "", "!<iblug>podcastxml/macho", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "저공비행 (노회찬, 유시민)", "", "!<iblug>xml/itunes/lowflying.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "특허받았음 김샘영어", "", "!<iblug>xml/itunes/johnykim.xml", "", "팟캐스트", "외국어", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "서영석 김용민의 정치토크", "", "!<iblug>podcastxml/seokimtalk", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "이철희의 이쑤시게", "", "!<iblug>xml/itunes/pressian.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "나디오스타", "", "<!iblug>xml/itunes/ngtv.xml", "", "팟캐스트", "코미디", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "나는꼽사리다보충수업", "", "<!iblug>xml/itunes/hyunkyekim.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "김봉현의 힙합초대석", "", "<!iblug>xml/itunes/kbhhiphop.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "편파음악감상실", "", "<!iblug>xml/itunes/devinlee.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "우울한 빵집옆 음반가게", "", "<!iblug>xml/itunes/shakemusic.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "역사책 읽는 집", "", "<!iblug>xml/itunes/bookcross.xml", "", "팟캐스트", "교양", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "달을 품은 토끼", "", "<!iblug>xml/itunes/dalpum.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
 
 
 
@@ -1009,10 +1024,138 @@ INSERT INTO channels VALUES (!<#>, "TED Talks (HD)", "", "!<feedburner>TedtalksH
 
 
 
+-- REUTERS
+--!SET pref http://feeds.reuters.com/
+INSERT INTO channels VALUES (!<#>, "REUTERS Arts", "", "!<pref>news/artsculture", "", "외국 언론", "교양", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Business", "", "!<pref>reuters/businessNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Business Travel", "", "!<pref>ReutersBusinessTravel", "", "외국 언론", "여행", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Company News", "", "!<pref>reuters/companyNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Counterparties", "", "!<pref>reuters/Counterparties", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Entertainment", "", "!<pref>reuters/entertainment", "", "외국 언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Environment", "", "!<pref>reuters/environment", "", "외국 언론", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Health News", "", "!<pref>reuters/healthNews", "", "외국 언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Lifestyle", "", "!<pref>reuters/lifestyle", "", "외국 언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Media", "", "!<pref>news/reutersmedia", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Money", "", "!<pref>news/wealth", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Most Read Articles", "", "!<pref>reuters/MostRead", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Oddly Enough", "", "!<pref>reuters/oddlyEnoughNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Pictures", "", "!<pref>ReutersPicturers", "", "외국 언론", "사진", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS People", "", "!<pref>reuters/peopleNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Politics", "", "!<pref>Reuters/PoliticsNews", "", "외국 언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Science", "", "!<pref>reuters/scienceNews", "", "외국 언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Sports", "", "!<pref>reuters/sportsNews", "", "외국 언론", "스포츠", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Technology", "", "!<pref>reuters/technologyNews", "", "외국 언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Top News", "", "!<pref>reuters/topNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS US News", "", "!<pref>Reuters/domesticNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS World", "", "!<pref>Reuters/worldNews", "", "외국 언론", "국제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Bankruptcy", "", "!<pref>reuters/bankruptcyNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Bonds", "", "!<pref>reuters/bondsNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Deals", "", "!<pref>news/deals", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Economy", "", "!<pref>news/economy", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Financial Services & Real Estate", "", "!<pref>reuters/financialServicesrealEstateNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Global Markets", "", "!<pref>reuters/globalmarketsNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Hedge Funds", "", "!<pref>news/hedgefunds", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Hot Stocks", "", "!<pref>reuters/hotStocksNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS IPOs", "", "!<pref>reuters/newIssuesNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Mergers & Acquisitions", "", "!<pref>reuters/mergersNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Private Equity", "", "!<pref>reuters/privateequityNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Regulatory News", "", "!<pref>reuters/governmentfilingsNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Small Business", "", "!<pref>reuters/smallBusinessNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Summit News", "", "!<pref>reuters/summitNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS US Dollar Report", "", "!<pref>reuters/USdollarreportNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS US Markets", "", "!<pref>news/usmarkets", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Basic Materials", "", "!<pref>reuters/basicmaterialsNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Cyclical Consumer Goods", "", "!<pref>reuters/cyclicalconsumergoodsNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Energy", "", "!<pref>reuters/USenergyNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Environment", "", "!<pref>reuters/environment", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Financials", "", "!<pref>reuters/financialsNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Healthcare", "", "!<pref>reuters/UShealthcareNews", "", "외국 언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Industrials", "", "!<pref>reuters/industrialsNews", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Media Diversified", "", "!<pref>reuters/USmediaDiversifiedNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Non-Cyclical Consumer Goods", "", "!<pref>reuters/noncyclicalconsumergoodsNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Technology", "", "!<pref>reuters/technologysectorNews", "", "외국 언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Technology, Media & Telecommunications", "", "!<pref>reuters/UStechnologyTelcomNews", "", "외국 언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Telecommunications", "", "!<pref>reuters/telecomsectorNews", "", "외국 언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Utilities", "", "!<pref>reuters/utilitiesNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Afghan Journal", "", "!<pref>reuters/blogs/AfghanJournal", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Anthony DeRosa", "", "!<pref>reuters/blogs/AnthonyDerosa", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Bernd Debusmann", "", "!<pref>reuters/blogs/reuters-dealzone", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Chrystia Freeland", "", "!<pref>ChrystiaFreeland", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog David Cay Johnston", "", "!<pref>reuters/reuters/blogs/DavidCayJohnston", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Davos Notebook", "", "!<feedburner>reuters/blogs/DavosNotebook", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog DealZone", "", "!<pref>reuters/blogs/reuters-dealzone", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Emanuel Derman", "", "!<pref>reuters/iOWg", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Entrepreneurial", "", "!<pref>reuters/blogs/entrepreneurial", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog FaithWorld", "", "!<pref>reuters/blogs/Faithworld", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Felix Salmon", "", "!<pref>reuters/blogs/felix-salmon", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Financial Regulatory Forum", "", "!<pref>reuters/blogs/FinancialRegulatoryForum", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog For the Record", "", "!<pref>reuters/blogs/for-the-record", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Funds Hub", "", "!<pref>reuters/blogs/FundsHub", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog George Chen", "", "!<pref>reuters/blogs/GeorgeChen", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Geraldine Fabrikant", "", "!<pref>reuters/blogs/GeraldineFabrikant", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Global Investing", "", "!<pref>reuters/blogs/GlobalInvesting", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Hugo Dixon", "", "!<pref>reuters/blogs/HugoDixon", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Ian Bremmer", "", "!<pref>reuters/blogs/IanBremmer", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog India Insight", "", "!<pref>reuters/blogs/India", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Jack Shafer", "", "!<pref>reuters/blogs/jackshafer", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog James Pethokoukis", "", "!<pref>reuters/blogs/JamesPethokoukis", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog James Saft", "", "!<pref>reuters/blogs/JamesSaft", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog John Abell", "", "!<pref>reuters/blogs/JohnCAbell", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog John Wasik", "", "!<pref>reuters/blogs/JohnWasik", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Lucy Marcus", "", "!<pref>LucyMarcus", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Lawrence Summers", "", "!<pref>reuters/blogs/LawrenceSummers", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Macroscope", "", "!<pref>reuters/blogs/macroscope", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog MediaFile", "", "!<pref>reuters/blogs/mediafile", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Mohamed El-Erian", "", "!<pref>reuters/blogs/mohamedelerian", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Newsmaker", "", "!<pref>reuters/blogs/newsmaker", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Reuters Breakingviews", "", "!<pref>reuters/blogs/ReutersBreakingviews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Reuters Editors", "", "!<pref>reuters/blogs/reuters-editors", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Reuters Photographers", "", "!<pref>reuters/blogs/photo", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Summit Notebook", "", "!<pref>reuters/blogs/SummitNotebook", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Blog Tales from the Trail", "", "!<pref>reuters/blogs/talesfromthetrail", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS The Blog Deep End", "", "!<pref>reuters/blogs/the-deep-end", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS The Blog Great Debate", "", "!<pref>reuters/blogs/the-great-debate", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS The Blog Human Impact", "", "!<pref>reuters/blogs/the-human-impact", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Tax Blog Break", "", "!<pref>reuters/blogs/taxbreak", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Unstructured Finance", "", "!<pref>UnstructuredFinance", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Breakingviews Video", "", "!<pref>reuters/USVideoBreakingviews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Business Video", "", "!<pref>reuters/USVideoBusiness", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Business Travel Video", "", "!<pref>reuters/USVideoBusinessTravel", "", "외국 언론", "여행", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Chrystia Freeland Video", "", "!<pref>reuters/USVideoChrystiaFreeland", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Entertainment Video", "", "!<pref>reuters/USVideoEntertainment", "", "외국 언론", "연예", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Environment Video", "", "!<pref>reuters/USVideoEnvironment", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Felix Salmon Video", "", "!<pref>reuters/USVideoFelixSalmon", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS GigaOm Video", "", "!<pref>reuters/USVideoGigaom", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Lifestyle Video", "", "!<pref>reuters/USVideoLifestyle", "", "외국 언론", "생활", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Most Watched Video", "", "!<pref>reuters/USVideoMostWatched", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Most Recent Video", "", "!<pref>reuters/USVideoLatest", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Newsmakers", "", "!<pref>reuters/USVideoNewsmakers", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Oddly Enough Video", "", "!<pref>reuters/USVideoOddlyEnough", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Personal Finance", "", "!<pref>reuters/USVideoPersonalFinance", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Politics Video", "", "!<pref>reuters/USVideoPolitics", "", "외국 언론", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Rough Cuts", "", "!<pref>reuters/USVideoRoughCuts", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Small Business", "", "!<pref>reuters/USVideoSmallBusiness", "", "외국 언론", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Technology Video", "", "!<pref>reuters/USVideoTechnology", "", "외국 언론", "기술/과학", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS Top News Video", "", "!<pref>reuters/USVideoTopNews", "", "외국 언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "REUTERS World News", "", "!<pref>reuters/USVideoWorldNews", "", "외국 언론", "국제", "", "", "", "kor", 0);
+
+
+
+-- 팟캐스트 ssenhosting
+--!SET pref http://pod.ssenhosting.com/rss/
+INSERT INTO channels VALUES (!<#>, "’잡주는 없다’ 스타전문가들의 코믹 투자해법", "", "!<pref>sezntff.xml", "", "경제", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "이박사와 이작가의 이이제이", "", "!<pref>vamp666.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "손미나의 여행사전", "", "!<pref>bbrcast.xml", "", "팟캐스트", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "게무시", "", "!<pref>dalhoent/GEMUSI.xml", "", "팟캐스트", "게임", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "팟캐스트 윤여준", "", "!<pref>warmwalk.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "오유 라디오", "", "!<pref>anipoint.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "옥상달빛 옥탑라됴", "", "!<pref>msbsound/okdalradio.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
+
+
+
 -- iblug is better than youtube! (to avoid duplication)
 -- INSERT INTO channels VALUES (!<#>, "뉴스타파", "", "http://newstapa.com/rss", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "영어 중상급자를 위한 방송", "", "http://practicus.co.kr/podcastgen/feed.xml", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "저공비행 (노회찬, 유시민)", "", "http://www.iblug.com/xml/itunes/lowflying.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "라디오 반민특위", "", "http://www.615tv.net/podcastbanmin/jkbsbanmin.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "망치부인 시사수다방", "", "http://nemo.podics.com/131192848437", "", "시사", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 의사다", "", "http://www.docdocdoc.co.kr/podcast/iam_doctors.xml", "", "기술/과학", "팟캐스트", "", "", "", "kor", 0);
@@ -1024,7 +1167,6 @@ INSERT INTO channels VALUES (!<#>, "법륜스님의 즉문즉설", "", "http://j
 INSERT INTO channels VALUES (!<#>, "티앤티앤 생활중국어 회화", "", "http://www.jrchina.com/jrchina/podcast/tiantian.xml", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "정철의 영어가 터지는 비법", "", "http://m.jungchul.com/xml/jungchul_1_111227_re2.xml", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "5분 패턴영어", "", "http://enjoyenglish.libsyn.com/rss", "", "외국어", "팟캐스트", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "’잡주는 없다’ 스타전문가들의 코믹 투자해법", "", "http://pod.ssenhosting.com/rss/sezntff.xml", "", "경제", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "비쥬얼 미디어", "", "http://itviewpoint.com/blog/rss", "", "기술/과학", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "미디어몽구", "", "http://mongu.net/rss", "", "정치", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 일반인이다", "", "http://iamnormal.co.kr/programs/iamnormal.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
@@ -1032,14 +1174,15 @@ INSERT INTO channels VALUES (!<#>, "책, 즐겁게 듣자!!", "", "http://audien
 INSERT INTO channels VALUES (!<#>, "이동진의 빨간 책가방", "", "http://ec.libsyn.com/p/d/0/9/d0996a60a3c2ad2c/redbooks.xml?d13a76d516d9dec20c3d276ce028ed5089ab1ce3dae902ea1d01cb8e33d5cf58b943&c_id=4456658", "", "교양", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "대한민국 직업이야기 잡수다", "", "!<feedburner>libsyn/jobsooda", "", "교양", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "티엔티엔 생활중국어회화", "", "http://www.jrchina.com/jrchina/podcast/tiantian.xml", "", "외국어", "", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "이박사와 이작가의 이이제이", "", "http://pod.ssenhosting.com/rss/vamp666.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "특허받았음 김샘영어", "", "http://www.iblug.com/xml/itunes/johnykim.xml", "", "팟캐스트", "외국어", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 호구다", "", "http://movie.betanews.net/pod_hogu/hogu.xml", "", "팟캐스트", "기술/과학", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "서영석 김용민의 정치토크", "", "http://www.iblug.com/podcastxml/seokimtalk", "", "팟캐스트", "시사", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "이철희의 이쑤시게", "", "http://www.iblug.com/xml/itunes/pressian.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "CNN Student News", "", "http://rss.cnn.com/services/podcasting/studentnews/rss.xml", "", "팟캐스트", "외국어", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "원나잇 스탠드", "", "http://jayventura.godohosting.com/onenightstand.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "손미나의 여행사전", "", "http://pod.ssenhosting.com/rss/bbrcast.xml", "", "팟캐스트", "문화", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "왓더뻑", "", "http://jayventura2.godohosting.com/watdepuck.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "게무시", "", "http://pod.ssenhosting.com/rss/dalhoent/GEMUSI.xml", "", "팟캐스트", "게임", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "BBC Global News", "", "http://downloads.bbc.co.uk/podcasts/worldservice/globalnews/rss.xml", "", "팟캐스트", "언론", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "아트앤스터디", "", "http://www.artnstudy.com/podcast.xml", "", "팟캐스트", "교육", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "100% 실용영어", "", "http://practicus.co.kr/podcastgen2/feed.xml", "", "팟캐스트", "외국어", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "EBS 북카페", "", "http://www.ebs.co.kr/actions/EncodingMngList?cmd=podcastEpisodeList", "", "팟캐스트", "교육", "", "", "", "kor", 0);
+
+
+-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+END TRANSACTION;
