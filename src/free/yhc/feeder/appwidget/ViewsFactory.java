@@ -95,7 +95,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         void
         register() {
-            mDbp.registerUpdatedListener(this, DB.UpdateType.CHANNEL_DATA.flag());
+            mDbp.registerUpdatedListener(this, DB.UpdateType.CHANNEL_DATA.flag()
+                                               | DB.UpdateType.CHANNEL_TABLE.flag());
             mDbp.registerChannelUpdatedListener(this, this);
         }
 
@@ -129,17 +130,28 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
-            if (DB.UpdateType.CHANNEL_DATA != type)
-                eAssert(false);
-            long cid = (Long)arg0;
-            // Check that number of channels in the category is changed.
-            long catid = mDbp.getChannelInfoLong(cid, ColumnChannel.CATEGORYID);
-            if (DBG) P.v("onDbUpdate : " + type.name() + " : "
-                                         + mAppWidgetId + ", "
-                                         +  mCategoryId + ", " + catid + ", " + cid);
-            if ((!isInCategory(cid) && catid == mCategoryId) // channel is newly inserted to this category.
-                || (isInCategory(cid) && catid != mCategoryId)) { // channel is removed from this category.
+            switch (type) {
+            case CHANNEL_DATA:
+                long cid = (Long)arg0;
+                // Check that number of channels in the category is changed.
+                long catid = mDbp.getChannelInfoLong(cid, ColumnChannel.CATEGORYID);
+                if (DBG) P.v("onDbUpdate : " + type.name() + " : "
+                                             + mAppWidgetId + ", "
+                                             +  mCategoryId + ", " + catid + ", " + cid);
+                if ((!isInCategory(cid) && catid == mCategoryId) // channel is newly inserted to this category.
+                    || (isInCategory(cid) && catid != mCategoryId)) { // channel is removed from this category.
+                    refreshItemList();
+                }
+                break;
+
+            case CHANNEL_TABLE:
+                // Channel may be deleted or newly inserted.
+                // So, refresh item list forcely...
                 refreshItemList();
+                break;
+
+            default:
+                eAssert(false);
             }
         }
     }

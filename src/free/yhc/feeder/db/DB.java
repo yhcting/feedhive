@@ -860,14 +860,15 @@ UnexpectedExceptionHandler.TrackedModule {
         long nrItems = mDb.delete(TABLE_ITEM,
                                   wh.isEmpty()? null: wh,
                                   null);
-        if (nrItems > 0) {
-            for (long cid : cids)
-                notifyUpdated(UpdateType.CHANNEL_DATA, cid);
-            notifyUpdated(UpdateType.ITEM_TABLE);
-        }
-
         // then delete channel.
         int nr = mDb.delete(TABLE_CHANNEL, chWhereStr, null);
+
+        // channel is deleted (NOT updated!)
+        // So, notifyUpdated SHOULD NOT be called for deleted channel!
+        if (nrItems > 0)
+            notifyUpdated(UpdateType.ITEM_TABLE);
+
+        // channel table is updated.
         if (nr > 0)
             notifyUpdated(UpdateType.CHANNEL_TABLE);
 
