@@ -1326,7 +1326,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return ret;
     }
 
-    public long
+    public Long
     getItemInfoLong(long id, ColumnItem column) {
         eAssert(column.getType().equals("integer"));
         return (Long)getItemInfoObject(id, column);

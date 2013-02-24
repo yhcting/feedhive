@@ -31,6 +31,7 @@ import android.database.Cursor;
 import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
+import free.yhc.feeder.LookAndFeel;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
@@ -271,7 +272,17 @@ UnexpectedExceptionHandler.TrackedModule {
     onItemClick(int position, long id) {
         eAssert(Utils.isUiThread());
         if (DBG) P.v("OnItemClick : " + position);
-        long cid = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
+        Long cidLong = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
+        if (null == cidLong) {
+            // CASE (reproducing step)
+            //   - Channel is deleted
+            //   - App widget is NOT updated yet.
+            //   - User select ALREADY-DELETED-ITEM
+            LookAndFeel.get().showTextToast(Utils.getAppContext(), R.string.warn_bad_request);
+            return;
+        }
+
+        long cid = cidLong;
         long act = mDbp.getChannelInfoLong(cid, ColumnChannel.ACTION);
         String[] strs = mDbp.getItemInfoStrings(id, new ColumnItem[] { ColumnItem.LINK,
                                                                        ColumnItem.ENCLOSURE_URL,

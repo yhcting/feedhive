@@ -117,6 +117,7 @@
     <string name="warn_db_in_use">Database is in use now. Update or scheduled update may be running. Try again later.</string>
     <string name="warn_db_version_mismatch">Version of imported DB mismatch DB version supported by this application version.</string>
     <string name="warn_too_many_in_category">Too many channels in one category.</string>
+    <string name="warn_bad_request">Bad request.</string>
     <string name="default_category_name">Default</string>
     <string name="change_category">Change category</string>
     <string name="select_category">Select category</string>
