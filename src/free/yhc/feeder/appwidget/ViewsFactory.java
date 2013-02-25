@@ -51,8 +51,6 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ViewsFactory.class);
 
-    private static final int    MAX_LIST_ITEM_COUNT = 100;
-
     private static final int    COLI_ID                 = 0;
     private static final int    COLI_CHANNELID          = 1;
     private static final int    COLI_TITLE              = 2;
@@ -304,13 +302,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     getCount() {
-        Cursor cur = mCursor.get();
-        // Called at binder thread
-        int count = cur.getCount() > MAX_LIST_ITEM_COUNT?
-                    MAX_LIST_ITEM_COUNT:
-                    cur.getCount();
-        if (DBG) P.v("getCount : " + count);
-        return count;
+        return mCursor.get().getCount();
     }
 
     @Override
