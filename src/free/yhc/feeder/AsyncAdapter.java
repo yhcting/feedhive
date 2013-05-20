@@ -658,9 +658,5 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     finalize() throws Throwable {
         super.finalize();
-        if (null != mItems) {
-            for (Object o : mItems)
-                destroyItem(o);
-        }
     }
 }
