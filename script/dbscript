@@ -6,7 +6,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 8;
+PRAGMA user_version = 9;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -516,6 +516,8 @@ INSERT INTO channels VALUES (!<#>, "나는 딴따라다", "", "!<pref>ddanddara.
 INSERT INTO channels VALUES (!<#>, "주진우의 현대사", "", "!<pref>drama.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "그것은 알기싫다", "", "!<pref>umcuw.xml", "", "시사", "팟캐스트", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "벙커1 특강", "", "!<pref>bunker1.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "파워투더피플", "", "!<pref>ptp.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "딴지이너뷰", "", "!<pref>innerview.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 
 
 
@@ -1150,6 +1152,11 @@ INSERT INTO channels VALUES (!<#>, "게무시", "", "!<pref>dalhoent/GEMUSI.xml"
 INSERT INTO channels VALUES (!<#>, "팟캐스트 윤여준", "", "!<pref>warmwalk.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "오유 라디오", "", "!<pref>anipoint.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "옥상달빛 옥탑라됴", "", "!<pref>msbsound/okdalradio.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 김용민의 조간브리핑", "", "!<pref>guitarkirk/jogan.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV '노무현은 안죽었다'라디오 드라마", "", "!<pref>guitarkirk/11nonodie.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 민동기 김용민의 미디어 토크", "", "!<pref>guitarkirk/15mediatalk.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "라툰 셜록홈즈", "", "!<pref>kontiki21.xml", "", "팟캐스트", "라디오", "", "", "", "kor", 0);
+
 
 
 
