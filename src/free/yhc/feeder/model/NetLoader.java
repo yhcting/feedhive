@@ -254,7 +254,7 @@ public class NetLoader {
                 try {
                     time = System.currentTimeMillis();
                     URLConnection conn = new URL(url).openConnection();
-                    conn.setReadTimeout(1000);
+                    conn.setReadTimeout(NET_CONN_TIMEOUT);
                     try {
                         mIstream = conn.getInputStream();
                     } catch (NullPointerException e) {
