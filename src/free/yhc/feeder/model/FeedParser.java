@@ -257,7 +257,9 @@ public abstract class FeedParser {
         //   This new Parsing Policy is best way to support this?
         //   Is there any elegant code structure to support various parsing policy?
         //
-        if (null == t) {
+        if (null == t
+            || t.getNodeValue().matches("^\\s*$")) {
+            // There is NO '#text' section or there is NO valid text.
             StringBuilder sbuilder = new StringBuilder();
             n = n.getFirstChild();
             while (null != n) {
