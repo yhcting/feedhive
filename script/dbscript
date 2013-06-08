@@ -6,7 +6,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 9;
+PRAGMA user_version = 10;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -950,10 +950,13 @@ INSERT INTO channels VALUES (!<#>, "편파음악감상실", "", "<!iblug>xml/itu
 INSERT INTO channels VALUES (!<#>, "우울한 빵집옆 음반가게", "", "<!iblug>xml/itunes/shakemusic.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "역사책 읽는 집", "", "<!iblug>xml/itunes/bookcross.xml", "", "팟캐스트", "교양", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "달을 품은 토끼", "", "<!iblug>xml/itunes/dalpum.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "대한민국 주식시장을 고발한다", "", "<!iblug>xml/itunes/bulgom.xml", "", "팟캐스트", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "[팩트TV] 이이제이 이작가의 결정적순간", "", "<!iblug>xml/itunes/facttv00008.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
 
 
 
 -- Think TV
+
 
 
 -- CBS
@@ -1156,6 +1159,23 @@ INSERT INTO channels VALUES (!<#>, "국민TV - 김용민의 조간브리핑", ""
 INSERT INTO channels VALUES (!<#>, "국민TV '노무현은 안죽었다'라디오 드라마", "", "!<pref>guitarkirk/11nonodie.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "국민TV - 민동기 김용민의 미디어 토크", "", "!<pref>guitarkirk/15mediatalk.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "라툰 셜록홈즈", "", "!<pref>kontiki21.xml", "", "팟캐스트", "라디오", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "다들 이불개고 영화봐", "", "!<pref>dongbumkim.xml", "", "팟캐스트", "영화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "프레젠테이션 수다", "", "!<pref>sangsan23.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "컬투! 심통사연", "", "!<pref>yeshira.xml", "", "팟캐스트", "건강", "", "", "", "kor", 0);
+
+-- 팟캐스트 국민TV
+--!SET pref http://pod.ssenhosting.com/rss/guitarkirk/
+INSERT INTO channels VALUES (!<#>, "국민TV - 이작가 김용민의 변두리 인물현대사", "", "!<pref>22byun.xml", "", "팟캐스트", "사회", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV '을트라맨이야' 라디오 드라마", "", "!<pref>11ultraman.xml", "", "팟캐스트", "사회", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 뉴스", "", "!<pref>news.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 서화숙의 3분칼럼", "", "!<pref>3minute.xml", "", "팟캐스트", "사회", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 김영경의 아프리카 청춘이다", "", "!<pref>afreeca.xml", "", "팟캐스트", "여행", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 황상민의 대국민 상담소", "", "!<pref>hsmin.xml", "", "팟캐스트", "사회", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 김남훈의 인파이팅", "", "!<pref>infighting.xml", "", "팟캐스트", "사회", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 정운현 혜문스님의 문화유산 토크", "", "!<pref>cultural.xml", "", "팟캐스트", "사회", "문화", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 안진걸의 을아차차", "", "!<pref>chacha.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 사건의 재구성", "", "!<pref>recons.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 덕원의 보편적인 노래", "", "!<pref>bopyun.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
 
 
 
@@ -1189,6 +1209,7 @@ INSERT INTO channels VALUES (!<#>, "BBC Global News", "", "http://downloads.bbc.
 INSERT INTO channels VALUES (!<#>, "아트앤스터디", "", "http://www.artnstudy.com/podcast.xml", "", "팟캐스트", "교육", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "100% 실용영어", "", "http://practicus.co.kr/podcastgen2/feed.xml", "", "팟캐스트", "외국어", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "EBS 북카페", "", "http://www.ebs.co.kr/actions/EncodingMngList?cmd=podcastEpisodeList", "", "팟캐스트", "교육", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "디자인과 이슈", "", "http://zuno88.cafe24.com/podcast/rss.xml", "", "팟캐스트", "사회", "", "", "", "kor", 0);
 
 
 -- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
