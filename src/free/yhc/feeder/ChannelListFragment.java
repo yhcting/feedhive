@@ -57,6 +57,7 @@ import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -98,8 +99,8 @@ UnexpectedExceptionHandler.TrackedModule {
         void
         register() {
             DBPolicy.get().registerUpdatedListener(this,
-                                                  DB.UpdateType.CHANNEL_TABLE.flag()
-                                                  | DB.UpdateType.CHANNEL_DATA.flag());
+                                                   DB.UpdateType.CHANNEL_TABLE.flag()
+                                                   | DB.UpdateType.CHANNEL_DATA.flag());
         }
 
         void
@@ -283,7 +284,9 @@ UnexpectedExceptionHandler.TrackedModule {
         onPostExecute(DiagAsyncTask task, Err result) {
             mLnf.showTextToast(getActivity(),
                                _mNrDelItems + getResources().getString(R.string.channel_deleted_msg));
-            refreshListAsync();
+            for (long cid : _mCids)
+                ChannelListFragment.this.getAdapter().removeChannel(cid);
+            ChannelListFragment.this.getAdapter().notifyDataSetChanged();
             ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
         }
     }
@@ -349,7 +352,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 mRtt.bind(cid, RTTask.Action.UPDATE, ChannelListFragment.this, new UpdateBGTaskListener(cid));
         }
         @Override
-        public void onUnregister(BGTask task, long cid, RTTask.Action act) { }
+        public void
+        onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
     private ChannelListActivity
@@ -559,6 +563,34 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor newCursor = ChannelListAdapter.getQueryCursor(mCatId);
         getAdapter().changeCursor(newCursor);
         getAdapter().reloadDataSetAsync();
+    }
+
+    public void
+    addChannel(String url, String iconurl) {
+        eAssert(url != null);
+        url = Utils.removeTrailingSlash(url);
+
+        long cid = -1;
+        try {
+            cid = mDbp.insertNewChannel(getCategoryId(), url);
+        } catch (FeederException e) {
+            mLnf.showTextToast(getActivity(), e.getError().getMsgId());
+            return;
+        }
+
+        // full update for this newly inserted channel
+        BGTaskUpdateChannel task;
+        if (Utils.isValidValue(iconurl))
+            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid, iconurl));
+        else
+            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
+
+        mRtt.register(cid, RTTask.Action.UPDATE, task);
+        mRtt.start(cid, RTTask.Action.UPDATE);
+
+        getAdapter().appendChannel(cid);
+        dataSetChanged();
+        ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
     }
 
     public void

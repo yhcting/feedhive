@@ -22,8 +22,6 @@ package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
-import java.util.Calendar;
-
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.AlertDialog;
@@ -51,10 +49,8 @@ import free.yhc.feeder.LookAndFeel.EditTextDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.FeederException;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -269,29 +265,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     addChannel(String url, String iconurl) {
-        eAssert(url != null);
-        url = Utils.removeTrailingSlash(url);
-
-        long cid = -1;
-        try {
-            cid = mDbp.insertNewChannel(getCurrentCategoryId(), url);
-        } catch (FeederException e) {
-            mLnf.showTextToast(this, e.getError().getMsgId());
-            return;
-        }
-
-        // full update for this newly inserted channel
-        BGTaskUpdateChannel task;
-        if (Utils.isValidValue(iconurl))
-            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid, iconurl));
-        else
-            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
-
-        mRtt.register(cid, RTTask.Action.UPDATE, task);
-        mRtt.start(cid, RTTask.Action.UPDATE);
-        ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
-
-        getPagerAdapter().getPrimaryFragment().refreshListAsync();
+        getPagerAdapter().getPrimaryFragment().addChannel(url, iconurl);
     }
 
 

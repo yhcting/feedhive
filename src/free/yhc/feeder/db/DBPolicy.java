@@ -1028,7 +1028,12 @@ UnexpectedExceptionHandler.TrackedModule {
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
         eAssert(categoryid >= 0);
-        return mDb.queryChannel(columns, ColumnChannel.CATEGORYID, categoryid, null, false, 0);
+        return queryChannel(columns, ColumnChannel.CATEGORYID, categoryid);
+    }
+
+    public Cursor
+    queryChannel(ColumnChannel[] columns, ColumnChannel where, Object value) {
+        return mDb.queryChannel(columns, where, value, null, false, 0);
     }
 
     /**

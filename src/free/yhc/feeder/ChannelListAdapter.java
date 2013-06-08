@@ -46,6 +46,14 @@ AsyncCursorAdapter.ItemBuilder {
     private static final Utils.Logger P = new Utils.Logger(ChannelListAdapter.class);
 
     private static final Date sDummyDate = new Date();
+    private static final ColumnChannel[] sChannQueryColumns = new ColumnChannel[] {
+        ColumnChannel.ID, // Mandatory.
+        ColumnChannel.TITLE,
+        ColumnChannel.DESCRIPTION,
+        ColumnChannel.LASTUPDATE,
+        ColumnChannel.IMAGEBLOB,
+        ColumnChannel.URL
+    };
 
     private final DBPolicy mDbp = DBPolicy.get();
     private final RTTask   mRtt = RTTask.get();
@@ -126,13 +134,7 @@ AsyncCursorAdapter.ItemBuilder {
 
     public static Cursor
     getQueryCursor(long catId) {
-        return DBPolicy.get().queryChannel(catId, new ColumnChannel[] {
-                    ColumnChannel.ID, // Mandatory.
-                    ColumnChannel.TITLE,
-                    ColumnChannel.DESCRIPTION,
-                    ColumnChannel.LASTUPDATE,
-                    ColumnChannel.IMAGEBLOB,
-                    ColumnChannel.URL });
+        return DBPolicy.get().queryChannel(catId, sChannQueryColumns);
     }
 
     public int
@@ -186,6 +188,21 @@ AsyncCursorAdapter.ItemBuilder {
             ii.bm = bm;
         }
         notifyDataSetChanged();
+    }
+
+    public void
+    removeChannel(long cid) {
+        int pos = findPosition(cid);
+        removeItem(pos);
+    }
+
+    public void
+    appendChannel(long cid) {
+        Cursor c = DBPolicy.get().queryChannel(sChannQueryColumns, ColumnChannel.ID, cid);
+        c.moveToFirst();
+        Object item = buildItem(this, c);
+        c.close();
+        insertItem(getCount(), item);
     }
 
     public long
