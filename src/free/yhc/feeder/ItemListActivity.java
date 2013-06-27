@@ -847,6 +847,33 @@ UnexpectedExceptionHandler.TrackedModule {
         dialog.show();
     }
 
+    private void
+    onContext_delete(final long id, final int position) {
+        // Create "Enter Url" dialog
+        AlertDialog dialog =
+                mLnf.createWarningDialog(this,
+                                        R.string.delete_item,
+                                        R.string.delete_item_msg);
+        dialog.setButton(getResources().getText(R.string.yes),
+                         new DialogInterface.OnClickListener() {
+            @Override
+            public void
+            onClick (DialogInterface dialog, int which) {
+                mDbp.deleteItem(ColumnItem.ID, id);
+                // Database is changed. So, cursor should be reloaded.
+                refreshListAsync();
+            }
+        });
+        dialog.setButton2(getResources().getText(R.string.no),
+                          new DialogInterface.OnClickListener() {
+            @Override
+            public void
+            onClick (DialogInterface dialog, int which) {
+            }
+        });
+        dialog.show();
+    }
+
     @Override
     public boolean
     onCreateOptionsMenu(Menu menu) {
@@ -885,6 +912,10 @@ UnexpectedExceptionHandler.TrackedModule {
             return true;
         case R.id.mark_unopened:
             //logI(" Mark As Unactioned : ID : " + dbId + " / " + info.position);
+            return true;
+
+        case R.id.delete:
+            onContext_delete(dbId, info.position);
             return true;
         }
         return false;

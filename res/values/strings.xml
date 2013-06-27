@@ -95,6 +95,7 @@
     <string name="delete_category">Delete category</string>
     <string name="rename_category">Rename category</string>
     <string name="delete_channel">Delete channel</string>
+    <string name="delete_item">Delete item</string>
     <string name="mark_as_unopened">Mark as unopened</string>
     <string name="wait_cancel_msg">Waiting for canceling.</string>
     <string name="delete_channel_msg">Are you sure to delete this channel?</string>
@@ -102,6 +103,7 @@
     <string name="delete_downloaded_file_msg">Are you sure to delete download file of this item?</string>
     <string name="deleting_channel_msg">Deleting channel and feeds is under progress.</string>
     <string name="channel_deleted_msg">items are deleted too.</string>
+    <string name="delete_item_msg">Are you sure deleting this item?</string>
     <string name="warn_network_unavailable">Network is not available.</string>
     <string name="warn_select_category_to_add">There is no selected category to add into. Please select category first.</string>
     <string name="warn_duplicated_category">Duplicated category name is not allowed.</string>
