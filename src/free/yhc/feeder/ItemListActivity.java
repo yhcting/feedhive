@@ -859,6 +859,9 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onClick (DialogInterface dialog, int which) {
+                File f = mDbp.getItemInfoDataFile(id);
+                eAssert(null != f);
+                f.delete();
                 mDbp.deleteItem(ColumnItem.ID, id);
                 // Database is changed. So, cursor should be reloaded.
                 refreshListAsync();
