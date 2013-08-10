@@ -26,7 +26,6 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
-import free.yhc.feeder.AppWidgetCategoryChooserActivity;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
@@ -91,24 +90,12 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
         if (DBG) P.v("onUpdate : " + Utils.nrsToNString(appWidgetIds));
 
-        ArrayList<Integer> oldWidgets = new ArrayList<Integer>(appWidgetIds.length);
-        ArrayList<Integer> newWidgets = new ArrayList<Integer>(appWidgetIds.length);
+        ArrayList<Integer> wl = new ArrayList<Integer>(appWidgetIds.length);
         for (int awid : appWidgetIds) {
             long catid = AppWidgetUtils.getWidgetCategory(awid);
-            if (DB.INVALID_ITEM_ID == catid)
-                newWidgets.add(awid);
-            else
-                oldWidgets.add(awid);
+            if (DB.INVALID_ITEM_ID != catid)
+                wl.add(awid);
         }
-        UpdateService.update(context, Utils.convertArrayIntegerToint(oldWidgets.toArray(new Integer[0])));
-
-        for (Integer i : newWidgets.toArray(new Integer[0])) {
-            Intent intent = new Intent(context, AppWidgetCategoryChooserActivity.class);
-            intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, i);
-            intent.putExtra(AppWidgetCategoryChooserActivity.KEY_CANCELABLE, false);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            context.startActivity(intent);
-        }
+        UpdateService.update(context, Utils.convertArrayIntegerToint(wl.toArray(new Integer[0])));
     }
 }

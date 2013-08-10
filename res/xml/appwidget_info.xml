@@ -4,5 +4,6 @@
     android:minHeight="70dp"
     android:initialLayout="@layout/appwidget"
     android:resizeMode="horizontal|vertical"
+    android:configure="free.yhc.feeder.AppWidgetCategoryChooserActivity"
     >
 </appwidget-provider>

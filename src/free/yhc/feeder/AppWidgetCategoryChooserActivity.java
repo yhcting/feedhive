@@ -24,7 +24,9 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import android.R.style;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.appwidget.AppWidgetManager;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Bundle;
@@ -53,11 +55,13 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        final int appWidgetId = getIntent().getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID,
+        final int appWidgetId = getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                         AppWidgetUtils.INVALID_APPWIDGETID);
+        eAssert(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
         mCancelable = getIntent().getBooleanExtra(KEY_CANCELABLE, false);
 
-        eAssert(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
+        final Intent resultValue = new Intent();
+        resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         UiHelper.OnCategorySelectedListener action = new UiHelper.OnCategorySelectedListener() {
             @Override
             public void
@@ -65,6 +69,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 AppWidgetUtils.putWidgetToCategoryMap(appWidgetId, category);
                 UpdateService.update(AppWidgetCategoryChooserActivity.this,
                                      new long[] { category });
+                setResult(RESULT_OK, resultValue);
+                finish();
             }
         };
 
@@ -78,6 +84,7 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onDismiss(DialogInterface dialog) {
+                setResult(RESULT_CANCELED, resultValue);
                 finish();
             }
         });

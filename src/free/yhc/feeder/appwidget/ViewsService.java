@@ -24,6 +24,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.util.HashMap;
 
+import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -95,7 +96,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
 
             Intent i = new Intent(context, AppWidgetCategoryChooserActivity.class);
-            i.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
+            i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, awid);
             i.putExtra(AppWidgetCategoryChooserActivity.KEY_CANCELABLE, true);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
