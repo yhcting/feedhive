@@ -275,6 +275,10 @@ UnexpectedExceptionHandler.TrackedModule {
         public Err
         doBackgroundWork(DiagAsyncTask task) {
             _mNrDelItems = mDbp.deleteChannel(_mCids);
+            // this can be error if there is no items.
+            // (Usually when deleting channel that has invalid url - after failed to sync.)
+            if (_mNrDelItems < 0)
+                _mNrDelItems = 0;
             return Err.NO_ERR;
         }
 
