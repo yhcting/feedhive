@@ -8,20 +8,32 @@
     <ListView
         android:id="@+id/list"
         android:layout_width="match_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="match_parent"
         />
     <ImageView
-        android:id="@+id/btn"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginTop="3dp"
+        android:id="@+id/changecat"
+        android:layout_width="@dimen/appwidget_btn_width"
+        android:layout_height="@dimen/appwidget_btn_height"
+        android:layout_marginLeft="5dp"
         android:layout_marginBottom="3dp"
         android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
         android:gravity="center"
         android:scaleType="fitCenter"
         android:src="@drawable/category"
+        android:clickable="true"
+        />
+    <ImageView
+        android:id="@+id/extramenu"
+        android:layout_width="@dimen/appwidget_btn_width"
+        android:layout_height="@dimen/appwidget_btn_height"
+        android:layout_marginRight="5dp"
+        android:layout_marginBottom="3dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:gravity="center"
+        android:scaleType="fitCenter"
+        android:src="@drawable/setting"
         android:clickable="true"
         />
 </RelativeLayout>

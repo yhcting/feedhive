@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.preference.PreferenceManager;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
@@ -269,6 +270,22 @@ UnexpectedExceptionHandler.TrackedModule {
             cleanChannelDir(cid, false);
         notifyUpdated(UpdateType.CHANS_DATA, cids);
         return ret;
+    }
+
+    public void
+    cleanAllChannelDirs() {
+        Cursor c = DBPolicy.get().queryChannel(ColumnChannel.ID);
+        if (!c.moveToFirst()) {
+            c.close();
+            return;
+        }
+
+        long[] cids = new long[c.getCount()];
+        int i = 0;
+        do {
+            cids[i++] = c.getLong(0);
+        } while (c.moveToNext());
+        cleanChannelDirs(cids);
     }
 
     /**

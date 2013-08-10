@@ -18,4 +18,6 @@
     <dimen name="dnprogress_text_size">14dip</dimen>
     <dimen name="chlist_bottom_btn_width">40dip</dimen>
     <dimen name="chlist_bottom_btn_height">35dip</dimen>
+    <dimen name="appwidget_btn_width">40dip</dimen>
+    <dimen name="appwidget_btn_height">40dip</dimen>
 </resources>

@@ -52,7 +52,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (!AppWidgetUtils.ACTION_LIST_PENDING_INTENT.equals(intent.getAction()))
                 return; // unexpected intent.
 
-            final int awid = intent.getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID,
+            final int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                 AppWidgetUtils.INVALID_APPWIDGETID);
             if (DBG) P.v("onReceive pending intent : appwidget id : " + awid);
             if (AppWidgetUtils.INVALID_APPWIDGETID == awid) {
@@ -84,10 +84,10 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onReceive(Context context, Intent intent) {
             if (DBG) P.v("ButtonPendingIntentReceiver : onReceive.");
-            if (!AppWidgetUtils.ACTION_BUTTON_PENDING_INTENT.equals(intent.getAction()))
+            if (!AppWidgetUtils.ACTION_CHANGE_CATEGORY_PENDING_INTENT.equals(intent.getAction()))
                 return; // unexpected intent.
 
-            final int awid = intent.getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID,
+            final int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                 AppWidgetUtils.INVALID_APPWIDGETID);
             if (DBG) P.v("onReceive pending intent : appwidget id : " + awid);
             if (AppWidgetUtils.INVALID_APPWIDGETID == awid) {
@@ -151,7 +151,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public RemoteViewsFactory
     onGetViewFactory(Intent intent) {
         long catid = intent.getLongExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, DB.INVALID_ITEM_ID);
-        int awid = intent.getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, AppWidgetUtils.INVALID_APPWIDGETID);
+        int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetUtils.INVALID_APPWIDGETID);
         eAssert(DB.INVALID_ITEM_ID != catid
                 && AppWidgetUtils.INVALID_APPWIDGETID != awid);
         if (DBG) P.v("onGetViewFactory : category(" + catid + ")" + " appwidget(" + awid + ")");

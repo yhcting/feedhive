@@ -31,7 +31,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
-import android.database.Cursor;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -43,14 +42,11 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import free.yhc.feeder.UiHelper.ConfirmDialogAction;
 import free.yhc.feeder.UiHelper.EditTextDialogAction;
-import free.yhc.feeder.db.ColumnChannel;
+import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.ContentsManager;
 import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.RTTask;
@@ -139,32 +135,6 @@ UnexpectedExceptionHandler.TrackedModule {
             if (DBG) P.v("OnPageViewChange : onPageScrollStateChanged : " + arg0);
             // Fragment is changed. So, context menu is no more valid.
             ChannelListActivity.this.closeContextMenu();
-        }
-    }
-
-    private class DeleteAllDnfilesWorker extends DiagAsyncTask.Worker {
-        @Override
-        public Err
-        doBackgroundWork(DiagAsyncTask task) {
-            Cursor c = mDbp.queryChannel(ColumnChannel.ID);
-            if (!c.moveToFirst()) {
-                c.close();
-                return Err.NO_ERR;
-            }
-
-            long[] cids = new long[c.getCount()];
-            int i = 0;
-            do {
-                cids[i++] = c.getLong(0);
-            } while (c.moveToNext());
-            return ContentsManager.get().cleanChannelDirs(cids)? Err.NO_ERR: Err.IO_FILE;
-        }
-
-        @Override
-        public void
-        onPostExecute(DiagAsyncTask task, Err result) {
-            if (Err.NO_ERR != result)
-                UiHelper.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
         }
     }
 
@@ -449,12 +419,14 @@ UnexpectedExceptionHandler.TrackedModule {
         // 0 should be default category index!
         eAssert(mAb.getSelectedNavigationIndex() > 0);
 
-        ConfirmDialogAction action = new ConfirmDialogAction() {
+        OnConfirmDialogAction action = new OnConfirmDialogAction() {
             @Override
             public void
             onOk(Dialog dialog) {
                 deleteCategory(categoryid);
             }
+            @Override
+            public void onCancel(Dialog dialog) { }
         };
         UiHelper.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
     }
@@ -514,29 +486,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_management_deleteAllDnFiles(final View anchor) {
-        // check constraints
-        if (mRtt.getItemsDownloading().length > 0) {
-            UiHelper.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
-            return;
-        }
-
-        ConfirmDialogAction action = new ConfirmDialogAction() {
-            @Override
-            public void
-            onOk(Dialog dialog) {
-                DiagAsyncTask task = new DiagAsyncTask(ChannelListActivity.this,
-                                                       new DeleteAllDnfilesWorker(),
-                                                       DiagAsyncTask.Style.SPIN,
-                                                       R.string.delete_all_downloaded_file);
-                task.run();
-            }
-        };
-
-        UiHelper.buildConfirmDialog(this,
-                                       R.string.delete_all_downloaded_file,
-                                       R.string.delete_all_downloaded_file_msg,
-                                       action)
-            .show();
+        AlertDialog diag = UiHelper.buildDeleteAllDnFilesConfirmDialog(this, null, null);
+        if (null == diag)
+            UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
+        diag.show();
     }
 
     private void

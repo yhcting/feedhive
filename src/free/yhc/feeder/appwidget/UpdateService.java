@@ -30,6 +30,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.IBinder;
 import android.widget.RemoteViews;
+import free.yhc.feeder.AppWidgetCategoryChooserActivity;
+import free.yhc.feeder.AppWidgetMenuActivity;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.Environ;
@@ -50,12 +52,17 @@ UnexpectedExceptionHandler.TrackedModule {
 
         private Intent
         createBaseIntent(Class<?> rcvrCls, long catid, int awid,
-                         String action) {
+                         String action, boolean newTask) {
             Intent i = new Intent(Environ.getAppContext(), rcvrCls);
             // To tell "This is different intent from previous one!"
             i.setData(Uri.fromParts("content", String.valueOf(awid), null));
+            i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, awid);
             i.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
-            i.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
+            if (newTask) {
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            }
+
             if (null != action)
                 i.setAction(action);
             return i;
@@ -94,22 +101,34 @@ UnexpectedExceptionHandler.TrackedModule {
                 // ==========================
                 Intent intent = createBaseIntent(ViewsService.class,
                                                  catid, awid,
-                                                 null);
+                                                 null, false);
                 rv.setRemoteAdapter(R.id.list, intent);
 
                 intent = createBaseIntent(ViewsService.ListPendingIntentReceiver.class,
                                           catid, awid,
-                                          AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
+                                          AppWidgetUtils.ACTION_LIST_PENDING_INTENT,
+                                          false);
                 PendingIntent pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
                 rv.setPendingIntentTemplate(R.id.list, pi);
 
-                // Button action pending intent
-                // ============================
-                intent = createBaseIntent(ViewsService.ButtonPendingIntentReceiver.class,
+                // Change category button action pending intent
+                // ============================================
+                intent = createBaseIntent(AppWidgetCategoryChooserActivity.class,
                                           catid, awid,
-                                          AppWidgetUtils.ACTION_BUTTON_PENDING_INTENT);
-                pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
-                rv.setOnClickPendingIntent(R.id.btn, pi);
+                                          AppWidgetUtils.ACTION_CHANGE_CATEGORY_PENDING_INTENT,
+                                          true);
+                intent.putExtra(AppWidgetCategoryChooserActivity.KEY_CANCELABLE, true);
+                pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
+                rv.setOnClickPendingIntent(R.id.changecat, pi);
+
+                // extra menu button action pending intent
+                // ============================================
+                intent = createBaseIntent(AppWidgetMenuActivity.class,
+                                          catid, awid,
+                                          AppWidgetUtils.ACTION_EXTRA_MENU_PENDING_INTENT,
+                                          true);
+                pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
+                rv.setOnClickPendingIntent(R.id.extramenu, pi);
 
                 if (DBG) P.v("Update widget : " + awid);
                 _mAwm.updateAppWidget(awid, rv);

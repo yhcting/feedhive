@@ -48,7 +48,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
-import free.yhc.feeder.UiHelper.ConfirmDialogAction;
+import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
@@ -474,11 +474,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContext_deleteChannel(final long cid) {
-        ConfirmDialogAction action = new ConfirmDialogAction() {
+        OnConfirmDialogAction action = new OnConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 deleteChannel(cid);
             }
+            @Override
+            public void onCancel(Dialog dialog) { }
         };
 
         UiHelper.buildConfirmDialog(getActivity(),

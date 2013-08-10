@@ -35,7 +35,10 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Toast;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.model.ContentsManager;
+import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.Utils;
 
 public class UiHelper {
@@ -47,12 +50,46 @@ public class UiHelper {
         void onOk(Dialog dialog, EditText edit);
     }
 
-    public interface ConfirmDialogAction {
-        void onOk(Dialog dialog);
+    public interface OnCategorySelectedListener {
+        void onSelected(long category, Object user);
     }
 
-    interface OnCategorySelectedListener {
-        void onSelected(long category, Object user);
+    public interface OnPostExecuteListener {
+        void onPostExecute(Err err, Object user);
+    }
+
+    public interface OnConfirmDialogAction {
+        void onOk(Dialog dialog);
+        void onCancel(Dialog dialog);
+    }
+
+    public static class DeleteAllDnfilesWorker extends DiagAsyncTask.Worker {
+        private final Context                 mContext;
+        private final OnPostExecuteListener   mOnPostExecute;
+        private final Object                  mUser;
+        public DeleteAllDnfilesWorker(Context context,
+                                      OnPostExecuteListener onPostExecute,
+                                      Object user) {
+            mContext = context;
+            mOnPostExecute = onPostExecute;
+            mUser = user;
+        }
+
+        @Override
+        public Err
+        doBackgroundWork(DiagAsyncTask task) {
+            ContentsManager.get().cleanAllChannelDirs();
+            return Err.NO_ERR;
+        }
+
+        @Override
+        public void
+        onPostExecute(DiagAsyncTask task, Err result) {
+            if (Err.NO_ERR != result)
+                UiHelper.showTextToast(mContext, R.string.delete_all_downloadded_file_errmsg);
+            if (null != mOnPostExecute)
+                mOnPostExecute.onPostExecute(result, mUser);
+        }
     }
 
     /**
@@ -189,21 +226,24 @@ public class UiHelper {
     buildConfirmDialog(final Context context,
                        final CharSequence title,
                        final CharSequence description,
-                       final ConfirmDialogAction action) {
+                       final OnConfirmDialogAction action) {
         final AlertDialog dialog = createAlertDialog(context, R.drawable.ic_info, title, description);
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, context.getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface diag, int which) {
-                dialog.dismiss();
+            public void
+            onClick(DialogInterface diag, int which) {
                 action.onOk(dialog);
+                dialog.dismiss();
             }
         });
 
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, context.getResources().getText(R.string.no),
                           new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void
+            onClick(DialogInterface diag, int which) {
+                action.onCancel(dialog);
                 dialog.dismiss();
             }
         });
@@ -214,7 +254,7 @@ public class UiHelper {
     buildConfirmDialog(final Context context,
                        final int title,
                        final int description,
-                       final ConfirmDialogAction action) {
+                       final OnConfirmDialogAction action) {
         return buildConfirmDialog(context,
                                   context.getResources().getText(title),
                                   context.getResources().getText(description),
@@ -267,5 +307,40 @@ public class UiHelper {
         });
         bldr.setTitle(title);
         return bldr.create();
+    }
+
+    public static AlertDialog
+    buildDeleteAllDnFilesConfirmDialog(final Context context,
+                                       final OnPostExecuteListener onPostExecute,
+                                       final Object postExecuteUser) {
+        // check constraints
+        if (RTTask.get().getItemsDownloading().length > 0)
+            return null;
+
+        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+            @Override
+            public void
+            onOk(Dialog dialog) {
+                DiagAsyncTask task = new DiagAsyncTask(context,
+                                                       new DeleteAllDnfilesWorker(context,
+                                                                                  onPostExecute,
+                                                                                  postExecuteUser),
+                                                       DiagAsyncTask.Style.SPIN,
+                                                       R.string.delete_all_downloadded_file);
+                task.run();
+            }
+
+            @Override
+            public void
+            onCancel(Dialog dialog) {
+                if (null != onPostExecute)
+                    onPostExecute.onPostExecute(Err.USER_CANCELLED, postExecuteUser);
+            }
+        };
+
+        return buildConfirmDialog(context,
+                                  R.string.delete_all_downloadded_file,
+                                  R.string.delete_all_downloadded_file_msg,
+                                  action);
     }
 }

@@ -46,7 +46,7 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import free.yhc.feeder.UiHelper.ConfirmDialogAction;
+import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
@@ -222,11 +222,13 @@ UnexpectedExceptionHandler.TrackedModule {
     actionExportDB() {
         CharSequence title = getResources().getText(R.string.exportdb);
         CharSequence msg = getResources().getText(R.string.database) + " => " + mExDBFilePath;
-        UiHelper.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        UiHelper.buildConfirmDialog(this, title, msg, new OnConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 exportDBAsync();
             }
+            @Override
+            public void onCancel(Dialog dialog) { }
         }).show();
     }
 
@@ -327,11 +329,14 @@ UnexpectedExceptionHandler.TrackedModule {
     actionImportDB() {
         CharSequence title = getResources().getText(R.string.importdb);
         CharSequence msg = getResources().getText(R.string.database) + " <= " + mExDBFilePath;
-        UiHelper.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        UiHelper.buildConfirmDialog(this, title, msg, new OnConfirmDialogAction() {
             @Override
-            public void onOk(Dialog dialog) {
+            public void
+            onOk(Dialog dialog) {
                 importDBAsync();
             }
+            @Override
+            public void onCancel(Dialog dialog) { }
         }).show();
     }
 

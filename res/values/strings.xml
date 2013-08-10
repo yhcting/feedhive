@@ -88,10 +88,10 @@
     <string name="err_unknwon">Unknown error! Something wicked issued on application.</string>
     <string name="err_user_cancelled">Operation is cancelled by user.</string>
     <string name="del_dnfiles_not_allowed_msg">Deleting files is not allowed. There may be files under downloading.</string>
-    <string name="delete_downloaded_file">Delete downloaded files</string>
-    <string name="delete_all_downloaded_file">Delete all downloaded files</string>
-    <string name="delete_all_downloaded_file_msg">All downloaded files will be deleted.</string>
-    <string name="delete_all_downloaded_file_errmsg">Some files are not able to be deleted.</string>
+    <string name="delete_downloadded_file">Delete downloadded files</string>
+    <string name="delete_all_downloadded_file">Delete all downloadded files</string>
+    <string name="delete_all_downloadded_file_msg">All downloadded files will be deleted.</string>
+    <string name="delete_all_downloadded_file_errmsg">Some files are not able to be deleted.</string>
     <string name="add_category">Add category</string>
     <string name="delete_category">Delete category</string>
     <string name="rename_category">Rename category</string>
@@ -101,7 +101,7 @@
     <string name="wait_cancel_msg">Waiting for canceling.</string>
     <string name="delete_channel_msg">Are you sure to delete this channel?</string>
     <string name="delete_category_msg">Are you sure to delete this category? All channels in this category are move to default category.</string>
-    <string name="delete_downloaded_file_msg">Are you sure to delete download file of this item?</string>
+    <string name="delete_downloadded_file_msg">Are you sure to delete download file of this item?</string>
     <string name="deleting_channel_msg">Deleting channel and feeds is under progress.</string>
     <string name="channel_deleted_msg">items are deleted too.</string>
     <string name="delete_item_msg">Are you sure deleting this item?</string>
@@ -146,7 +146,7 @@
     <string name="pref_send_usage_report_desc">Sends usage information to improve application (ex. channel urls those are not included at predefined channel.)</string>
     <string name="pref_storage">Storage</string>
     <string name="pref_download_root">Application directory.</string>
-    <string name="pref_download_root_desc">Root directory where downloaded files are stored.</string>
+    <string name="pref_download_root_desc">Root directory where downloadded files are stored.</string>
     <string name="pref_usage">Usage</string>
     <string name="pref_newmsg_noti">New feed notification</string>
     <string name="pref_newmsg_noti_desc">Notifying new feed to status bar.</string>

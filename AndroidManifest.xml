@@ -53,6 +53,10 @@
                 <action android:name="android.intent.action.APPWIDGET_PICK" />
             </intent-filter>
         </activity>
+        <activity android:name=".AppWidgetMenuActivity"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  android:theme="@android:style/Theme.Dialog"
+                  />
         <service android:name=".ScheduledUpdateService"
                  />
         <service android:name=".appwidget.UpdateService"
@@ -92,7 +96,7 @@
         </receiver>
         <receiver android:name=".appwidget.ViewsService$ButtonPendingIntentReceiver">
             <intent-filter>
-                <action android:name="feeder.intent.action.BUTTON_PENDING_INTENT" />
+                <action android:name="feeder.intent.action.CHANGE_CATEGORY_PENDING_INTENT" />
             </intent-filter>
         </receiver>
     </application>

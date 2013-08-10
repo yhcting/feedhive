@@ -815,8 +815,8 @@ UnexpectedExceptionHandler.TrackedModule {
         // Create "Enter Url" dialog
         AlertDialog dialog =
                 UiHelper.createWarningDialog(this,
-                                             R.string.delete_downloaded_file,
-                                             R.string.delete_downloaded_file_msg);
+                                             R.string.delete_downloadded_file,
+                                             R.string.delete_downloadded_file_msg);
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
@@ -891,7 +891,7 @@ UnexpectedExceptionHandler.TrackedModule {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.item_context, menu);
 
-        // check for "Delete Downloaded File" option
+        // check for "Delete downloadded File" option
         File f = ContentsManager.get().getItemInfoDataFile(dbId);
         if (null != f && f.exists())
             menu.findItem(R.id.delete_dnfile).setVisible(true);
@@ -906,7 +906,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long dbId = getListAdapter().getItemInfo_id(info.position);
         switch (mItem.getItemId()) {
         case R.id.delete_dnfile:
-            //logI(" Delete Downloaded File : ID : " + dbId + " / " + info.position);
+            //logI(" Delete downloadded File : ID : " + dbId + " / " + info.position);
             onContext_deleteDnFile(dbId, info.position);
             return true;
         case R.id.mark_unopened:
