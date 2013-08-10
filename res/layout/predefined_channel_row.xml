@@ -3,15 +3,27 @@
     class="free.yhc.feeder.PredefinedChannelActivity$ListRow"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal" >
+    android:orientation="horizontal"
+    android:weightSum="1"
+    >
     <TextView
         android:id="@+id/title"
-        android:layout_width="fill_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:paddingLeft="@dimen/list_item_left_padding"
         android:paddingTop="@dimen/menu_row_vertical_padding"
         android:paddingBottom="@dimen/menu_row_vertical_padding"
+        android:layout_weight="1"
         android:textSize="@dimen/menu_text_size"
         android:textColor="@color/title_color_opened"
+        />
+    <CheckBox
+        android:id="@+id/checkbtn"
+        android:layout_width="@dimen/chlist_bottom_btn_height"
+        android:layout_height="@dimen/chlist_bottom_btn_height"
+        android:layout_marginRight="5dp"
+        android:layout_gravity="center"
+        android:focusable="false"
+        android:clickable="false"
         />
 </view>

@@ -65,6 +65,7 @@
     <string name="wait_cancel">취소가 완료되길 기다리고 있습니다.</string>
     <string name="load_progress">로드 중입니다. 데이터의 크기와 네트웤 사정에 따라 최대 수 분정도 소요될 수도 있습니다.</string>
     <string name="pick_icon_progress">그림을 로드 중입니다.  이미지 크기와 네트웤 사정에 따라 최대 수 분 정도 소요될 수도 있습니다.</string>
+    <string name="append">추가</string>
     <string name="cancel">취소</string>
     <string name="noti_newitem_title">새로운 피드</string>
     <string name="noti_newitem_desc">새로운 피드가 있습니다.</string>

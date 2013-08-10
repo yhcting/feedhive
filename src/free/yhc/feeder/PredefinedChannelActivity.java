@@ -20,8 +20,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
-
+import java.util.HashMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -39,6 +38,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -57,6 +58,9 @@ public class PredefinedChannelActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(PredefinedChannelActivity.class);
+
+    public static final String KEY_URLS     = "urls";
+    public static final String KEY_ICONURLS = "iconurls";
 
     // ========================================================================
     //
@@ -101,21 +105,23 @@ UnexpectedExceptionHandler.TrackedModule {
     private final DBPolicy      mDbp    = DBPolicy.get();
 
     // Variables set only once.
-    private AssetSQLiteHelper   mAssetDB     = null;
-    private long                categoryid  = -1;
+    private AssetSQLiteHelper   mAssetDB    = null;
+    private HashMap<Long, ChanInfo> mChanMap    = new HashMap<Long, ChanInfo>();
 
     // Runtime variable
     private String prevCategory = "";
     private String prevSearch   = "";
 
     public static class ListRow extends LinearLayout {
-        String url;
-        String iconurl;
-
-        public
-        ListRow(Context context, AttributeSet attrs) {
+        ChanInfo    chaninfo = new ChanInfo();
+        public ListRow(Context context, AttributeSet attrs) {
             super(context, attrs);
         }
+    }
+
+    static class ChanInfo {
+        String url = null;
+        String iconurl = null;
     }
 
     private class ListAdapter extends ResourceCursorAdapter {
@@ -130,9 +136,12 @@ UnexpectedExceptionHandler.TrackedModule {
             ListRow row = (ListRow)view;
 
             TextView titlev = (TextView)view.findViewById(R.id.title);
+            CheckBox checkv = (CheckBox)view.findViewById(R.id.checkbtn);
+
             titlev.setText(c.getString(c.getColumnIndex(DB_COL_TITLE)));
-            row.url = c.getString(c.getColumnIndex(DB_COL_URL));
-            row.iconurl = c.getString(c.getColumnIndex(DB_COL_ICONURL));
+            row.chaninfo.url = c.getString(c.getColumnIndex(DB_COL_URL));
+            row.chaninfo.iconurl = c.getString(c.getColumnIndex(DB_COL_ICONURL));
+
 
             // TODO
             // It's extremely weird !!!
@@ -147,10 +156,15 @@ UnexpectedExceptionHandler.TrackedModule {
             // Need to check this!!!
             // (I think this is definitely BUG of ANDROID FRAMEWORK!)
             // => This case is same with below "else" case too.
-            if (mDbp.isDuplicatedChannelUrl(row.url)) {
+            if (mDbp.isDuplicatedChannelUrl(row.chaninfo.url)) {
+                checkv.setVisibility(View.GONE);
                 titlev.setTextColor(context.getResources().getColor(R.color.title_color_opened));
                 titlev.setFocusable(true);
             } else {
+                checkv.setVisibility(View.VISIBLE);
+                long id = c.getLong(c.getColumnIndex(DB_COL_ID));
+                checkv.setChecked(mChanMap.containsKey(id));
+
                 titlev.setTextColor(context.getResources().getColor(R.color.title_color_new));
                 titlev.setFocusable(false);
             }
@@ -186,15 +200,8 @@ UnexpectedExceptionHandler.TrackedModule {
         return cats;
     }
 
-    /**
-     *
-     * @param category
-     *   empty : for all categories
-     * @param search
-     *   empty : all channels.
-     */
-    private void
-    refreshList(String category, String search) {
+    private Cursor
+    query(String category, String search) {
         String   where = "";
         if (!category.isEmpty()) {
             int i = 0;
@@ -212,14 +219,28 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // implement this.
-        Cursor c = mAssetDB.sqlite().query(DB_TABLE,
-                                           sListCursorProj,
-                                           where, null,
-                                           null, null,
-                                           DB_COL_TITLE);
-        getAdapter().changeCursor(c);
+        return mAssetDB.sqlite().query(DB_TABLE,
+                                       sListCursorProj,
+                                       where, null,
+                                       null, null,
+                                       DB_COL_TITLE);
     }
 
+    /**
+     *
+     * @param category
+     *   empty : for all categories
+     * @param search
+     *   empty : all channels.
+     */
+    private void
+    refreshList(String category, String search) {
+        getAdapter().changeCursor(query(category, search));
+    }
+
+    // ========================================================================
+    //
+    // ========================================================================
     private void
     requestRefreshList() {
         Environ.getUiHandler().post(new Runnable() {
@@ -247,6 +268,14 @@ UnexpectedExceptionHandler.TrackedModule {
                     refreshList(category, search);
             }
         });
+    }
+
+    private void
+    onCheck(long id, ChanInfo chaninfo, boolean isChecked) {
+        if (isChecked)
+            mChanMap.put(id, chaninfo);
+        else
+            mChanMap.remove(id);
     }
 
     // ========================================================================
@@ -288,9 +317,11 @@ UnexpectedExceptionHandler.TrackedModule {
                 requestRefreshList();
             }
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            public void
+            beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            public void
+            onTextChanged(CharSequence s, int start, int before, int count) {}
         });
     }
 
@@ -307,11 +338,9 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 ListRow row = (ListRow)view;
-                Intent i = new Intent();
-                i.putExtra("url", row.url);
-                i.putExtra("iconurl", row.iconurl);
-                setResult(RESULT_OK, i);
-                finish();
+                CheckBox cb = (CheckBox)view.findViewById(R.id.checkbtn);
+                cb.setChecked(!cb.isChecked());
+                onCheck(id, row.chaninfo, cb.isChecked());
             }
         });
     }
@@ -327,8 +356,6 @@ UnexpectedExceptionHandler.TrackedModule {
     onCreate(Bundle savedInstanceState) {
         UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
-        categoryid = this.getIntent().getLongExtra("category", -1);
-        eAssert(categoryid >= 0);
 
         mAssetDB = new AssetSQLiteHelper(DB_NAME, DB_ASSET, DB_VERSION);
         mAssetDB.open();
@@ -338,6 +365,33 @@ UnexpectedExceptionHandler.TrackedModule {
         setCategorySpinner((Spinner)findViewById(R.id.sp_category));
         setSearchEdit((EditText)findViewById(R.id.editbox));
         setListView((ListView)findViewById(R.id.list));
+
+        ((Button)findViewById(R.id.append)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void
+            onClick(View v) {
+                Intent intent = new Intent();
+                ChanInfo[] cis = mChanMap.values().toArray(new ChanInfo[0]);
+                String[] urls = new String[cis.length];
+                String[] iconurls = new String[cis.length];
+                for (int i = 0 ; i < cis.length; i++) {
+                    urls[i] = cis[i].url;
+                    iconurls[i] = cis[i].iconurl;
+                }
+                intent.putExtra(KEY_URLS, urls);
+                intent.putExtra(KEY_ICONURLS, iconurls);
+                setResult(RESULT_OK, intent);
+                finish();
+            }
+        });
+        ((Button)findViewById(R.id.cancel)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void
+            onClick(View v) {
+                setResult(RESULT_CANCELED);
+                finish();
+            }
+        });
     }
 
     @Override

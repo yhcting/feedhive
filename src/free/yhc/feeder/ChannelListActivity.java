@@ -338,7 +338,6 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_addChannel_predefined(View anchor) {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
-        intent.putExtra("category", getCurrentCategoryId());
         startActivityForResult(intent, REQC_PICK_PREDEFINED_CHANNEL);
     }
 
@@ -652,18 +651,22 @@ UnexpectedExceptionHandler.TrackedModule {
         if (RESULT_OK != resultCode)
             return;
 
-        final String url = data.getStringExtra("url");
-        eAssert(Utils.isValidValue(url));
-        final String iconurl = data.getStringExtra("iconurl");
-        // NOTE
-        // Without using 'post', user may feel bad ui response.
-        Environ.getUiHandler().post(new Runnable() {
-            @Override
-            public void
-            run() {
-                addChannel(url, iconurl);
-            }
-        });
+        final String[] urls = data.getStringArrayExtra(PredefinedChannelActivity.KEY_URLS);
+        final String[] iconurls = data.getStringArrayExtra(PredefinedChannelActivity.KEY_ICONURLS);
+        for (int i = 0; i < urls.length; i++) {
+            eAssert(Utils.isValidValue(urls[i]));
+            final String url = urls[i];
+            final String iconurl = iconurls[i];
+            // NOTE
+            // Without using 'post', user may feel bad ui response.
+            Environ.getUiHandler().post(new Runnable() {
+                @Override
+                public void
+                run() {
+                    addChannel(url, iconurl);
+                }
+            });
+        }
     }
 
     private void
