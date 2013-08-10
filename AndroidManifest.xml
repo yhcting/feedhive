@@ -86,5 +86,10 @@
                 <action android:name="feeder.intent.action.LIST_PENDING_INTENT" />
             </intent-filter>
         </receiver>
+        <receiver android:name=".appwidget.ViewsService$ButtonPendingIntentReceiver">
+            <intent-filter>
+                <action android:name="feeder.intent.action.BUTTON_PENDING_INTENT" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

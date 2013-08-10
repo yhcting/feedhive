@@ -28,6 +28,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViewsService;
+import free.yhc.feeder.AppWidgetCategoryChooserActivity;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -76,24 +77,60 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    public static class ButtonPendingIntentReceiver extends BroadcastReceiver {
+        @Override
+        public void
+        onReceive(Context context, Intent intent) {
+            if (DBG) P.v("ButtonPendingIntentReceiver : onReceive.");
+            if (!AppWidgetUtils.ACTION_BUTTON_PENDING_INTENT.equals(intent.getAction()))
+                return; // unexpected intent.
+
+            final int awid = intent.getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID,
+                                                AppWidgetUtils.INVALID_APPWIDGETID);
+            if (DBG) P.v("onReceive pending intent : appwidget id : " + awid);
+            if (AppWidgetUtils.INVALID_APPWIDGETID == awid) {
+                if (DBG) P.w("Unexpected List Pending Intent...");
+                return;
+            }
+
+            Intent i = new Intent(context, AppWidgetCategoryChooserActivity.class);
+            i.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
+            i.putExtra(AppWidgetCategoryChooserActivity.KEY_CANCELABLE, true);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            context.startActivity(i);
+        }
+    }
+
     static ViewsFactory
     getViewsFactory(int appWidgetId) {
         ViewsFactory vf = sViewsFactoryMap.get(appWidgetId);
-        if (null != vf)
-            return vf;
-
         long catid = AppWidgetUtils.getWidgetCategory(appWidgetId);
-        if (DB.INVALID_ITEM_ID == catid)
-            return null;
+        try {
+            if (DB.INVALID_ITEM_ID == catid)
+                throw new Exception();
 
-        if (!DBPolicy.get().isValidCategoryId(catid)) {
-            AppWidgetUtils.deleteWidgetToCategoryMap(appWidgetId);
+            if (!DBPolicy.get().isValidCategoryId(catid)) {
+                AppWidgetUtils.deleteWidgetToCategoryMap(appWidgetId);
+                throw new Exception();
+            }
+        } catch (Exception e) {
+            if (null != vf)
+                sViewsFactoryMap.remove(appWidgetId);
             return null;
         }
-
-        vf = new ViewsFactory(catid, appWidgetId);
+        if (null == vf)
+            vf = new ViewsFactory(catid, appWidgetId);
+        else
+            vf.setCategory(catid);
         sViewsFactoryMap.put(appWidgetId, vf);
         return vf;
+    }
+
+    static void
+    updateViewsFactory(int appWidgetId) {
+        // Calling getViewsFactory is enough to update ViewsFactory.
+        getViewsFactory(appWidgetId);
     }
 
     public static void

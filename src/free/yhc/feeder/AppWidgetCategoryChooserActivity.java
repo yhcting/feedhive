@@ -39,6 +39,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(AppWidgetCategoryChooserActivity.class);
 
+    public static final String KEY_CANCELABLE = "cancelable";
+
+    private boolean mCancelable = false;
 
     @Override
     public String
@@ -52,6 +55,8 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         final int appWidgetId = getIntent().getIntExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID,
                                                         AppWidgetUtils.INVALID_APPWIDGETID);
+        mCancelable = getIntent().getBooleanExtra(KEY_CANCELABLE, false);
+
         eAssert(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
         UiUtils.OnCategorySelectedListener action = new UiUtils.OnCategorySelectedListener() {
             @Override
@@ -68,7 +73,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                         action,
                                                         DB.INVALID_ITEM_ID,
                                                         null);
-        diag.setCancelable(false);
+        diag.setCancelable(mCancelable);
         diag.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void

@@ -47,6 +47,19 @@ UnexpectedExceptionHandler.TrackedModule {
         private final int[]             _mAppWidgetIds;
         private final int               _mStartId;
 
+        private Intent
+        createBaseIntent(Class<?> rcvrCls, long catid, int awid,
+                         String action) {
+            Intent i = new Intent(Utils.getAppContext(), rcvrCls);
+            // To tell "This is different intent from previous one!"
+            i.setData(Uri.fromParts("content", String.valueOf(awid), null));
+            i.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
+            i.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
+            if (null != action)
+                i.setAction(action);
+            return i;
+        }
+
         AppWidgetUpdater(int[] appWidgetIds, int startId) {
             _mAppWidgetIds = appWidgetIds;
             _mStartId = startId;
@@ -76,28 +89,31 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (DB.INVALID_ITEM_ID == catid)
                     continue;
 
-                Intent intent = new Intent(Utils.getAppContext(),
-                                           ViewsService.class);
-                // To tell "This is different intent from previous one!"
-                intent.setData(Uri.fromParts("content", String.valueOf(awid), null));
-
-                intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
-                intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
+                // List action pending intent
+                // ==========================
+                Intent intent = createBaseIntent(ViewsService.class,
+                                                 catid, awid,
+                                                 null);
                 rv.setRemoteAdapter(R.id.list, intent);
 
-                intent = new Intent(Utils.getAppContext(),
-                                    ViewsService.ListPendingIntentReceiver.class);
-                intent.setAction(AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
-                // To tell "This is different intent from previous one!"
-                intent.setData(Uri.fromParts("content", String.valueOf(awid), null));
-
-                intent.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
-                intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, awid);
+                intent = createBaseIntent(ViewsService.ListPendingIntentReceiver.class,
+                                          catid, awid,
+                                          AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
                 PendingIntent pi = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent, 0);
                 rv.setPendingIntentTemplate(R.id.list, pi);
 
+                // Button action pending intent
+                // ============================
+                intent = createBaseIntent(ViewsService.ButtonPendingIntentReceiver.class,
+                                          catid, awid,
+                                          AppWidgetUtils.ACTION_BUTTON_PENDING_INTENT);
+                pi = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent, 0);
+                rv.setOnClickPendingIntent(R.id.btn, pi);
+
                 if (DBG) P.v("Update widget : " + awid);
                 _mAwm.updateAppWidget(awid, rv);
+                // Update ViewsFactory manually!
+                ViewsService.updateViewsFactory(awid);
             }
             stopSelf(_mStartId);
         }

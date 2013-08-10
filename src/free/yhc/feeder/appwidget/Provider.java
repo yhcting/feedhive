@@ -105,6 +105,7 @@ UnexpectedExceptionHandler.TrackedModule {
         for (Integer i : newWidgets.toArray(new Integer[0])) {
             Intent intent = new Intent(context, AppWidgetCategoryChooserActivity.class);
             intent.putExtra(AppWidgetUtils.MAP_KEY_APPWIDGETID, i);
+            intent.putExtra(AppWidgetCategoryChooserActivity.KEY_CANCELABLE, false);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
             context.startActivity(intent);

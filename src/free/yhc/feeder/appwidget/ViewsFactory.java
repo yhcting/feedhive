@@ -74,11 +74,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private final DBPolicy  mDbp = DBPolicy.get();
     private final RTTask    mRtt = RTTask.get();
-    private final long      mCategoryId;
     private final int       mAppWidgetId;
     private final DBWatcher         mDbWatcher;
     private final ItemActionHandler mItemAction;
 
+    private long    mCategoryId;
     private long[]  mCids = null;
     private AtomicReference<Cursor> mCursor = new AtomicReference<Cursor>(null);
 
@@ -264,6 +264,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
         mItemAction = new ItemActionHandler(null, new AdapterBridge());
         mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
+    }
+
+    boolean
+    setCategory(long categoryId) {
+        if (mCategoryId == categoryId)
+            return false; // nothing to do
+        if (DBG) P.d("Category Updated : " + mCategoryId + " -> " + categoryId);
+        mCategoryId = categoryId;
+        refreshItemList();
+        return true;
     }
 
     void
