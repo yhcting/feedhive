@@ -813,6 +813,17 @@ public class Utils {
             return false;
     }
 
+    public static boolean
+    isWifiAvailable() {
+        ConnectivityManager cm = (ConnectivityManager)getAppContext()
+                                                      .getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ni = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (null != ni)
+            return ni.isConnectedOrConnecting();
+        else
+            return false;
+    }
+
     // ------------------------------------------------------------------------
     //
     // Accessing preference
@@ -833,6 +844,11 @@ public class Utils {
             eAssert(false);
         }
         return value;
+    }
+
+    public static boolean
+    isPrefUseWifiOnly() {
+        return sPrefs.getString("use_wifi_only", "no").equals("yes");
     }
 
     // ================================================

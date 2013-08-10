@@ -23,6 +23,7 @@ package free.yhc.feeder.model;
 import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -159,6 +160,14 @@ public class NetLoader {
                throw new FeederException(Err.INVALID_URL);
            }
 
+           // TODO : Confirm it!
+           // Is is right place?
+           // What happen if network is inter-change between mobile network and wifi
+           //   in the middle of download or something like that?
+           if (!Utils.isNetworkAvailable()
+               || (Utils.isPrefUseWifiOnly() && !Utils.isWifiAvailable()))
+                throw new FeederException(Err.IO_NET);
+
            while (0 < retry--) {
                try {
                    conn = url.openConnection();
@@ -245,58 +254,25 @@ public class NetLoader {
     private RSSParser.Result
     parseFeedUrl(String url)
             throws FeederException {
-        //logI("Fetching Channel [" + url + "]");
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
         RSSParser.Result res = null;
-        long             time;
-        int              retry = NET_RETRY;
         try {
-            while (0 < retry--) {
-                try {
-                    time = System.currentTimeMillis();
-                    URLConnection conn = new URL(url).openConnection();
-                    conn.setReadTimeout(NET_CONN_TIMEOUT);
-                    try {
-                        mIstream = conn.getInputStream();
-                    } catch (NullPointerException e) {
-                        // NOTE : Workaround bug of getInputStream().
-                        // In case that url contains non-English characters,
-                        //   sometimes getInputStream() throws NullPointerExceptions.
-                        // This is definitely unexpected exception (Library shouldn't throw
-                        //   this kind of exception!).
-                        throw new FeederException(Err.INVALID_URL);
-                    }
-
-                    Document dom = DocumentBuilderFactory
-                                    .newInstance()
-                                    .newDocumentBuilder()
-                                    .parse(mIstream);
-                    mIstream.close();
-                    //logI("TIME: Open URL and Parseing as Dom : " + (System.currentTimeMillis() - time));
-                    time = System.currentTimeMillis();
-                    // Only RSS is supported at this version.
-                    res = FeedParser.getParser(dom).parse(dom);
-                    //logI("TIME: RSSParsing : " + (System.currentTimeMillis() - time));
-                    break; // done
-                } catch (MalformedURLException e) {
-                    throw new FeederException(Err.INVALID_URL);
-                } catch (IOException e) {
-                    if (mCancelled)
-                        throw new FeederException(Err.USER_CANCELLED);
-
-                    if (0 >= retry)
-                        throw new FeederException(Err.IO_NET);
-
-                    ; // continue next retry after some time.
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException ie) {
-                        if (mCancelled)
-                            throw new FeederException(Err.USER_CANCELLED);
-                        else
-                            throw new FeederException(Err.INTERRUPTED);
-                    }
-                }
-            }
+            download(os, url, null);
+            mIstream = new ByteArrayInputStream(os.toByteArray());
+            Document dom = DocumentBuilderFactory
+                               .newInstance()
+                               .newDocumentBuilder()
+                               .parse(mIstream);
+            mIstream.close();
+            res = FeedParser.getParser(dom).parse(dom);
+        } catch (MalformedURLException e) {
+            throw new FeederException(Err.INVALID_URL);
+        } catch (IOException e) {
+            if (mCancelled)
+                throw new FeederException(Err.USER_CANCELLED);
+            else
+                throw new FeederException(Err.IO_NET);
         } catch (DOMException e) {
             throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
         } catch (SAXException e) {
@@ -307,6 +283,9 @@ public class NetLoader {
         } catch (FeederException e) {
             throw e;
         } finally {
+            try {
+                os.close();
+            } catch (IOException ignored) { }
             closeIstream();
         }
         return res;

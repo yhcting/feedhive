@@ -149,4 +149,6 @@
     <string name="pref_usage">Usage</string>
     <string name="pref_newmsg_noti">New feed notification</string>
     <string name="pref_newmsg_noti_desc">Notifying new feed to status bar.</string>
+    <string name="pref_use_wifi_only">Use Wifi update/download</string>
+    <string name="pref_use_wifi_only_desc">Update or download are started only when Wifi is available.</string>
 </resources>

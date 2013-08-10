@@ -53,5 +53,12 @@
             android:defaultValue="yes"
             android:entries="@array/pref_yes_no_entry"
             android:entryValues="@array/pref_yes_no_value" />
+        <ListPreference
+            android:title="@string/pref_use_wifi_only"
+            android:summary="@string/pref_use_wifi_only_desc"
+            android:key="use_wifi_only"
+            android:defaultValue="no"
+            android:entries="@array/pref_yes_no_entry"
+            android:entryValues="@array/pref_yes_no_value" />
     </PreferenceCategory>
 </PreferenceScreen>
