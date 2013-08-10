@@ -379,7 +379,6 @@ UnexpectedExceptionHandler.TrackedModule {
     public RemoteViews
     getViewAt(int position) {
         // Called at binder thread
-        //if (DBG) P.v("getViewAt : " + position);
         Cursor cur = mCursor.get();
         cur.moveToPosition(position);
         RemoteViews rv = new RemoteViews(Environ.getAppContext().getPackageName(),
@@ -393,9 +392,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
         File df = ContentsManager.get().getItemInfoDataFile(iid);
-        if (null != df && df.exists())
+        if (DBG) P.v("getViewAt : " + position
+                     + " : Path(" + df.exists() + ") ["
+                     + ((null == df)? "<null>": df.getAbsolutePath()) + "]");
+        if (null != df && df.exists()) {
+            rv.setViewVisibility(R.id.image, View.VISIBLE);
             rv.setImageViewResource(R.id.image, R.drawable.ic_save);
-        else {
+        } else {
             RTTask.TaskState dnState = mRtt.getState(iid, RTTask.Action.DOWNLOAD);
             rv.setViewVisibility(R.id.image, View.VISIBLE);
             switch(dnState) {

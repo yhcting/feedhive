@@ -204,7 +204,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == title)
             return null;
         String fname = Utils.convertToFilename(title) + "_" + cid;
-        return Environ.get().getAppRootDirectoryPath() + fname;
+        return Environ.get().getAppRootDirectoryPath() + fname + "/";
     }
 
     private static File
