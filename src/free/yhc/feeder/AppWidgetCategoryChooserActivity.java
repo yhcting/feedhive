@@ -58,7 +58,7 @@ UnexpectedExceptionHandler.TrackedModule {
         mCancelable = getIntent().getBooleanExtra(KEY_CANCELABLE, false);
 
         eAssert(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
-        UiUtils.OnCategorySelectedListener action = new UiUtils.OnCategorySelectedListener() {
+        UiHelper.OnCategorySelectedListener action = new UiHelper.OnCategorySelectedListener() {
             @Override
             public void
             onSelected(final long category, Object user) {
@@ -68,11 +68,11 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        AlertDialog diag = UiUtils.selectCategoryDialog(this,
-                                                        R.string.select_category,
-                                                        action,
-                                                        DB.INVALID_ITEM_ID,
-                                                        null);
+        AlertDialog diag = UiHelper.selectCategoryDialog(this,
+                                                         R.string.select_category,
+                                                         action,
+                                                         DB.INVALID_ITEM_ID,
+                                                         null);
         diag.setCancelable(mCancelable);
         diag.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override

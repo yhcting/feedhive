@@ -61,11 +61,13 @@ import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
+import free.yhc.feeder.model.ContentsManager;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.ItemActionHandler;
+import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 public class ItemListActivity extends Activity implements
@@ -96,10 +98,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public static final int FILTER_NONE     = 0; // no filter
     public static final int FILTER_NEW      = 1; // new items of each channel.
 
-    private final UIPolicy      mUip = UIPolicy.get();
     private final DBPolicy      mDbp = DBPolicy.get();
     private final RTTask        mRtt = RTTask.get();
-    private final LookAndFeel   mLnf = LookAndFeel.get();
 
     private final RTTaskQChangedListener    mRttqcl = new RTTaskQChangedListener();
 
@@ -108,7 +108,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private ListView    mList    = null;
     private ItemActionHandler mItemAction;
 
-    private static class DBWatcher implements DB.OnDBUpdatedListener {
+    private static class DBWatcher implements ListenerManager.Listener {
         private final HashSet<Long> _mUpdatedChannelSet = new HashSet<Long>();
         // NOTE
         // initial value should be 'true' because we don't know what happened to DB
@@ -145,8 +145,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
-            switch (type) {
+        onNotify(Object user, ListenerManager.Type type, Object arg0, Object arg1) {
+            switch ((DB.UpdateType)type) {
             case CHANNEL_DATA:
                 _mUpdatedChannelSet.add((Long)arg0);
                 break;
@@ -581,7 +581,7 @@ UnexpectedExceptionHandler.TrackedModule {
         onDeQ(BGTask task, long id, RTTask.Action act) {
             if (RTTask.Action.DOWNLOAD == act) {
                 // This will be run after activity is paused.
-                File df = mDbp.getItemInfoDataFile(id);
+                File df = ContentsManager.get().getItemInfoDataFile(id);
                 getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id),
                                                      null != df && df.exists());
             }
@@ -713,7 +713,7 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onClick(View v) {
-                mLnf.showTextToast(ItemListActivity.this, msg);
+                UiHelper.showTextToast(ItemListActivity.this, msg);
             }
         });
     }
@@ -726,7 +726,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onClick(View v) {
                 // Update is supported only at channel item list.
                 eAssert(mOpMode instanceof OpModeChannel);
-                mLnf.showTextToast(ItemListActivity.this, result.getMsgId());
+                UiHelper.showTextToast(ItemListActivity.this, result.getMsgId());
                 mRtt.consumeResult(mOpMode.getCids()[0], RTTask.Action.UPDATE);
                 requestSetUpdateButton();
             }
@@ -802,7 +802,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     requestSetUpdateButton() {
-        Utils.getUiHandler().post(new Runnable() {
+        Environ.getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 setUpdateButton();
@@ -814,20 +814,18 @@ UnexpectedExceptionHandler.TrackedModule {
     onContext_deleteDnFile(final long id, final int position) {
         // Create "Enter Url" dialog
         AlertDialog dialog =
-                mLnf.createWarningDialog(this,
-                                        R.string.delete_downloaded_file,
-                                        R.string.delete_downloaded_file_msg);
-        dialog.setButton(getResources().getText(R.string.yes),
+                UiHelper.createWarningDialog(this,
+                                             R.string.delete_downloaded_file,
+                                             R.string.delete_downloaded_file_msg);
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
             public void
             onClick (DialogInterface dialog, int which) {
                 // NOTE
                 // There is no use case that "null == f" here.
-                File f = mDbp.getItemInfoDataFile(id);
-                eAssert(null != f);
-                if (!f.delete())
-                    mLnf.showTextToast(ItemListActivity.this, Err.IO_FILE.getMsgId());
+                if (!ContentsManager.get().deleteItemContent(id))
+                    UiHelper.showTextToast(ItemListActivity.this, Err.IO_FILE.getMsgId());
                 else {
                     getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), false);
                     dataSetChanged(id);
@@ -835,7 +833,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 dialog.dismiss();
             }
         });
-        dialog.setButton2(getResources().getText(R.string.no),
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getResources().getText(R.string.no),
                           new DialogInterface.OnClickListener() {
             @Override
             public void
@@ -851,23 +849,21 @@ UnexpectedExceptionHandler.TrackedModule {
     onContext_delete(final long id, final int position) {
         // Create "Enter Url" dialog
         AlertDialog dialog =
-                mLnf.createWarningDialog(this,
-                                        R.string.delete_item,
-                                        R.string.delete_item_msg);
-        dialog.setButton(getResources().getText(R.string.yes),
+                UiHelper.createWarningDialog(this,
+                                             R.string.delete_item,
+                                             R.string.delete_item_msg);
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
             public void
             onClick (DialogInterface dialog, int which) {
-                File f = mDbp.getItemInfoDataFile(id);
-                eAssert(null != f);
-                f.delete();
+                ContentsManager.get().deleteItemContent(id);
                 mDbp.deleteItem(ColumnItem.ID, id);
                 // Database is changed. So, cursor should be reloaded.
                 refreshListAsync();
             }
         });
-        dialog.setButton2(getResources().getText(R.string.no),
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getResources().getText(R.string.no),
                           new DialogInterface.OnClickListener() {
             @Override
             public void
@@ -896,7 +892,7 @@ UnexpectedExceptionHandler.TrackedModule {
         inflater.inflate(R.menu.item_context, menu);
 
         // check for "Delete Downloaded File" option
-        File f = mDbp.getItemInfoDataFile(dbId);
+        File f = ContentsManager.get().getItemInfoDataFile(dbId);
         if (null != f && f.exists())
             menu.findItem(R.id.delete_dnfile).setVisible(true);
         else
@@ -970,14 +966,14 @@ UnexpectedExceptionHandler.TrackedModule {
         since.setTimeInMillis(mOpMode.minPubtime());
         final Calendar now = Calendar.getInstance();
         if (now.getTimeInMillis() < since.getTimeInMillis()) {
-            mLnf.showTextToast(this, R.string.warn_no_item_before_now);
+            UiHelper.showTextToast(this, R.string.warn_no_item_before_now);
             return;
         }
 
         // Setup search dialog controls
-        final View diagV  =  mLnf.inflateLayout(this, R.layout.item_list_search);
+        final View diagV  =  UiHelper.inflateLayout(this, R.layout.item_list_search);
         final AlertDialog diag =
-                mLnf.createEditTextDialog(this, diagV, R.string.feed_search);
+                UiHelper.createEditTextDialog(this, diagV, R.string.feed_search);
 
         String[] years = buildStringArray(since.get(Calendar.YEAR), now.get(Calendar.YEAR) + 1);
         setSpinner(diagV, R.id.sp_year0, years, 0, new AdapterView.OnItemSelectedListener() {
@@ -1013,7 +1009,7 @@ UnexpectedExceptionHandler.TrackedModule {
         months = buildStringArray(mons[0], mons[1] + 1);
         setSpinner(diagV, R.id.sp_month1, months, months.length - 1, null); // select last (latest) month
 
-        diag.setButton(getResources().getText(R.string.ok), new DialogInterface.OnClickListener() {
+        diag.setButton(AlertDialog.BUTTON_POSITIVE, getResources().getText(R.string.ok), new DialogInterface.OnClickListener() {
             @Override
             public void
             onClick(DialogInterface dia, int which) {
@@ -1051,7 +1047,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 mOpMode.setFilter(search, from.getTimeInMillis(), to.getTimeInMillis());
                 mList.setSelection(0);
                 getListAdapter().moveToFirstDataSet();
-                Utils.getUiHandler().post(new Runnable() {
+                Environ.getUiHandler().post(new Runnable() {
                    @Override
                    public void run() {
                        refreshListAsync();
@@ -1061,7 +1057,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        diag.setButton2(getResources().getText(R.string.cancel), new DialogInterface.OnClickListener() {
+        diag.setButton(AlertDialog.BUTTON_NEGATIVE, getResources().getText(R.string.cancel), new DialogInterface.OnClickListener() {
             @Override
             public void
             onClick(DialogInterface dialog, int which) {

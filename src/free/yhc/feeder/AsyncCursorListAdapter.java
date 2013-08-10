@@ -67,7 +67,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
               maxArrSz,
               hasLimit);
 
-        View firstLoadingView = LookAndFeel.get().inflateLayout(context, rowLayout);
+        View firstLoadingView = UiHelper.inflateLayout(context, rowLayout);
         preBindView(firstLoadingView, context, INVALID_POS);
         init(firstLoadingView,
              lv,

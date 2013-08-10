@@ -45,7 +45,7 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Handler;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.text.Layout;
 import android.util.Log;
@@ -75,20 +75,14 @@ public class Utils {
     public static final int    HOUR_IN_SEC  = 60 * 60;
     public static final int    DAY_IN_SEC   = 24 * HOUR_IN_SEC;
 
-    // This is only for debugging.
-    private static boolean  sInitialized = false;
-
-    // Even if these two varaibles are not 'final', those should be handled like 'final'
-    //   because those are set only at init() function, and SHOULD NOT be changed.
-    private static Context  sAppContext  = null;
-    private static Handler  sUiHandler   = null;
     private static SharedPreferences sPrefs = null;
 
     // To enable logging to file - NOT LOGCAT
     // These are for debugging purpose
-    private static final boolean ENABLE_LOGF= false;
-    private static final String  LOGF       = "/sdcard/feeder.log";
-    private static final String  LOGF_LAST  = LOGF + "-last";
+    private static final boolean ENABLE_LOGF = false;
+    private static final String  LOGF        = Environment.getExternalStorageDirectory().getAbsolutePath()
+                                                  + "/feedhive.log";
+    private static final String  LOGF_LAST   = LOGF + "-last";
     private static FileWriter    sLogout     = null;
 
     // Format of nString (Number String)
@@ -266,16 +260,9 @@ public class Utils {
     // Public
     // =======================
     public static void
-    init(Context aAppContext) {
-        // This is called first for module initialization.
-        // So, ANY DEPENDENCY to other module is NOT allowed
-        eAssert(!sInitialized);
-        if (!sInitialized)
-            sInitialized = true;
-
-        sAppContext = aAppContext;
-        sUiHandler = new Handler();
-        sPrefs = PreferenceManager.getDefaultSharedPreferences(getAppContext());
+    init() {
+        eAssert(null == sPrefs);
+        sPrefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
     }
 
     // Assert
@@ -308,19 +295,9 @@ public class Utils {
     // ------------------------------------------------------
     //
     // ------------------------------------------------------
-    public static Context
-    getAppContext() {
-        return sAppContext;
-    }
-
     public static boolean
     isUiThread() {
-        return Thread.currentThread() == sUiHandler.getLooper().getThread();
-    }
-
-    public static Handler
-    getUiHandler() {
-        return sUiHandler;
+        return Thread.currentThread() == Environ.getUiHandler().getLooper().getThread();
     }
 
     // Bit mask handling
@@ -385,7 +362,7 @@ public class Utils {
 
     public static int
     dpToPx(int dp) {
-        return (int) (dp * getAppContext().getResources().getDisplayMetrics().density);
+        return (int) (dp * Environ.getAppContext().getResources().getDisplayMetrics().density);
     }
 
     public static long
@@ -685,12 +662,6 @@ public class Utils {
     public static String
     getExtentionFromUrl(String url) {
         return MimeTypeMap.getFileExtensionFromUrl(url);
-        /* -- obsoleted implementation.
-        int idx = str.lastIndexOf(".");
-        if (idx < 0)
-            return null;
-        return str.substring(idx + 1);
-        */
     }
 
     public static String
@@ -701,17 +672,6 @@ public class Utils {
         //   uppercase-extension - ex. MP3.
         // For workaround, converted lowercase is used.
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext.toLowerCase());
-        /* -- obsoleted implementation.
-        String ext = getExtention(filename);
-        if (null == ext)
-            return null;
-
-        for (int i = 0; i < mExt2mimeMap.length; i += EXT2MIME_OFFSET_SZ)
-            if (mExt2mimeMap[EXT2MIME_OFFSET_EXT].equalsIgnoreCase(ext))
-                return mExt2mimeMap[EXT2MIME_OFFSET_MIME];
-
-        return null;
-        */
     }
 
     public static boolean
@@ -729,19 +689,6 @@ public class Utils {
     isMimeType(String str) {
         // Let's reuse Android class
         return MimeTypeMap.getSingleton().hasMimeType(str);
-
-        /* -- obsoleted implementation.
-        int idx = str.lastIndexOf("/");
-        if (idx < 0)
-            return false;
-
-        String type = str.substring(0, idx);
-        for (String t : mMimeTypes)
-            if (type.equalsIgnoreCase(t))
-                return true;
-
-        return false;
-        */
     }
 
     /**
@@ -805,7 +752,9 @@ public class Utils {
      */
     public static boolean
     isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager)getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager)Environ
+                                                      .getAppContext()
+                                                      .getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getActiveNetworkInfo();
         if (null != ni)
             return ni.isConnectedOrConnecting();
@@ -815,13 +764,28 @@ public class Utils {
 
     public static boolean
     isWifiAvailable() {
-        ConnectivityManager cm = (ConnectivityManager)getAppContext()
+        ConnectivityManager cm = (ConnectivityManager)Environ
+                                                      .getAppContext()
                                                       .getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo ni = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         if (null != ni)
             return ni.isConnectedOrConnecting();
         else
             return false;
+    }
+
+    public static File
+    getNewTempFile() {
+        File ret = null;
+        try {
+            ret = File.createTempFile("free.yhc.feeder", null, Environ.get().getTempDirFile());
+        } catch (IOException ignored){ }
+        return ret;
+    }
+
+    public static void
+    cleanTempFiles() {
+        removeFileRecursive(Environ.get().getTempDirFile(), false);
     }
 
     // ------------------------------------------------------------------------
@@ -849,6 +813,32 @@ public class Utils {
     public static boolean
     isPrefUseWifiOnly() {
         return sPrefs.getString("use_wifi_only", "no").equals("yes");
+    }
+
+    /**
+     * Get BG task thread priority from shared preference.
+     * @param context
+     * @return
+     *   Value of Java Thread priority (between Thread.MIN_PRIORITY and Thread.MAX_PRIORITY)
+     */
+    public static int
+    getPrefBGTaskPriority() {
+        String prio = sPrefs.getString("bgtask_prio", "low");
+        if ("low".equals(prio))
+            return Thread.MIN_PRIORITY;
+        else if ("medium".equals(prio))
+            return (Thread.NORM_PRIORITY + Thread.MIN_PRIORITY) / 2;
+        else if ("high".equals(prio))
+            return Thread.NORM_PRIORITY;
+        else {
+            eAssert(false);
+            return Thread.MIN_PRIORITY;
+        }
+    }
+
+    public static int
+    getPrefContentVersion() {
+        return sPrefs.getInt(ContentsManager.KEY_CONTENTS_VERSION, 0);
     }
 
     // ================================================

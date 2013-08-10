@@ -30,8 +30,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import free.yhc.feeder.ItemViewActivity;
-import free.yhc.feeder.LookAndFeel;
 import free.yhc.feeder.R;
+import free.yhc.feeder.UiHelper;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
 
@@ -41,10 +41,8 @@ public class ItemActionHandler {
 
     public static final int REQC_ITEM_VIEW = 0;
 
-    private final UIPolicy      mUip = UIPolicy.get();
     private final DBPolicy      mDbp = DBPolicy.get();
     private final RTTask        mRtt = RTTask.get();
-    private final LookAndFeel   mLnf = LookAndFeel.get();
     private final Activity      mActivity;
     private final Context       mContext;
     private final AdapterBridge mABridge;
@@ -81,7 +79,7 @@ public class ItemActionHandler {
     onActionOpen_http(long action, long id, int position, String url, String protocol) {
         RTTask.TaskState state = mRtt.getState(id, RTTask.Action.DOWNLOAD);
         if (RTTask.TaskState.FAILED == state) {
-            mLnf.showTextToast(mContext, mRtt.getErr(id, RTTask.Action.DOWNLOAD).getMsgId());
+            UiHelper.showTextToast(mContext, mRtt.getErr(id, RTTask.Action.DOWNLOAD).getMsgId());
             mRtt.consumeResult(id, RTTask.Action.DOWNLOAD);
             mABridge.dataSetChanged(id);
             return;
@@ -100,8 +98,9 @@ public class ItemActionHandler {
             try {
                 mContext.startActivity(intent);
             } catch (ActivityNotFoundException e) {
-                mLnf.showTextToast(mContext,
-                                   mContext.getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
+                UiHelper.showTextToast(mContext,
+                                       mContext.getResources().getText(R.string.warn_find_app_to_open).toString()
+                                           + protocol);
                 return;
             }
         } else
@@ -117,8 +116,9 @@ public class ItemActionHandler {
         try {
             mContext.startActivity(intent);
         } catch (ActivityNotFoundException e) {
-            mLnf.showTextToast(mContext,
-                               mContext.getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
+            UiHelper.showTextToast(mContext,
+                                   mContext.getResources().getText(R.string.warn_find_app_to_open).toString()
+                                       + protocol);
             return;
         }
 
@@ -137,7 +137,7 @@ public class ItemActionHandler {
     private void
     onActionDn(long action, long id, int position, String url, String encType) {
         // 'enclosure' is used.
-        File f = mDbp.getItemInfoDataFile(id);
+        File f = ContentsManager.get().getItemInfoDataFile(id);
         eAssert(null != f);
         if (f.exists()) {
             // "RSS described media type" vs "mime type by guessing from file extention".
@@ -161,8 +161,9 @@ public class ItemActionHandler {
             try {
                 mContext.startActivity(intent);
             } catch (ActivityNotFoundException e) {
-                mLnf.showTextToast(mContext,
-                                   mContext.getResources().getText(R.string.warn_find_app_to_open).toString() + " [" + type + "]");
+                UiHelper.showTextToast(mContext,
+                                       mContext.getResources().getText(R.string.warn_find_app_to_open).toString()
+                                           + " [" + type + "]");
                 return;
             }
             // change state as 'opened' at this moment.
@@ -171,13 +172,11 @@ public class ItemActionHandler {
             RTTask.TaskState state = mRtt.getState(id, RTTask.Action.DOWNLOAD);
             switch(state) {
             case IDLE: {
-                File tmpf = mUip.getNewTempFile();
+                File tmpf = Utils.getNewTempFile();
                 if (null == tmpf)
-                    LookAndFeel.get().showTextToast(mContext, R.string.err_iofile);
+                    UiHelper.showTextToast(mContext, R.string.err_iofile);
                 else {
-                    BGTaskDownloadToFile.Arg arg
-                        = new BGTaskDownloadToFile.Arg(url, f, tmpf);
-                    BGTaskDownloadToFile dnTask = new BGTaskDownloadToFile(arg);
+                    BGTaskDownloadToItemContent dnTask = new BGTaskDownloadToItemContent(url, id);
                     mRtt.register(id, RTTask.Action.DOWNLOAD, dnTask);
                     mRtt.start(id, RTTask.Action.DOWNLOAD);
                     mABridge.dataSetChanged(id);
@@ -191,12 +190,12 @@ public class ItemActionHandler {
                 break;
 
             case CANCELING:
-                mLnf.showTextToast(mContext, R.string.wait_cancel);
+                UiHelper.showTextToast(mContext, R.string.wait_cancel);
                 break;
 
             case FAILED: {
                 Err result = mRtt.getErr(id, RTTask.Action.DOWNLOAD);
-                mLnf.showTextToast(mContext, result.getMsgId());
+                UiHelper.showTextToast(mContext, result.getMsgId());
                 mRtt.consumeResult(id, RTTask.Action.DOWNLOAD);
                 mABridge.dataSetChanged(id);
             } break;
@@ -217,7 +216,7 @@ public class ItemActionHandler {
         //String enclosure = getListAdapter().getItemInfo_encUrl(position);
 
         if (Feed.Channel.FACT_TYPE_DYNAMIC == actionType) {
-            String url = mUip.getDynamicActionTargetUrl(action, link, enclosure);
+            String url = FeedPolicy.getDynamicActionTargetUrl(action, link, enclosure);
             // NOTE
             // Items that have both invalid link and enclosure url, SHOULD NOT be added to DB.
             // Parser give those away in parsing phase.
@@ -239,6 +238,6 @@ public class ItemActionHandler {
                              AdapterBridge bridge) {
         mABridge = bridge;
         mActivity = activity;
-        mContext = null == mActivity? Utils.getAppContext(): mActivity;
+        mContext = null == mActivity? Environ.getAppContext(): mActivity;
     }
 }

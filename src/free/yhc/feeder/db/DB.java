@@ -24,16 +24,16 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -65,10 +65,10 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String NAME            = "feader.db";
     private static final int    VERSION         = 3;
 
-    private static final int FLAG_CATEGORY_TABLE = 0x1;
-    private static final int FLAG_CHANNEL_TABLE  = 0x10;
-    private static final int FLAG_CHANNEL_DATA   = 0x20;
-    private static final int FLAG_ITEM_TABLE     = 0x100;
+    private static final long FLAG_CATEGORY_TABLE = 0x1;
+    private static final long FLAG_CHANNEL_TABLE  = 0x10;
+    private static final long FLAG_CHANNEL_DATA   = 0x20;
+    private static final long FLAG_ITEM_TABLE     = 0x100;
 
     private static final String ITEM_QUERY_DEFAULT_ORDER = ColumnItem.PUBTIME.getName() + " DESC";
     private static final String CHANNEL_QUERY_DEFAULT_ORDER = ColumnChannel.POSITION.getName() + " ASC";
@@ -80,43 +80,31 @@ UnexpectedExceptionHandler.TrackedModule {
      **************************************/
     private SQLiteDatabase mDb = null;
 
-    private final LinkedList<UpdatedListener> mUpdatedListenerl = new LinkedList<UpdatedListener>();
+    private final ListenerManager mLm = new ListenerManager();
 
-    public enum UpdateType {
+    public enum UpdateType implements ListenerManager.Type {
         CATEGORY_TABLE  (FLAG_CATEGORY_TABLE),
         CHANNEL_TABLE   (FLAG_CHANNEL_TABLE),
         CHANNEL_DATA    (FLAG_CHANNEL_DATA), // arg0 : <Long> channel id.
         ITEM_TABLE      (FLAG_ITEM_TABLE);
 
-        private final int _mFlag;
+        private final long _mFlag;
 
-        private UpdateType(int flag) {
+        private UpdateType(long flag) {
             _mFlag = flag;
         }
 
-        public int
+        @Override
+        public long
         flag() {
             return _mFlag;
         }
-    }
-
-    public interface OnDBUpdatedListener {
-        void onDbUpdated(UpdateType type, Object arg0, Object arg1);
     }
 
     public interface Column {
         String getName();
         String getType();
         String getConstraint();
-    }
-
-    private static class UpdatedListener {
-        int flag;
-        OnDBUpdatedListener  listener;
-        UpdatedListener(OnDBUpdatedListener aListener, int aFlag) {
-            listener = aListener;
-            flag = aFlag;
-        }
     }
 
     // =====================================================
@@ -408,7 +396,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * Operation
      **************************************/
     private DB() {
-        super(Utils.getAppContext(), NAME, null, getVersion());
+        super(Environ.getAppContext(), NAME, null, getVersion());
         UnexpectedExceptionHandler.get().registerModule(sInstance);
     }
 
@@ -432,61 +420,15 @@ UnexpectedExceptionHandler.TrackedModule {
     /**************************************
      * DB monitoring
      **************************************/
-    private void
-    notifyUpdated(final UpdateType type, final Object arg0, final Object arg1) {
-        Utils.getUiHandler().post(new Runnable() {
-            @Override
-            public void
-            run() {
-                Iterator<UpdatedListener> iter = mUpdatedListenerl.iterator();
-                    while (iter.hasNext()) {
-                        UpdatedListener ul = iter.next();
-                        if (0 != (ul.flag & type.flag()))
-                            ul.listener.onDbUpdated(type, arg0, arg1);
-                    }
-            }
-        });
-    }
-
-    private void
-    notifyUpdated(final UpdateType type, final Object arg0) {
-        notifyUpdated(type, arg0, null);
-    }
-
-    private void
-    notifyUpdated(final UpdateType type) {
-        notifyUpdated(type, null);
+    void
+    registerUpdatedListener(ListenerManager.Listener listener, long flag) {
+        mLm.registerListener(listener, null, flag);
     }
 
     void
-    registerUpdatedListener(OnDBUpdatedListener listener, int flag) {
-        eAssert(Utils.isUiThread());
-        Iterator<UpdatedListener> iter = mUpdatedListenerl.iterator();
-        while (iter.hasNext()) {
-            UpdatedListener ul = iter.next();
-            if (listener == ul.listener) {
-                // already registered.
-                // just updating flag is enough.
-                ul.flag = flag;
-                return;
-            }
-        }
-        mUpdatedListenerl.add(new UpdatedListener(listener,flag));
+    unregisterUpdatedListener(ListenerManager.Listener listener) {
+        mLm.unregisterListener(listener);
     }
-
-    void
-    unregisterUpdatedListener(OnDBUpdatedListener listener) {
-        eAssert(Utils.isUiThread());
-        Iterator<UpdatedListener> iter = mUpdatedListenerl.iterator();
-        while (iter.hasNext()) {
-            UpdatedListener ul = iter.next();
-            if (listener == ul.listener) {
-                iter.remove();
-                return;
-            }
-        }
-    }
-
     /**************************************
      * DB operation
      **************************************/
@@ -501,9 +443,9 @@ UnexpectedExceptionHandler.TrackedModule {
         open();
 
         // All DB information is changed now!.
-        notifyUpdated(UpdateType.CATEGORY_TABLE);
-        notifyUpdated(UpdateType.CHANNEL_TABLE);
-        notifyUpdated(UpdateType.ITEM_TABLE);
+        mLm.notifyIndirect(UpdateType.CATEGORY_TABLE);
+        mLm.notifyIndirect(UpdateType.CHANNEL_TABLE);
+        mLm.notifyIndirect(UpdateType.ITEM_TABLE);
 
         // Mark as all channel is changed
         Cursor c = mDb.query(TABLE_CHANNEL,
@@ -511,7 +453,7 @@ UnexpectedExceptionHandler.TrackedModule {
                              null, null, null, null, null);
         if (c.moveToFirst()) {
             do {
-                notifyUpdated(UpdateType.CHANNEL_DATA, c.getLong(0));
+                mLm.notifyIndirect(UpdateType.CHANNEL_DATA, c.getLong(0));
             } while (c.moveToNext());
         }
         c.close();
@@ -549,7 +491,7 @@ UnexpectedExceptionHandler.TrackedModule {
         values.put(ColumnCategory.NAME.getName(), category.name);
         long catid = mDb.insert(TABLE_CATEGORY, null, values);
         if (catid > 0)
-            notifyUpdated(UpdateType.CATEGORY_TABLE);
+            mLm.notifyIndirect(UpdateType.CATEGORY_TABLE);
         return catid;
     }
 
@@ -559,7 +501,7 @@ UnexpectedExceptionHandler.TrackedModule {
                              ColumnCategory.ID.getName() + " = " + id,
                              null);
         if (nr > 0)
-            notifyUpdated(UpdateType.CATEGORY_TABLE);
+            mLm.notifyIndirect(UpdateType.CATEGORY_TABLE);
         return nr;
     }
 
@@ -569,7 +511,7 @@ UnexpectedExceptionHandler.TrackedModule {
                               ColumnCategory.NAME.getName() + " = " + DatabaseUtils.sqlEscapeString(name),
                               null);
         if (nr > 0)
-            notifyUpdated(UpdateType.CATEGORY_TABLE);
+            mLm.notifyIndirect(UpdateType.CATEGORY_TABLE);
         return nr;
     }
 
@@ -640,8 +582,8 @@ UnexpectedExceptionHandler.TrackedModule {
     insertChannel(ContentValues values) {
         long cid = mDb.insert(TABLE_CHANNEL, null, values);
         if (cid > 0) {
-            notifyUpdated(UpdateType.CHANNEL_TABLE);
-            notifyUpdated(UpdateType.CHANNEL_DATA, cid);
+            mLm.notifyIndirect(UpdateType.CHANNEL_TABLE);
+            mLm.notifyIndirect(UpdateType.CHANNEL_DATA, cid);
         }
         return cid;
     }
@@ -661,7 +603,7 @@ UnexpectedExceptionHandler.TrackedModule {
                             ColumnChannel.ID.getName() + " = " + cid,
                             null);
         if (nr > 0)
-            notifyUpdated(UpdateType.CHANNEL_DATA, cid);
+            mLm.notifyIndirect(UpdateType.CHANNEL_DATA, cid);
         return nr;
     }
 
@@ -730,7 +672,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         if (where.equals(ColumnChannel.ID)) {
             for (Object o : whereValues)
-                notifyUpdated(UpdateType.CHANNEL_DATA, o);
+                mLm.notifyIndirect(UpdateType.CHANNEL_DATA, o);
         }
     }
 
@@ -866,11 +808,11 @@ UnexpectedExceptionHandler.TrackedModule {
         // channel is deleted (NOT updated!)
         // So, notifyUpdated SHOULD NOT be called for deleted channel!
         if (nrItems > 0)
-            notifyUpdated(UpdateType.ITEM_TABLE);
+            mLm.notifyIndirect(UpdateType.ITEM_TABLE);
 
         // channel table is updated.
         if (nr > 0)
-            notifyUpdated(UpdateType.CHANNEL_TABLE);
+            mLm.notifyIndirect(UpdateType.CHANNEL_TABLE);
 
         return nrItems;
     }
@@ -891,7 +833,7 @@ UnexpectedExceptionHandler.TrackedModule {
     insertItem(ContentValues values) {
         long id = mDb.insert(TABLE_ITEM, null, values);
         if (id > 0)
-            notifyUpdated(UpdateType.ITEM_TABLE);
+            mLm.notifyIndirect(UpdateType.ITEM_TABLE);
         return id;
     }
 
@@ -1101,7 +1043,7 @@ UnexpectedExceptionHandler.TrackedModule {
                             wh.isEmpty()? null: wh,
                             null);
         if (nr > 0)
-            notifyUpdated(UpdateType.ITEM_TABLE);
+            mLm.notifyIndirect(UpdateType.ITEM_TABLE);
         return nr;
     }
 
@@ -1241,7 +1183,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // And any other channel value is not changed too.
         // So, DB doesn't need to notify that "channel is changed".
         if (nr > 0)
-            notifyUpdated(UpdateType.ITEM_TABLE);
+            mLm.notifyIndirect(UpdateType.ITEM_TABLE);
 
         return nr;
     }

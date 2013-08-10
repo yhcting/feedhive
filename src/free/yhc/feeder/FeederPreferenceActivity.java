@@ -28,7 +28,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -37,9 +37,6 @@ SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FeederPreferenceActivity.class);
-
-    private final UIPolicy      mUip = UIPolicy.get();
-    private final LookAndFeel   mLnf = LookAndFeel.get();
 
     private String mAppRootOld = null;
 
@@ -52,16 +49,16 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals(UIPolicy.PREF_KEY_APP_ROOT)) {
-            String appRoot = sharedPreferences.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
+        if (key.equals(Environ.PREF_KEY_APP_ROOT)) {
+            String appRoot = sharedPreferences.getString(Environ.PREF_KEY_APP_ROOT, null);
             File appRootFile = new File(appRoot);
             if (!appRootFile.canWrite()) {
-                mLnf.showTextToast(this, R.string.warn_file_access_denied);
+                UiHelper.showTextToast(this, R.string.warn_file_access_denied);
                 SharedPreferences.Editor prefEd = sharedPreferences.edit();
-                prefEd.putString(UIPolicy.PREF_KEY_APP_ROOT, mAppRootOld);
+                prefEd.putString(Environ.PREF_KEY_APP_ROOT, mAppRootOld);
                 prefEd.apply();
             } else {
-                mUip.setAppDirectories(appRoot);
+                Environ.get().setAppDirectories(appRoot);
                 mAppRootOld = appRoot;
             }
         }
@@ -74,7 +71,7 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preference);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        mAppRootOld = prefs.getString(UIPolicy.PREF_KEY_APP_ROOT, null);
+        mAppRootOld = prefs.getString(Environ.PREF_KEY_APP_ROOT, null);
         prefs.registerOnSharedPreferenceChangeListener(this);
         eAssert(null != mAppRootOld);
     }

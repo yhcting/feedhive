@@ -42,26 +42,20 @@ OnSharedPreferenceChangeListener {
     public  static final String REPORT_RECEIVER         = "yhcting77@gmail.com";
     public  static final String FEEDBACK_REPORT_SUBJECT = "[FeedHive] Feedback Report.";
 
+    private static final long   USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
     private static final String ERR_REPORT_SUBJECT      = "[FeedHive] Exception Report.";
     private static final String USAGE_REPORT_SUBJECT    = "[FeedHive] Usage Report.";
     private static final String TIME_STAMP_FILE_SUFFIX  = "____tmstamp___";
 
     private static UsageReport sInstance = null;
 
-    // Dependency on only following modules are allowed
-    // - Utils
-    // - UnexpectedExceptionHandler
-    // - DB / DBThread
-    // - UIPolicy
-    // - DBPolicy
-    // - RTTask
-    private final UIPolicy mUip = UIPolicy.get();
+    private final Environ mEnv = Environ.get();
 
     private boolean mErrReportEnabled = true;
     private boolean mUsageReportEnabled = true;
 
     private UsageReport() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Utils.getAppContext());
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
         prefs.registerOnSharedPreferenceChangeListener(this);
         onSharedPreferenceChanged(prefs, "err_report");
         onSharedPreferenceChanged(prefs, "usage_report");
@@ -160,7 +154,7 @@ OnSharedPreferenceChangeListener {
     storeErrReport(String report) {
         if (!mErrReportEnabled)
             return;
-        storeReport(mUip.getErrLogFile(), report);
+        storeReport(mEnv.getErrLogFile(), report);
     }
 
     /**
@@ -171,29 +165,29 @@ OnSharedPreferenceChangeListener {
     sendErrReportMail(Context context) {
         if (!mErrReportEnabled)
             return;
-        sendReportMail(context, mUip.getErrLogFile(), R.string.send_err_report, ERR_REPORT_SUBJECT);
+        sendReportMail(context, mEnv.getErrLogFile(), R.string.send_err_report, ERR_REPORT_SUBJECT);
     }
 
     public void
     storeUsageReport(String report) {
         if (!mUsageReportEnabled)
             return;
-        storeReport(mUip.getUsageLogFile(), report);
+        storeReport(mEnv.getUsageLogFile(), report);
     }
 
     public void
     sendUsageReportMail(Context context) {
         if (!mUsageReportEnabled)
             return;
-        File f = mUip.getUsageLogFile();
+        File f = mEnv.getUsageLogFile();
         File tmstamp = getTimeStampFile(f);
         long tmPassed = 0;
         if (tmstamp.exists())
             tmPassed = System.currentTimeMillis() - tmstamp.lastModified();
-        if (UIPolicy.USAGE_INFO_UPDATE_PERIOD > tmPassed)
+        if (USAGE_INFO_UPDATE_PERIOD > tmPassed)
             return; // time is not passed enough
 
-        sendReportMail(context, mUip.getUsageLogFile(), R.string.send_usage_report, USAGE_REPORT_SUBJECT);
+        sendReportMail(context, mEnv.getUsageLogFile(), R.string.send_usage_report, USAGE_REPORT_SUBJECT);
     }
 
     public boolean

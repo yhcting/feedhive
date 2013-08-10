@@ -142,7 +142,7 @@ UncaughtExceptionHandler {
     }
 
     private UnexpectedExceptionHandler() {
-        setEnvironmentInfo(Utils.getAppContext());
+        setEnvironmentInfo(Environ.getAppContext());
     }
     // ========================
     // Publics

@@ -79,13 +79,13 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
             // acquire wakelock/wifilock if needed
             if (0 != (OPT_WAKELOCK & mOpt)) {
                 //logI("< WakeLock >" + WLTAG + mNick + " <<<<<< acquire");
-                mWl = ((PowerManager)Utils.getAppContext().getSystemService(Context.POWER_SERVICE))
+                mWl = ((PowerManager)Environ.getAppContext().getSystemService(Context.POWER_SERVICE))
                         .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG + getName());
                 mWl.acquire();
             }
 
             if (0 != (OPT_WIFILOCK & mOpt)) {
-                mWfl = ((WifiManager)Utils.getAppContext().getSystemService(Context.WIFI_SERVICE))
+                mWfl = ((WifiManager)Environ.getAppContext().getSystemService(Context.WIFI_SERVICE))
                         .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG + getName());
                 mWfl.acquire();
             }

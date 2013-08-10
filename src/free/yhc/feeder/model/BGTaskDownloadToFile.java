@@ -71,9 +71,9 @@ public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Objec
         Err result = Err.NO_ERR;
         try {
             mLoader.downloadToFile(arg.url,
-                    arg.tempFile,
-                    arg.toFile,
-                    new NetLoader.OnProgress() {
+                                   arg.tempFile,
+                                   arg.toFile,
+                                   new NetLoader.OnProgress() {
                 @Override
                 public void
                 onProgress(NetLoader loader, long prog) {

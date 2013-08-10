@@ -25,8 +25,9 @@ import android.content.res.Configuration;
 import free.yhc.feeder.appwidget.ViewsService;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.model.ContentsManager;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.UsageReport;
 import free.yhc.feeder.model.Utils;
@@ -49,20 +50,24 @@ public class FeederApp extends Application {
         // NOTE
         // Order is important
 
-        // Utils.init() SHOULD be called before calling other init() functions,
+        // Initialize Environment
+        Environ.init(getApplicationContext());
+        Environ.get();
+
+        // Utils.init() SHOULD be called before initializing other modules.
         //   because Utils has application context and offer it to other modules.
         // And most modules uses application context in it's early stage - ex. constructor.
-        Utils.init(getApplicationContext());
+        Utils.init();
+        Utils.cleanTempFiles();
 
         // register default customized uncaught exception handler for error collecting.
         Thread.setDefaultUncaughtExceptionHandler(UnexpectedExceptionHandler.get());
 
         DB.get().open();
-        UIPolicy.get();
+        ContentsManager.get();
         DBPolicy.get();
         RTTask.get();
         UsageReport.get();
-        LookAndFeel.get();
         NotiManager.get();
 
         // To connect to app widgets

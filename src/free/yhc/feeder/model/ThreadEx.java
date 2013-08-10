@@ -225,11 +225,11 @@ public abstract class ThreadEx<R> {
     }
 
     public ThreadEx(String name, int priority) {
-        this(name, Utils.getUiHandler(), priority);
+        this(name, Environ.getUiHandler(), priority);
     }
 
     public ThreadEx(int priority) {
-        this(DEFAULT_THREAD_NAME, Utils.getUiHandler(), priority);
+        this(DEFAULT_THREAD_NAME, Environ.getUiHandler(), priority);
     }
 
     public ThreadEx(Handler owner) {
@@ -237,7 +237,7 @@ public abstract class ThreadEx<R> {
     }
 
     public ThreadEx() {
-        this(DEFAULT_THREAD_NAME, Utils.getUiHandler(), PRIORITY_MIDLOW);
+        this(DEFAULT_THREAD_NAME, Environ.getUiHandler(), PRIORITY_MIDLOW);
     }
 
     public final String

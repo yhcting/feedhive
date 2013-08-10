@@ -42,6 +42,7 @@ import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -198,7 +199,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // try after 500 ms with same runnable instance.
             if (!ScheduledUpdateService.isEnabled()) {
                 //logI("runStartCommand --- POST!!!");
-                Utils.getUiHandler().postDelayed(this, RETRY_DELAY);
+                Environ.getUiHandler().postDelayed(this, RETRY_DELAY);
             } else
                 runStartCommand(_mIntent, _mFlags, _mStartId);
         }
@@ -300,9 +301,9 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, we don't need to synchronize it!
         eAssert(mWlcnt >= 0);
         if (null == mWl) {
-            mWl = ((PowerManager)Utils.getAppContext().getSystemService(Context.POWER_SERVICE))
+            mWl = ((PowerManager)Environ.getAppContext().getSystemService(Context.POWER_SERVICE))
                     .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
-            mWfl = ((WifiManager)Utils.getAppContext().getSystemService(Context.WIFI_SERVICE))
+            mWfl = ((WifiManager)Environ.getAppContext().getSystemService(Context.WIFI_SERVICE))
                     .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG);
             //logI("ScheduledUpdateService : WakeLock created and aquired");
             mWl.acquire();
@@ -396,18 +397,19 @@ UnexpectedExceptionHandler.TrackedModule {
         c.close();
 
         if (nearestNext != invalidNearestNext) {
+            Context cxt = Environ.getAppContext();
             // convert into real time.
             nearestNext += calNow.getTimeInMillis();
-            Intent intent = new Intent(Utils.getAppContext(), AlarmReceiver.class);
+            Intent intent = new Intent(cxt, AlarmReceiver.class);
             intent.setAction(SCHEDUPDATE_INTENT_ACTION);
             intent.putExtra("time", nearestNext);
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            PendingIntent pIntent = PendingIntent.getBroadcast(Utils.getAppContext(),
+            PendingIntent pIntent = PendingIntent.getBroadcast(cxt,
                                                                0,
                                                                intent,
                                                                PendingIntent.FLAG_CANCEL_CURRENT);
             // Get the AlarmManager service
-            AlarmManager am = (AlarmManager)Utils.getAppContext().getSystemService(ALARM_SERVICE);
+            AlarmManager am = (AlarmManager)cxt.getSystemService(ALARM_SERVICE);
             am.set(AlarmManager.RTC_WAKEUP, nearestNext, pIntent);
             if (DBG) P.v("New nearest scheduled update is set! " + (nearestNext / 1000) + " sec.");
         }
@@ -562,7 +564,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             // try after some time again.
             if (!ScheduledUpdateService.isEnabled())
-                Utils.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
+                Environ.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
             else
                 runStartCommand(intent, flags, startId);
         } finally {

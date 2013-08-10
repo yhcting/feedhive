@@ -37,6 +37,8 @@ import android.os.Process;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
+import free.yhc.feeder.model.Environ;
+import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.RTTask.Action;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -56,8 +58,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // active notification set.
     private final HashSet<NotiType>     mAnset = new HashSet<NotiType>();
-    private final NotificationManager   mNm = (NotificationManager)Utils.getAppContext()
-                                                                        .getSystemService(Context.NOTIFICATION_SERVICE);
+    private final NotificationManager   mNm = (NotificationManager)Environ.getAppContext()
+                                                                   .getSystemService(Context.NOTIFICATION_SERVICE);
     private final TaskQListener         mTaskQListener = new TaskQListener();
     private final ChannUpdatedListener  mChannUpdatedListener = new ChannUpdatedListener();
 
@@ -90,21 +92,22 @@ UnexpectedExceptionHandler.TrackedModule {
 
         private Notification
         buildNotification() {
-            Resources res = Utils.getAppContext().getResources();
+            Context cxt = Environ.getAppContext();
+            Resources res = cxt.getResources();
             CharSequence textTitle = res.getText(_mTitle);
             CharSequence textDesc = res.getText(_mDesc);
 
-            Intent intent = new Intent(Utils.getAppContext(), NotiManager.NotiIntentReceiver.class);
+            Intent intent = new Intent(cxt, NotiManager.NotiIntentReceiver.class);
             intent.setAction(NOTI_INTENT_DELETE_ACTION);
             intent.putExtra("type", name());
-            PendingIntent piDelete = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent,
+            PendingIntent piDelete = PendingIntent.getBroadcast(cxt, 0, intent,
                                                                 PendingIntent.FLAG_UPDATE_CURRENT);
 
-            intent = new Intent(Utils.getAppContext(), FeederActivity.class);
+            intent = new Intent(cxt, FeederActivity.class);
             intent.setAction(Intent.ACTION_MAIN);
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            PendingIntent piContent = PendingIntent.getActivity(Utils.getAppContext(), 0, intent, 0);
-            Notification.Builder nbldr = new Notification.Builder(Utils.getAppContext());
+            PendingIntent piContent = PendingIntent.getActivity(cxt, 0, intent, 0);
+            Notification.Builder nbldr = new Notification.Builder(cxt);
             nbldr.setSmallIcon(_mIcon)
                  .setTicker(textTitle)
                  .setContentTitle(textTitle)
@@ -244,19 +247,19 @@ UnexpectedExceptionHandler.TrackedModule {
                     else
                         mNewItemChannSet.remove(cid);
                 }
-                Utils.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
+                Environ.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
             } break;
 
             case NEW:
                 for (Long cid : _mCids)
                     mNewItemChannSet.add(cid);
-                Utils.getUiHandler().post(new PostNewItemChecker(true));
+                Environ.getUiHandler().post(new PostNewItemChecker(true));
                 break;
 
             case READ:
                 for (Long cid : _mCids)
                     mNewItemChannSet.remove(cid);
-                Utils.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
+                Environ.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
                 break;
             }
         }
@@ -304,19 +307,24 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class ChannUpdatedListener implements DBPolicy.OnChannelUpdatedListener {
+    private class ChannUpdatedListener implements ListenerManager.Listener {
         @Override
         public void
-        onNewItemsUpdated(long cid, int nrNewItems) {
-            //logI("NotiManager : NewItemsUpdated");
-            mBgWorkHandler.post(new NewItemChecker(new long[] { cid }, NewItemCheckCmd.NEW));
-        }
+        onNotify(Object user, ListenerManager.Type type, Object a0, Object a1) {
+            if (DBG) P.i("NotiManager : Noty : " + ((DBPolicy.UpdateType)type).name());
+            switch ((DBPolicy.UpdateType)type) {
+            case NEW_ITEMS: {
+                long cid = (Long)a0;
+                mBgWorkHandler.post(new NewItemChecker(new long[] { cid }, NewItemCheckCmd.NEW));
+            } break;
 
-        @Override
-        public void
-        onLastItemIdUpdated(long[] cids) {
-            //logI("NotiManager : LastItemIdUpdated");
-            mBgWorkHandler.post(new NewItemChecker(cids, NewItemCheckCmd.READ));
+            case LAST_ITEM_ID: {
+                long[] cids = (long[])a0;
+                mBgWorkHandler.post(new NewItemChecker(cids, NewItemCheckCmd.READ));
+            } break;
+            default:
+                Utils.eAssert(false);
+            }
         }
     }
 

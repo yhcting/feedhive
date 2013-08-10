@@ -54,7 +54,6 @@ public class NetLoader {
     private static final int NET_RETRY = 3;
     private static final int NET_CONN_TIMEOUT = 5000;
 
-    private final UIPolicy  mUip = UIPolicy.get();
     private final DBPolicy  mDbp = DBPolicy.get();
 
     private volatile boolean        mCancelled = false;
@@ -318,9 +317,9 @@ public class NetLoader {
         // But, rarely whole channel item type may be changed and requires different action.
         // So, whenever update is executed try to adjust 'action' type.
         long oldAction = mDbp.getChannelInfoLong(cid, ColumnChannel.ACTION);
-        long action = mUip.decideActionType(oldAction,
-                                            parD.channel,
-                                            parD.items.length > 0? parD.items[0]: null);
+        long action = FeedPolicy.decideActionType(oldAction,
+                                                  parD.channel,
+                                                  parD.items.length > 0? parD.items[0]: null);
         if (action != oldAction)
             mDbp.updateChannel(cid, ColumnChannel.ACTION, action);
 
@@ -371,12 +370,12 @@ public class NetLoader {
             idop = new DBPolicy.ItemDataOpInterface() {
                 @Override
                 public File getFile(Feed.Item.ParD parD) throws FeederException {
-                    String url = mUip.getDynamicActionTargetUrl(chact, parD.link, parD.enclosureUrl);
+                    String url = FeedPolicy.getDynamicActionTargetUrl(chact, parD.link, parD.enclosureUrl);
                     if (!Utils.isValidValue(url))
                         return null;
 
-                    File f = mUip.getNewTempFile();
-                    downloadToFile(url, mUip.getNewTempFile(), f, null);
+                    File f = Utils.getNewTempFile();
+                    downloadToFile(url, Utils.getNewTempFile(), f, null);
                     return f;
                 }
             };

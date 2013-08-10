@@ -21,7 +21,6 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
-
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.AlertDialog;
@@ -44,15 +43,17 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
-import free.yhc.feeder.LookAndFeel.EditTextDialogAction;
+import free.yhc.feeder.UiHelper.ConfirmDialogAction;
+import free.yhc.feeder.UiHelper.EditTextDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.model.ContentsManager;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.UsageReport;
 import free.yhc.feeder.model.Utils;
@@ -66,11 +67,9 @@ UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int REQC_PICK_PREDEFINED_CHANNEL  = 1;
 
-    private final UIPolicy      mUip = UIPolicy.get();
     private final DBPolicy      mDbp = DBPolicy.get();
     private final RTTask        mRtt = RTTask.get();
     private final UsageReport   mUr  = UsageReport.get();
-    private final LookAndFeel   mLnf = LookAndFeel.get();
 
     private ActionBar                   mAb             = null;
     private ViewPager                   mPager          = null;
@@ -83,7 +82,7 @@ UnexpectedExceptionHandler.TrackedModule {
         long         categoryid;
     }
 
-    private static class DBWatcher implements DB.OnDBUpdatedListener {
+    private static class DBWatcher implements ListenerManager.Listener {
         // NOTE
         // Comparing with "ChannelListFragment" and "ItemListActivity", initial value of
         //   _mCategoryTableUpdated is 'false'
@@ -114,7 +113,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
+        onNotify(Object user, ListenerManager.Type type, Object arg0, Object arg1) {
             if (DB.UpdateType.CATEGORY_TABLE == type)
                 _mCategoryTableUpdated = true;
             else
@@ -153,19 +152,19 @@ UnexpectedExceptionHandler.TrackedModule {
                 return Err.NO_ERR;
             }
 
-            boolean bOk = true;
+            long[] cids = new long[c.getCount()];
+            int i = 0;
             do {
-                if (!mUip.cleanChannelDir(c.getLong(0)))
-                    bOk = false;
+                cids[i++] = c.getLong(0);
             } while (c.moveToNext());
-            return bOk? Err.NO_ERR: Err.IO_FILE;
+            return ContentsManager.get().cleanChannelDirs(cids)? Err.NO_ERR: Err.IO_FILE;
         }
 
         @Override
         public void
         onPostExecute(DiagAsyncTask task, Err result) {
             if (Err.NO_ERR != result)
-                mLnf.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
+                UiHelper.showTextToast(ChannelListActivity.this, R.string.delete_all_downloaded_file_errmsg);
         }
     }
 
@@ -291,7 +290,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        mLnf.buildOneLineEditTextDialog(this, item.getTitle(), action).show();
+        UiHelper.buildOneLineEditTextDialog(this, item.getTitle(), action).show();
     }
 
     private void
@@ -333,7 +332,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        mLnf.buildOneLineEditTextDialog(this, R.string.channel_url, action).show();
+        UiHelper.buildOneLineEditTextDialog(this, R.string.channel_url, action).show();
     }
 
     private void
@@ -351,13 +350,13 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (0 > mAb.getSelectedNavigationIndex()) {
-            mLnf.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
+            UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
             return;
         }
 
         if (!Utils.isNetworkAvailable()) {
             // TODO Handling error
-            mLnf.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
+            UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
             return;
         }
 
@@ -400,11 +399,11 @@ UnexpectedExceptionHandler.TrackedModule {
             onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
                 if (mDbp.isDuplicatedCategoryName(name)) {
-                    mLnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                    UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
                     Feed.Category cat = new Feed.Category(name);
                     if (0 > mDbp.insertCategory(cat))
-                        mLnf.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
+                        UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
                     else {
                         eAssert(cat.id >= 0);
                         addCategory(cat);
@@ -412,7 +411,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         };
-        mLnf.buildOneLineEditTextDialog(this, R.string.add_category, action).show();
+        UiHelper.buildOneLineEditTextDialog(this, R.string.add_category, action).show();
     }
 
     private void
@@ -429,14 +428,14 @@ UnexpectedExceptionHandler.TrackedModule {
             onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
                 if (mDbp.isDuplicatedCategoryName(name)) {
-                    mLnf.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                    UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
                 } else {
                     mAb.getSelectedTab().setText(name);
                     mDbp.updateCategory(getCurrentCategoryId(), name);
                 }
             }
         };
-        mLnf.buildOneLineEditTextDialog(this, R.string.rename_category, action).show();
+        UiHelper.buildOneLineEditTextDialog(this, R.string.rename_category, action).show();
     }
 
     private void
@@ -444,7 +443,7 @@ UnexpectedExceptionHandler.TrackedModule {
         final long categoryid = getCurrentCategoryId();
         if (DBG) P.v("onOpt_category_delete : category(" + categoryid + ")");
         if (mDbp.isDefaultCategoryId(categoryid)) {
-            mLnf.showTextToast(this, R.string.warn_delete_default_category);
+            UiHelper.showTextToast(this, R.string.warn_delete_default_category);
             return;
         }
 
@@ -458,7 +457,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 deleteCategory(categoryid);
             }
         };
-        mLnf.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
+        UiHelper.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
     }
 
     private void
@@ -518,7 +517,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onOpt_management_deleteAllDnFiles(final View anchor) {
         // check constraints
         if (mRtt.getItemsDownloading().length > 0) {
-            mLnf.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
+            UiHelper.showTextToast(ChannelListActivity.this, R.string.del_dnfiles_not_allowed_msg);
             return;
         }
 
@@ -534,7 +533,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        mLnf.buildConfirmDialog(this,
+        UiHelper.buildConfirmDialog(this,
                                        R.string.delete_all_downloaded_file,
                                        R.string.delete_all_downloaded_file_msg,
                                        action)
@@ -544,12 +543,12 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_management_feedbackOpinion(final View anchor) {
         if (!Utils.isNetworkAvailable()) {
-            mLnf.showTextToast(this, R.string.warn_network_unavailable);
+            UiHelper.showTextToast(this, R.string.warn_network_unavailable);
             return;
         }
 
         if (!mUr.sendFeedbackReportMain(this))
-            mLnf.showTextToast(this, R.string.warn_find_email_app);
+            UiHelper.showTextToast(this, R.string.warn_find_email_app);
     }
 
     private void
@@ -608,13 +607,13 @@ UnexpectedExceptionHandler.TrackedModule {
                .append(getResources().getText(R.string.about_app_email)).append("\n")
                .append(getResources().getText(R.string.about_app_blog)).append("\n")
                .append(getResources().getText(R.string.about_app_page)).append("\n");
-        AlertDialog diag = mLnf.createAlertDialog(this, 0, title, strbldr.toString());
+        AlertDialog diag = UiHelper.createAlertDialog(this, 0, title, strbldr.toString());
         diag.show();
     }
 
     private void
     onOpt_information_license(final View anchor) {
-        View v = mLnf.inflateLayout(this, R.layout.info_dialog);
+        View v = UiHelper.inflateLayout(this, R.layout.info_dialog);
         TextView tv = ((TextView)v.findViewById(R.id.text));
         tv.setTypeface(Typeface.MONOSPACE);
         tv.setText(R.string.license_desc);
@@ -658,7 +657,7 @@ UnexpectedExceptionHandler.TrackedModule {
         final String iconurl = data.getStringExtra("iconurl");
         // NOTE
         // Without using 'post', user may feel bad ui response.
-        Utils.getUiHandler().post(new Runnable() {
+        Environ.getUiHandler().post(new Runnable() {
             @Override
             public void
             run() {

@@ -43,11 +43,11 @@ import android.widget.ProgressBar;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BGTaskDownloadToFile;
+import free.yhc.feeder.model.BGTaskDownloadToItemContent;
 import free.yhc.feeder.model.BaseBGTask;
+import free.yhc.feeder.model.ContentsManager;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -58,10 +58,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static final int RESULT_DOWNLOAD = 1;
 
-    private final UIPolicy      mUip = UIPolicy.get();
     private final DBPolicy      mDbp = DBPolicy.get();
+    private final ContentsManager mCm = ContentsManager.get();
     private final RTTask        mRtt = RTTask.get();
-    private final LookAndFeel   mLnf = LookAndFeel.get();
 
     private long        mId      = -1;
     private String      mNetUrl  = "";
@@ -143,10 +142,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     startDownload() {
-        BGTaskDownloadToFile dnTask
-            = new BGTaskDownloadToFile(new BGTaskDownloadToFile.Arg(mNetUrl,
-                                                                    mDbp.getItemInfoDataFile(mId),
-                                                                    mUip.getNewTempFile()));
+        BGTaskDownloadToItemContent dnTask
+            = new BGTaskDownloadToItemContent(mNetUrl, mId);
         mRtt.register(mId, RTTask.Action.DOWNLOAD, dnTask);
         mRtt.start(mId, RTTask.Action.DOWNLOAD);
     }
@@ -159,7 +156,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     notifyResult() {
         Err result = mRtt.getErr(mId, RTTask.Action.DOWNLOAD);
-        mLnf.showTextToast(ItemViewActivity.this, result.getMsgId());
+        UiHelper.showTextToast(ItemViewActivity.this, result.getMsgId());
         mRtt.consumeResult(mId, RTTask.Action.DOWNLOAD);
         setupLayout();
     }
@@ -202,7 +199,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     }
                 });
             } else {
-                if (mDbp.getItemInfoDataFile(mId).exists()) {
+                if (mCm.getItemInfoDataFile(mId).exists()) {
                     ItemViewActivity.this.findViewById(R.id.imgbtn).setVisibility(View.GONE);
                 } else {
                     imgbtn.setImageResource(R.drawable.download_anim0);
@@ -236,7 +233,7 @@ UnexpectedExceptionHandler.TrackedModule {
             imgbtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mLnf.showTextToast(ItemViewActivity.this, R.string.wait_cancel);
+                    UiHelper.showTextToast(ItemViewActivity.this, R.string.wait_cancel);
                 }
             });
             break;
@@ -296,7 +293,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // NOTE
         // There is no use case that 'null == f' here!
-        File f = mDbp.getItemInfoDataFile(mId);
+        File f = mCm.getItemInfoDataFile(mId);
         eAssert(null != f);
         mNetUrl = mDbp.getItemInfoString(mId, ColumnItem.LINK);
         mFileUrl = "file:///" + f.getAbsolutePath();

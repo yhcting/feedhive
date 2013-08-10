@@ -48,6 +48,7 @@ import android.widget.TextView;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.AssetSQLiteHelper;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -221,7 +222,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     requestRefreshList() {
-        Utils.getUiHandler().post(new Runnable() {
+        Environ.getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 boolean needRefresh = false;

@@ -39,6 +39,7 @@ import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BaseBGTask;
+import free.yhc.feeder.model.ContentsManager;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -263,7 +264,7 @@ AsyncCursorAdapter.ItemBuilder {
             // This runs on background thread.
             // So, assert on this thread doesn't stop application and reporting bug.
             // Therefore, this should be endurable for unexpected result.
-            File df = mDbp.getItemInfoDataFile(i.id);
+            File df = ContentsManager.get().getItemInfoDataFile(i.id);
             i.hasDnFile = null != df && df.exists();
 
             int cidx = c.getColumnIndex(ColumnItem.CHANNELID.getName());

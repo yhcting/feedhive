@@ -31,6 +31,7 @@ import android.widget.RemoteViewsService;
 import free.yhc.feeder.AppWidgetCategoryChooserActivity;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -62,7 +63,7 @@ UnexpectedExceptionHandler.TrackedModule {
             final int pos = intent.getIntExtra(AppWidgetUtils.MAP_KEY_POSITION, AppWidgetUtils.INVALID_POSITION);
             final long id = intent.getLongExtra(AppWidgetUtils.MAP_KEY_ITEMID, DB.INVALID_ITEM_ID);
             if (DBG) P.v("onReceive pending intent : pos : " + pos + " / id : " + id);
-            Utils.getUiHandler().post(new Runnable() {
+            Environ.getUiHandler().post(new Runnable() {
                 @Override
                 public void
                 run() {

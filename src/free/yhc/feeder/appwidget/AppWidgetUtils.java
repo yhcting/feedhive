@@ -27,6 +27,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
 import free.yhc.feeder.db.DB;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Utils;
 import free.yhc.feeder.model.Utils.Logger;
 
@@ -50,14 +51,14 @@ public class AppWidgetUtils {
 
     // AppWidget to Category Map.
     private static final SharedPreferences sMapPref
-        = Utils.getAppContext().getSharedPreferences(APPWIDGET_PREF_FILE, Context.MODE_PRIVATE);
+        = Environ.getAppContext().getSharedPreferences(APPWIDGET_PREF_FILE, Context.MODE_PRIVATE);
     private static final SharedPreferences.Editor sMapPrefEditor
         = sMapPref.edit();;
 
     static int[]
     getAppWidgetIds() {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(Utils.getAppContext());
-        ComponentName widget = new ComponentName(Utils.getAppContext(), Provider.class);
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(Environ.getAppContext());
+        ComponentName widget = new ComponentName(Environ.getAppContext(), Provider.class);
         return appWidgetManager.getAppWidgetIds(widget);
     }
 
@@ -94,6 +95,4 @@ public class AppWidgetUtils {
         sMapPrefEditor.putLong(String.valueOf(appWidgetId), categoryid);
         sMapPrefEditor.apply();
     }
-
-
 }

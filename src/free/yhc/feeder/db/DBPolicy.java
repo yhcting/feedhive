@@ -33,11 +33,12 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.os.Handler;
 import android.os.HandlerThread;
+import free.yhc.feeder.model.ContentsManager;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
+import free.yhc.feeder.model.FeedPolicy;
 import free.yhc.feeder.model.FeederException;
-import free.yhc.feeder.model.KeyBasedLinkedList;
-import free.yhc.feeder.model.UIPolicy;
+import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -60,6 +61,10 @@ public class DBPolicy implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(DBPolicy.class);
+
+    private static final long FLAG_NEW_ITEMS    = 0x1;
+    private static final long FLAG_LAST_ITEM_ID = 0x10;
+    private static final long FLAG_ALL          = FLAG_NEW_ITEMS | FLAG_LAST_ITEM_ID;
 
     // Checking duplication inside whole DB is very very inefficient.
     // It requires extremely frequent and heavy DB access.
@@ -84,11 +89,8 @@ UnexpectedExceptionHandler.TrackedModule {
     // - DB / DBThread
     // - UIPolicy
     private final DB        mDb     = DB.get();
-    private final UIPolicy  mUip    = UIPolicy.get();
     private final Handler   mAsyncHandler;
 
-    // Only for bug reporting.
-    private final LinkedList<String>  mWiredChannl = new LinkedList<String>();
     // Getting max item id of channel takes longer time than expected.
     // So, let's caching it.
     // It is used at very few places.
@@ -101,15 +103,31 @@ UnexpectedExceptionHandler.TrackedModule {
     //   it may take too long time because DB is continuously accessed by channel updater.
     // This may let user annoying.
     // So, this HACK is used!
-    private final AtomicInteger       mDelayedChannelUpdate = new AtomicInteger(0);
+    private final AtomicInteger     mDelayedChannelUpdate = new AtomicInteger(0);
 
-    private final KeyBasedLinkedList<OnChannelUpdatedListener> mChannUpdatedListenerl
-                        = new KeyBasedLinkedList<OnChannelUpdatedListener>();
+    private final ListenerManager   mLm = new ListenerManager();
 
     public interface OnChannelUpdatedListener {
         // Called back after updating channel in case that new items are newly inserted.
         void onNewItemsUpdated(long cid, int nrNewItems);
         void onLastItemIdUpdated(long[] cids);
+    }
+
+    public enum UpdateType implements ListenerManager.Type {
+        NEW_ITEMS       (FLAG_NEW_ITEMS),
+        LAST_ITEM_ID    (FLAG_LAST_ITEM_ID);
+
+        private final long _mFlag;
+
+        private UpdateType(long flag) {
+            _mFlag = flag;
+        }
+
+        @Override
+        public long
+        flag() {
+            return _mFlag;
+        }
     }
 
     public enum ItemDataType {
@@ -311,11 +329,6 @@ UnexpectedExceptionHandler.TrackedModule {
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         StringBuilder bldr = new StringBuilder("[ DBPolicy ]\n");
-        synchronized (mWiredChannl) {
-            Iterator<String> itr = mWiredChannl.iterator();
-            while (itr.hasNext())
-                bldr.append("  Wired Channel : " + itr.next() + "\n");
-        }
         return bldr.toString();
     }
 
@@ -369,35 +382,23 @@ UnexpectedExceptionHandler.TrackedModule {
     // Channel Event Listeners
     // ------------------------------------------------------
     public void
-    registerChannelUpdatedListener(Object key, OnChannelUpdatedListener listener) {
-        synchronized (mChannUpdatedListenerl) {
-            mChannUpdatedListenerl.addLast(key, listener);
-        }
+    registerChannelUpdatedListener(Object key, ListenerManager.Listener listener) {
+        mLm.registerListener(key, listener, null, FLAG_ALL);
     }
 
     public void
     unregisterChannelUpdatedListener(Object key) {
-        synchronized (mChannUpdatedListenerl) {
-            mChannUpdatedListenerl.remove(key);
-        }
+        mLm.unregisterListenerByKey(key);
     }
 
     private void
     notifyNewItemsUpdated(long cid, int nrNewItems) {
-        synchronized (mChannUpdatedListenerl) {
-            Iterator<OnChannelUpdatedListener> itr = mChannUpdatedListenerl.iterator();
-            while (itr.hasNext())
-                itr.next().onNewItemsUpdated(cid, nrNewItems);
-        }
+        mLm.notifyDirect(UpdateType.NEW_ITEMS, cid, nrNewItems);
     }
 
     private void
     notifyLastItemIdUpdated(long[] cids) {
-        synchronized (mChannUpdatedListenerl) {
-            Iterator<OnChannelUpdatedListener> itr = mChannUpdatedListenerl.iterator();
-            while (itr.hasNext())
-                itr.next().onLastItemIdUpdated(cids);
-        }
+        mLm.notifyIndirect(UpdateType.LAST_ITEM_ID, cids);
     }
 
     // ======================================================
@@ -578,7 +579,7 @@ UnexpectedExceptionHandler.TrackedModule {
         parD.title = profD.url;
         cid = mDb.insertChannel(buildNewChannelContentValues(profD, parD, dbD));
         // check duplication...
-        if (!mUip.makeChannelDir(cid)) {
+        if (!ContentsManager.get().makeChannelDir(cid)) {
             mDb.deleteChannel(ColumnChannel.ID, cid);
             throw new FeederException(Err.IO_FILE);
         }
@@ -733,7 +734,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             for (Feed.Item.ParD item : items) {
                 // ignore not-verified item
-                if (!mUip.verifyConstraints(item))
+                if (!FeedPolicy.verifyConstraints(item))
                     continue;
 
                 // -----------------------------------------------------------------------
@@ -879,7 +880,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     // NOTE
                     // At this moment, race-condition can be issued.
                     // But, as I mentioned above, it's not harmful and very rare case.
-                    if (!f.renameTo(getItemInfoDataFile(itemDbD.id)))
+                    if (!ContentsManager.get().addItemContent(f, itemDbD.id))
                         f.delete();
                 }
             } catch (FeederException e) {
@@ -1080,7 +1081,7 @@ UnexpectedExceptionHandler.TrackedModule {
             cols[i] = ColumnChannel.ID;
         long nr = mDb.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
         for (long cid : cids)
-            mUip.removeChannelDir(cid);
+            ContentsManager.get().removeChannelDir(cid);
         return nr;
     }
 
@@ -1368,79 +1369,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return v;
     }
 
-    /**
-     * Get file which contains data for given feed item.
-     * Usually, this file is downloaded from internet.
-     * (Ex. downloaded web page / downloaded mp3 etc)
-     * @param id
-     * @return
-     */
-    public File
-    getItemInfoDataFile(long id) {
-        return getItemInfoDataFile(id, -1, null, null);
-    }
-
-    // NOTE
-    // Why this parameter is given even if we can get from DB?
-    // This is only for performance reason!
-    // postfix : usually, extension;
-    /**
-     * NOTE
-     * Why these parameters - title, url - are given even if we can get from DB?
-     * This is only for performance reason!
-     * @param id
-     *   item id
-     * @param cid
-     *   channel id of this item. if '< 0', than value read from DB is used.
-     * @param title
-     *   title of this item. if '== null' or 'isEmpty()', than value read from DB is used.
-     * @param url
-     *   target url of this item. link or enclosure is possible.
-     *   if '== null' or is 'isEmpty()', then value read from DB is used.
-     * @return
-     */
-    public File
-    getItemInfoDataFile(long id, long cid, String title, String url) {
-        if (cid < 0)
-            cid = getItemInfoLong(id, ColumnItem.CHANNELID);
-
-        if (!Utils.isValidValue(title))
-            title = getItemInfoString(id, ColumnItem.TITLE);
-
-        if (!Utils.isValidValue(url)) {
-            long action = getChannelInfoLong(cid, ColumnChannel.ACTION);
-            String link = getItemInfoString(id, ColumnItem.LINK);
-            String enclosure = getItemInfoString(id, ColumnItem.ENCLOSURE_URL);
-            url = mUip.getDynamicActionTargetUrl(action, link, enclosure);
-        }
-
-        // we don't need to create valid filename with empty url value.
-        if (!Utils.isValidValue(url)) {
-            synchronized (mWiredChannl) {
-                mWiredChannl.add(getChannelInfoString(cid, ColumnChannel.URL));
-            }
-            return null;
-        }
-
-        String ext = Utils.getExtentionFromUrl(url);
-
-        // Title may include character that is not allowed as file name
-        // (ex. '/')
-        // Item is id is preserved even after update.
-        // So, item ID can be used as file name to match item and file.
-        String fname = Utils.convertToFilename(title) + "_" + id;
-        int endIndex = Utils.MAX_FILENAME_LENGTH - ext.length() - 1; // '- 1' for '.'
-        if (endIndex > fname.length())
-            endIndex = fname.length();
-
-        fname = fname.substring(0, endIndex);
-        fname = fname + '.' + ext;
-
-        // NOTE
-        //   In most UNIX file systems, only '/' and 'null' are reserved.
-        //   So, we don't worry about "converting string to valid file name".
-        return new File(mUip.getAppRootDirectoryPath() + cid + "/" + fname);
-    }
 
     public Cursor
     queryItem(ColumnItem[] columns) {
@@ -1630,12 +1558,12 @@ UnexpectedExceptionHandler.TrackedModule {
     //
     // ===============================================
     public void
-    registerUpdatedListener(DB.OnDBUpdatedListener listener, int flag) {
+    registerUpdatedListener(ListenerManager.Listener listener, long flag) {
         mDb.registerUpdatedListener(listener, flag);
     }
 
     public void
-    unregisterUpdatedListener(DB.OnDBUpdatedListener listener) {
+    unregisterUpdatedListener(ListenerManager.Listener listener) {
         mDb.unregisterUpdatedListener(listener);
     }
 }

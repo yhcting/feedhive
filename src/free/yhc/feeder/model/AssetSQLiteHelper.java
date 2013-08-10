@@ -64,9 +64,9 @@ public class AssetSQLiteHelper {
 
     public void
     open() {
-        File dbf = Utils.getAppContext().getDatabasePath(mDbName);
+        File dbf = Environ.getAppContext().getDatabasePath(mDbName);
         try {
-            InputStream is = Utils.getAppContext().getAssets().open(mAssetDBFile);
+            InputStream is = Environ.getAppContext().getAssets().open(mAssetDBFile);
             if (!dbf.exists()) {
                 FileOutputStream fos = new FileOutputStream(dbf);
                 // This is first time. Just copy it!

@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.view.KeyEvent;
 import android.view.View;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.ThreadEx;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -155,7 +156,7 @@ View.OnClickListener {
 
     public void
     publishMessage(final String message) {
-        Utils.getUiHandler().post(new Runnable() {
+        Environ.getUiHandler().post(new Runnable() {
             @Override
             public void
             run() {

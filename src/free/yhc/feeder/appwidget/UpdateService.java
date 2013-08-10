@@ -32,6 +32,7 @@ import android.os.IBinder;
 import android.widget.RemoteViews;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.DB;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.ThreadEx;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
@@ -50,7 +51,7 @@ UnexpectedExceptionHandler.TrackedModule {
         private Intent
         createBaseIntent(Class<?> rcvrCls, long catid, int awid,
                          String action) {
-            Intent i = new Intent(Utils.getAppContext(), rcvrCls);
+            Intent i = new Intent(Environ.getAppContext(), rcvrCls);
             // To tell "This is different intent from previous one!"
             i.setData(Uri.fromParts("content", String.valueOf(awid), null));
             i.putExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, catid);
@@ -99,7 +100,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 intent = createBaseIntent(ViewsService.ListPendingIntentReceiver.class,
                                           catid, awid,
                                           AppWidgetUtils.ACTION_LIST_PENDING_INTENT);
-                PendingIntent pi = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent, 0);
+                PendingIntent pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
                 rv.setPendingIntentTemplate(R.id.list, pi);
 
                 // Button action pending intent
@@ -107,7 +108,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 intent = createBaseIntent(ViewsService.ButtonPendingIntentReceiver.class,
                                           catid, awid,
                                           AppWidgetUtils.ACTION_BUTTON_PENDING_INTENT);
-                pi = PendingIntent.getBroadcast(Utils.getAppContext(), 0, intent, 0);
+                pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.btn, pi);
 
                 if (DBG) P.v("Update widget : " + awid);
@@ -146,7 +147,7 @@ UnexpectedExceptionHandler.TrackedModule {
     update(Context context, int[] appWidgetIds) {
         if (DBG) P.v("Update Widgets : Widget Ids : " + Utils.nrsToNString(appWidgetIds));
         // Build the intent to call the service
-        Intent intent = new Intent(Utils.getAppContext(), UpdateService.class);
+        Intent intent = new Intent(Environ.getAppContext(), UpdateService.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         // Update the widgets via the service
         context.startService(intent);

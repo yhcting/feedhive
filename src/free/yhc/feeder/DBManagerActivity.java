@@ -46,13 +46,13 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
+import free.yhc.feeder.UiHelper.ConfirmDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -66,10 +66,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final long  ID_ALL_CHANNEL   = -1;
     private static final int   POS_ALL_CHANNEL  = -1;
 
-    private final UIPolicy      mUip = UIPolicy.get();
     private final DBPolicy      mDbp = DBPolicy.get();
     private final RTTask        mRtt = RTTask.get();
-    private final LookAndFeel   mLnf = LookAndFeel.get();
 
     private String mExDBFilePath = null;
     private String mInDBFilePath = null;
@@ -110,8 +108,8 @@ UnexpectedExceptionHandler.TrackedModule {
         getView(int position, View convertView, ViewGroup parent) {
             View v = convertView;
             if (null == v) {
-                LayoutInflater li = (LayoutInflater)Utils.getAppContext()
-                                                         .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                LayoutInflater li = (LayoutInflater)Environ.getAppContext()
+                                                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 v = li.inflate(_mResId, null);
             }
             DBInfo.ChannInfo e = getItem(position);
@@ -177,7 +175,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     exportDBAsync() {
         if (!getExclusiveDBAccess()) {
-            mLnf.showTextToast(this, R.string.warn_db_in_use);
+            UiHelper.showTextToast(this, R.string.warn_db_in_use);
             return;
         }
 
@@ -201,7 +199,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onPostExecute(DiagAsyncTask task, Err result) {
                 if (result != Err.NO_ERR)
-                    mLnf.showTextToast(DBManagerActivity.this, result.getMsgId());
+                    UiHelper.showTextToast(DBManagerActivity.this, result.getMsgId());
 
                 putExclusiveDBAccess();
             }
@@ -224,7 +222,7 @@ UnexpectedExceptionHandler.TrackedModule {
     actionExportDB() {
         CharSequence title = getResources().getText(R.string.exportdb);
         CharSequence msg = getResources().getText(R.string.database) + " => " + mExDBFilePath;
-        mLnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        UiHelper.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 exportDBAsync();
@@ -245,32 +243,32 @@ UnexpectedExceptionHandler.TrackedModule {
         final String inDBBackupSuffix = "______backup";
         final File exDbf = new File(mExDBFilePath);
         if (!exDbf.exists()) {
-            mLnf.showTextToast(this, R.string.warn_exdb_access_denied);
+            UiHelper.showTextToast(this, R.string.warn_exdb_access_denied);
             return;
         }
 
         switch(verifyCandidateDB(exDbf)) {
         case VERSION_MISMATCH:
-            mLnf.showTextToast(this, R.string.warn_db_version_mismatch);
+            UiHelper.showTextToast(this, R.string.warn_db_version_mismatch);
             return;
 
         case NO_ERR:
             break;
 
         default:
-            mLnf.showTextToast(this, R.string.warn_exdb_not_compatible);
+            UiHelper.showTextToast(this, R.string.warn_exdb_not_compatible);
             return;
         }
 
         if (!getExclusiveDBAccess()) {
-            mLnf.showTextToast(this, R.string.warn_db_in_use);
+            UiHelper.showTextToast(this, R.string.warn_db_in_use);
             return;
         }
 
         final File inDbf = new File(mInDBFilePath);
         final File inDbfBackup = new File(inDbf.getAbsoluteFile() + inDBBackupSuffix);
         if (!inDbf.renameTo(inDbfBackup)) {
-            mLnf.showTextToast(this, Err.IO_FILE.getMsgId());
+            UiHelper.showTextToast(this, Err.IO_FILE.getMsgId());
             putExclusiveDBAccess();
             return;
         }
@@ -304,9 +302,9 @@ UnexpectedExceptionHandler.TrackedModule {
                     onDBChanged(ID_ALL_CHANNEL, 0);
                 } else {
                     if (inDbfBackup.renameTo(inDbf))
-                        mLnf.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
+                        UiHelper.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
                     else
-                        mLnf.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
+                        UiHelper.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
                 }
                 putExclusiveDBAccess();
             }
@@ -329,7 +327,7 @@ UnexpectedExceptionHandler.TrackedModule {
     actionImportDB() {
         CharSequence title = getResources().getText(R.string.importdb);
         CharSequence msg = getResources().getText(R.string.database) + " <= " + mExDBFilePath;
-        mLnf.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
+        UiHelper.buildConfirmDialog(this, title, msg, new ConfirmDialogAction() {
             @Override
             public void onOk(Dialog dialog) {
                 importDBAsync();
@@ -357,7 +355,8 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onPostExecute(DiagAsyncTask task, Err result) {
-                mLnf.showTextToast(DBManagerActivity.this, nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
+                UiHelper.showTextToast(DBManagerActivity.this,
+                                       nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
                 onDBChanged(cid, nr);
             }
 
@@ -511,7 +510,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         setContentView(R.layout.db_manager);
 
-        mExDBFilePath = mUip.getAppRootDirectoryPath()
+        mExDBFilePath = Environ.get().getAppRootDirectoryPath()
                         + getResources().getText(R.string.app_name) + ".db";
         mInDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
 

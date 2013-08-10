@@ -22,6 +22,7 @@ package free.yhc.feeder.appwidget;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,16 +32,19 @@ import android.database.Cursor;
 import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
-import free.yhc.feeder.LookAndFeel;
 import free.yhc.feeder.R;
+import free.yhc.feeder.UiHelper;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BaseBGTask;
+import free.yhc.feeder.model.ContentsManager;
+import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.ItemActionHandler;
+import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.RTTask;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
@@ -73,6 +77,7 @@ UnexpectedExceptionHandler.TrackedModule {
             ColumnItem.LINK };
 
     private final DBPolicy  mDbp = DBPolicy.get();
+    private final ContentsManager mCm = ContentsManager.get();
     private final RTTask    mRtt = RTTask.get();
     private final int       mAppWidgetId;
     private final DBWatcher         mDbWatcher;
@@ -82,9 +87,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private long[]  mCids = null;
     private AtomicReference<Cursor> mCursor = new AtomicReference<Cursor>(null);
 
-    private class DBWatcher implements
-    DB.OnDBUpdatedListener,
-    DBPolicy.OnChannelUpdatedListener {
+    private class DBWatcher implements ListenerManager.Listener {
         private final HashSet<Long> _mCidSet = new HashSet<Long>();
 
         private boolean
@@ -92,17 +95,28 @@ UnexpectedExceptionHandler.TrackedModule {
             return _mCidSet.contains(cid);
         }
 
+        private boolean
+        isInCategoryItem(long id) {
+            long cid = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
+            return isInCategory(cid);
+        }
+
         void
         register() {
             mDbp.registerUpdatedListener(this, DB.UpdateType.CHANNEL_DATA.flag()
                                                | DB.UpdateType.CHANNEL_TABLE.flag());
             mDbp.registerChannelUpdatedListener(this, this);
+            mCm.registerUpdatedListener(this, ContentsManager.UpdateType.ITEM_DATA.flag()
+                                              | ContentsManager.UpdateType.CHAN_DATA.flag()
+                                              | ContentsManager.UpdateType.CHANS_DATA.flag());
+
         }
 
         void
         unregister() {
             mDbp.unregisterUpdatedListener(this);
             mDbp.unregisterChannelUpdatedListener(this);
+            mCm.unregisterUpdatedListener(this);
         }
 
         void
@@ -114,43 +128,70 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onNewItemsUpdated(long cid, int nrNewItems) {
-            if (isInCategory(cid)
-                && nrNewItems > 0)
-                refreshItemList();
-        }
+        onNotify(Object user, ListenerManager.Type type, Object arg0, Object arg1) {
+            if (type instanceof DB.UpdateType) {
+                switch ((DB.UpdateType)type) {
+                case CHANNEL_DATA:
+                    long cid = (Long)arg0;
+                    // Check that number of channels in the category is changed.
+                    long catid = mDbp.getChannelInfoLong(cid, ColumnChannel.CATEGORYID);
+                    if (DBG) P.v("onDbUpdate : " + ((DB.UpdateType)type).name() + " : "
+                                                 + mAppWidgetId + ", "
+                                                 +  mCategoryId + ", " + catid + ", " + cid);
+                    if ((!isInCategory(cid) && catid == mCategoryId) // channel is newly inserted to this category.
+                        || (isInCategory(cid) && catid != mCategoryId)) { // channel is removed from this category.
+                        refreshItemList();
+                    }
+                    break;
 
-        @Override
-        public void
-        onLastItemIdUpdated(long[] cids) {
-            // ignore...
-        }
-
-        @Override
-        public void
-        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
-            switch (type) {
-            case CHANNEL_DATA:
-                long cid = (Long)arg0;
-                // Check that number of channels in the category is changed.
-                long catid = mDbp.getChannelInfoLong(cid, ColumnChannel.CATEGORYID);
-                if (DBG) P.v("onDbUpdate : " + type.name() + " : "
-                                             + mAppWidgetId + ", "
-                                             +  mCategoryId + ", " + catid + ", " + cid);
-                if ((!isInCategory(cid) && catid == mCategoryId) // channel is newly inserted to this category.
-                    || (isInCategory(cid) && catid != mCategoryId)) { // channel is removed from this category.
+                case CHANNEL_TABLE:
+                    // Channel may be deleted or newly inserted.
+                    // So, refresh item list forcely...
                     refreshItemList();
+                    break;
+
+                default:
+                    eAssert(false);
                 }
-                break;
+            } else if (type instanceof DBPolicy.UpdateType) {
+                switch ((DBPolicy.UpdateType)type) {
+                case NEW_ITEMS: {
+                    long cid = (Long)arg0;
+                    int nrNewItems = (Integer)arg1;
+                    if (isInCategory(cid)
+                            && nrNewItems > 0)
+                            refreshItemList();
+                } break;
 
-            case CHANNEL_TABLE:
-                // Channel may be deleted or newly inserted.
-                // So, refresh item list forcely...
-                refreshItemList();
-                break;
+                case LAST_ITEM_ID:
+                    break; // ignore
 
-            default:
-                eAssert(false);
+                default:
+                    assert(false);
+                }
+            } else if (type instanceof ContentsManager.UpdateType) {
+                switch ((ContentsManager.UpdateType)type) {
+                case ITEM_DATA:
+                    if (isInCategoryItem((Long)arg0))
+                        refreshItemList();
+                    break;
+
+                case CHAN_DATA:
+                    if (isInCategory((Long)arg0))
+                        refreshItemList();
+                    break;
+
+                case CHANS_DATA: {
+                    boolean in = false;
+                    for (long cid : (long[])arg0) {
+                        in = isInCategory(cid);
+                        if (in) {
+                            refreshItemList();
+                            break;
+                        }
+                    }
+                } break;
+                }
             }
         }
     }
@@ -234,7 +275,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     notifyDataSetChanged() {
-        AppWidgetManager awm = AppWidgetManager.getInstance(Utils.getAppContext());
+        AppWidgetManager awm = AppWidgetManager.getInstance(Environ.getAppContext());
         awm.notifyAppWidgetViewDataChanged(mAppWidgetId, R.id.list);
     }
 
@@ -286,7 +327,7 @@ UnexpectedExceptionHandler.TrackedModule {
             //   - Channel is deleted
             //   - App widget is NOT updated yet.
             //   - User select ALREADY-DELETED-ITEM
-            LookAndFeel.get().showTextToast(Utils.getAppContext(), R.string.warn_bad_request);
+            UiHelper.showTextToast(Environ.getAppContext(), R.string.warn_bad_request);
             return;
         }
 
@@ -341,7 +382,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //if (DBG) P.v("getViewAt : " + position);
         Cursor cur = mCursor.get();
         cur.moveToPosition(position);
-        RemoteViews rv = new RemoteViews(Utils.getAppContext().getPackageName(),
+        RemoteViews rv = new RemoteViews(Environ.getAppContext().getPackageName(),
                                          R.layout.appwidget_row);
         rv.setTextViewText(R.id.channel, mDbp.getChannelInfoString(cur.getLong(COLI_CHANNELID),
                                                                    ColumnChannel.TITLE));
@@ -349,31 +390,38 @@ UnexpectedExceptionHandler.TrackedModule {
         rv.setTextViewText(R.id.description, cur.getString(COLI_DESCRIPTION));
 
         long iid = cur.getLong(COLI_ID);
-        RTTask.TaskState dnState = mRtt.getState(iid, RTTask.Action.DOWNLOAD);
-        rv.setViewVisibility(R.id.image, View.VISIBLE);
-        switch(dnState) {
-        case IDLE:
-            rv.setViewVisibility(R.id.image, View.GONE);
-            break;
 
-        case READY:
-            rv.setImageViewResource(R.id.image, R.drawable.ic_pause);
-            break;
 
-        case RUNNING:
-            rv.setImageViewResource(R.id.image, R.drawable.ic_refresh);
-            break;
+        File df = ContentsManager.get().getItemInfoDataFile(iid);
+        if (null != df && df.exists())
+            rv.setImageViewResource(R.id.image, R.drawable.ic_save);
+        else {
+            RTTask.TaskState dnState = mRtt.getState(iid, RTTask.Action.DOWNLOAD);
+            rv.setViewVisibility(R.id.image, View.VISIBLE);
+            switch(dnState) {
+            case IDLE:
+                rv.setViewVisibility(R.id.image, View.GONE);
+                break;
 
-        case FAILED:
-            rv.setImageViewResource(R.id.image, R.drawable.ic_info);
-            break;
+            case READY:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_pause);
+                break;
 
-        case CANCELING:
-            rv.setImageViewResource(R.id.image, R.drawable.ic_block);
-            break;
+            case RUNNING:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_refresh);
+                break;
 
-        default:
-            eAssert(false);
+            case FAILED:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_info);
+                break;
+
+            case CANCELING:
+                rv.setImageViewResource(R.id.image, R.drawable.ic_block);
+                break;
+
+            default:
+                eAssert(false);
+            }
         }
 
         Intent ei = new Intent();
@@ -413,7 +461,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onDestroy() {
         // mDbWatcher.unregister SHOULD be called at UI context
         // See unregisterUpdatedListener at DB.java for details.
-        Utils.getUiHandler().post(new Runnable() {
+        Environ.getUiHandler().post(new Runnable() {
             @Override
             public void
             run() {

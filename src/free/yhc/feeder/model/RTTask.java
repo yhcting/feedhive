@@ -302,7 +302,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (r) {
-            Utils.getUiHandler().post(new Runnable() {
+            Environ.getUiHandler().post(new Runnable() {
                 @Override
                 public void
                 run() {
@@ -342,7 +342,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (!r || null == task)
             return false;
 
-        Utils.getUiHandler().post(new Runnable() {
+        Environ.getUiHandler().post(new Runnable() {
             @Override
             public void
             run() {

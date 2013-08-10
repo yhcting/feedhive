@@ -31,19 +31,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Toast;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
+import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.Utils;
 
-public class LookAndFeel implements
-UnexpectedExceptionHandler.TrackedModule {
+public class UiHelper {
     private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(LookAndFeel.class);
-
-    // Even if LookAndFeel looks like suitable for static class,
-    //   singleton is used because multiple instance may be used with high possibility at future.
-    private static LookAndFeel sInstance = null;
+    private static final Utils.Logger P = new Utils.Logger(UiHelper.class);
 
     public interface EditTextDialogAction {
         void prepare(Dialog dialog, EditText edit);
@@ -54,28 +51,8 @@ UnexpectedExceptionHandler.TrackedModule {
         void onOk(Dialog dialog);
     }
 
-    private LookAndFeel() {
-        // Dependency on only following modules are allowed
-        // - Utils
-        // - UnexpectedExceptionHandler
-        // - DB / DBThread
-        // - UIPolicy
-        // - DBPolicy
-        // - RTTask
-        UnexpectedExceptionHandler.get().registerModule(this);
-    }
-
-    public static LookAndFeel
-    get() {
-        if (null == sInstance)
-            sInstance = new LookAndFeel();
-        return sInstance;
-    }
-
-    @Override
-    public String
-    dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ LookAndFeel ]";
+    interface OnCategorySelectedListener {
+        void onSelected(long category, Object user);
     }
 
     /**
@@ -83,7 +60,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param context
      * @param root
      */
-    private void
+    private static void
     showToast(Context context, ViewGroup root) {
         Toast t = Toast.makeText(context, "", Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
@@ -91,27 +68,27 @@ UnexpectedExceptionHandler.TrackedModule {
         t.show();
     }
 
-    public View
+    public static View
     inflateLayout(Context context, int layout) {
         LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         return inflater.inflate(layout, null);
     }
 
-    public void
+    public static void
     showTextToast(Context context, String text) {
         Toast t = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.show();
     }
 
-    public void
+    public static void
     showTextToast(Context context, int textid) {
         Toast t = Toast.makeText(context, textid, Toast.LENGTH_SHORT);
         t.setGravity(Gravity.CENTER, 0, 0);
         t.show();
     }
 
-    public AlertDialog
+    public static AlertDialog
     createAlertDialog(Context context, int icon, CharSequence title, CharSequence message) {
         eAssert(null != title);
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -124,7 +101,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return dialog;
     }
 
-    public AlertDialog
+    public static AlertDialog
     createAlertDialog(Context context, int icon, int title, int message) {
         eAssert(0 != title);
         CharSequence t = context.getResources().getText(title);
@@ -132,19 +109,19 @@ UnexpectedExceptionHandler.TrackedModule {
         return createAlertDialog(context, icon, t, msg);
     }
 
-    public AlertDialog
+    public static AlertDialog
     createWarningDialog(Context context, CharSequence title, CharSequence message) {
         return createAlertDialog(context, R.drawable.ic_alert, title, message);
     }
 
-    public AlertDialog
+    public static AlertDialog
     createWarningDialog(Context context, int title, int message) {
         return createWarningDialog(context,
                                    context.getResources().getText(title),
                                    context.getResources().getText(message));
     }
 
-    public AlertDialog
+    public static AlertDialog
     createEditTextDialog(Context context, View layout, CharSequence title) {
         // Create "Enter Url" dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -156,12 +133,12 @@ UnexpectedExceptionHandler.TrackedModule {
         return dialog;
     }
 
-    public AlertDialog
+    public static AlertDialog
     createEditTextDialog(Context context, View layout, int title) {
         return createEditTextDialog(context, layout, context.getResources().getText(title));
     }
 
-    public AlertDialog
+    public static AlertDialog
     buildOneLineEditTextDialog(final Context context, final CharSequence title, final EditTextDialogAction action) {
         // Create "Enter Url" dialog
         View layout = inflateLayout(context, R.layout.oneline_editbox_dialog);
@@ -183,7 +160,7 @@ UnexpectedExceptionHandler.TrackedModule {
         });
         action.prepare(dialog, edit);
 
-        dialog.setButton(context.getResources().getText(R.string.ok),
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, context.getResources().getText(R.string.ok),
                          new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dia, int which) {
@@ -193,7 +170,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        dialog.setButton2(context.getResources().getText(R.string.cancel),
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, context.getResources().getText(R.string.cancel),
                           new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -203,18 +180,18 @@ UnexpectedExceptionHandler.TrackedModule {
         return dialog;
     }
 
-    public AlertDialog
+    public static AlertDialog
     buildOneLineEditTextDialog(final Context context, final int title, final EditTextDialogAction action) {
         return buildOneLineEditTextDialog(context, context.getResources().getText(title), action);
     }
 
-    public AlertDialog
+    public static AlertDialog
     buildConfirmDialog(final Context context,
                        final CharSequence title,
                        final CharSequence description,
                        final ConfirmDialogAction action) {
         final AlertDialog dialog = createAlertDialog(context, R.drawable.ic_info, title, description);
-        dialog.setButton(context.getResources().getText(R.string.yes),
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, context.getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface diag, int which) {
@@ -223,7 +200,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        dialog.setButton2(context.getResources().getText(R.string.no),
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, context.getResources().getText(R.string.no),
                           new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -233,7 +210,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return dialog;
     }
 
-    public AlertDialog
+    public static AlertDialog
     buildConfirmDialog(final Context context,
                        final int title,
                        final int description,
@@ -242,5 +219,53 @@ UnexpectedExceptionHandler.TrackedModule {
                                   context.getResources().getText(title),
                                   context.getResources().getText(description),
                                   action);
+    }
+
+    public static AlertDialog
+    selectCategoryDialog(final Context  context,
+                         final int      title,
+                         final OnCategorySelectedListener action,
+                         final long     catIdExcluded,
+                         final Object   user) {
+        // Create Adapter for list and set it.
+        DBPolicy dbp = DBPolicy.get();
+        Feed.Category[] cats = dbp.getCategories();
+
+        int nrExcluded = 0;
+        for (Feed.Category cat : cats) {
+            if (cat.id == catIdExcluded) {
+                nrExcluded = 1;
+                break;
+            }
+        }
+
+        final String[] menus = new String[cats.length - nrExcluded];
+        final long[] catIds = new long[cats.length - nrExcluded];
+        int i = 0;
+        for (Feed.Category cat : cats) {
+            if (cat.id != catIdExcluded) {
+                if (!Utils.isValidValue(cat.name)
+                    && dbp.isDefaultCategoryId(cat.id))
+                    menus[i] = context.getResources().getText(R.string.default_category_name).toString();
+                else
+                    menus[i] = cat.name;
+
+                catIds[i++] = cat.id;
+            }
+        }
+
+        AlertDialog.Builder bldr = new AlertDialog.Builder(context);
+        ArrayAdapter<String> adapter
+            = new ArrayAdapter<String>(context, android.R.layout.select_dialog_item, menus);
+        bldr.setAdapter(adapter, new DialogInterface.OnClickListener() {
+            @Override
+            public void
+            onClick(DialogInterface dialog, int which) {
+                action.onSelected(catIds[which], user);
+                dialog.dismiss();
+            }
+        });
+        bldr.setTitle(title);
+        return bldr.create();
     }
 }

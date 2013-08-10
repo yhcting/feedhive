@@ -48,18 +48,19 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
-import free.yhc.feeder.LookAndFeel.ConfirmDialogAction;
+import free.yhc.feeder.UiHelper.ConfirmDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
 import free.yhc.feeder.model.BaseBGTask;
+import free.yhc.feeder.model.ContentsManager;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
 import free.yhc.feeder.model.FeederException;
+import free.yhc.feeder.model.ListenerManager;
 import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UIPolicy;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -76,10 +77,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String KEY_PRIMARY     = "primary";
 
 
-    private final LookAndFeel   mLnf = LookAndFeel.get();
     private final DBPolicy      mDbp = DBPolicy.get();
     private final RTTask        mRtt = RTTask.get();
-    private final UIPolicy      mUip = UIPolicy.get();
 
     private DBWatcher mDbWatcher = null;
     private boolean mPrimary = false;
@@ -89,7 +88,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // Saved cid for Async execution.
     private long        mCidPickImage = -1;
 
-    private static class DBWatcher implements DB.OnDBUpdatedListener {
+    private static class DBWatcher implements ListenerManager.Listener {
         // NOTE
         // initial value should be 'true' because we don't know what happened to DB
         //   while this fragment instance DOESN'T exist!
@@ -126,8 +125,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onDbUpdated(DB.UpdateType type, Object arg0, Object arg1) {
-            switch (type) {
+        onNotify(Object user, ListenerManager.Type type, Object arg0, Object arg1) {
+            switch ((DB.UpdateType)type) {
             case CHANNEL_TABLE:
                 _mChannelTableUpdated = true;
                 break;
@@ -282,7 +281,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostExecute(DiagAsyncTask task, Err result) {
-            mLnf.showTextToast(getActivity(),
+            UiHelper.showTextToast(getActivity(),
                                _mNrDelItems + getResources().getString(R.string.channel_deleted_msg));
             for (long cid : _mCids)
                 ChannelListFragment.this.getAdapter().removeChannel(cid);
@@ -340,7 +339,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (Err.NO_ERR == result)
                 getAdapter().setChannelIcon(_mCid, _mBm);
             else
-                mLnf.showTextToast(getActivity(), result.getMsgId());
+                UiHelper.showTextToast(getActivity(), result.getMsgId());
         }
     }
 
@@ -458,13 +457,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         case FAILED: {
             Err result = mRtt.getErr(cid, RTTask.Action.UPDATE);
-            mLnf.showTextToast(getActivity(), result.getMsgId());
+            UiHelper.showTextToast(getActivity(), result.getMsgId());
             mRtt.consumeResult(cid, RTTask.Action.UPDATE);
             dataSetChanged(cid);
         } break;
 
         case CANCELING:
-            mLnf.showTextToast(getActivity(), R.string.wait_cancel);
+            UiHelper.showTextToast(getActivity(), R.string.wait_cancel);
             break;
 
         default:
@@ -482,11 +481,11 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        mLnf.buildConfirmDialog(getActivity(),
-                                R.string.delete_channel,
-                                R.string.delete_channel_msg,
-                                action)
-            .show();
+        UiHelper.buildConfirmDialog(getActivity(),
+                                    R.string.delete_channel,
+                                    R.string.delete_channel_msg,
+                                    action)
+                .show();
     }
 
     private void
@@ -494,12 +493,12 @@ UnexpectedExceptionHandler.TrackedModule {
         // delete entire channel directory and re-make it.
         // Why?
         // All and only downloaded files are located in channel directory.
-        mUip.cleanChannelDir(cid);
+        ContentsManager.get().cleanChannelDir(cid);
     }
 
     private void
     onContext_changeCategory(final long cid) {
-        UiUtils.OnCategorySelectedListener action = new UiUtils.OnCategorySelectedListener() {
+        UiHelper.OnCategorySelectedListener action = new UiHelper.OnCategorySelectedListener() {
             @Override
             public void
             onSelected(long category, Object user) {
@@ -507,12 +506,12 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         };
 
-        UiUtils.selectCategoryDialog(getActivity(),
-                                     R.string.select_category,
-                                     action,
-                                     mCatId,
-                                     null)
-               .show();
+        UiHelper.selectCategoryDialog(getActivity(),
+                                      R.string.select_category,
+                                      action,
+                                      mCatId,
+                                      null)
+                .show();
     }
 
     private void
@@ -532,7 +531,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                         getResources().getText(R.string.pick_icon)),
                                    REQC_PICK_IMAGE);
         } catch (ActivityNotFoundException e) {
-            mLnf.showTextToast(getActivity(), R.string.warn_find_gallery_app);
+            UiHelper.showTextToast(getActivity(), R.string.warn_find_gallery_app);
             return;
         }
     }
@@ -574,7 +573,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             cid = mDbp.insertNewChannel(getCategoryId(), url);
         } catch (FeederException e) {
-            mLnf.showTextToast(getActivity(), e.getError().getMsgId());
+            UiHelper.showTextToast(getActivity(), e.getError().getMsgId());
             return;
         }
 
