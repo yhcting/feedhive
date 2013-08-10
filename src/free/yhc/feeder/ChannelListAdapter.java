@@ -48,6 +48,7 @@ AsyncCursorAdapter.ItemBuilder {
     private static final Date sDummyDate = new Date();
     private static final ColumnChannel[] sChannQueryColumns = new ColumnChannel[] {
         ColumnChannel.ID, // Mandatory.
+        ColumnChannel.URL,
         ColumnChannel.TITLE,
         ColumnChannel.DESCRIPTION,
         ColumnChannel.LASTUPDATE,
@@ -72,6 +73,7 @@ AsyncCursorAdapter.ItemBuilder {
 
     private static class ItemInfo {
         long        cid             = -1;
+        String      url             = "";
         String      title           = "";
         String      desc            = "";
         Date        lastUpdate      = sDummyDate;
@@ -217,6 +219,7 @@ AsyncCursorAdapter.ItemBuilder {
         ItemInfo i = new ItemInfo();
         try {
             i.cid = getCursorLong(c, ColumnChannel.ID);
+            i.url = getCursorString(c, ColumnChannel.URL);
             i.title = getCursorString(c, ColumnChannel.TITLE);
             i.desc = getCursorString(c, ColumnChannel.DESCRIPTION);
             i.lastUpdate = new Date(getCursorLong(c, ColumnChannel.LASTUPDATE));
@@ -339,7 +342,9 @@ AsyncCursorAdapter.ItemBuilder {
             age = String.format("%2d:%2d", ageDay, ageHours);
         }
 
-        ((TextView)v.findViewById(R.id.title)).setText(ii.title);
+        // If there is NO valid title for this channel, Just use URL as title.
+        String title = Utils.isValidValue(ii.title)? ii.title: ii.url;
+        ((TextView)v.findViewById(R.id.title)).setText(title);
         ((TextView)v.findViewById(R.id.description)).setText(ii.desc);
         ((TextView)v.findViewById(R.id.date)).setText(date);
         ((TextView)v.findViewById(R.id.age)).setText(age);

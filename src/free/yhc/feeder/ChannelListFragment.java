@@ -265,7 +265,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class DeleteChannelWorker extends DiagAsyncTask.Worker {
         private final long[]    _mCids;
-        private long            _mNrDelItems    = -1;
+        private long            _mNrDelItems    = 0;
 
         DeleteChannelWorker(long[] cids) {
             _mCids = cids;
@@ -275,10 +275,6 @@ UnexpectedExceptionHandler.TrackedModule {
         public Err
         doBackgroundWork(DiagAsyncTask task) {
             _mNrDelItems = mDbp.deleteChannel(_mCids);
-            // this can be error if there is no items.
-            // (Usually when deleting channel that has invalid url - after failed to sync.)
-            if (_mNrDelItems < 0)
-                _mNrDelItems = 0;
             return Err.NO_ERR;
         }
 
@@ -286,7 +282,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostExecute(DiagAsyncTask task, Err result) {
             UiHelper.showTextToast(getActivity(),
-                               _mNrDelItems + getResources().getString(R.string.channel_deleted_msg));
+                                   _mNrDelItems + getResources().getString(R.string.channel_deleted_msg));
             for (long cid : _mCids)
                 ChannelListFragment.this.getAdapter().removeChannel(cid);
             ChannelListFragment.this.getAdapter().notifyDataSetChanged();

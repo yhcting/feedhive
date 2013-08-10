@@ -20,6 +20,8 @@
 
 package free.yhc.feeder.model;
 
+import java.io.File;
+
 public class BGTaskDownloadToItemContent extends BGTaskDownloadToFile {
     private long mId;
     public BGTaskDownloadToItemContent(String url, long id) {
@@ -32,6 +34,10 @@ public class BGTaskDownloadToItemContent extends BGTaskDownloadToFile {
     @Override
     protected Err
     doBgTask(Arg arg) {
+        if (null == arg.toFile)
+            return Err.IO_FILE;
+
+        new File(arg.toFile.getParent()).mkdirs();
         ContentsManager cm = ContentsManager.get();
         Err ret = super.doBgTask(arg);
         if (Err.NO_ERR == ret)

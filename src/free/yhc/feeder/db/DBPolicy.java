@@ -576,14 +576,7 @@ UnexpectedExceptionHandler.TrackedModule {
         dbD.categoryid = categoryid;
         dbD.lastupdate = new Date().getTime();
         Feed.Channel.ParD parD = new Feed.Channel.ParD();
-        parD.title = profD.url;
         cid = mDb.insertChannel(buildNewChannelContentValues(profD, parD, dbD));
-        // check duplication...
-        if (!ContentsManager.get().makeChannelDir(cid)) {
-            mDb.deleteChannel(ColumnChannel.ID, cid);
-            throw new FeederException(Err.IO_FILE);
-        }
-
         return cid;
     }
 
@@ -1079,10 +1072,9 @@ UnexpectedExceptionHandler.TrackedModule {
         ColumnChannel[] cols = new ColumnChannel[cids.length];
         for (int i = 0; i < cols.length; i++)
             cols[i] = ColumnChannel.ID;
-        long nr = mDb.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
         for (long cid : cids)
             ContentsManager.get().removeChannelDir(cid);
-        return nr;
+        return mDb.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
     }
 
     /**

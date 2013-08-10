@@ -201,7 +201,7 @@ UnexpectedExceptionHandler.TrackedModule {
     getChannelDirPath(long cid) {
         DBPolicy dbp = DBPolicy.get();
         String title = dbp.getChannelInfoString(cid, ColumnChannel.TITLE);
-        if (null == title)
+        if (!Utils.isValidValue(title))
             return null;
         String fname = Utils.convertToFilename(title) + "_" + cid;
         return Environ.get().getAppRootDirectoryPath() + fname + "/";
@@ -209,8 +209,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static File
     getChannelDirFile(long cid) {
-        return new File(getChannelDirPath(cid));
+        String path = getChannelDirPath(cid);
+        return (null == path)? null: new File(path);
     }
+
     /**
      * Create clean channel dir.
      * If directory already exists, all files in it are deleted.
@@ -220,6 +222,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public boolean
     makeChannelDir(long cid) {
         File f = getChannelDirFile(cid);
+        if (null == f)
+            return false; // Channel information is NOT updated yet.
         if (f.exists())
             Utils.removeFileRecursive(f, true);
         return f.mkdir();
@@ -232,27 +236,37 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public boolean
     removeChannelDir(long cid) {
-        boolean ret = Utils.removeFileRecursive(getChannelDirFile(cid), true);
+        File f = getChannelDirFile(cid);
+        if (null == f)
+            return false; // Channel information is NOT updated yet.
+        boolean ret = Utils.removeFileRecursive(f, true);
         notifyUpdated(UpdateType.CHAN_DATA, cid);
+        return ret;
+    }
+
+    private boolean
+    cleanChannelDir(long cid, boolean notify) {
+        File f = getChannelDirFile(cid);
+        // Channel is NOT successfully updated yet.
+        // So, there is no channel directory.
+        if (null == f)
+            return true;
+        boolean ret = Utils.removeFileRecursive(f, false);
+        if (notify)
+            notifyUpdated(UpdateType.CHAN_DATA, cid);
         return ret;
     }
 
     public boolean
     cleanChannelDir(long cid) {
-        boolean ret = Utils.removeFileRecursive(getChannelDirFile(cid), false);
-        notifyUpdated(UpdateType.CHAN_DATA, cid);
-        return ret;
+        return cleanChannelDir(cid, true);
     }
 
     public boolean
     cleanChannelDirs(long[] cids) {
         boolean ret = true;
-        for (long cid : cids) {
-            if (!Utils.removeFileRecursive(getChannelDirFile(cid), false)) {
-                ret = false;
-                break;
-            }
-        }
+        for (long cid : cids)
+            cleanChannelDir(cid, false);
         notifyUpdated(UpdateType.CHANS_DATA, cids);
         return ret;
     }
@@ -294,6 +308,10 @@ UnexpectedExceptionHandler.TrackedModule {
         if (cid < 0)
             cid = dbp.getItemInfoLong(id, ColumnItem.CHANNELID);
 
+        String chanDirPath = getChannelDirPath(cid);
+        if (null == chanDirPath)
+            return null;
+
         if (!Utils.isValidValue(title))
             title = dbp.getItemInfoString(id, ColumnItem.TITLE);
 
@@ -326,10 +344,11 @@ UnexpectedExceptionHandler.TrackedModule {
         fname = fname.substring(0, endIndex);
         fname = fname + '.' + ext;
 
+
         // NOTE
         //   In most UNIX file systems, only '/' and 'null' are reserved.
         //   So, we don't worry about "converting string to valid file name".
-        return new File(getChannelDirPath(cid) + fname);
+        return new File(chanDirPath + fname);
     }
 
     public boolean
