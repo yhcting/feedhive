@@ -159,12 +159,9 @@ public class NetLoader {
                throw new FeederException(Err.INVALID_URL);
            }
 
-           // TODO : Confirm it!
-           // Is is right place?
-           // What happen if network is inter-change between mobile network and wifi
+           // What happen if network state is changed
            //   in the middle of download or something like that?
-           if (!Utils.isNetworkAvailable()
-               || (Utils.isPrefUseWifiOnly() && !Utils.isWifiAvailable()))
+           if (!Utils.isNetworkAvailable())
                 throw new FeederException(Err.IO_NET);
 
            while (0 < retry--) {
@@ -214,6 +211,11 @@ public class NetLoader {
                int  count;
                long prevProgress = -1;
                while (true) {
+                   // Check network state as often as possible to confirm that
+                   //   network what user want to use is available.
+                   if (!Utils.isNetworkAvailable())
+                       throw new FeederException(Err.IO_NET);
+
                    if (-1 == (count = mIstream.read(data)))
                        break;
                    outstream.write(data, 0, count);

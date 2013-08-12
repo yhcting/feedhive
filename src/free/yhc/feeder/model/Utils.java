@@ -753,21 +753,15 @@ public class Utils {
     public static boolean
     isNetworkAvailable() {
         ConnectivityManager cm = (ConnectivityManager)Environ
-                                                      .getAppContext()
-                                                      .getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        if (null != ni)
-            return ni.isConnectedOrConnecting();
-        else
-            return false;
-    }
+                .getAppContext()
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo ni;
 
-    public static boolean
-    isWifiAvailable() {
-        ConnectivityManager cm = (ConnectivityManager)Environ
-                                                      .getAppContext()
-                                                      .getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (isPrefUseWifiOnly())
+            ni = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        else
+            ni = cm.getActiveNetworkInfo();
+
         if (null != ni)
             return ni.isConnectedOrConnecting();
         else
@@ -793,6 +787,12 @@ public class Utils {
     // Accessing preference
     //
     // ------------------------------------------------------------------------
+    // Preference for internal use.
+    private static boolean
+    isPrefUseWifiOnly() {
+        return sPrefs.getString("use_wifi_only", "no").equals("yes");
+    }
+
     public static boolean
     isPrefNewmsgNoti() {
         return sPrefs.getString("newmsg_noti", "yes").equals("yes");
@@ -808,11 +808,6 @@ public class Utils {
             eAssert(false);
         }
         return value;
-    }
-
-    public static boolean
-    isPrefUseWifiOnly() {
-        return sPrefs.getString("use_wifi_only", "no").equals("yes");
     }
 
     /**
