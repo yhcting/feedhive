@@ -29,7 +29,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.RemoteViewsService;
-import free.yhc.feeder.AppWidgetCategoryChooserActivity;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.Environ;
@@ -79,29 +78,31 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    public static class ButtonPendingIntentReceiver extends BroadcastReceiver {
+    public static class MoveToTopPendingIntentReceiver extends BroadcastReceiver {
         @Override
         public void
         onReceive(Context context, Intent intent) {
-            if (DBG) P.v("ButtonPendingIntentReceiver : onReceive.");
-            if (!AppWidgetUtils.ACTION_CHANGE_CATEGORY_PENDING_INTENT.equals(intent.getAction()))
+            if (DBG) P.v("MoveToTopPendingIntentReceiver : onReceive.");
+            if (!AppWidgetUtils.ACTION_MOVE_TO_TOP_PENDING_INTENT.equals(intent.getAction()))
                 return; // unexpected intent.
 
             final int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                 AppWidgetUtils.INVALID_APPWIDGETID);
             if (DBG) P.v("onReceive pending intent : appwidget id : " + awid);
             if (AppWidgetUtils.INVALID_APPWIDGETID == awid) {
-                if (DBG) P.w("Unexpected List Pending Intent...");
+                if (DBG) P.w("Unexpected AppWidgetId...");
                 return;
             }
-
-            Intent i = new Intent(context, AppWidgetCategoryChooserActivity.class);
-            i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, awid);
-            i.putExtra(AppWidgetCategoryChooserActivity.KEY_CANCELABLE, true);
-            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            context.startActivity(i);
+            sendUpdateAppWidgetRequest(context, new int[] { awid });
         }
+    }
+
+    static void
+    sendUpdateAppWidgetRequest(Context context, int[] awids) {
+        Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+        intent.setClass(Environ.getAppContext(), Provider.class);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, awids);
+        context.sendBroadcast(intent);
     }
 
     static ViewsFactory

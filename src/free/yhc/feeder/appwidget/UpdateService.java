@@ -121,14 +121,23 @@ UnexpectedExceptionHandler.TrackedModule {
                 pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.changecat, pi);
 
-                // extra menu button action pending intent
+                // Move-to-top button action pending intent
+                // ============================================
+                intent = createBaseIntent(ViewsService.MoveToTopPendingIntentReceiver.class,
+                                          catid, awid,
+                                          AppWidgetUtils.ACTION_MOVE_TO_TOP_PENDING_INTENT,
+                                          true);
+                pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
+                rv.setOnClickPendingIntent(R.id.move_to_top, pi);
+
+                // more menu button action pending intent
                 // ============================================
                 intent = createBaseIntent(AppWidgetMenuActivity.class,
                                           catid, awid,
-                                          AppWidgetUtils.ACTION_EXTRA_MENU_PENDING_INTENT,
+                                          AppWidgetUtils.ACTION_MORE_MENU_PENDING_INTENT,
                                           true);
                 pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
-                rv.setOnClickPendingIntent(R.id.extramenu, pi);
+                rv.setOnClickPendingIntent(R.id.more_menu, pi);
 
                 if (DBG) P.v("Update widget : " + awid);
                 _mAwm.updateAppWidget(awid, rv);

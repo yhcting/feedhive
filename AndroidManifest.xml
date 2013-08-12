@@ -94,9 +94,9 @@
                 <action android:name="feeder.intent.action.LIST_PENDING_INTENT" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".appwidget.ViewsService$ButtonPendingIntentReceiver">
+        <receiver android:name=".appwidget.ViewsService$MoveToTopPendingIntentReceiver">
             <intent-filter>
-                <action android:name="feeder.intent.action.CHANGE_CATEGORY_PENDING_INTENT" />
+                <action android:name="feeder.intent.action.MOVE_TO_TOP_PENDING_INTENT" />
             </intent-filter>
         </receiver>
     </application>

@@ -39,7 +39,8 @@ public class AppWidgetUtils {
 
     static final String ACTION_LIST_PENDING_INTENT            = "feeder.intent.action.LIST_PENDING_INTENT";
     static final String ACTION_CHANGE_CATEGORY_PENDING_INTENT = "feeder.intent.action.CHANGE_CATEGORY_PENDING_INTENT";
-    static final String ACTION_EXTRA_MENU_PENDING_INTENT      = "feeder.intent.action.EXTRA_MENU_PENDING_INTENT";
+    static final String ACTION_MOVE_TO_TOP_PENDING_INTENT     = "feeder.intent.action.MOVE_TO_TOP_PENDING_INTENT";
+    static final String ACTION_MORE_MENU_PENDING_INTENT       = "feeder.intent.action.MORE_MENU_PENDING_INTENT";
 
     static final int    INVALID_POSITION    = -1;
 
