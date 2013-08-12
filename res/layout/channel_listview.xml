@@ -154,7 +154,7 @@
 	                android:layout_height="@dimen/chlist_bottom_btn_height"
 	                android:gravity="center"
 	                android:scaleType="fitCenter"
-	                android:src="@drawable/management"
+	                android:src="@drawable/menu_more"
 	                />
 	            <TextView
 	                android:layout_width="fill_parent"

@@ -20,4 +20,6 @@
     <dimen name="chlist_bottom_btn_height">35dip</dimen>
     <dimen name="appwidget_btn_width">40dip</dimen>
     <dimen name="appwidget_btn_height">40dip</dimen>
+    <dimen name="appwidget_list_noti_width">24dip</dimen>
+    <dimen name="appwidget_list_noti_height">24dip</dimen>
 </resources>

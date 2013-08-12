@@ -10,8 +10,8 @@
     >
     <ImageView
         android:id="@+id/image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="@dimen/appwidget_list_noti_width"
+        android:layout_height="@dimen/appwidget_list_noti_height"
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
         android:gravity="center"

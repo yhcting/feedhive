@@ -33,7 +33,7 @@
         android:layout_alignParentBottom="true"
         android:gravity="center"
         android:scaleType="fitCenter"
-        android:src="@drawable/setting"
+        android:src="@drawable/menu_more"
         android:clickable="true"
         />
 </RelativeLayout>
