@@ -17,7 +17,7 @@
     <dimen name="spinner_text_size">20dip</dimen>
     <dimen name="dnprogress_text_size">14dip</dimen>
     <dimen name="chlist_bottom_btn_width">40dip</dimen>
-    <dimen name="chlist_bottom_btn_height">35dip</dimen>
+    <dimen name="chlist_bottom_btn_height">40dip</dimen>
     <dimen name="appwidget_btn_width">40dip</dimen>
     <dimen name="appwidget_btn_height">40dip</dimen>
     <dimen name="appwidget_list_noti_width">24dip</dimen>

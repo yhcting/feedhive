@@ -68,13 +68,13 @@
                 android:clickable="true"
                 />
             <ImageView
-                android:id="@+id/btn_management"
+                android:id="@+id/btn_more_menu"
                 android:layout_width="@dimen/chlist_bottom_btn_width"
                 android:layout_height="match_parent"
                 android:layout_weight="1.0"
                 android:gravity="center"
                 android:scaleType="fitCenter"
-                android:src="@drawable/menu_more"
+                android:src="@drawable/more_menu"
                 android:clickable="true"
                 />
             <ImageView
@@ -85,16 +85,6 @@
                 android:gravity="center"
                 android:scaleType="fitCenter"
                 android:src="@drawable/setting"
-                android:clickable="true"
-                />
-            <ImageView
-                android:id="@+id/btn_information"
-                android:layout_width="@dimen/chlist_bottom_btn_width"
-                android:layout_height="match_parent"
-                android:layout_weight="1.0"
-                android:gravity="center"
-                android:scaleType="fitCenter"
-                android:src="@drawable/information"
                 android:clickable="true"
                 />
         </LinearLayout>

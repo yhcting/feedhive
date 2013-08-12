@@ -483,67 +483,8 @@ UnexpectedExceptionHandler.TrackedModule {
         startActivity(intent);
     }
 
-
     private void
-    onOpt_management_deleteAllDnFiles(final View anchor) {
-        AlertDialog diag = UiHelper.buildDeleteAllDnFilesConfirmDialog(this, null, null);
-        if (null == diag)
-            UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
-        diag.show();
-    }
-
-    private void
-    onOpt_management_feedbackOpinion(final View anchor) {
-        if (!Utils.isNetworkAvailable()) {
-            UiHelper.showTextToast(this, R.string.warn_network_unavailable);
-            return;
-        }
-
-        if (!mUr.sendFeedbackReportMain(this))
-            UiHelper.showTextToast(this, R.string.warn_find_email_app);
-    }
-
-    private void
-    onOpt_management_dbManage(final View anchor) {
-        Intent intent = new Intent(this, DBManagerActivity.class);
-        startActivity(intent);
-    }
-
-    private void
-    onOpt_management(final View anchor) {
-        PopupMenu popup = new PopupMenu(this, anchor);
-        popup.getMenuInflater().inflate(R.menu.popup_management, popup.getMenu());
-        popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean
-            onMenuItemClick(MenuItem item) {
-                switch (item.getItemId()) {
-                case R.id.media_delete_all:
-                    onOpt_management_deleteAllDnFiles(anchor);
-                    break;
-                case R.id.feedback_opinion:
-                    onOpt_management_feedbackOpinion(anchor);
-                    break;
-                case R.id.db_manage:
-                    onOpt_management_dbManage(anchor);
-                    break;
-                default:
-                    eAssert(false);
-                }
-                return true;
-            }
-        });
-        popup.show();
-    }
-
-    private void
-    onOpt_setting(final View anchor) {
-        Intent intent = new Intent(this, FeederPreferenceActivity.class);
-        startActivity(intent);
-    }
-
-    private void
-    onOpt_information_about(final View anchor) {
+    onOpt_moreMenu_about(final View anchor) {
         PackageManager pm = getPackageManager();
         PackageInfo pi = null;
         try {
@@ -564,7 +505,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_information_license(final View anchor) {
+    onOpt_moreMenu_license(final View anchor) {
         View v = UiHelper.inflateLayout(this, R.layout.info_dialog);
         TextView tv = ((TextView)v.findViewById(R.id.text));
         tv.setTypeface(Typeface.MONOSPACE);
@@ -576,19 +517,53 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_information(final View anchor) {
+    onOpt_moreMenu_deleteAllDnFiles(final View anchor) {
+        AlertDialog diag = UiHelper.buildDeleteAllDnFilesConfirmDialog(this, null, null);
+        if (null == diag)
+            UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
+        diag.show();
+    }
+
+    private void
+    onOpt_moreMenu_feedbackOpinion(final View anchor) {
+        if (!Utils.isNetworkAvailable()) {
+            UiHelper.showTextToast(this, R.string.warn_network_unavailable);
+            return;
+        }
+
+        if (!mUr.sendFeedbackReportMain(this))
+            UiHelper.showTextToast(this, R.string.warn_find_email_app);
+    }
+
+    private void
+    onOpt_moreMenu_dbManagement(final View anchor) {
+        Intent intent = new Intent(this, DBManagerActivity.class);
+        startActivity(intent);
+    }
+
+    private void
+    onOpt_moreMenu(final View anchor) {
         PopupMenu popup = new PopupMenu(this, anchor);
-        popup.getMenuInflater().inflate(R.menu.popup_information, popup.getMenu());
+        popup.getMenuInflater().inflate(R.menu.popup_more_menu, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
             @Override
             public boolean
             onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                 case R.id.about:
-                    onOpt_information_about(anchor);
+                    onOpt_moreMenu_about(anchor);
                     break;
                 case R.id.license:
-                    onOpt_information_license(anchor);
+                    onOpt_moreMenu_license(anchor);
+                    break;
+                case R.id.media_delete_all:
+                    onOpt_moreMenu_deleteAllDnFiles(anchor);
+                    break;
+                case R.id.feedback_opinion:
+                    onOpt_moreMenu_feedbackOpinion(anchor);
+                    break;
+                case R.id.db_management:
+                    onOpt_moreMenu_dbManagement(anchor);
                     break;
                 default:
                     eAssert(false);
@@ -597,6 +572,12 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
         popup.show();
+    }
+
+    private void
+    onOpt_setting(final View anchor) {
+        Intent intent = new Intent(this, FeederPreferenceActivity.class);
+        startActivity(intent);
     }
 
     private void
@@ -664,11 +645,11 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         });
 
-        findViewById(R.id.btn_management).setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btn_more_menu).setOnClickListener(new View.OnClickListener() {
             @Override
             public void
             onClick(View v) {
-                onOpt_management(v);
+                onOpt_moreMenu(v);
             }
         });
 
@@ -677,24 +658,6 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onClick(View v) {
                 onOpt_setting(v);
-            }
-        });
-
-        findViewById(R.id.btn_information).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void
-            onClick(View v) {
-                onOpt_information(v);
-                /* For scheduled update test.
-                Cursor c = mDbp.queryChannel(ColumnChannel.ID);
-                c.moveToFirst();
-                Calendar calNow = Calendar.getInstance();
-                long dayms = calNow.getTimeInMillis() - Utils.dayBaseMs(calNow);
-                dayms += 10000; // after 10 sec
-                mDbp.updateChannel_schedUpdate(c.getLong(0), new long[] { dayms/1000 });
-                c.close();
-                ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
-                */
             }
         });
     }

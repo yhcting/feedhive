@@ -21,6 +21,7 @@
     <string name="delete">삭제</string>
     <string name="deleting">삭제 중....</string>
     <string name="loading">로드 중</string>
+    <string name="menu_more">기타 메뉴</string>
     <string name="all">전체</string>
     <string name="favorite_items">관심 피드</string>
     <string name="all_items">전체 피드</string>
@@ -36,7 +37,7 @@
     <string name="uploader">작성자</string>
     <string name="word_search">검색어</string>
     <string name="send_opinion">의견 보내기</string>
-    <string name="manage_db">데이타베이스 관리</string>
+    <string name="db_management">데이타베이스 관리</string>
     <string name="feed_search">피드 검색</string>
     <string name="db_size">전체 DB 크기</string>
     <string name="exportdb">DB 내보내기</string>
@@ -59,9 +60,8 @@
     <string name="empty_list_items_category">현재 카테고리에 속한 모든 피드를 보여줍니다.</string>
     <string name="empty_list_items_all">모든 피드 아이템들을 보여줍니다.</string>
     <string name="empty_list_category">카테고리 관련 기능(추가/삭제/변경)을 사용할 수 있습니다.</string>
-    <string name="empty_list_management">기타 다양한 관리 기능을 사용합니다.</string>
+    <string name="empty_list_more_menu">기타 다양한 관리 기능을 사용합니다.</string>
     <string name="empty_list_setting">어플리케이션 설정을 조정합니다.</string>
-    <string name="empty_list_information">어플리케인션에 대한 기타 정보들을 보여 줍니다.</string>
     <string name="wait_cancel">취소가 완료되길 기다리고 있습니다.</string>
     <string name="load_progress">로드 중입니다. 데이터의 크기와 네트웤 사정에 따라 최대 수 분정도 소요될 수도 있습니다.</string>
     <string name="pick_icon_progress">그림을 로드 중입니다.  이미지 크기와 네트웤 사정에 따라 최대 수 분 정도 소요될 수도 있습니다.</string>

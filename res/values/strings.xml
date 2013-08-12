@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FeedHive</string>
-    <string name="ok">Ok</string>
+    <string name="ok">OK</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="high">High</string>
@@ -21,6 +21,7 @@
     <string name="delete">Delete</string>
     <string name="deleting">Deleting</string>
     <string name="loading">Loading</string>
+    <string name="menu_more">Menu more</string>
     <string name="all">All</string>
     <string name="favorite_items">Favorite items</string>
     <string name="all_items">All items</string>
@@ -36,7 +37,7 @@
     <string name="uploader">Uploader</string>
     <string name="word_search">Keyword</string>
     <string name="send_opinion">E-mail opinion</string>
-    <string name="manage_db">Management DB</string>
+    <string name="db_management">DB Management</string>
     <string name="feed_search">Feed search</string>
     <string name="db_size">Total DB size</string>
     <string name="exportdb">Export DB</string>
@@ -59,9 +60,8 @@
     <string name="empty_list_items_category">List all category items.</string>
     <string name="empty_list_items_all">List all items.</string>
     <string name="empty_list_category">To do jobs related with category - add/delete/rename.</string>
-    <string name="empty_list_management">Manage application with several useful functions.</string>
+    <string name="empty_list_more_menu">More menus to manage application.</string>
     <string name="empty_list_setting">Adjust application setting.</string>
-    <string name="empty_list_information">Show misc information about this application.</string>
     <string name="wait_cancel">Please wait for canceling</string>
     <string name="load_progress">Loading in progress. It may takes long time (up to several minutes?) based on size of feeds of given site.</string>
     <string name="pick_icon_progress">Loading image in progress. It may takes long time based on size of selected image.</string>

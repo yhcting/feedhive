@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/about"
+          android:title="@string/about_app" />
+    <item android:id="@+id/license"
+          android:title="@string/license" />
+    <item android:id="@+id/media_delete_all"
+          android:title="@string/delete_all_downloadded_file" />
+    <item android:id="@+id/db_management"
+          android:title="@string/db_management" />
+    <item android:id="@+id/feedback_opinion"
+          android:title="@string/send_opinion" />
+</menu>
