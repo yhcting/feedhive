@@ -122,6 +122,11 @@ UnexpectedExceptionHandler.TrackedModule {
     static class ChanInfo {
         String url = null;
         String iconurl = null;
+        ChanInfo() { }
+        ChanInfo(ChanInfo other) {
+            url = other.url;
+            iconurl = other.iconurl;
+        }
     }
 
     private class ListAdapter extends ResourceCursorAdapter {
@@ -273,7 +278,13 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onCheck(long id, ChanInfo chaninfo, boolean isChecked) {
         if (isChecked)
-            mChanMap.put(id, chaninfo);
+            // NOTE
+            // passed 'chaninfo' is reference of ChanInfo located at ListRow.
+            // So, as list is scrolled, value is changed accordingly.
+            // This is definitely NOT expected.
+            // We need to fixed ChanInfo value here.
+            // So, put cloned(deep-copied) value to hashmap.
+            mChanMap.put(id, new ChanInfo(chaninfo));
         else
             mChanMap.remove(id);
     }
