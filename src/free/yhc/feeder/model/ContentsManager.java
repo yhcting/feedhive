@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.preference.PreferenceManager;
+import free.yhc.feeder.R;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
@@ -44,8 +45,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // Current Contents Version
     private static final int CONTENTS_VERSION = 1;
-
-    public static final String KEY_CONTENTS_VERSION = "contents_version";
 
     // Contents are classified by item and data.
     private static final long FLAG_ITEM_DATA  = 0x1;
@@ -140,7 +139,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // update contents version string to shared preference
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
         SharedPreferences.Editor prefEd = prefs.edit();
-        prefEd.putInt(KEY_CONTENTS_VERSION, CONTENTS_VERSION);
+        prefEd.putInt(Utils.getResText(R.string.cscontent_version), CONTENTS_VERSION);
         prefEd.apply();
     }
 

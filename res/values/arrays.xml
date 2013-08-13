@@ -37,8 +37,8 @@
         <item>@string/no</item>
     </string-array>
     <string-array name="pref_yes_no_value">
-        <item>"yes"</item>
-        <item>"no"</item>
+        <item>@string/csyes</item>
+        <item>@string/csno</item>
     </string-array>
     <string-array name="pref_bgtask_prio_entry">
         <item>@string/high</item>
@@ -46,8 +46,17 @@
         <item>@string/low</item>
     </string-array>
     <string-array name="pref_bgtask_prio_value">
-        <item>"high"</item>
-        <item>"medium"</item>
-        <item>"low"</item>
+        <item>@string/cshigh</item>
+        <item>@string/csmedium</item>
+        <item>@string/cslow</item>
+    </string-array>
+    <string-array name="pref_layout_entry">
+        <item>@string/right</item>
+        <item>@string/left</item>
+    </string-array>
+    <!-- values used here should match enum in 'utils.java' -->
+    <string-array name="pref_layout_value">
+        <item>@string/csRIGHT</item>
+        <item>@string/csLEFT</item>
     </string-array>
 </resources>

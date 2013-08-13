@@ -4,7 +4,7 @@
         <ListPreference
             android:title="@string/pref_maxnr_bgtask"
             android:summary="@string/pref_maxnr_bgtask_desc"
-            android:key="maxnr_bgtask"
+            android:key="@string/csmaxnr_bgtask"
             android:defaultValue="2"
             android:entries="@array/pref_maxnr_concurrent_entry"
             android:entryValues="@array/pref_maxnr_concurrent_value"
@@ -12,8 +12,8 @@
         <ListPreference
             android:title="@string/pref_bgtask_prio"
             android:summary="@string/pref_bgtask_prio_desc"
-            android:key="bgtask_prio"
-            android:defaultValue="low"
+            android:key="@string/csbgtask_prio"
+            android:defaultValue="@string/cslow"
             android:entries="@array/pref_bgtask_prio_entry"
             android:entryValues="@array/pref_bgtask_prio_value"
             />
@@ -22,16 +22,16 @@
         <ListPreference
             android:title="@string/pref_send_err_report"
             android:summary="@string/pref_send_err_report_desc"
-            android:key="err_report"
-            android:defaultValue="yes"
+            android:key="@string/cserr_report"
+            android:defaultValue="@string/csyes"
             android:entries="@array/pref_yes_no_entry"
             android:entryValues="@array/pref_yes_no_value"
             />
         <ListPreference
             android:title="@string/pref_send_usage_report"
             android:summary="@string/pref_send_usage_report_desc"
-            android:key="usage_report"
-            android:defaultValue="yes"
+            android:key="@string/csusage_report"
+            android:defaultValue="@string/csyes"
             android:entries="@array/pref_yes_no_entry"
             android:entryValues="@array/pref_yes_no_value"
             />
@@ -40,7 +40,7 @@
         <EditTextPreference
             android:title="@string/pref_download_root"
             android:summary="@string/pref_download_root_desc"
-            android:key="app_root"
+            android:key="@string/csapp_root"
             android:defaultValue="/sdcard/yhcFeeder"
             android:dialogTitle="@string/pref_download_root"
             />
@@ -49,16 +49,26 @@
         <ListPreference
             android:title="@string/pref_newmsg_noti"
             android:summary="@string/pref_newmsg_noti_desc"
-            android:key="newmsg_noti"
-            android:defaultValue="yes"
+            android:key="@string/csnewmsg_noti"
+            android:defaultValue="@string/csyes"
             android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value" />
+            android:entryValues="@array/pref_yes_no_value"
+            />
         <ListPreference
             android:title="@string/pref_use_wifi_only"
             android:summary="@string/pref_use_wifi_only_desc"
-            android:key="use_wifi_only"
-            android:defaultValue="no"
+            android:key="@string/csuse_wifi_only"
+            android:defaultValue="@string/csno"
             android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value" />
+            android:entryValues="@array/pref_yes_no_value"
+            />
+        <ListPreference
+            android:title="@string/pref_appwidget_btn_layout"
+            android:summary="@string/pref_appwidget_btn_layout_desc"
+            android:key="@string/csappwidget_btn_layout"
+            android:defaultValue="@string/csRIGHT"
+            android:entries="@array/pref_layout_entry"
+            android:entryValues="@array/pref_layout_value"
+            />
     </PreferenceCategory>
 </PreferenceScreen>

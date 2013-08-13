@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This strings are NOT SHOWN TO USERS.
+So, internationalization is NOT required.
+Usually, used for matching resource and code.
+-->
+<resources>
+    <string name="cson">on</string>
+    <string name="csoff">off</string>
+
+    <string name="csyes">yes</string>
+    <string name="csno">no</string>
+
+    <string name="cshigh">high</string>
+    <string name="csmedium">medium</string>
+    <string name="cslow">low</string>
+
+    <string name="csRIGHT">RIGHT</string>
+    <string name="csLEFT">LEFT</string>
+
+    <!-- For preference keys -->
+    <string name="csmaxnr_bgtask">maxnr_bgtask</string>
+    <string name="csbgtask_prio">bgtask_prio</string>
+    <string name="cserr_report">err_report</string>
+    <string name="csusage_report">usage_report</string>
+    <string name="csapp_root">app_root</string>
+    <string name="csnewmsg_noti">newmsg_noti</string>
+    <string name="csuse_wifi_only">use_wifi_only</string>
+    <string name="cscontent_version">content_version</string>
+    <string name="csappwidget_btn_layout">appwidget_btn_layout</string>
+</resources>

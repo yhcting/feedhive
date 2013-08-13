@@ -26,9 +26,14 @@ import java.util.HashMap;
 
 import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.preference.PreferenceManager;
 import android.widget.RemoteViewsService;
+import free.yhc.feeder.R;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.Environ;
@@ -42,6 +47,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static HashMap<Integer, ViewsFactory> sViewsFactoryMap
         = new HashMap<Integer, ViewsFactory>();
+    private static PreferenceChangedListener sSPCListener = null; // Shared Preference Changed Listener
 
     public static class ListPendingIntentReceiver extends BroadcastReceiver {
         @Override
@@ -97,6 +103,29 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    private static class PreferenceChangedListener implements OnSharedPreferenceChangeListener {
+        private Utils.PrefLayout mOldLayout;
+        PreferenceChangedListener() {
+            mOldLayout = Utils.getPrefAppWidgetButtonLayout();
+        }
+
+        @Override
+        public void
+        onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+            if (!key.equals(Utils.getResText(R.string.csappwidget_btn_layout)))
+                return; // ignore others
+
+            Utils.PrefLayout newLayout = Utils.getPrefAppWidgetButtonLayout();
+            if (mOldLayout == newLayout)
+                return; // not changed. ignore it.
+            mOldLayout = newLayout;
+            Context context = Environ.getAppContext();
+            int[] awids = AppWidgetManager.getInstance(context)
+                                          .getAppWidgetIds(new ComponentName(context, Provider.class));
+            sendUpdateAppWidgetRequest(context, awids);
+        }
+    }
+
     static void
     sendUpdateAppWidgetRequest(Context context, int[] awids) {
         Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
@@ -136,8 +165,18 @@ UnexpectedExceptionHandler.TrackedModule {
         getViewsFactory(appWidgetId);
     }
 
+    /**
+     * Called only once at FeederApp.onCreate
+     */
     public static void
     instantiateViewsFactories() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
+        sSPCListener = new PreferenceChangedListener();
+        // NOTE
+        // SharedPreference uses 'WeekHashMap'.
+        // So, listener SHOULD have EXPLICIT variable keeping it's reference to prevent it from GC(Garbage Collection).
+        prefs.registerOnSharedPreferenceChangeListener(sSPCListener);
+
         for (int awid : AppWidgetUtils.getAppWidgetIds())
             getViewsFactory(awid);
     }

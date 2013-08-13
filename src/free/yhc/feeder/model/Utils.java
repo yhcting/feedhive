@@ -51,6 +51,7 @@ import android.text.Layout;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.widget.TextView;
+import free.yhc.feeder.R;
 
 public class Utils {
     private static final boolean DBG = false;
@@ -182,6 +183,12 @@ public class Utils {
         }
     }
 
+    public static enum PrefLayout {
+        // Name of echo elements should match values used in the preference.
+        RIGHT,
+        LEFT,
+    }
+
     public static class Logger {
         private final Class _mCls;
         public Logger(Class cls) {
@@ -213,27 +220,6 @@ public class Utils {
         }
     }
 
-
-    /**
-     * Decode image from file path(String) or raw data (byte[]).
-     * @param image
-     *   Two types are supported.
-     *   String for file path / byte[] for raw image data.
-     * @param opt
-     * @return
-     */
-    private static Bitmap
-    decodeImageRaw(Object image, BitmapFactory.Options opt) {
-        if (image instanceof String) {
-            return BitmapFactory.decodeFile((String) image, opt);
-        } else if (image instanceof byte[]) {
-            byte[] data = (byte[]) image;
-            return BitmapFactory.decodeByteArray(data, 0, data.length, opt);
-        }
-        eAssert(false);
-        return null;
-    }
-
     private static void
     log(Class cls, LogLV lv, String msg) {
         if (null == msg)
@@ -256,8 +242,27 @@ public class Utils {
         }
     }
 
+    /**
+     * Decode image from file path(String) or raw data (byte[]).
+     * @param image
+     *   Two types are supported.
+     *   String for file path / byte[] for raw image data.
+     * @param opt
+     * @return
+     */
+    private static Bitmap
+    decodeImageRaw(Object image, BitmapFactory.Options opt) {
+        if (image instanceof String) {
+            return BitmapFactory.decodeFile((String) image, opt);
+        } else if (image instanceof byte[]) {
+            byte[] data = (byte[]) image;
+            return BitmapFactory.decodeByteArray(data, 0, data.length, opt);
+        }
+        eAssert(false);
+        return null;
+    }
     // =======================
-    // Public
+    //
     // =======================
     public static void
     init() {
@@ -270,6 +275,11 @@ public class Utils {
     eAssert(boolean cond) {
         if (!cond)
             throw new AssertionError();
+    }
+
+    public static String
+    getResText(int id) {
+        return Environ.getAppContext().getResources().getText(id).toString();
     }
 
     // ------------------------------------------------------
@@ -790,17 +800,21 @@ public class Utils {
     // Preference for internal use.
     private static boolean
     isPrefUseWifiOnly() {
-        return sPrefs.getString("use_wifi_only", "no").equals("yes");
+        return sPrefs.getString(getResText(R.string.csuse_wifi_only),
+                                getResText(R.string.csno))
+                     .equals(getResText(R.string.csyes));
     }
 
     public static boolean
     isPrefNewmsgNoti() {
-        return sPrefs.getString("newmsg_noti", "yes").equals("yes");
+        return sPrefs.getString(getResText(R.string.csnewmsg_noti),
+                                getResText(R.string.csyes))
+                     .equals(getResText(R.string.csyes));
     }
 
     public static int
     getPrefMaxNrBgTask() {
-        String v = sPrefs.getString("maxnr_bgtask", "2");
+        String v = sPrefs.getString(getResText(R.string.csmaxnr_bgtask), "2");
         int value = 2;
         try {
             value = Integer.parseInt(v);
@@ -818,12 +832,13 @@ public class Utils {
      */
     public static int
     getPrefBGTaskPriority() {
-        String prio = sPrefs.getString("bgtask_prio", "low");
-        if ("low".equals(prio))
+        String prio = sPrefs.getString(getResText(R.string.csbgtask_prio),
+                                       getResText(R.string.cslow));
+        if (getResText(R.string.cslow).equals(prio))
             return Thread.MIN_PRIORITY;
-        else if ("medium".equals(prio))
+        else if (getResText(R.string.csmedium).equals(prio))
             return (Thread.NORM_PRIORITY + Thread.MIN_PRIORITY) / 2;
-        else if ("high".equals(prio))
+        else if (getResText(R.string.cshigh).equals(prio))
             return Thread.NORM_PRIORITY;
         else {
             eAssert(false);
@@ -833,9 +848,14 @@ public class Utils {
 
     public static int
     getPrefContentVersion() {
-        return sPrefs.getInt(ContentsManager.KEY_CONTENTS_VERSION, 0);
+        return sPrefs.getInt(getResText(R.string.cscontent_version), 0);
     }
 
+    public static PrefLayout
+    getPrefAppWidgetButtonLayout() {
+        return PrefLayout.valueOf(sPrefs.getString(getResText(R.string.csappwidget_btn_layout),
+                                                   PrefLayout.RIGHT.name()));
+    }
     // ================================================
     //
     // Utility Functions for Date

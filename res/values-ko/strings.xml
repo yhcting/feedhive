@@ -7,6 +7,8 @@
     <string name="high">높음</string>
     <string name="medium">중간</string>
     <string name="low">낮음</string>
+    <string name="right">오른쪽</string>
+    <string name="left">왼쪽</string>
     <string name="channel_name">채널 이름</string>
     <string name="database">데이타베이스</string>
     <string name="about_app">어플 정보</string>
@@ -152,4 +154,6 @@
     <string name="pref_newmsg_noti_desc">새로운 피드가 왔을 때, 상태바에 알립니다.</string>
     <string name="pref_use_wifi_only">Wifi 업데이트/다운로드</string>
     <string name="pref_use_wifi_only_desc">Wifi가 사용가능 할때만 업데이트/다운로드 수행.</string>
+    <string name="pref_appwidget_btn_layout">앱위젯에서의 버튼위치</string>
+    <string name="pref_appwidget_btn_layout_desc">앱위젯 위에 위치한 버튼의 위치를 결정한다.(예. 왼손사용자의 경우 \'오른쪽\'이 편리)</string>
 </resources>

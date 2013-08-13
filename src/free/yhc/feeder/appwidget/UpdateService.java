@@ -91,8 +91,20 @@ UnexpectedExceptionHandler.TrackedModule {
         onPostRun(Err result) {
             if (DBG) P.v("Update onPostRun");
             for (int awid : _mAppWidgetIds) {
-                RemoteViews rv = new RemoteViews(getApplicationContext().getPackageName(),
-                                                 R.layout.appwidget);
+                RemoteViews rv = null;
+                switch (Utils.getPrefAppWidgetButtonLayout()) {
+                case RIGHT:
+                    rv = new RemoteViews(getApplicationContext().getPackageName(),
+                                         R.layout.appwidget_right);
+                    break;
+                case LEFT:
+                    rv = new RemoteViews(getApplicationContext().getPackageName(),
+                                         R.layout.appwidget_left);
+                    break;
+                default:
+                    Utils.eAssert(false);
+                }
+
                 long catid = AppWidgetUtils.getWidgetCategory(awid);
                 if (DB.INVALID_ITEM_ID == catid)
                     continue;

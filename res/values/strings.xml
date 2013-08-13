@@ -7,6 +7,8 @@
     <string name="high">High</string>
     <string name="medium">Medium</string>
     <string name="low">Low</string>
+    <string name="right">Right</string>
+    <string name="left">Left</string>
     <string name="channel_name">Channel name</string>
     <string name="database">Database</string>
     <string name="about_app">About</string>
@@ -152,4 +154,6 @@
     <string name="pref_newmsg_noti_desc">Notifying new feed to status bar.</string>
     <string name="pref_use_wifi_only">Use Wifi update/download</string>
     <string name="pref_use_wifi_only_desc">Update or download are started only when Wifi is available.</string>
+    <string name="pref_appwidget_btn_layout">Button position in appwidget</string>
+    <string name="pref_appwidget_btn_layout_desc">Decides position(align) of buttons in app widget. (Ex. \'right\' is better for left-hand user)</string>
 </resources>
