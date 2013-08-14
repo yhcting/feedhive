@@ -22,6 +22,8 @@ package free.yhc.feeder.model;
 
 import static free.yhc.feeder.model.Utils.eAssert;
 
+import java.util.regex.Pattern;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -74,6 +76,10 @@ public abstract class FeedParser {
     }
 
     protected static class ItemValues {
+        // static pattern to check "String represents web protocol"
+        private static final Pattern _sWebProtoPattern
+            = Pattern.compile("^http(s)?\\:\\/\\/.*", Pattern.CASE_INSENSITIVE);
+
         NodeValue   title           = new NodeValue();
         NodeValue   description     = new NodeValue();
         NodeValue   link            = new NodeValue();
@@ -81,6 +87,18 @@ public abstract class FeedParser {
         NodeValue   enclosure_url   = new NodeValue();
         NodeValue   enclosure_type  = new NodeValue();
         NodeValue   pubDate         = new NodeValue();
+
+        // Below values is NOT required at STANDARD case.
+        // But, at some Feed - ex. hanitv sisagate, enclosure url is empty.
+        // But, 'guid' has valid enclosure url.
+        // In this case, 'guid' should be used as enclosure url.
+        // This is DEFINITELY out of spec. and out of standard...
+        // But... *sigh*
+        // To handle those exceptional case, below variables are defined.
+        // (You might be able to regard them as overhead.)
+        // Below values SHOULD NOT be exported to Feed data.
+        // (This is SHOULD BE EXCLUDED at EXTERNAL interface.)
+        NodeValue   guid            = new NodeValue();
 
         void
         init() {
@@ -91,6 +109,9 @@ public abstract class FeedParser {
             enclosure_url.init();
             enclosure_type.init();
             pubDate.init();
+
+            // To handle exceptional case
+            guid.init();
         }
 
         void
@@ -106,6 +127,21 @@ public abstract class FeedParser {
                 item.enclosureType = enclosure_type.value;
             }
             item.pubDate = pubDate.value;
+
+            //
+            // Handle exceptional case.
+            //
+            if (!isValidItem(item)) {
+                // Try to fixup
+                if (Utils.isValidValue(guid.value)
+                    && _sWebProtoPattern.matcher(guid.value).matches()) {
+                    if (Utils.isValidValue(item.enclosureType)
+                        && !Utils.isValidValue(item.enclosureUrl))
+                        item.enclosureUrl = guid.value;
+                    else if (!Utils.isValidValue(item.link))
+                        item.link = guid.value;
+                }
+            }
         }
     }
 
@@ -316,7 +352,7 @@ public abstract class FeedParser {
     //        Constraints
     //
     // ========================================
-    protected boolean
+    protected static boolean
     isValidItem(Feed.Item.ParD iParD) {
         return Utils.isValidValue(iParD.title)
                && (Utils.isValidValue(iParD.link) || Utils.isValidValue(iParD.enclosureUrl));

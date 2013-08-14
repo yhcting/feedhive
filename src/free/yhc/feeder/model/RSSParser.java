@@ -182,6 +182,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 nodeEnclosure(iv, n);
             else if (n.getNodeName().equalsIgnoreCase("pubDate"))
                 setValue(iv.pubDate, getTextValue(n));
+            else if (n.getNodeName().equalsIgnoreCase("guid"))
+                setValue(iv.guid, getTextValue(n));
             else
                 ret = false;
 
@@ -216,7 +218,6 @@ UnexpectedExceptionHandler.TrackedModule {
             pl.add(new NSDcParser());
 
     }
-
 
     private void
     nodeChannel(Result res, NSParser[] parser, Node chn)
