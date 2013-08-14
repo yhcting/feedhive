@@ -234,8 +234,13 @@ UnexpectedExceptionHandler.TrackedModule {
                 eAssert(false);
         } else if (Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA == actionType) {
             findViewById(R.id.browser_layout).setVisibility(View.GONE);
-        } else
-            eAssert(false);
+        } else {
+            // Action is unknown.
+            // This case can be reached when there is no items in the channel. (Empty channel)
+            // (Default action is Feed.FINVALID)
+            // In this case, show minimal setting options only
+            findViewById(R.id.browser_layout).setVisibility(View.GONE);
+        }
     }
 
     @Override
