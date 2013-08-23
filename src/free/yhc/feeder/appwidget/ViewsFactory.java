@@ -90,6 +90,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private class DBWatcher implements ListenerManager.Listener {
         private final HashSet<Long> _mCidSet = new HashSet<Long>();
 
+        // See comment at 'onNotify'
+        private AtomicReference<Boolean> _mClosed = new AtomicReference<Boolean>(false);
+
         private boolean
         isInCategory(long cid) {
             return _mCidSet.contains(cid);
@@ -113,6 +116,11 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         void
+        close() {
+            _mClosed.set(true);
+        }
+
+        void
         unregister() {
             mDbp.unregisterUpdatedListener(this);
             mDbp.unregisterChannelUpdatedListener(this);
@@ -129,6 +137,18 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onNotify(Object user, ListenerManager.Type type, Object arg0, Object arg1) {
+            // NOTE
+            // unregister is called at UI context after onDestroy by 'post'.
+            // So, following case is possible.
+            // 1. onDestroy is called. And ViewsFactory is destroyed.
+            //    (member variables of ViewsFactory are unavailable)
+            // 2. Before 'unregister' is called at UI context, 'onNotify' is called.
+            // 3. Accessing to member variables of ViewsFactory leads to unexpected results.
+            //
+            // To avoid this, _mClosed flag is used.
+            if (_mClosed.get())
+                return;
+
             if (type instanceof DB.UpdateType) {
                 switch ((DB.UpdateType)type) {
                 case CHANNEL_DATA:
@@ -462,6 +482,9 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDestroy() {
+        // Call 'close()' to avoid race condition
+        // See comments in 'onNotify' at DBWatcher
+        mDbWatcher.close();
         // mDbWatcher.unregister SHOULD be called at UI context
         // See unregisterUpdatedListener at DB.java for details.
         Environ.getUiHandler().post(new Runnable() {
