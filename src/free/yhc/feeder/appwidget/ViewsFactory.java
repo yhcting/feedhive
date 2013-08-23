@@ -85,7 +85,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private long    mCategoryId;
     private long[]  mCids = null;
-    private AtomicReference<Cursor> mCursor = new AtomicReference<Cursor>(null);
+    private Cursor  mCursor = null;
+    private final Object mCursorLock = new Object();
 
     private class DBWatcher implements ListenerManager.Listener {
         private final HashSet<Long> _mCidSet = new HashSet<Long>();
@@ -303,8 +304,10 @@ UnexpectedExceptionHandler.TrackedModule {
     refreshItemList() {
         if (DBG) P.v("WidgetDataChanged : " + mAppWidgetId);
         Cursor newCur = getCursor();
-        Cursor cur = mCursor.get();
-        mCursor.set(newCur);
+        Cursor cur = mCursor;
+        synchronized (mCursorLock) {
+            mCursor = newCur;
+        }
         notifyDataSetChanged();
         if (null != cur)
             cur.close();
@@ -321,7 +324,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Doing time-consuming job in advance.
         cur.getCount();
         cur.moveToFirst();
-        mCursor.set(cur);
+        mCursor = cur;
 
         mItemAction = new ItemActionHandler(null, new AdapterBridge());
         mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
@@ -373,16 +376,19 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     getCount() {
-        return mCursor.get().getCount();
+        synchronized (mCursorLock) {
+            return mCursor.getCount();
+        }
     }
 
     @Override
     public long
     getItemId(int position) {
-        Cursor cur = mCursor.get();
-        // Called at binder thread
-        cur.moveToPosition(position);
-        return cur.getLong(COLI_ID);
+        synchronized (mCursorLock) {
+            // Called at binder thread
+            mCursor.moveToPosition(position);
+            return mCursor.getLong(COLI_ID);
+        }
     }
 
     @Override
@@ -399,16 +405,20 @@ UnexpectedExceptionHandler.TrackedModule {
     public RemoteViews
     getViewAt(int position) {
         // Called at binder thread
-        Cursor cur = mCursor.get();
-        cur.moveToPosition(position);
+        long iid, cid;
+        String title, desc;
+        synchronized (mCursorLock) {
+            mCursor.moveToPosition(position);
+            iid = mCursor.getLong(COLI_ID);
+            cid = mCursor.getLong(COLI_CHANNELID);
+            title = mCursor.getString(COLI_TITLE);
+            desc = mCursor.getString(COLI_DESCRIPTION);
+        }
         RemoteViews rv = new RemoteViews(Environ.getAppContext().getPackageName(),
                                          R.layout.appwidget_row);
-        rv.setTextViewText(R.id.channel, mDbp.getChannelInfoString(cur.getLong(COLI_CHANNELID),
-                                                                   ColumnChannel.TITLE));
-        rv.setTextViewText(R.id.title, cur.getString(COLI_TITLE));
-        rv.setTextViewText(R.id.description, cur.getString(COLI_DESCRIPTION));
-
-        long iid = cur.getLong(COLI_ID);
+        rv.setTextViewText(R.id.channel, mDbp.getChannelInfoString(cid, ColumnChannel.TITLE));
+        rv.setTextViewText(R.id.title, title);
+        rv.setTextViewText(R.id.description, desc);
 
 
         File df = ContentsManager.get().getItemInfoDataFile(iid);
@@ -502,8 +512,7 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     finalize() throws Throwable {
         super.finalize();
-        Cursor cur = mCursor.get();
-        if (null != cur)
-            cur.close();
+        if (null != mCursor)
+            mCursor.close();
     }
 }
