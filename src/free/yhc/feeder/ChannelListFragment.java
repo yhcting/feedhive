@@ -210,7 +210,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPreRun(BaseBGTask task) {
             // NOTE : refresh??? just 'notifying' is enough?
-            dataSetChanged(_mCid);
+            channelRttStateChanged(_mCid);
         }
 
         @Override
@@ -241,7 +241,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 return;
 
             if (0 == mRtt.getItemsDownloading(_mCid).length)
-                dataSetChanged(_mCid);
+                channelRttStateChanged(_mCid);
         }
 
         @Override
@@ -252,7 +252,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 return;
 
             if (0 == mRtt.getItemsDownloading(_mCid).length)
-                dataSetChanged(_mCid);
+                channelRttStateChanged(_mCid);
         }
     }
 
@@ -279,7 +279,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                    _mNrDelItems + getResources().getString(R.string.channel_deleted_msg));
             for (long cid : _mCids)
                 ChannelListFragment.this.getAdapter().removeChannel(cid);
-            ChannelListFragment.this.getAdapter().notifyDataSetChanged();
+            dataSetChanged();
             ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
         }
     }
@@ -368,6 +368,11 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     dataSetChanged() {
         // ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
+        // Delayed action(notify) may lead to unexpected exception. Why?
+        // Delayed action means, action can be triggered even after this fragment is destroyed
+        // In this case adapter and fragment has invalid reference values and this
+        //   may lead to unexpected (ex. "try to use recycled bitmap at ImageView") excpetion.
+        // So, DO NOT USE delayed action here.
         getAdapter().notifyDataSetChanged();
     }
 
@@ -392,7 +397,12 @@ UnexpectedExceptionHandler.TrackedModule {
                 cla.addUnchanged(cla.getItemId(i));
         }
         */
-        getAdapter().notifyDataSetChanged();
+        dataSetChanged();
+    }
+
+    private void
+    channelRttStateChanged(long cid) {
+        getAdapter().notifyChannelRttStateChanged(cid);
     }
 
     private int
@@ -438,7 +448,7 @@ UnexpectedExceptionHandler.TrackedModule {
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
             mRtt.register(cid, RTTask.Action.UPDATE, task);
             mRtt.start(cid, RTTask.Action.UPDATE);
-            dataSetChanged(cid);
+            channelRttStateChanged(cid);
         } break;
 
         case RUNNING:
@@ -446,14 +456,14 @@ UnexpectedExceptionHandler.TrackedModule {
             //if (DBG) P.v("cancel : " + cid);
             mRtt.cancel(cid, RTTask.Action.UPDATE, null);
             // to change icon into "canceling"
-            dataSetChanged(cid);
+            channelRttStateChanged(cid);
             break;
 
         case FAILED: {
             Err result = mRtt.getErr(cid, RTTask.Action.UPDATE);
             UiHelper.showTextToast(getActivity(), result.getMsgId());
             mRtt.consumeResult(cid, RTTask.Action.UPDATE);
-            dataSetChanged(cid);
+            channelRttStateChanged(cid);
         } break;
 
         case CANCELING:
@@ -541,7 +551,7 @@ UnexpectedExceptionHandler.TrackedModule {
         for (int i = 0; i < ids.length; i++)
             ids[i] = adapter.findItemId(cids[i]);
         adapter.reloadItem(ids);
-        adapter.notifyDataSetChanged();
+        dataSetChanged();
     }
 
     private void

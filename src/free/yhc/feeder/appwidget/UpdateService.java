@@ -32,6 +32,7 @@ import android.os.IBinder;
 import android.widget.RemoteViews;
 import free.yhc.feeder.AppWidgetCategoryChooserActivity;
 import free.yhc.feeder.AppWidgetMenuActivity;
+import free.yhc.feeder.AppWidgetUpdateCategoryActivity;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.model.Environ;
@@ -141,6 +142,15 @@ UnexpectedExceptionHandler.TrackedModule {
                                           true);
                 pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.move_to_top, pi);
+
+                // update button action pending intent
+                // ============================================
+                intent = createBaseIntent(AppWidgetUpdateCategoryActivity.class,
+                                          catid, awid,
+                                          AppWidgetUtils.ACTION_UPDATE_CATEGORY_PENDING_INTENT,
+                                          true);
+                pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
+                rv.setOnClickPendingIntent(R.id.update, pi);
 
                 // more menu button action pending intent
                 // ============================================

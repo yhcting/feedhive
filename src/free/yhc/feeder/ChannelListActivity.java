@@ -467,6 +467,28 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    onOpt_updateAll(final View anchor) {
+        UiHelper.OnConfirmDialogAction action = new UiHelper.OnConfirmDialogAction() {
+            @Override
+            public void
+            onOk(Dialog dialog) {
+                ScheduledUpdateService.scheduleImmediateUpdate(mDbp.getChannelIds());
+            }
+
+            @Override
+            public void
+            onCancel(Dialog dialog) {
+            }
+        };
+
+        UiHelper.buildConfirmDialog(this,
+                                    R.string.update_all_channels,
+                                    R.string.update_all_channels_msg,
+                                    action)
+                .show();
+    }
+
+    private void
     onOpt_itemsCategory(final View anchor) {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
         intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_CATEGORY);
@@ -626,6 +648,14 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onClick(View v) {
                 onOpt_itemsAll(v);
+            }
+        });
+
+        findViewById(R.id.btn_update_all).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void
+            onClick(View v) {
+                onOpt_updateAll(v);
             }
         });
 

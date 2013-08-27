@@ -340,6 +340,11 @@ UnexpectedExceptionHandler.TrackedModule {
         return true;
     }
 
+    long
+    getCategory() {
+        return mCategoryId;
+    }
+
     void
     onItemClick(int position, long id) {
         eAssert(Utils.isUiThread());

@@ -24,6 +24,7 @@ import static free.yhc.feeder.model.Utils.eAssert;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.HashMap;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -64,6 +65,7 @@ AsyncCursorAdapter.ItemBuilder {
     private final View.OnClickListener mPosUpOnClick;
     private final View.OnClickListener mPosDnOnClick;
 
+    private final HashMap<View, Integer> mView2PosMap = new HashMap<View, Integer>();
 
     interface OnActionListener {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -212,6 +214,23 @@ AsyncCursorAdapter.ItemBuilder {
         return ((ItemInfo)super.getItem(position)).cid;
     }
 
+    /**
+     * rebind view of given cid only.
+     * @param cid
+     */
+    public void
+    notifyChannelRttStateChanged(long cid) {
+        int pos = findPosition(cid);
+        if (pos < 0)
+            return; // Not an visible channel
+        for (View v : mView2PosMap.keySet().toArray(new View[0])) {
+            if (pos == mView2PosMap.get(v)) {
+                doBindView(v, (ItemInfo)getItem(pos));
+                return;
+            }
+        }
+    }
+
     @Override
     public Object
     buildItem(AsyncCursorAdapter adapter, Cursor c) {
@@ -265,15 +284,8 @@ AsyncCursorAdapter.ItemBuilder {
         return ret;
     }
 
-    @Override
-    protected void
-    bindView(View v, final Context context, int position)  {
-        if (DBG) P.v("ChannelList bindView Position : " + position);
-        if (!preBindView(v, context, position))
-            return;
-
-        ItemInfo ii = ((ItemInfo)getItem(position));
-
+    private void
+    doBindView(View v, ItemInfo ii) {
         long nrNew = ii.maxItemId - ii.oldLastItemId;
 
         ImageView chIcon = (ImageView)v.findViewById(R.id.image);
@@ -353,5 +365,16 @@ AsyncCursorAdapter.ItemBuilder {
             msgImage.setVisibility(View.VISIBLE);
         else
             msgImage.setVisibility(View.GONE);
+    }
+
+    @Override
+    protected void
+    bindView(View v, final Context context, int position)  {
+        if (DBG) P.v("ChannelList bindView Position : " + position);
+        if (!preBindView(v, context, position))
+            return;
+
+        mView2PosMap.put(v, position);
+        doBindView(v, (ItemInfo)getItem(position));
     }
 }

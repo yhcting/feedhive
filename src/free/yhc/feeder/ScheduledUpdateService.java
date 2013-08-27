@@ -25,7 +25,6 @@ import static free.yhc.feeder.model.Utils.eAssert;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.app.AlarmManager;
@@ -64,6 +63,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private static final String CMD_ALARM   = "alarm";
     private static final String CMD_RESCHED = "resched";
+    private static final String CMD_UPDATE  = "update";
+
+    private static final String KEY_CMD     = "cmd";
+    private static final String KEY_TIME    = "time";
+    private static final String KEY_CHANS   = "chans";
 
     private static final int    RETRY_DELAY = 1000; // ms
 
@@ -106,7 +110,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // TODO
             // Any better way??
             Intent svc = new Intent(context, ScheduledUpdateService.class);
-            svc.putExtra("cmd", CMD_RESCHED);
+            svc.putExtra(KEY_CMD, CMD_RESCHED);
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
@@ -133,8 +137,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 return;
             }
             Intent svc = new Intent(context, ScheduledUpdateService.class);
-            svc.putExtra("cmd", CMD_ALARM);
-            svc.putExtra("time", time);
+            svc.putExtra(KEY_CMD, CMD_ALARM);
+            svc.putExtra(KEY_TIME, time);
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
@@ -352,9 +356,24 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
+     * Schedule update for 'cids' right now.
+     * @param cids
+     */
+    static void
+    scheduleImmediateUpdate(long[] cids) {
+        Context context = Environ.getAppContext();
+        Intent svc = new Intent(context, ScheduledUpdateService.class);
+        svc.putExtra(KEY_CMD, CMD_UPDATE);
+        svc.putExtra(KEY_CHANS, cids);
+        // onStartCommand will be sent!
+        context.startService(svc);
+        // Update should be started before falling into sleep.
+        getWakeLock();
+    }
+
+    /**
      * NOTE
      * Next updates which are at least 1-min after, will be scheduled.
-     * @param context
      * @param calNow
      */
     static void
@@ -412,6 +431,39 @@ UnexpectedExceptionHandler.TrackedModule {
             AlarmManager am = (AlarmManager)cxt.getSystemService(ALARM_SERVICE);
             am.set(AlarmManager.RTC_WAKEUP, nearestNext, pIntent);
             if (DBG) P.v("New nearest scheduled update is set! " + (nearestNext / 1000) + " sec.");
+        }
+    }
+
+    private void
+    startUpdates(int startId, long[] cids) {
+        for (long cid : cids) {
+            // NOTE
+            // onStartCommand() is run on UIThread.
+            // So, I don't need to worry about race-condition caused from re-entrance of this function
+            // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
+            RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
+            if (RTTask.TaskState.CANCELING == state
+                || RTTask.TaskState.RUNNING == state
+                || RTTask.TaskState.READY == state) {
+                //logI("doCmdAlarm : Channel [" + cid + "] is already active.\n" +
+                //     "             So scheduled update is skipped");
+            } else {
+                // unregister gracefully to start update.
+                // There is sanity check in BGTaskManager - see BGTaskManager
+                //   to know why this 'unregister' is required.
+                mRtt.unregister(cid, RTTask.Action.UPDATE);
+
+                UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
+                mRtt.register(cid, RTTask.Action.UPDATE, task);
+                mRtt.bind(cid, RTTask.Action.UPDATE, this, task.getTaskEventListener());
+                //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
+                synchronized (mTaskset) {
+                    if (!mTaskset.add(cid)) {
+                        if (DBG) P.w("doCmdAlarm : starts duplicated update! : " + cid);
+                    }
+                }
+                mRtt.start(cid, RTTask.Action.UPDATE);
+            }
         }
     }
 
@@ -476,37 +528,8 @@ UnexpectedExceptionHandler.TrackedModule {
         } while (c.moveToNext());
         c.close();
 
-        Iterator<Long> itr = chl.listIterator();
-        while (itr.hasNext()) {
-            long cid = itr.next();
-            // NOTE
-            // onStartCommand() is run on UIThread.
-            // So, I don't need to worry about race-condition caused from re-entrance of this function
-            // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
-            RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
-            if (RTTask.TaskState.CANCELING == state
-                || RTTask.TaskState.RUNNING == state
-                || RTTask.TaskState.READY == state) {
-                //logI("doCmdAlarm : Channel [" + cid + "] is already active.\n" +
-                //     "             So scheduled update is skipped");
-            } else {
-                // unregister gracefully to start update.
-                // There is sanity check in BGTaskManager - see BGTaskManager
-                //   to know why this 'unregister' is required.
-                mRtt.unregister(cid, RTTask.Action.UPDATE);
-
-                UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
-                mRtt.register(cid, RTTask.Action.UPDATE, task);
-                mRtt.bind(cid, RTTask.Action.UPDATE, this, task.getTaskEventListener());
-                //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
-                synchronized (mTaskset) {
-                    if (!mTaskset.add(cid)) {
-                        if (DBG) P.w("doCmdAlarm : starts duplicated update! : " + cid);
-                    }
-                }
-                mRtt.start(cid, RTTask.Action.UPDATE);
-            }
-        }
+        long[] cids = Utils.convertArrayLongTolong(chl.toArray(new Long[0]));
+        startUpdates(startId, cids);
 
         // register next scheduled-update.
         // NOTE
@@ -520,16 +543,34 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    doCmdUpdate(int startId, long[] cids) {
+        if (DBG) {
+            StringBuilder bldr = new StringBuilder("");
+            bldr.append("DO Command update!! : " + startId + "\n");
+            bldr.append("Cids: ");
+            for (long cid : cids)
+                bldr.append(cid + ", ");
+            bldr.append("\n");
+            P.v(bldr.toString());
+        }
+
+        startUpdates(startId, cids);
+    }
+
+    private void
     runStartCommand(Intent intent, int flags, int startId) {
-        String cmd = intent.getStringExtra("cmd");
+        String cmd = intent.getStringExtra(KEY_CMD);
         //logI("ScheduledUpdate : runStartCommand : " + cmd);
         // 'cmd' can be null.
         // So, DO NOT use "cmd.equals()"...
         if (CMD_RESCHED.equals(cmd))
             doCmdResched(startId);
         else if (CMD_ALARM.equals(cmd)) {
-            long schedTime = intent.getLongExtra("time", -1);
+            long schedTime = intent.getLongExtra(KEY_TIME, -1);
             doCmdAlarm(startId, schedTime);
+        } else if (CMD_UPDATE.equals(cmd)) {
+            long[] cids = intent.getLongArrayExtra(KEY_CHANS);
+            doCmdUpdate(startId, cids);
         } else
             eAssert(false);
 

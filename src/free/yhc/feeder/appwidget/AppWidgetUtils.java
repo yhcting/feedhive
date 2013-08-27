@@ -36,15 +36,16 @@ public class AppWidgetUtils {
     private static final Logger P = new Logger(AppWidgetUtils.class);
 
     public static final int    INVALID_APPWIDGETID = -1;
+    public static final String MAP_KEY_CATEGORYID  = "categoryid";
 
     static final String ACTION_LIST_PENDING_INTENT            = "feeder.intent.action.LIST_PENDING_INTENT";
     static final String ACTION_CHANGE_CATEGORY_PENDING_INTENT = "feeder.intent.action.CHANGE_CATEGORY_PENDING_INTENT";
     static final String ACTION_MOVE_TO_TOP_PENDING_INTENT     = "feeder.intent.action.MOVE_TO_TOP_PENDING_INTENT";
+    static final String ACTION_UPDATE_CATEGORY_PENDING_INTENT = "feeder.intent.action.UPDATE_CATEGORY_PENDING_INTENT";
     static final String ACTION_MORE_MENU_PENDING_INTENT       = "feeder.intent.action.MORE_MENU_PENDING_INTENT";
 
     static final int    INVALID_POSITION    = -1;
 
-    static final String MAP_KEY_CATEGORYID  = "categoryid";
     static final String MAP_KEY_ITEMID      = "itemid";
     static final String MAP_KEY_POSITION    = "position";
 

@@ -35,12 +35,24 @@
         android:clickable="true"
         />
     <ImageView
-        android:id="@+id/more_menu"
+        android:id="@+id/update"
         android:layout_width="@dimen/appwidget_btn_width"
         android:layout_height="@dimen/appwidget_btn_height"
         android:layout_marginLeft="3dp"
         android:layout_alignParentBottom="true"
         android:layout_toRightOf="@id/move_to_top"
+        android:gravity="center"
+        android:scaleType="fitCenter"
+        android:src="@drawable/refresh"
+        android:clickable="true"
+        />
+    <ImageView
+        android:id="@+id/more_menu"
+        android:layout_width="@dimen/appwidget_btn_width"
+        android:layout_height="@dimen/appwidget_btn_height"
+        android:layout_marginLeft="3dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/update"
         android:gravity="center"
         android:scaleType="fitCenter"
         android:src="@drawable/more_menu"

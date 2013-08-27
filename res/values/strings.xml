@@ -30,6 +30,8 @@
     <string name="send_err_report">Send error report</string>
     <string name="send_usage_report">Send usage report</string>
     <string name="send_feedback_report">Send feedback report</string>
+    <string name="update_all_channels">Update all channels</string>
+    <string name="update_category_channels">Update category channels</string>
     <string name="enter_name">Enter name</string>
     <string name="channel_url">Channel URL</string>
     <string name="setting">Setting</string>
@@ -94,6 +96,8 @@
     <string name="delete_all_downloadded_file">Delete all downloadded files</string>
     <string name="delete_all_downloadded_file_msg">All downloadded files will be deleted.</string>
     <string name="delete_all_downloadded_file_errmsg">Some files are not able to be deleted.</string>
+    <string name="update_all_channels_msg">All channels are updated immediately.</string>
+    <string name="update_category_channels_msg">Channels in this category are updated immediately.</string>
     <string name="add_category">Add category</string>
     <string name="delete_category">Delete category</string>
     <string name="rename_category">Rename category</string>
