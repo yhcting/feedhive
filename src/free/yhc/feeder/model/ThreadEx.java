@@ -106,6 +106,15 @@ public abstract class ThreadEx<R> {
     }
 
     private void
+    runOnOwnerContext(Runnable r) {
+        if (isOwnerThread(Thread.currentThread())) {
+            r.run();
+        } else {
+            mOwner.post(r);
+        }
+    }
+
+    private void
     postOnCancelled() {
         if (DBG) P.v("postOnCancelled");
         mOwner.post(new Runnable() {
@@ -303,7 +312,7 @@ public abstract class ThreadEx<R> {
         if (mUserCancel.getAndSet(true))
             return false;
 
-        mOwner.post(new Runnable() {
+        runOnOwnerContext(new Runnable() {
             @Override
             public void
             run() {
@@ -338,7 +347,7 @@ public abstract class ThreadEx<R> {
 
     public final void
     run() {
-        mOwner.post(new Runnable() {
+        runOnOwnerContext(new Runnable() {
             @Override
             public void
             run() {

@@ -216,15 +216,9 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BaseBGTask task, Err result) {
-            eAssert(Err.USER_CANCELLED != result);
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (getActivity().isFinishing())
                 return;
-
-            // In normal case, onPostExecute is not called in case of 'user-cancel'.
-            // below code is for safety.
-            if (Err.USER_CANCELLED == result)
-                return; // onPostExecute SHOULD NOT be called in case of user-cancel
 
             // NOTE : refresh??? just 'notifying' is enough?
             // It should be 'refresh' due to after successful update,
