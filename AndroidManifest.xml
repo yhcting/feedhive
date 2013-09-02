@@ -50,7 +50,15 @@
                   android:theme="@android:style/Theme.Dialog"
                   >
             <intent-filter>
-                <action android:name="android.intent.action.APPWIDGET_PICK" />
+                <action android:name="android.intent.action.CHANGE_CATEGORY_PENDING_INTENT" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".AppWidgetUpdateCategoryActivity"
+                  android:configChanges="orientation|screenSize|keyboardHidden"
+                  android:theme="@android:style/Theme.Dialog"
+                  >
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_UPDATE_CATEGORY_PENDING_INTENT" />
             </intent-filter>
         </activity>
         <activity android:name=".AppWidgetMenuActivity"
