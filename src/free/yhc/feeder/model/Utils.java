@@ -30,6 +30,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -671,7 +673,29 @@ public class Utils {
 
     public static String
     getExtentionFromUrl(String url) {
-        return MimeTypeMap.getFileExtensionFromUrl(url);
+        /*
+         * Sometimes MimeTypeMap.getFileExtentionFromUrl returns null event if url is valid
+         * (Especially, in case that URL contains Korean).
+         * So, DO NOT USE it!
+        String ext = MimeTypeMap.getFileExtensionFromUrl(url);
+        if (isValidValue(ext))
+            return ext;
+        */
+        URL u;
+        try {
+            u = new URL(url);
+        } catch (MalformedURLException e) {
+            return "";
+        }
+        String path = u.getPath();
+        int i = path.lastIndexOf('.');
+        if (i < 0)
+            return "";
+        try {
+            return path.substring(i + 1);
+        } catch (IndexOutOfBoundsException e) {
+            return "";
+        }
     }
 
     public static String
