@@ -95,13 +95,15 @@ UnexpectedExceptionHandler.TrackedModule {
         private AtomicReference<Boolean> _mClosed = new AtomicReference<Boolean>(false);
 
         private boolean
-        isInCategory(long cid) {
+        isInCategory(Long cid) {
+            if (null == cid)
+                return false;
             return _mCidSet.contains(cid);
         }
 
         private boolean
         isInCategoryItem(long id) {
-            long cid = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
+            Long cid = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
             return isInCategory(cid);
         }
 
