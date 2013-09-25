@@ -99,7 +99,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
                                              WebStorage.QuotaUpdater quotaUpdater) {
-            if (DBG) P.d("ReachedMaxAppCacheSize : " + spaceNeeded);
+            if (DBG) P.d("space : " + spaceNeeded);
             quotaUpdater.updateQuota(spaceNeeded * 2);
         }
     }
@@ -132,7 +132,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPostRun(BaseBGTask task, Err result) {
-            if (DBG) P.v("DownloadToDBBGTaskListener : onPostRun");
+            if (DBG) P.v("Enter");
             Intent i = new Intent();
             i.putExtra("id", mId);
             setResult(RESULT_DOWNLOAD, i);
@@ -183,7 +183,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         RTTask.TaskState state = mRtt.getState(mId, RTTask.Action.DOWNLOAD);
-        if (DBG) P.v("setupLayout : state : " + state.name());
+        if (DBG) P.v("state : " + state.name());
         switch(state) {
         case IDLE:
             if (mCurUrl.equals(mFileUrl)) {
@@ -319,7 +319,6 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onPause() {
-        //if (DBG) P.v("onPause");
         // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
         mRtt.unregisterRegisterEventListener(this);
         // See comments in 'ChannelListActivity.onPause()'
@@ -330,7 +329,6 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     protected void
     onStop() {
-        //if (DBG) P.v("onStop");
         super.onStop();
     }
 

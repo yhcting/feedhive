@@ -444,7 +444,6 @@ UnexpectedExceptionHandler.TrackedModule {
         RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
         switch (state) {
         case IDLE: {
-            //if (DBG) P.v("update : " + cid);
             BGTaskUpdateChannel task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
             mRtt.register(cid, RTTask.Action.UPDATE, task);
             mRtt.start(cid, RTTask.Action.UPDATE);
@@ -453,7 +452,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
         case RUNNING:
         case READY:
-            //if (DBG) P.v("cancel : " + cid);
             mRtt.cancel(cid, RTTask.Action.UPDATE, null);
             // to change icon into "canceling"
             channelRttStateChanged(cid);
@@ -808,7 +806,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onStart() {
         super.onStart();
-        if (DBG) P.v("Fragment : onStart");
+        if (DBG) P.v("Enter");
     }
 
     @Override
@@ -898,7 +896,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onStop() {
-        if (DBG) P.v("Fragment : onStop");
+        if (DBG) P.v("Enter");
         super.onStop();
     }
     @Override

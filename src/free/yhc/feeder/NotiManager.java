@@ -311,7 +311,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onNotify(Object user, ListenerManager.Type type, Object a0, Object a1) {
-            if (DBG) P.i("NotiManager : Noty : " + ((DBPolicy.UpdateType)type).name());
+            if (DBG) P.i("Noty : " + ((DBPolicy.UpdateType)type).name());
             switch ((DBPolicy.UpdateType)type) {
             case NEW_ITEMS: {
                 long cid = (Long)a0;

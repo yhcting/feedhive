@@ -112,7 +112,7 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
         if (mCurTransaction == null)
             mCurTransaction = mFragmentManager.beginTransaction();
         String name = getFragmentName(position);
-        P.d("destroyItem : position(" + position + "), name(" + name + ")");
+        P.d("position(" + position + "), name(" + name + ")");
         mCurTransaction.detach((Fragment)object);
         mCurTransaction.remove((Fragment)object);
     }
@@ -121,7 +121,6 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
     public void
     setPrimaryItem(ViewGroup container, int position, Object object) {
         Fragment fragment = (Fragment)object;
-        //if (DBG) P.v("setPrimaryItem : position(" + position + ") tag(" + fragment.getTag() + ")");
         if (fragment != mCurrentPrimaryItem) {
             if (mCurrentPrimaryItem != null) {
                 mCurrentPrimaryItem.setMenuVisibility(false);

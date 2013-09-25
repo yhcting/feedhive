@@ -66,7 +66,7 @@ public class AppWidgetUtils {
 
     static void
     deleteWidgetToCategoryMap(int appWidgetId) {
-        if (DBG) P.v("<DELETE> Widget->Category Map : widget:" + appWidgetId);
+        if (DBG) P.v("widget : " + appWidgetId);
         sMapPrefEditor.remove(String.valueOf(appWidgetId));
         sMapPrefEditor.apply();
     }
@@ -86,14 +86,14 @@ public class AppWidgetUtils {
                 al.add(id);
         }
         int[] rets = Utils.convertArrayIntegerToint(al.toArray(new Integer[0]));
-        if (DBG) P.v("<GET> Category->Widget Map : category:" + categoryid +
+        if (DBG) P.v("category:" + categoryid +
                      " -> widget:" + Utils.nrsToNString(rets));
         return rets;
     }
 
     public static void
     putWidgetToCategoryMap(int appWidgetId, long categoryid) {
-        if (DBG) P.v("<PUT> Widget->Category Map : widget:" + appWidgetId + " -> category:" + categoryid);
+        if (DBG) P.v("widget:" + appWidgetId + " -> category:" + categoryid);
         sMapPrefEditor.putLong(String.valueOf(appWidgetId), categoryid);
         sMapPrefEditor.apply();
     }

@@ -59,7 +59,7 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onDeleted(context, appWidgetIds);
         for (int id : appWidgetIds)
             AppWidgetUtils.deleteWidgetToCategoryMap(id);
-        if (DBG) P.v("onDeleted");
+        if (DBG) P.v("Exit");
 
     }
 
@@ -67,28 +67,28 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onDisabled(Context context) {
         super.onDisabled(context);
-        if (DBG) P.v("onDisabled");
+        if (DBG) P.v("Exit");
     }
 
     @Override
     public void
     onEnabled(Context context) {
         super.onEnabled(context);
-        if (DBG) P.v("onEnabled");
+        if (DBG) P.v("Exit");
     }
 
     @Override
     public void
     onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
-        if (DBG) P.v("onReceive");
+        if (DBG) P.v("Exit");
     }
 
     @Override
     public void
     onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
-        if (DBG) P.v("onUpdate : " + Utils.nrsToNString(appWidgetIds));
+        if (DBG) P.v("widget ids : " + Utils.nrsToNString(appWidgetIds));
 
         ArrayList<Integer> wl = new ArrayList<Integer>(appWidgetIds.length);
         for (int awid : appWidgetIds) {

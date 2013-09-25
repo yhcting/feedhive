@@ -69,14 +69,14 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
 
     public void
     refreshDataSet() {
-        if (DBG) P.v("refreshDataSet");
+        if (DBG) P.v("Enter");
         reset(mDbp.getCategories());
         super.notifyDataSetChanged();
     }
 
     public void
     newCategoryAdded(long newCatId) {
-        if (DBG) P.v("newCategoryAdded : " + newCatId);
+        if (DBG) P.v("id : " + newCatId);
         long[] newCatIds = new long[mCatIds.length + 1];
         System.arraycopy(mCatIds, 0, newCatIds, 0, mCatIds.length);
         newCatIds[mCatIds.length] = newCatId;
@@ -90,7 +90,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
 
     public void
     categoryDeleted(long catId) {
-        if (DBG) P.v("categoryDeleted : " + catId);
+        if (DBG) P.v("id : " + catId);
         long[] newCatIds = new long[mCatIds.length - 1];
         ChannelListFragment[] newFragments = new ChannelListFragment[newCatIds.length];
         try {
@@ -110,7 +110,6 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     public ChannelListFragment
     getPrimaryFragment() {
         ChannelListFragment clf = (ChannelListFragment)super.getCurrentPrimaryFragment();
-        //if (DBG) P.v("getPrimaryFragment : tag(" + (null == clf? "<null>": clf.getTag()) + ")");
         return clf;
     }
 
@@ -143,7 +142,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     @Override
     public Fragment
     getItem(int position) {
-        if (DBG) P.v("getItem : " + position);
+        if (DBG) P.v("pos : " + position);
         return ChannelListFragment.newInstance(mCatIds[position]);
 
     }
@@ -151,7 +150,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     @Override
     public long
     getItemId(int position) {
-        if (DBG) P.v("getItemId : " + position + "/" + mCatIds[position]);
+        if (DBG) P.v("pos : " + position + "/" + mCatIds[position]);
         return mCatIds[position];
     }
 
@@ -172,14 +171,14 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     @Override
     public Object
     instantiateItem(ViewGroup container, int position) {
-        if (DBG) P.v("instantiateItem : " + position);
+        if (DBG) P.v("pos : " + position);
         return super.instantiateItem(container, position);
     }
 
     @Override
     public void
     destroyItem(ViewGroup container, int position, Object object) {
-        if (DBG) P.v("destroyItem : " + position);
+        if (DBG) P.v("pos : " + position);
         super.destroyItem(container, position, object);
     }
 

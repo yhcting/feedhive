@@ -116,7 +116,7 @@ public abstract class ThreadEx<R> {
 
     private void
     postOnCancelled() {
-        if (DBG) P.v("postOnCancelled");
+        if (DBG) P.v("Enter");
         mOwner.post(new Runnable() {
             @Override
             public void
@@ -131,7 +131,7 @@ public abstract class ThreadEx<R> {
 
     private void
     postOnPostRun(final R r) {
-        if (DBG) P.v("postOnPostRun");
+        if (DBG) P.v("Enter");
         mOwner.post(new Runnable() {
             @Override
             public void
@@ -159,7 +159,7 @@ public abstract class ThreadEx<R> {
                     break;
 
                 default:
-                    if (DBG) P.w("bgRun : Invalid state (" + getStateLocked().name() + ")");
+                    if (DBG) P.w("Invalid state (" + getStateLocked().name() + ")");
                     return; // nothing to do
                 }
             }
@@ -321,7 +321,7 @@ public abstract class ThreadEx<R> {
                     case STARTED:
                     case RUNNING:
                         setStateLocked(State.CANCELING);
-                        if (DBG) P.v("cancel : before onCancel()");
+                        if (DBG) P.v("before onCancel()");
                         // NOTE
                         // onCancel() SHOULD be HERE!
                         // The reason is that state of "BG job" should be in 'CANCELLING' while onCancel is called.

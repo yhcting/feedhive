@@ -483,7 +483,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (schedTime < 0 // something wrong!!
             || calNow.getTimeInMillis() < schedTime // scheduled too early
             || calNow.getTimeInMillis() > schedTime + Utils.HOUR_IN_MS) { // scheduled too late
-            if (DBG) P.w("WARN : ScheduledUpdateService : weired scheduling!!!\n" +
+            if (DBG) P.w("WARN : weired scheduling!!!\n" +
                          "    scheduled time(ms) : " + schedTime + "\n" +
                          "    current time(ms)   : " + calNow.getTimeInMillis());
             scheduleNextUpdate(calNow);

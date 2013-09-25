@@ -158,7 +158,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     long cid = (Long)arg0;
                     // Check that number of channels in the category is changed.
                     long catid = mDbp.getChannelInfoLong(cid, ColumnChannel.CATEGORYID);
-                    if (DBG) P.v("onDbUpdate : " + ((DB.UpdateType)type).name() + " : "
+                    if (DBG) P.v("Channel update : " + ((DB.UpdateType)type).name() + " : "
                                                  + mAppWidgetId + ", "
                                                  +  mCategoryId + ", " + catid + ", " + cid);
                     if ((!isInCategory(cid) && catid == mCategoryId) // channel is newly inserted to this category.
@@ -277,7 +277,7 @@ UnexpectedExceptionHandler.TrackedModule {
     getCursor() {
         mCids = mDbp.getChannelIds(mCategoryId);
         mDbWatcher.updateCategoryChannels(mCids);
-        if (DBG) P.v("getCursor : Channels : " + Utils.nrsToNString(mCids));
+        if (DBG) P.v("Channels : " + Utils.nrsToNString(mCids));
         return mDbp.queryItem(mCids, sQueryProjection);
     }
 
@@ -350,7 +350,7 @@ UnexpectedExceptionHandler.TrackedModule {
     void
     onItemClick(int position, long id) {
         eAssert(Utils.isUiThread());
-        if (DBG) P.v("OnItemClick : " + position);
+        if (DBG) P.v("pos : " + position);
         Long cidLong = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
         if (null == cidLong) {
             // CASE (reproducing step)
@@ -404,7 +404,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Called at binder thread
         // TODO
         // Loading view here.
-        if (DBG) P.v("getLoadingView");
+        if (DBG) P.v("Enter");
         return null;
     }
 
@@ -429,7 +429,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
         File df = ContentsManager.get().getItemInfoDataFile(iid);
-        if (DBG) P.v("getViewAt : " + position
+        if (DBG) P.v("pos : " + position
                      + " : Path(" + df.exists() + ") ["
                      + ((null == df)? "<null>": df.getAbsolutePath()) + "]");
         if (null != df && df.exists()) {
@@ -487,7 +487,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onCreate() {
-        if (DBG) P.v("onCreate : " + mAppWidgetId + " / " + mCategoryId);
+        if (DBG) P.v("widgetid : " + mAppWidgetId + " / " + mCategoryId);
     }
 
     @Override
@@ -512,7 +512,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 mRtt.unregisterRegisterEventListener(this);
             }
         });
-        if (DBG) P.v("onDestroy");
+        if (DBG) P.v("Exit");
     }
 
     @Override

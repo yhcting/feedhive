@@ -78,11 +78,11 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         protected void
         onPreRun() {
-            if (DBG) P.v("Update onPreRun");
+            if (DBG) P.v("Enter");
             for (int awid : _mAppWidgetIds) {
                 RemoteViews rv = new RemoteViews(getApplicationContext().getPackageName(),
                                                  R.layout.appwidget_loading);
-                if (DBG) P.v("Update widget - Loading : " + awid);
+                if (DBG) P.v("Loading : " + awid);
                 _mAwm.updateAppWidget(awid, rv);
             }
         }
@@ -90,7 +90,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         protected void
         onPostRun(Err result) {
-            if (DBG) P.v("Update onPostRun");
+            if (DBG) P.v("Enter");
             for (int awid : _mAppWidgetIds) {
                 RemoteViews rv = null;
                 switch (Utils.getPrefAppWidgetButtonLayout()) {
@@ -161,7 +161,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.more_menu, pi);
 
-                if (DBG) P.v("Update widget : " + awid);
+                if (DBG) P.v("widget : " + awid);
                 _mAwm.updateAppWidget(awid, rv);
                 // Update ViewsFactory manually!
                 ViewsService.updateViewsFactory(awid);
@@ -177,14 +177,14 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         protected void
         onCancelled() {
-            if (DBG) P.v("Update onCancelled");
+            if (DBG) P.v("Enter");
             stopSelf();
         }
 
         @Override
         protected Err
         doAsyncTask() {
-            if (DBG) P.v("Update AsyncTask");
+            if (DBG) P.v("Enter");
             try {
                 //Thread.sleep(5000);
             } catch (Exception ignored) { }
@@ -195,7 +195,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static void
     update(Context context, int[] appWidgetIds) {
-        if (DBG) P.v("Update Widgets : Widget Ids : " + Utils.nrsToNString(appWidgetIds));
+        if (DBG) P.v("Widget Ids : " + Utils.nrsToNString(appWidgetIds));
         // Build the intent to call the service
         Intent intent = new Intent(Environ.getAppContext(), UpdateService.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
@@ -205,7 +205,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static void
     update(Context context, long[] cats) {
-        if (DBG) P.v("Update Widgets : Category Ids : " + Utils.nrsToNString(cats));
+        if (DBG) P.v("Category Ids : " + Utils.nrsToNString(cats));
         ArrayList<Integer> al = new ArrayList<Integer>(cats.length);
         for (long cat : cats) {
             int[] awids = AppWidgetUtils.getCategoryWidget(cat);
@@ -238,7 +238,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     onStartCommand(Intent intent, int flags, int startId) {
-        if (DBG) P.v("onStartCommand : " + startId);
+        if (DBG) P.v("startId : " + startId);
         // DO NOT anything for additional update request if there is already running update.
         int[] appWidgetIds = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS);
         new AppWidgetUpdater(appWidgetIds, startId).run();
@@ -248,7 +248,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onDestroy() {
-        if (DBG) P.v("onDestroy");
+        if (DBG) P.v("Enter");
         UnexpectedExceptionHandler.get().unregisterModule(this);
         //logI("ScheduledUpdateService : onDestroy");
         super.onDestroy();

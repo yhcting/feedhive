@@ -57,7 +57,7 @@ import free.yhc.feeder.model.Utils;
 public class ChannelListActivity extends FragmentActivity implements
 ActionBar.TabListener,
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
+    private static final boolean DBG = true;
     private static final Utils.Logger P = new Utils.Logger(ChannelListActivity.class);
 
     // Request codes.
@@ -121,7 +121,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPageSelected(int arg0) {
-            if (DBG) P.v("OnPageViewChange : onPageSelected : " + arg0);
+            if (DBG) P.v("arg : " + arg0);
             mAb.setSelectedNavigationItem(arg0);
         }
 
@@ -132,7 +132,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onPageScrollStateChanged(int arg0) {
-            if (DBG) P.v("OnPageViewChange : onPageScrollStateChanged : " + arg0);
+            if (DBG) P.v("arg : " + arg0);
             // Fragment is changed. So, context menu is no more valid.
             ChannelListActivity.this.closeContextMenu();
         }
@@ -410,7 +410,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_category_delete(final View anchor) {
         final long categoryid = getCurrentCategoryId();
-        if (DBG) P.v("onOpt_category_delete : category(" + categoryid + ")");
+        if (DBG) P.v("category(" + categoryid + ")");
         if (mDbp.isDefaultCategoryId(categoryid)) {
             UiHelper.showTextToast(this, R.string.warn_delete_default_category);
             return;

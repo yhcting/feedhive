@@ -22,7 +22,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
         @Override
         public void
         onPreDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq) {
-            if (DBG) P.v("onPreDataProvide : anchorPos(" + anchorPos + ")");
+            if (DBG) P.v("anchorPos(" + anchorPos + ")");
             AsyncCursorListAdapter adpr = (AsyncCursorListAdapter)adapter;
             adpr.setAsyncLoadingAnchor(anchorPos);
         }
@@ -30,7 +30,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
         @Override
         public void
         onPostDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq) {
-            if (DBG) P.v("onPostDataProvide : anchorPos(" + anchorPos + ")");
+            if (DBG) P.v("anchorPos(" + anchorPos + ")");
             AsyncCursorListAdapter adpr = (AsyncCursorListAdapter)adapter;
             adpr.setAsyncLoadingAnchor(INVALID_POS);
         }
@@ -38,7 +38,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
         @Override
         public void
         onCancelledDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq) {
-            if (DBG) P.v("onCancelledDataProvide : anchorPos(" + anchorPos + ")");
+            if (DBG) P.v("anchorPos(" + anchorPos + ")");
             AsyncCursorListAdapter adpr = (AsyncCursorListAdapter)adapter;
             adpr.setAsyncLoadingAnchor(INVALID_POS);
         }

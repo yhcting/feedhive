@@ -53,13 +53,13 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onReceive(Context context, Intent intent) {
-            if (DBG) P.v("ListPendingIntentReceiver : onReceive.");
+            if (DBG) P.v("Enter");
             if (!AppWidgetUtils.ACTION_LIST_PENDING_INTENT.equals(intent.getAction()))
                 return; // unexpected intent.
 
             final int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                 AppWidgetUtils.INVALID_APPWIDGETID);
-            if (DBG) P.v("onReceive pending intent : appwidget id : " + awid);
+            if (DBG) P.v("pending intent : appwidget id : " + awid);
             if (AppWidgetUtils.INVALID_APPWIDGETID == awid) {
                 if (DBG) P.w("Unexpected List Pending Intent...");
                 return;
@@ -68,7 +68,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (DBG) P.v("List Pending Intent receives");
             final int pos = intent.getIntExtra(AppWidgetUtils.MAP_KEY_POSITION, AppWidgetUtils.INVALID_POSITION);
             final long id = intent.getLongExtra(AppWidgetUtils.MAP_KEY_ITEMID, DB.INVALID_ITEM_ID);
-            if (DBG) P.v("onReceive pending intent : pos : " + pos + " / id : " + id);
+            if (DBG) P.v("pending intent : pos : " + pos + " / id : " + id);
             Environ.getUiHandler().post(new Runnable() {
                 @Override
                 public void
@@ -88,13 +88,13 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onReceive(Context context, Intent intent) {
-            if (DBG) P.v("MoveToTopPendingIntentReceiver : onReceive.");
+            if (DBG) P.v("Enter");
             if (!AppWidgetUtils.ACTION_MOVE_TO_TOP_PENDING_INTENT.equals(intent.getAction()))
                 return; // unexpected intent.
 
             final int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                 AppWidgetUtils.INVALID_APPWIDGETID);
-            if (DBG) P.v("onReceive pending intent : appwidget id : " + awid);
+            if (DBG) P.v("pending intent : appwidget id : " + awid);
             if (AppWidgetUtils.INVALID_APPWIDGETID == awid) {
                 if (DBG) P.w("Unexpected AppWidgetId...");
                 return;
@@ -194,7 +194,7 @@ UnexpectedExceptionHandler.TrackedModule {
         int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetUtils.INVALID_APPWIDGETID);
         eAssert(DB.INVALID_ITEM_ID != catid
                 && AppWidgetUtils.INVALID_APPWIDGETID != awid);
-        if (DBG) P.v("onGetViewFactory : category(" + catid + ")" + " appwidget(" + awid + ")");
+        if (DBG) P.v("category(" + catid + ")" + " appwidget(" + awid + ")");
         ViewsFactory vf = getViewsFactory(awid);
         if (null == vf) {
             vf = new ViewsFactory(catid, awid);

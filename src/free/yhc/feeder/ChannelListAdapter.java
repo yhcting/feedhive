@@ -370,7 +370,7 @@ AsyncCursorAdapter.ItemBuilder {
     @Override
     protected void
     bindView(View v, final Context context, int position)  {
-        if (DBG) P.v("ChannelList bindView Position : " + position);
+        if (DBG) P.v("Position : " + position);
         if (!preBindView(v, context, position))
             return;
 
