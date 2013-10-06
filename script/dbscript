@@ -6,7 +6,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 11;
+PRAGMA user_version = 12;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -178,6 +178,8 @@ INSERT INTO channels VALUES (!<#>, "한겨레 - 주요기사", "", "!<pref>/lead
 INSERT INTO channels VALUES (!<#>, "한겨레 - 인기기사", "", "!<pref>/newsrank", "", "언론", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "무편집 친절한 기자들 (비디오)", "", "http://vod.hani.co.kr/kindreport/kindreport_vod.xml", "", "시사", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "김어준의 뉴욕타임스 - 오디오", "", "http://vod.hani.co.kr/podcast/cctv_audio.xml.rss", "", "언론", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "시사게이트", "", "!<pref>hanitv/sisagate.xml", "", "팟캐스트", "시사", "정치", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "한겨레캐스트 2013", "", "!<pref>hanitv/hcastnew.xml", "", "팟캐스트", "정치", "시사", "", "", "kor", 0);
 
 
 
@@ -518,6 +520,7 @@ INSERT INTO channels VALUES (!<#>, "그것은 알기싫다", "", "!<pref>umcuw.x
 INSERT INTO channels VALUES (!<#>, "벙커1 특강", "", "!<pref>bunker1.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "파워투더피플", "", "!<pref>ptp.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "딴지이너뷰", "", "!<pref>innerview.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "아부나이 니홍고", "", "!<pref>masao.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
 
 
 
@@ -1056,6 +1059,7 @@ INSERT INTO channels VALUES (!<#>, "대한민국 주식시장을 고발한다", 
 INSERT INTO channels VALUES (!<#>, "[팩트TV] 이이제이 이작가의 결정적순간", "", "!<iblug>facttv00008.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "[팩트TV] 이박사와 세작의 역사데칼코마니", "", "!<iblug>facttv00010.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 변호사", "", "!<iblug>iamlawyer.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "[팩트TV] 나친박 이썅규의 종횡무진", "", "!<pref>facttv00006.xml", "", "팟캐스트", "정치", "시사", "", "", "kor", 0);
 
 
 
@@ -1266,7 +1270,21 @@ INSERT INTO channels VALUES (!<#>, "컬투! 심통사연", "", "!<pref>yeshira.x
 INSERT INTO channels VALUES (!<#>, "김종배의 사사로운 토크", "", "!<pref>sasatalk.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 잉여다", "", "!<pref>ingyeoin.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "라디오 책다방", "", "!<pref>changbi.xml", "", "팟캐스트", "교양", "", "", "", "kor", 0);
-INSERT INTO channels VALUES (!<#>, "시사게이트", "", "!<pref>hanitv/sisagate.xml", "", "팟캐스트", "시사", "정치", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "박시백의 조선왕조실록", "", "!<pref>human.xml", "", "팟캐스트", "문화", "교양", "", "", "kor", 0);
+
+
+
+-- 국민TV 뉴스
+--!SET pref http://news.kukmin.tv/rss/
+INSERT INTO channels VALUES (!<#>, "국민TV뉴스 - 전체기사", "", "!<pref>allArticle.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV뉴스 - 인기기사", "", "!<pref>clickTop.xml", "", "언론", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV뉴스 - 정치/국제", "", "!<pref>S1N1.xml", "", "언론", "정치", "국제", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV뉴스 - 사회/경제", "", "!<pref>S1N2.xml", "", "언론", "사회", "경제", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV뉴스 - 문화/미디어", "", "!<pref>S1N4.xml", "", "언론", "문화", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV뉴스 - 오피니언", "", "!<pref>S1N5.xml", "", "언론", "사설", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV뉴스 - 라디오", "", "!<pref>S1N6.xml", "", "언론", "", "", "", "", "kor", 0);
+
+
 
 -- 팟캐스트 국민TV
 --!SET pref http://pod.ssenhosting.com/rss/guitarkirk/
@@ -1296,6 +1314,15 @@ INSERT INTO channels VALUES (!<#>, "국민TV - 이재정의 70.5", "", "!<pref>7
 INSERT INTO channels VALUES (!<#>, "국민TV - 어나더 타임", "", "!<pref>13another.xml", "", "팟캐스트", "음악", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "국민TV - 최동석-유정식-문희정의 경영토크", "", "!<pref>19young.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "국민TV - 초대석", "", "!<pref>07invite.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 오보의 역사", "", "!<pref>obo.xml", "", "팟캐스트", "사회", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 인문학으로 여는 오늘", "", "!<pref>06humanities.xml", "", "팟캐스트", "문화", "사회", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 꿈꾸는 협동조합", "", "!<pref>12johap.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 30분 책 읽기", "", "!<pref>30book.xml", "", "팟캐스트", "교양", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 이작가 문희정의 라이벌", "", "!<pref>rival.xml", "", "팟캐스트", "교양", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 김광수의 경제 소프트", "", "!<pref>soft.xml", "", "팟캐스트", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 김종대 정욱식의 진짜 안보", "", "!<pref>anbo.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 노종면의 뉴스바", "", "!<pref>newsbar.xml", "", "팟캐스트", "시사", "정치", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민TV - 선대인의 대인경제", "", "!<pref>sundaein.xml", "", "팟캐스트", "경제", "", "", "", "kor", 0);
 
 
 
@@ -1331,6 +1358,8 @@ INSERT INTO channels VALUES (!<#>, "EBS 북카페", "", "http://www.ebs.co.kr/ac
 INSERT INTO channels VALUES (!<#>, "디자인과 이슈", "", "http://zuno88.cafe24.com/podcast/rss.xml", "", "팟캐스트", "사회", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "뉴욕 노가리(New York Nogary)", "", "http://nynogary.com/pobcast/nynogary.xml", "", "팟캐스트", "여행", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "뉴스타파", "", "http://download.newstapa.org/podcast/podcast.xml", "", "언론", "팟캐스트", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "김광수의 경제 한 방", "", "http://feeds.kseri.net/kseri/punch", "", "팟캐스트", "경제", "", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "국민이 갑이다", "", "http://www.615tv.net/podcastgap/jkbsgap.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 
 
 
