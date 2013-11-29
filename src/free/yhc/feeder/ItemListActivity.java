@@ -816,7 +816,7 @@ UnexpectedExceptionHandler.TrackedModule {
         AlertDialog dialog =
                 UiHelper.createWarningDialog(this,
                                              R.string.delete_downloadded_file,
-                                             R.string.delete_downloadded_file_msg);
+                                             R.string.delete_item_downloadded_file_msg);
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getResources().getText(R.string.yes),
                          new DialogInterface.OnClickListener() {
             @Override
@@ -847,7 +847,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContext_delete(final long id, final int position) {
-        // Create "Enter Url" dialog
         AlertDialog dialog =
                 UiHelper.createWarningDialog(this,
                                              R.string.delete_item,

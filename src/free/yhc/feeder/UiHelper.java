@@ -184,7 +184,8 @@ public class UiHelper {
         final EditText edit = (EditText)layout.findViewById(R.id.editbox);
         edit.setOnKeyListener(new View.OnKeyListener() {
             @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
+            public boolean
+            onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
                 if ((KeyEvent.ACTION_DOWN == event.getAction()) && (KeyEvent.KEYCODE_ENTER == keyCode)) {
                     dialog.dismiss();
@@ -200,7 +201,8 @@ public class UiHelper {
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, context.getResources().getText(R.string.ok),
                          new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dia, int which) {
+            public void
+            onClick(DialogInterface dia, int which) {
                 dialog.dismiss();
                 if (!edit.getText().toString().isEmpty())
                     action.onOk(dialog, edit);
@@ -210,7 +212,8 @@ public class UiHelper {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, context.getResources().getText(R.string.cancel),
                           new DialogInterface.OnClickListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void
+            onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
             }
         });

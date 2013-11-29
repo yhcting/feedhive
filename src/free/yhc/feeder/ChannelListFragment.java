@@ -494,10 +494,22 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContext_deleteDownloaded(final long cid) {
-        // delete entire channel directory and re-make it.
-        // Why?
-        // All and only downloaded files are located in channel directory.
-        ContentsManager.get().cleanChannelDir(cid);
+        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+            @Override
+            public void onOk(Dialog dialog) {
+                // delete entire channel directory and re-make it.
+                // Why?
+                // All and only downloadded files are located in channel directory.
+                ContentsManager.get().cleanChannelDir(cid);
+            }
+            @Override
+            public void onCancel(Dialog dialog) { }
+        };
+        UiHelper.buildConfirmDialog(getActivity(),
+                                    R.string.delete_downloadded_file,
+                                    R.string.delete_channel_downloadded_file_msg,
+                                    action)
+                .show();
     }
 
     private void
