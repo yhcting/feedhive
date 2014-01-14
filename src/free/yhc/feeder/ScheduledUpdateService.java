@@ -34,9 +34,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.net.wifi.WifiManager;
 import android.os.IBinder;
-import android.os.PowerManager;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.BGTaskUpdateChannel;
@@ -58,8 +56,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // Should match manifest's intent filter
     private static final String SCHEDUPDATE_INTENT_ACTION = "feeder.intent.action.SCHEDULED_UPDATE";
-    // Wakelock
-    private static final String WLTAG = "free.yhc.feeder.ScheduledUpdateService";
 
     private static final String CMD_ALARM   = "alarm";
     private static final String CMD_RESCHED = "resched";
@@ -81,10 +77,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // If disabled, requested command is continuously posted to message Q until
     //   scheduled update is re-enabled again.
     private static boolean               mEnabled = true;
-
-    private static PowerManager.WakeLock mWl = null;
-    private static WifiManager.WifiLock  mWfl = null;
-    private static int                   mWlcnt = 0;
 
     private final DBPolicy               mDbp = DBPolicy.get();
     private final RTTask                 mRtt = RTTask.get();
@@ -114,7 +106,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            getWakeLock();
+            LifeSupportService.getWakeLock();
         }
     }
 
@@ -142,7 +134,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            getWakeLock();
+            LifeSupportService.getWakeLock();
         }
     }
 
@@ -299,47 +291,6 @@ UnexpectedExceptionHandler.TrackedModule {
     //
     //
     // =======================================================
-    private static void
-    getWakeLock() {
-        // getWakeLock() and putWakeLock() are used only at main ui thread (broadcast receiver, onStartCommand).
-        // So, we don't need to synchronize it!
-        eAssert(mWlcnt >= 0);
-        if (null == mWl) {
-            mWl = ((PowerManager)Environ.getAppContext().getSystemService(Context.POWER_SERVICE))
-                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
-            mWfl = ((WifiManager)Environ.getAppContext().getSystemService(Context.WIFI_SERVICE))
-                    .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG);
-            //logI("ScheduledUpdateService : WakeLock created and aquired");
-            mWl.acquire();
-            mWfl.acquire();
-        }
-        mWlcnt++;
-        //logI("ScheduledUpdateService(GET) : current WakeLock count: " + mWlcnt);
-    }
-
-    private static void
-    putWakeLock() {
-        if (mWlcnt <= 0)
-            return; // nothing to put!
-
-        eAssert(mWlcnt > 0);
-        mWlcnt--;
-        //logI("ScheduledUpdateService(PUT) : current WakeLock count: " + mWlcnt);
-        if (0 == mWlcnt) {
-            mWl.release();
-            mWfl.release();
-            // !! NOTE : Important.
-            // if below line "mWl = null" is removed, then RuntimeException is raised
-            //   when 'getWakeLock' -> 'putWakeLock' -> 'getWakeLock' -> 'putWakeLock(*)'
-            //   (at them moment of location on * is marked - last 'putWakeLock').
-            // That is, once WakeLock is released, reusing is dangerous in current Android Framework.
-            // I'm not sure that this is Android FW's bug... or I missed something else...
-            // Anyway, let's set 'mWl' as 'null' here to re-create new WakeLock at next time.
-            mWl = null;
-            mWfl = null;
-            //logI("ScheduledUpdateService : WakeLock is released");
-        }
-    }
 
     // out[0] : time to go from dayTime0 to dayTime1
     // out[1] : time to go from dayTime1 to dayTime0
@@ -368,7 +319,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // onStartCommand will be sent!
         context.startService(svc);
         // Update should be started before falling into sleep.
-        getWakeLock();
+        LifeSupportService.getWakeLock();
     }
 
     /**
@@ -613,7 +564,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // BGTask itself will manage wakelock for the background tasking.
             // We don't need to worry about update jobs.
             // Just release wakelock for this command.
-            putWakeLock();
+            LifeSupportService.putWakeLock();
         }
         return START_NOT_STICKY;
     }

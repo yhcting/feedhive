@@ -70,6 +70,8 @@ public class FeederApp extends Application {
         UsageReport.get();
         NotiManager.get();
 
+        LifeSupportService.init();
+
         // To connect to app widgets
         ViewsService.instantiateViewsFactories();
     }

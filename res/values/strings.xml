@@ -73,10 +73,8 @@
     <string name="cancel">Cancel</string>
     <string name="noti_newitem_title">New feeds</string>
     <string name="noti_newitem_desc">There are new feeds.</string>
-    <string name="noti_update_title">Updating</string>
-    <string name="noti_update_desc">There are channels under update.</string>
-    <string name="noti_download_title">Downloading</string>
-    <string name="noti_download_desc">There are medias or web pages under download.</string>
+    <string name="noti_action_title">Processing</string>
+    <string name="noti_action_desc">App. is busy now.</string>
     <string name="err_interrupted">Operation is interrupted or cancelled.</string>
     <string name="err_version_mismatch">Version mismatch.</string>
     <string name="err_url">Invalid URL.</string>

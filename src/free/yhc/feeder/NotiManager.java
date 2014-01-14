@@ -36,11 +36,8 @@ import android.os.HandlerThread;
 import android.os.Process;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BGTask;
 import free.yhc.feeder.model.Environ;
 import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.RTTask.Action;
 import free.yhc.feeder.model.UnexpectedExceptionHandler;
 import free.yhc.feeder.model.Utils;
 
@@ -59,8 +56,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // active notification set.
     private final HashSet<NotiType>     mAnset = new HashSet<NotiType>();
     private final NotificationManager   mNm = (NotificationManager)Environ.getAppContext()
-                                                                   .getSystemService(Context.NOTIFICATION_SERVICE);
-    private final TaskQListener         mTaskQListener = new TaskQListener();
+                                                                          .getSystemService(Context.NOTIFICATION_SERVICE);
     private final ChannUpdatedListener  mChannUpdatedListener = new ChannUpdatedListener();
 
     // Should be accessed only by NewItemChecker to avoid race-condition.
@@ -71,14 +67,10 @@ UnexpectedExceptionHandler.TrackedModule {
                    R.drawable.noti_newitem,
                    R.string.noti_newitem_title,
                    R.string.noti_newitem_desc),
-        UPDATE    (false,
-                   R.drawable.noti_update,
-                   R.string.noti_update_title,
-                   R.string.noti_update_desc),
-        DOWNLOAD  (false,
-                   R.drawable.noti_download,
-                   R.string.noti_download_title,
-                   R.string.noti_download_desc);
+        ACTION    (false,
+                   R.drawable.noti_action,
+                   R.string.noti_action_title,
+                   R.string.noti_action_desc);
 
         // true : for keep notification alive even if app. is killed.
         // false: notification should be removed when app. is killed.
@@ -205,7 +197,6 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-
     private class NewItemChecker implements Runnable {
         // Channels that have new items.
         private final long[]            _mCids;
@@ -265,48 +256,6 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-
-
-    private class TaskQListener implements RTTask.OnTaskQueueChangedListener {
-        private int _mNrUpdate    = 0;
-        private int _mNrDownload  = 0;
-        @Override
-        public void
-        onEnQ(BGTask task, long id, Action act) {
-            if (Action.UPDATE == act) {
-                _mNrUpdate++;
-                // notification may be deleted by user in the middle.
-                // So, checking with only 'nrUpdate' is not enough.
-                // 'mAnset' should be checked too!
-                if (!mAnset.contains(NotiType.UPDATE))
-                    addNotification(NotiType.UPDATE);
-            }
-
-            if (Action.DOWNLOAD == act) {
-                _mNrDownload++;
-                // See comments above regarding 'UPDATE'
-                if (!mAnset.contains(NotiType.DOWNLOAD))
-                    addNotification(NotiType.DOWNLOAD);
-            }
-        }
-
-        @Override
-        public void
-        onDeQ(BGTask task, long id, Action act) {
-            if (Action.UPDATE == act) {
-                if (0 == --_mNrUpdate
-                    && mAnset.contains(NotiType.UPDATE))
-                    removeNotification(NotiType.UPDATE);
-            }
-
-            if (Action.DOWNLOAD == act) {
-                if (0 == --_mNrDownload
-                    && mAnset.contains(NotiType.DOWNLOAD))
-                    removeNotification(NotiType.DOWNLOAD);
-            }
-        }
-    }
-
     private class ChannUpdatedListener implements ListenerManager.Listener {
         @Override
         public void
@@ -330,7 +279,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private NotiManager() {
         DBPolicy.get().registerChannelUpdatedListener(this, mChannUpdatedListener);
-        RTTask.get().registerTaskQChangedListener(this, mTaskQListener);
         HandlerThread hThread = new HandlerThread("NotiManager",Process.THREAD_PRIORITY_BACKGROUND);
         hThread.start();
         mBgWorkHandler = new Handler(hThread.getLooper());
@@ -341,12 +289,11 @@ UnexpectedExceptionHandler.TrackedModule {
     addNotification(NotiType type) {
         // To avoid unexpected race-condition.
         eAssert(Utils.isUiThread());
-        if (mAnset.contains(type))
+        if (NotiType.ACTION == type // UPDATE Notification is used only for 'foreground service' noti.
+            || mAnset.contains(type) // already notified.
+            || (NotiType.NEWITEM == type // new item but, user don't want to see.
+                && !Utils.isPrefNewmsgNoti()))
             return; // notification is already notified. Nothing to do.
-
-        if (NotiType.NEWITEM == type
-            && !Utils.isPrefNewmsgNoti())
-            return;
 
         mAnset.add(type);
         // Set event time.
@@ -370,6 +317,18 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == sInstance)
             sInstance = new NotiManager();
         return sInstance;
+    }
+
+    public Notification
+    getForegroundNotification() {
+        Notification n = NotiType.ACTION.getNotification();
+        n.when = System.currentTimeMillis();
+        return n;
+    }
+
+    public int
+    getForegroundNotificationId() {
+        return NotiType.ACTION.getNotiId();
     }
 
     public void
