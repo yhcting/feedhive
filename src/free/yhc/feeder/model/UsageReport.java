@@ -137,13 +137,10 @@ OnSharedPreferenceChangeListener {
     @Override
     public void
     onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-        if ("err_report".equals(key)) {
-            String v = prefs.getString("err_report", "yes");
-            mErrReportEnabled = v.equals("yes")? true: false;
-        } else if ("usage_report".equals(key)) {
-            String v = prefs.getString("usage_report", "yes");
-            mUsageReportEnabled = v.equals("yes")? true: false;
-        }
+        if (Utils.getResString(R.string.cserr_report).equals(key))
+            mErrReportEnabled = prefs.getBoolean(Utils.getResString(R.string.cserr_report), true);
+        else if (Utils.getResString(R.string.csusage_report).equals(key))
+            mUsageReportEnabled = prefs.getBoolean(Utils.getResString(R.string.csusage_report), true);
     }
 
     /**

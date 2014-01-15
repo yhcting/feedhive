@@ -286,8 +286,8 @@ public class Utils {
     }
 
     public static String
-    getResText(int id) {
-        return Environ.getAppContext().getResources().getText(id).toString();
+    getResString(int id) {
+        return Environ.getAppContext().getResources().getString(id);
     }
 
     // ------------------------------------------------------
@@ -842,21 +842,17 @@ public class Utils {
     // Preference for internal use.
     private static boolean
     isPrefUseWifiOnly() {
-        return sPrefs.getString(getResText(R.string.csuse_wifi_only),
-                                getResText(R.string.csno))
-                     .equals(getResText(R.string.csyes));
+        return sPrefs.getBoolean(getResString(R.string.csuse_wifi_only), false);
     }
 
     public static boolean
     isPrefNewmsgNoti() {
-        return sPrefs.getString(getResText(R.string.csnewmsg_noti),
-                                getResText(R.string.csyes))
-                     .equals(getResText(R.string.csyes));
+        return sPrefs.getBoolean(getResString(R.string.csnewmsg_noti), true);
     }
 
     public static int
     getPrefMaxNrBgTask() {
-        String v = sPrefs.getString(getResText(R.string.csmaxnr_bgtask), "2");
+        String v = sPrefs.getString(getResString(R.string.csmaxnr_bgtask), "2");
         int value = 2;
         try {
             value = Integer.parseInt(v);
@@ -874,13 +870,13 @@ public class Utils {
      */
     public static int
     getPrefBGTaskPriority() {
-        String prio = sPrefs.getString(getResText(R.string.csbgtask_prio),
-                                       getResText(R.string.cslow));
-        if (getResText(R.string.cslow).equals(prio))
+        String prio = sPrefs.getString(getResString(R.string.csbgtask_prio),
+                                       getResString(R.string.cslow));
+        if (getResString(R.string.cslow).equals(prio))
             return Thread.MIN_PRIORITY;
-        else if (getResText(R.string.csmedium).equals(prio))
+        else if (getResString(R.string.csmedium).equals(prio))
             return (Thread.NORM_PRIORITY + Thread.MIN_PRIORITY) / 2;
-        else if (getResText(R.string.cshigh).equals(prio))
+        else if (getResString(R.string.cshigh).equals(prio))
             return Thread.NORM_PRIORITY;
         else {
             eAssert(false);
@@ -890,12 +886,12 @@ public class Utils {
 
     public static int
     getPrefContentVersion() {
-        return sPrefs.getInt(getResText(R.string.cscontent_version), 0);
+        return sPrefs.getInt(getResString(R.string.cscontent_version), 0);
     }
 
     public static PrefLayout
     getPrefAppWidgetButtonLayout() {
-        return PrefLayout.valueOf(sPrefs.getString(getResText(R.string.csappwidget_btn_layout),
+        return PrefLayout.valueOf(sPrefs.getString(getResString(R.string.csappwidget_btn_layout),
                                                    PrefLayout.RIGHT.name()));
     }
     // ================================================

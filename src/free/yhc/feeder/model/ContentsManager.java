@@ -137,7 +137,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // update contents version string to shared preference
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
         SharedPreferences.Editor prefEd = prefs.edit();
-        prefEd.putInt(Utils.getResText(R.string.cscontent_version), CONTENTS_VERSION);
+        prefEd.putInt(Utils.getResString(R.string.cscontent_version), CONTENTS_VERSION);
         prefEd.apply();
     }
 

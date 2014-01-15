@@ -25,6 +25,8 @@ import java.util.Locale;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Environment;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -35,6 +37,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Utils.Logger P = new Utils.Logger(Environ.class);
 
     public static final String  PREF_KEY_APP_ROOT = "app_root";
+    public static final String  PREF_KEY_APP_VERSION = "app_version";
     public static final long    USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
 
 
@@ -55,6 +58,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private File   mAppErrLogFile;
     private File   mAppUsageLogFile;
 
+    public interface OnAppUpgrade {
+        void onUpgrade(Context context, int from, int to);
+    }
 
     private Environ() {
         // Dependency on only following modules are allowed
@@ -73,7 +79,19 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param aAppContext
      */
     public static void
-    init(Context aAppContext) {
+    init(Context aAppContext, OnAppUpgrade onUpgrade) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(aAppContext);
+        int prev = prefs.getInt(PREF_KEY_APP_VERSION, -1);
+        try {
+            PackageInfo pi = aAppContext.getPackageManager().getPackageInfo(aAppContext.getPackageName(), -1);
+            if (pi.versionCode > prev) {
+                onUpgrade.onUpgrade(aAppContext, prev, pi.versionCode);
+                SharedPreferences.Editor prefEd = prefs.edit();
+                prefEd.putInt(Environ.PREF_KEY_APP_VERSION, pi.versionCode);
+                prefEd.apply();
+            }
+        } catch (NameNotFoundException ignore) { }
+
         sAppContext = aAppContext;
         sUiHandler = new Handler();
         Utils.eAssert(null == sInstance);

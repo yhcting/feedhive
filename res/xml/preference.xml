@@ -19,21 +19,17 @@
             />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_feedback">
-        <ListPreference
+        <CheckBoxPreference
             android:title="@string/pref_send_err_report"
             android:summary="@string/pref_send_err_report_desc"
             android:key="@string/cserr_report"
-            android:defaultValue="@string/csyes"
-            android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value"
+            android:defaultValue="true"
             />
-        <ListPreference
+        <CheckBoxPreference
             android:title="@string/pref_send_usage_report"
             android:summary="@string/pref_send_usage_report_desc"
             android:key="@string/csusage_report"
-            android:defaultValue="@string/csyes"
-            android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value"
+            android:defaultValue="true"
             />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_storage">
@@ -46,21 +42,17 @@
             />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_usage">
-        <ListPreference
+        <CheckBoxPreference
             android:title="@string/pref_newmsg_noti"
             android:summary="@string/pref_newmsg_noti_desc"
             android:key="@string/csnewmsg_noti"
-            android:defaultValue="@string/csyes"
-            android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value"
+            android:defaultValue="true"
             />
-        <ListPreference
+        <CheckBoxPreference
             android:title="@string/pref_use_wifi_only"
             android:summary="@string/pref_use_wifi_only_desc"
             android:key="@string/csuse_wifi_only"
-            android:defaultValue="@string/csno"
-            android:entries="@array/pref_yes_no_entry"
-            android:entryValues="@array/pref_yes_no_value"
+            android:defaultValue="false"
             />
         <ListPreference
             android:title="@string/pref_appwidget_btn_layout"

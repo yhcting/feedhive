@@ -112,7 +112,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-            if (!key.equals(Utils.getResText(R.string.csappwidget_btn_layout)))
+            if (!key.equals(Utils.getResString(R.string.csappwidget_btn_layout)))
                 return; // ignore others
 
             Utils.PrefLayout newLayout = Utils.getPrefAppWidgetButtonLayout();

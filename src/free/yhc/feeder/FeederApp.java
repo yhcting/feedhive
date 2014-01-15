@@ -21,7 +21,11 @@
 package free.yhc.feeder;
 
 import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.preference.PreferenceManager;
 import free.yhc.feeder.appwidget.ViewsService;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
@@ -35,6 +39,44 @@ import free.yhc.feeder.model.Utils;
 public class FeederApp extends Application {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(FeederApp.class);
+
+    private void
+    convertYesNoPreferenceToBoolean(SharedPreferences prefs,
+                                    SharedPreferences.Editor prefEd,
+                                    Resources res,
+                                    int keyId) {
+        String yesno = prefs.getString(res.getString(keyId), null);
+        if (null != yesno) {
+            if (res.getString(R.string.csyes).equals(yesno))
+                prefEd.putBoolean(res.getString(keyId), true);
+            else
+                prefEd.putBoolean(res.getString(keyId), false);
+        }
+    }
+
+    // Following preference is changed from list preference to switch preference.
+    // - send error report
+    // - send usage report
+    // - new message notification
+    // - use wifi only
+    private void
+    onUpgradeTo56(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor prefEd = prefs.edit();
+        Resources res = context.getResources();
+        convertYesNoPreferenceToBoolean(prefs, prefEd, res, R.string.cserr_report);
+        convertYesNoPreferenceToBoolean(prefs, prefEd, res, R.string.csusage_report);
+        convertYesNoPreferenceToBoolean(prefs, prefEd, res, R.string.csnewmsg_noti);
+        convertYesNoPreferenceToBoolean(prefs, prefEd, res, R.string.csuse_wifi_only);
+        prefEd.apply();
+    }
+
+    private void
+    onAppUpgrade(Context context, int from, int to) {
+        int cur = from;
+        if (cur < 56)
+            onUpgradeTo56(context);
+    }
 
     @Override
     public void
@@ -51,7 +93,14 @@ public class FeederApp extends Application {
         // Order is important
 
         // Initialize Environment
-        Environ.init(getApplicationContext());
+        Environ.init(getApplicationContext(),
+                     new Environ.OnAppUpgrade() {
+            @Override
+            public void
+            onUpgrade(Context context, int from, int to) {
+                onAppUpgrade(context, from, to);
+            }
+        });
         Environ.get();
 
         // Utils.init() SHOULD be called before initializing other modules.
