@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/predefined"
+    <item
+        android:id="@+id/predefined"
         android:title="@string/select_predefined_channel" />
-    <item android:id="@+id/url"
+    <item
+        android:id="@+id/url"
         android:title="@string/enter_channel_address" />
-    <item android:id="@+id/youtube"
+    <item
+        android:id="@+id/youtube"
         android:title="@string/youtube_channel" />
 </menu>

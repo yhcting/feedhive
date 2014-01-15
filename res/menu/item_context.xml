@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/delete_dnfile"
-          android:title="@string/delete_downloadded_file"
-          android:visible="false"
-          />
-    <item android:id="@+id/mark_unopened"
-          android:title="@string/mark_as_unopened"
-          android:visible="false"
-          />
-    <item android:id="@+id/delete"
-          android:title="@string/delete"
-          android:visible="true"
-          />
+    <item
+        android:id="@+id/delete_dnfile"
+        android:title="@string/delete_downloadded_file"
+        android:visible="false"
+        />
+    <item
+        android:id="@+id/mark_unopened"
+        android:title="@string/mark_as_unopened"
+        android:visible="false"
+        />
+    <item
+        android:id="@+id/delete"
+        android:title="@string/delete"
+        android:visible="true"
+        />
 </menu>

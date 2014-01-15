@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/all"
+    <item
+        android:id="@+id/all"
         android:title="@string/feedshrink_all" />
-    <item android:id="@+id/half"
+    <item
+        android:id="@+id/half"
         android:title="@string/feedshrink_half" />
-    <item android:id="@+id/per30"
+    <item
+        android:id="@+id/per30"
         android:title="@string/feedshrink_30" />
 </menu>

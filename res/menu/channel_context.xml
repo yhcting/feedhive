@@ -1,27 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    <item android:id="@+id/change_category"
-          android:title="@string/change_category"
-          android:visible="true"
-          />
-    <item android:id="@+id/setting"
-          android:title="@string/setting"
-          android:visible="true"
-          />
-    <item android:id="@+id/delete_dnfile"
-          android:title="@string/delete_downloadded_file"
-          android:visible="true"
-          />
-    <item android:id="@+id/delete_used_dnfile"
-          android:title="@string/delete_used_downloadded_file"
-          android:visible="true"
-          />
-    <item android:id="@+id/pick_icon"
-          android:title="@string/pick_icon"
-          android:visible="true"
-          />
-    <item android:id="@+id/delete"
-          android:title="@string/delete"
-          android:visible="true"
-          />
+    <item
+        android:id="@+id/change_category"
+        android:title="@string/change_category"
+        android:visible="true"
+        />
+    <item
+        android:id="@+id/setting"
+        android:title="@string/setting"
+        android:visible="true"
+        />
+    <item
+        android:id="@+id/delete_dnfile"
+        android:title="@string/delete_downloadded_file"
+        android:visible="true"
+        />
+    <item
+        android:id="@+id/delete_used_dnfile"
+        android:title="@string/delete_used_downloadded_file"
+        android:visible="true"
+        />
+    <item
+        android:id="@+id/pick_icon"
+        android:title="@string/pick_icon"
+        android:visible="true"
+        />
+    <item
+        android:id="@+id/delete"
+        android:title="@string/delete"
+        android:visible="true"
+        />
 </menu>
