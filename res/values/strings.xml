@@ -148,6 +148,8 @@
     <string name="pref_maxnr_bgtask_desc">Maximum number of background tasks that can be run concurrently.</string>
     <string name="pref_bgtask_prio">Priority of background task</string>
     <string name="pref_bgtask_prio_desc">Update or download performance will be increased with higher value, but responsibility will be worse.</string>
+    <string name="pref_mem_consumption">Memory consumption</string>
+    <string name="pref_mem_consumption_desc">Set to \'high\' for faster but high memory usage.</string>
     <string name="pref_feedback">Feedback</string>
     <string name="pref_send_err_report">Sending error report</string>
     <string name="pref_send_err_report_desc">Error report is sent when application is crashed.</string>

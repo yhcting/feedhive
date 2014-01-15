@@ -148,6 +148,8 @@
     <string name="pref_maxnr_bgtask_desc">동시에 수행하는 업데이트, 다운로드 등의 백그라운드 Task개수. 값이 높으면 여러 작업을 동시에 수행하나 반응속도가 떨어질 수 있습니다.</string>
     <string name="pref_bgtask_prio">백그라운드 Task 우선순위</string>
     <string name="pref_bgtask_prio_desc">값이 높으면 업데이트나 다운로드의 시간은 빨라질 수 있으나 반응속도가 떨어지고, 낮으면 그 반대가 됩니다.</string>
+    <string name="pref_mem_consumption">메모리 소비량</string>
+    <string name="pref_mem_consumption_desc">\'높음\'으로 설정시, 많은 메모리를 사용하는 대신 수행속도가 향상됩니다.</string>
     <string name="pref_feedback">피드백</string>
     <string name="pref_send_err_report">에러 레보트 보내기</string>
     <string name="pref_send_err_report_desc">어플리케이션에 문제가 발생했을때, 에러 레포트를 보냅니다.</string>

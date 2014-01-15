@@ -186,12 +186,6 @@ public class Utils {
         }
     }
 
-    public static enum PrefLayout {
-        // Name of echo elements should match values used in the preference.
-        RIGHT,
-        LEFT,
-    }
-
     public static class Logger {
         private final Class<?> _mCls;
 
@@ -206,6 +200,19 @@ public class Utils {
         public void w(String msg) { log(_mCls, LogLV.W, msg); }
         public void e(String msg) { log(_mCls, LogLV.E, msg); }
         public void f(String msg) { log(_mCls, LogLV.F, msg); }
+    }
+
+
+    public static enum PrefLayout {
+        // Name of echo elements should match values used in the preference.
+        RIGHT,
+        LEFT,
+    }
+
+    public static enum PrefLevel {
+        HIGH,
+        MEDIUM,
+        LOW
     }
 
     // =======================
@@ -881,6 +888,23 @@ public class Utils {
         else {
             eAssert(false);
             return Thread.MIN_PRIORITY;
+        }
+    }
+
+    public static PrefLevel
+    getPrefMemConsumptionLevel() {
+        // See preference.xml for meaning of each number value.
+        String lv = sPrefs.getString(getResString(R.string.csmem_consumption),
+                getResString(R.string.csmedium));
+        if (getResString(R.string.cslow).equals(lv))
+            return PrefLevel.LOW;
+        else if (getResString(R.string.csmedium).equals(lv))
+            return PrefLevel.MEDIUM;
+        else if (getResString(R.string.cshigh).equals(lv))
+            return PrefLevel.HIGH;
+        else {
+            eAssert(false);
+            return PrefLevel.MEDIUM;
         }
     }
 

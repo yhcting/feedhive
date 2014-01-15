@@ -325,8 +325,7 @@ public class NetLoader {
         if (action != oldAction)
             mDbp.updateChannel(cid, ColumnChannel.ACTION, action);
 
-        byte[] imageblob = mDbp.getChannelInfoImageblob(cid);
-        if (imageblob.length <= 0) {
+        if (null == mDbp.getChannelImageBitmap(cid)) {
             time = System.currentTimeMillis();
             // Kind Of Policy!!
             // Original image reference always has priority!
@@ -347,7 +346,7 @@ public class NetLoader {
                 Bitmap bm = Utils.decodeImage(bmdata,
                                               Feed.Channel.ICON_MAX_WIDTH,
                                               Feed.Channel.ICON_MAX_HEIGHT);
-                imageblob = Utils.compressBitmap(bm);
+                byte[] imageblob = Utils.compressBitmap(bm);
                 bm.recycle();
                 if (null != imageblob)
                     mDbp.updateChannel(cid, ColumnChannel.IMAGEBLOB, imageblob);

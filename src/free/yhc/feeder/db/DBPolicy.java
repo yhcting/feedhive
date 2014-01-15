@@ -31,8 +31,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.LruCache;
 import free.yhc.feeder.model.ContentsManager;
 import free.yhc.feeder.model.Err;
 import free.yhc.feeder.model.Feed;
@@ -97,6 +100,9 @@ UnexpectedExceptionHandler.TrackedModule {
     // Therefore, it is easy to caching and easy to avoid cache-synchronization issue.
     private final HashMap<Long, Long> mMaxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
 
+    // channel thumbnail cache.
+    private final LruChannBitmapCache mChannImgCache;
+
     // NOTE
     // This is a kind of dirty-HACK!
     // When user try to access item tables at DB during updating channels(adding new items),
@@ -156,14 +162,56 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    private static class LruChannBitmapCache extends LruCache<Long, Bitmap> {
+        public LruChannBitmapCache(int maxSize) {
+            super(maxSize);
+        }
+
+        @Override
+        protected Bitmap
+        create(Long key) {
+            byte[] imgRaw =DBPolicy.get().getChannelImageblob(key);
+            if (imgRaw.length > 0)
+                return BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
+            else
+                return null;
+        }
+
+        @Override
+        protected void
+        entryRemoved(boolean evicted, Long key, Bitmap oldValue, Bitmap newValue) {
+            // DO NOT recycle old bitmap here!
+            // old Bitmap may be used at anywhere else!
+        }
+
+        @Override
+        protected int
+        sizeOf(Long key, Bitmap value) {
+            return value.getByteCount();
+        }
+    }
+
     // ======================================================
     //
     // ======================================================
     private DBPolicy() {
         UnexpectedExceptionHandler.get().registerModule(this);
+        int chnnCacheSize;
+        switch (Utils.getPrefMemConsumptionLevel()) {
+        case LOW:
+            chnnCacheSize = 1 * 1024 * 1024; // 1MB
+        case HIGH:
+            chnnCacheSize = 4 * 1024 * 1024;
+        case MEDIUM:
+        default:
+            chnnCacheSize = 2 * 1024 * 1024;
+        }
+
+        mChannImgCache = new LruChannBitmapCache(chnnCacheSize);
         DBAsyncThread async = new DBAsyncThread();
         async.start();
         mAsyncHandler = new Handler(async.getLooper());
+
     }
 
     /**
@@ -918,6 +966,7 @@ UnexpectedExceptionHandler.TrackedModule {
     updateChannel(long cid, ColumnChannel column, byte[] data) {
         // Fields those are allowed to be updated.
         eAssert(ColumnChannel.IMAGEBLOB == column);
+        mChannImgCache.remove(cid);
         return mDb.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
     }
 
@@ -1117,6 +1166,18 @@ UnexpectedExceptionHandler.TrackedModule {
         return cids;
     }
 
+    private byte[]
+    getChannelImageblob(long cid) {
+        byte[] blob = new byte[0];
+        Cursor c = mDb.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
+                                    ColumnChannel.ID, cid,
+                                    null, false, 0);
+        if (c.moveToFirst())
+            blob = c.getBlob(0);
+        c.close();
+        return blob;
+    }
+
     /**
      * Get field value of given 'USED' channel.
      * @param cid
@@ -1197,16 +1258,11 @@ UnexpectedExceptionHandler.TrackedModule {
      * @param cid
      * @return
      */
-    public byte[]
-    getChannelInfoImageblob(long cid) {
-        byte[] blob = new byte[0];
-        Cursor c = mDb.queryChannel(new ColumnChannel[] { ColumnChannel.IMAGEBLOB },
-                                    ColumnChannel.ID, cid,
-                                    null, false, 0);
-        if (c.moveToFirst())
-            blob = c.getBlob(0);
-        c.close();
-        return blob;
+
+
+    public Bitmap
+    getChannelImageBitmap(long cid) {
+        return mChannImgCache.get(cid);
     }
 
     /**

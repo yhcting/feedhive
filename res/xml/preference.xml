@@ -14,8 +14,16 @@
             android:summary="@string/pref_bgtask_prio_desc"
             android:key="@string/csbgtask_prio"
             android:defaultValue="@string/cslow"
-            android:entries="@array/pref_bgtask_prio_entry"
-            android:entryValues="@array/pref_bgtask_prio_value"
+            android:entries="@array/pref_3level_entry"
+            android:entryValues="@array/pref_3level_value"
+            />
+        <ListPreference
+            android:title="@string/pref_mem_consumption"
+            android:summary="@string/pref_mem_consumption_desc"
+            android:key="@string/csmem_consumption"
+            android:defaultValue="@string/csmedium"
+            android:entries="@array/pref_3level_entry"
+            android:entryValues="@array/pref_3level_value"
             />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_feedback">

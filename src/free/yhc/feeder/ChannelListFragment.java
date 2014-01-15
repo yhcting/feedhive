@@ -287,7 +287,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class PickIconWorker extends DiagAsyncTask.Worker {
         private long        _mCid = -1;
-        private Bitmap      _mBm = null;
         private final Uri   _mImageUri;
 
         PickIconWorker(Uri uri) {
@@ -312,8 +311,8 @@ UnexpectedExceptionHandler.TrackedModule {
             c.close();
 
             // Make url string from file path
-            _mBm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
-            byte[] imageData = Utils.compressBitmap(_mBm);
+            Bitmap bm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
+            byte[] imageData = Utils.compressBitmap(bm);
 
             if (null == imageData)
                 return Err.CODEC_DECODE;
@@ -332,7 +331,7 @@ UnexpectedExceptionHandler.TrackedModule {
         public void
         onPostExecute(DiagAsyncTask task, Err result) {
             if (Err.NO_ERR == result)
-                getAdapter().setChannelIcon(_mCid, _mBm);
+                getAdapter().notifyChannelIconChanged(_mCid);
             else
                 UiHelper.showTextToast(getActivity(), result.getMsgId());
         }

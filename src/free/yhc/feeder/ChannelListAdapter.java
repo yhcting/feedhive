@@ -30,7 +30,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.StaleDataException;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -53,7 +52,6 @@ AsyncCursorAdapter.ItemBuilder {
         ColumnChannel.TITLE,
         ColumnChannel.DESCRIPTION,
         ColumnChannel.LASTUPDATE,
-        ColumnChannel.IMAGEBLOB,
         ColumnChannel.URL
     };
 
@@ -182,15 +180,10 @@ AsyncCursorAdapter.ItemBuilder {
      * @param pos1
      */
     public void
-    setChannelIcon(long cid, Bitmap bm) {
+    notifyChannelIconChanged(long cid) {
         eAssert(Utils.isUiThread());
         ItemInfo ii = (ItemInfo)getItem(findPosition(cid));
-        if (null != ii) {
-            if (null != ii.bm
-                && bm != ii.bm)
-                ii.bm.recycle();
-            ii.bm = bm;
-        }
+        ii.bm = mDbp.getChannelImageBitmap(cid);
         notifyDataSetChanged();
     }
 
@@ -244,10 +237,7 @@ AsyncCursorAdapter.ItemBuilder {
             i.lastUpdate = new Date(getCursorLong(c, ColumnChannel.LASTUPDATE));
             i.maxItemId = mDbp.getItemInfoMaxId(i.cid);
             i.oldLastItemId = mDbp.getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
-            i.bm = null;
-            byte[] imgRaw = getCursorBlob(c, ColumnChannel.IMAGEBLOB);
-            if (imgRaw.length > 0)
-                i.bm = BitmapFactory.decodeByteArray(imgRaw, 0, imgRaw.length);
+            i.bm = mDbp.getChannelImageBitmap(i.cid);
         } catch (StaleDataException e) {
             eAssert(false);
         }
@@ -259,15 +249,9 @@ AsyncCursorAdapter.ItemBuilder {
     public void
     destroyItem(AsyncCursorAdapter adapter, Object item) {
         ItemInfo ii = (ItemInfo)item;
-        // NOTE
-        // bm will be destroyed by GC
-        // But, we cannot control when GC is triggered.
-        // Actually, sometimes I experienced OutOfMeory error.
-        // To avoid OOM, bm.recycle() is needed to be called in manual whenever item is no-longer used.
-        if (null != ii.bm) {
-            ii.bm.recycle();
-            ii.bm = null;
-        }
+        // DO NOT recycle bitmap here!
+        // bitmap is already cached!
+        ii.bm = null;
     }
 
     @Override
