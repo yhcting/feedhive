@@ -6,6 +6,8 @@
           android:title="@string/license" />
     <item android:id="@+id/media_delete_all"
           android:title="@string/delete_all_downloadded_file" />
+    <item android:id="@+id/media_delete_used_all"
+          android:title="@string/delete_all_used_downloadded_file" />
     <item android:id="@+id/db_management"
           android:title="@string/db_management" />
     <item android:id="@+id/feedback_opinion"

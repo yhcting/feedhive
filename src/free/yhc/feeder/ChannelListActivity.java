@@ -547,6 +547,14 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    onOpt_moreMenu_deleteAllUsedDnFiles(final View anchor) {
+        AlertDialog diag = UiHelper.buildDeleteUsedDnFilesConfirmDialog(0, this, null, null);
+        if (null == diag)
+            UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
+        diag.show();
+    }
+
+    private void
     onOpt_moreMenu_feedbackOpinion(final View anchor) {
         if (!Utils.isNetworkAvailable()) {
             UiHelper.showTextToast(this, R.string.warn_network_unavailable);
@@ -580,6 +588,9 @@ UnexpectedExceptionHandler.TrackedModule {
                     break;
                 case R.id.media_delete_all:
                     onOpt_moreMenu_deleteAllDnFiles(anchor);
+                    break;
+                case R.id.media_delete_used_all:
+                    onOpt_moreMenu_deleteAllUsedDnFiles(anchor);
                     break;
                 case R.id.feedback_opinion:
                     onOpt_moreMenu_feedbackOpinion(anchor);

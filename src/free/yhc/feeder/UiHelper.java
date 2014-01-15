@@ -21,6 +21,11 @@
 package free.yhc.feeder;
 
 import static free.yhc.feeder.model.Utils.eAssert;
+
+import java.io.File;
+import java.util.Iterator;
+import java.util.LinkedList;
+
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -34,6 +39,7 @@ import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Toast;
+import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.model.ContentsManager;
 import free.yhc.feeder.model.Err;
@@ -64,15 +70,15 @@ public class UiHelper {
     }
 
     public static class DeleteAllDnfilesWorker extends DiagAsyncTask.Worker {
-        private final Context                 mContext;
-        private final OnPostExecuteListener   mOnPostExecute;
-        private final Object                  mUser;
+        private final Context                 _mContext;
+        private final OnPostExecuteListener   _mOnPostExecute;
+        private final Object                  _mUser;
         public DeleteAllDnfilesWorker(Context context,
                                       OnPostExecuteListener onPostExecute,
                                       Object user) {
-            mContext = context;
-            mOnPostExecute = onPostExecute;
-            mUser = user;
+            _mContext = context;
+            _mOnPostExecute = onPostExecute;
+            _mUser = user;
         }
 
         @Override
@@ -86,11 +92,65 @@ public class UiHelper {
         public void
         onPostExecute(DiagAsyncTask task, Err result) {
             if (Err.NO_ERR != result)
-                UiHelper.showTextToast(mContext, R.string.delete_all_downloadded_file_errmsg);
-            if (null != mOnPostExecute)
-                mOnPostExecute.onPostExecute(result, mUser);
+                UiHelper.showTextToast(_mContext, R.string.delete_downloadded_files_errmsg);
+            if (null != _mOnPostExecute)
+                _mOnPostExecute.onPostExecute(result, _mUser);
         }
     }
+
+    public static class DeleteUsedDnfilesWorker extends DiagAsyncTask.Worker {
+        private final long                    _mCid;
+        private final Context                 _mContext;
+        private final OnPostExecuteListener   _mOnPostExecute;
+        private final Object                  _mUser;
+        public DeleteUsedDnfilesWorker(long cid,
+                                       Context context,
+                                       OnPostExecuteListener onPostExecute,
+                                       Object user) {
+            _mCid = cid;
+            _mContext = context;
+            _mOnPostExecute = onPostExecute;
+            _mUser = user;
+        }
+
+        @Override
+        public Err
+        doBackgroundWork(DiagAsyncTask task) {
+            DBPolicy dbp = DBPolicy.get();
+            ContentsManager cm = ContentsManager.get();
+            LinkedList<File> l = new LinkedList<File>();
+            if (_mCid > 0)
+                l = cm.getContentFiles(new long[] { _mCid });
+            else
+                l = cm.getContentFiles();
+
+            // check each content file to know whether they are valid or not.
+            LinkedList<Long> idsl = new LinkedList<Long>();
+            Iterator<File> i = l.iterator();
+            while (i.hasNext()) {
+                File f = i.next();
+                long id = cm.getIdFromContentFileName(f.getName());
+                if (0 > id)
+                    // unexpected content file.
+                    continue;
+                long state = dbp.getItemInfoLong(id, ColumnItem.STATE);
+                if (!Feed.Item.isStateOpenNew(state))
+                    idsl.add(id);
+            }
+            cm.deleteItemContents(Utils.convertArrayLongTolong(idsl.toArray(new Long[0])));
+            return Err.NO_ERR;
+        }
+
+        @Override
+        public void
+        onPostExecute(DiagAsyncTask task, Err result) {
+            if (Err.NO_ERR != result)
+                UiHelper.showTextToast(_mContext, R.string.delete_downloadded_files_errmsg);
+            if (null != _mOnPostExecute)
+                _mOnPostExecute.onPostExecute(result, _mUser);
+        }
+    }
+
 
     /**
      * This is for future use...
@@ -345,5 +405,57 @@ public class UiHelper {
                                   R.string.delete_all_downloadded_file,
                                   R.string.delete_all_downloadded_file_msg,
                                   action);
+    }
+
+    /**
+     * @param cid
+     *     0 means 'all channels'
+     * @param context
+     * @param onPostExecute
+     * @param postExecuteUser
+     * @return
+     */
+    public static AlertDialog
+    buildDeleteUsedDnFilesConfirmDialog(final long cid,
+                                        final Context context,
+                                        final OnPostExecuteListener onPostExecute,
+                                        final Object postExecuteUser) {
+        // check constraints
+        if (RTTask.get().getItemsDownloading().length > 0)
+            return null;
+
+        final int resTitle;
+        final int resMsg;
+        if (0 < cid) {
+            resTitle = R.string.delete_used_downloadded_file;
+            resMsg = R.string.delete_channel_used_downloadded_file_msg;
+        } else {
+            resTitle = R.string.delete_all_used_downloadded_file;
+            resMsg = R.string.delete_all_used_downloadded_file_msg;
+        }
+
+        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+            @Override
+            public void
+            onOk(Dialog dialog) {
+                DiagAsyncTask task = new DiagAsyncTask(context,
+                                                       new DeleteUsedDnfilesWorker(cid,
+                                                                                   context,
+                                                                                   onPostExecute,
+                                                                                   postExecuteUser),
+                                                       DiagAsyncTask.Style.SPIN,
+                                                       resTitle);
+                task.run();
+            }
+
+            @Override
+            public void
+            onCancel(Dialog dialog) {
+                if (null != onPostExecute)
+                    onPostExecute.onPostExecute(Err.USER_CANCELLED, postExecuteUser);
+            }
+        };
+
+        return buildConfirmDialog(context, resTitle, resMsg, action);
     }
 }

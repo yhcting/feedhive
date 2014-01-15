@@ -113,8 +113,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                | DB.UpdateType.CHANNEL_TABLE.flag());
             mDbp.registerChannelUpdatedListener(this, this);
             mCm.registerUpdatedListener(this, ContentsManager.UpdateType.ITEM_DATA.flag()
-                                              | ContentsManager.UpdateType.CHAN_DATA.flag()
-                                              | ContentsManager.UpdateType.CHANS_DATA.flag());
+                                              | ContentsManager.UpdateType.CHAN_DATA.flag());
 
         }
 
@@ -195,25 +194,23 @@ UnexpectedExceptionHandler.TrackedModule {
             } else if (type instanceof ContentsManager.UpdateType) {
                 switch ((ContentsManager.UpdateType)type) {
                 case ITEM_DATA:
-                    if (isInCategoryItem((Long)arg0))
-                        refreshItemList();
-                    break;
-
-                case CHAN_DATA:
-                    if (isInCategory((Long)arg0))
-                        refreshItemList();
-                    break;
-
-                case CHANS_DATA: {
-                    boolean in = false;
-                    for (long cid : (long[])arg0) {
-                        in = isInCategory(cid);
-                        if (in) {
+                    for (long id : (long[])arg0) {
+                        if (isInCategoryItem(id)) {
                             refreshItemList();
                             break;
                         }
                     }
-                } break;
+                    break;
+
+                case CHAN_DATA:
+                    boolean in = false;
+                    for (long cid : (long[])arg0) {
+                        if (isInCategory(cid)) {
+                            refreshItemList();
+                            break;
+                        }
+                    }
+                    break;
                 }
             }
         }

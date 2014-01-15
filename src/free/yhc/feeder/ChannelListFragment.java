@@ -26,6 +26,7 @@ import java.util.Calendar;
 import java.util.HashSet;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
@@ -513,6 +514,14 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
+    onContext_deleteUsedDownloaded(final long cid) {
+        AlertDialog diag = UiHelper.buildDeleteUsedDnFilesConfirmDialog(cid, this.getActivity(), null, null);
+        if (null == diag)
+            UiHelper.showTextToast(this.getActivity(), R.string.del_dnfiles_not_allowed_msg);
+        diag.show();
+    }
+
+    private void
     onContext_changeCategory(final long cid) {
         UiHelper.OnCategorySelectedListener action = new UiHelper.OnCategorySelectedListener() {
             @Override
@@ -655,6 +664,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
         case R.id.delete_dnfile:
             onContext_deleteDownloaded(dbId);
+            return true;
+
+        case R.id.delete_used_dnfile:
+            onContext_deleteUsedDownloaded(dbId);
             return true;
 
         case R.id.change_category:

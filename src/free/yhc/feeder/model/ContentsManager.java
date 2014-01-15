@@ -47,9 +47,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final int CONTENTS_VERSION = 1;
 
     // Contents are classified by item and data.
-    private static final long FLAG_ITEM_DATA  = 0x1;
-    private static final long FLAG_CHAN_DATA  = 0x10;
-    private static final long FLAG_CHANS_DATA = 0x20;
+    private static final long FLAG_CHAN_DATA = 0x1;
+    private static final long FLAG_ITEM_DATA = 0x2;
 
     private static ContentsManager sInstance = null;
 
@@ -63,9 +62,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     public enum UpdateType implements ListenerManager.Type {
-        ITEM_DATA  (FLAG_ITEM_DATA), // arg0 : item id
-        CHAN_DATA  (FLAG_CHAN_DATA), // arg0 : channel id
-        CHANS_DATA (FLAG_CHANS_DATA);// arg0 : channel id array
+        CHAN_DATA (FLAG_CHAN_DATA),// arg0 : channel id array
+        ITEM_DATA (FLAG_ITEM_DATA);// arg0 : channel id array
         private final long _mFlag;
 
         private UpdateType(long flag) {
@@ -240,7 +238,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == f)
             return false; // Channel information is NOT updated yet.
         boolean ret = Utils.removeFileRecursive(f, true);
-        notifyUpdated(UpdateType.CHAN_DATA, cid);
+        notifyUpdated(UpdateType.CHAN_DATA, new long[] { cid });
         return ret;
     }
 
@@ -253,7 +251,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return true;
         boolean ret = Utils.removeFileRecursive(f, false);
         if (notify)
-            notifyUpdated(UpdateType.CHAN_DATA, cid);
+            notifyUpdated(UpdateType.CHAN_DATA, new long[] { cid });
         return ret;
     }
 
@@ -267,7 +265,7 @@ UnexpectedExceptionHandler.TrackedModule {
         boolean ret = true;
         for (long cid : cids)
             cleanChannelDir(cid, false);
-        notifyUpdated(UpdateType.CHANS_DATA, cids);
+        notifyUpdated(UpdateType.CHAN_DATA, cids);
         return ret;
     }
 
@@ -284,7 +282,33 @@ UnexpectedExceptionHandler.TrackedModule {
         do {
             cids[i++] = c.getLong(0);
         } while (c.moveToNext());
+        c.close();
         cleanChannelDirs(cids);
+    }
+
+    public LinkedList<File>
+    getContentFiles(long cids[]) {
+        LinkedList<File> l = new LinkedList<File>();
+        for (long cid : cids)
+            Utils.getFilesRecursive(l, getChannelDirFile(cid));
+        return l;
+    }
+
+    public LinkedList<File>
+    getContentFiles() {
+        Cursor c = DBPolicy.get().queryChannel(ColumnChannel.ID);
+        if (!c.moveToFirst()) {
+            c.close();
+            return new LinkedList<File>(); // return empty list.
+        }
+
+        long[] cids = new long[c.getCount()];
+        int i = 0;
+        do {
+            cids[i++] = c.getLong(0);
+        } while (c.moveToNext());
+        c.close();
+        return getContentFiles(cids);
     }
 
     /**
@@ -367,15 +391,48 @@ UnexpectedExceptionHandler.TrackedModule {
         return new File(chanDirPath + fname);
     }
 
+    public long
+    getIdFromContentFileName(String fname) {
+        // Item data file format
+        // <channel dir>/<title string>_<id>.<ext>
+        int idot = fname.lastIndexOf('.');
+        int iubar = fname.lastIndexOf('_');
+        try {
+            String idstr = fname.substring(iubar + 1, idot);
+            return Long.parseLong(idstr);
+        } catch (Exception e) {
+            // NumberFormatException, IndexOutOfBoundsException
+            return -1;
+        }
+    }
+
     public boolean
     addItemContent(File f, long id) {
         File itemContentFile = ContentsManager.get().getItemInfoDataFile(id);
         if (f.getAbsolutePath().equals(itemContentFile.getAbsolutePath())
             || f.renameTo(ContentsManager.get().getItemInfoDataFile(id))) {
-            notifyUpdated(UpdateType.ITEM_DATA, id);
+            notifyUpdated(UpdateType.ITEM_DATA, new long[] { id });
             return true;
         } else
             return false;
+    }
+
+    public int
+    deleteItemContents(long ids[]) {
+        int failcnt = 0;
+        LinkedList<Long> l = new LinkedList<Long>();
+        for (long id : ids) {
+            File f = getItemInfoDataFile(id);
+            eAssert(null != f);
+            if (null == f
+                || !f.delete())
+                ++failcnt;
+            else
+                l.add(id);
+        }
+        // Item ids that fails to delete it's content, are ignored intentionally.
+        notifyUpdated(UpdateType.ITEM_DATA, Utils.convertArrayLongTolong(l.toArray(new Long[0])));
+        return failcnt;
     }
 
     public boolean
@@ -384,9 +441,10 @@ UnexpectedExceptionHandler.TrackedModule {
         // There is no use case that "null == f" here.
         File f = getItemInfoDataFile(id);
         eAssert(null != f);
-        boolean ret = f.delete();
-        if (ret)
-            notifyUpdated(UpdateType.ITEM_DATA, id);
-        return ret;
+        if (f.delete()) {
+            notifyUpdated(UpdateType.ITEM_DATA, new long[] { id });
+            return true;
+        }
+        return false;
     }
 }

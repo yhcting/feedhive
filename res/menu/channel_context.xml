@@ -12,6 +12,10 @@
           android:title="@string/delete_downloadded_file"
           android:visible="true"
           />
+    <item android:id="@+id/delete_used_dnfile"
+          android:title="@string/delete_used_downloadded_file"
+          android:visible="true"
+          />
     <item android:id="@+id/pick_icon"
           android:title="@string/pick_icon"
           android:visible="true"

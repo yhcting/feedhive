@@ -35,6 +35,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.http.impl.cookie.DateParseException;
@@ -768,6 +769,18 @@ public class Utils {
         if (ret && bDeleteMe)
             return f.delete();
         return ret;
+    }
+
+    public static void
+    getFilesRecursive(LinkedList<File> l, File f) {
+        if (!f.exists())
+            return;
+
+        if (f.isDirectory()) {
+            for (File c : f.listFiles())
+                    getFilesRecursive(l, c);
+        } else
+            l.add(f);
     }
 
     public static String
