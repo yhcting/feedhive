@@ -73,8 +73,7 @@ public class FeederApp extends Application {
 
     private void
     onAppUpgrade(Context context, int from, int to) {
-        int cur = from;
-        if (cur < 56)
+        if (from < 56)
             onUpgradeTo56(context);
     }
 
