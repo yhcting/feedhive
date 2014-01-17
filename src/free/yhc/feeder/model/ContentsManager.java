@@ -212,17 +212,19 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * Create clean channel dir.
-     * If directory already exists, all files in it are deleted.
+     * Create channel dir.
+     * If @force == true and directory already exists, all files in it are deleted,
+     *   and new empty directory will be generated.
      * @param cid
+     * @param force
      * @return
      */
     public boolean
-    makeChannelDir(long cid) {
+    makeChannelDir(long cid, boolean force) {
         File f = getChannelDirFile(cid);
         if (null == f)
             return false; // Channel information is NOT updated yet.
-        if (f.exists())
+        if (f.exists() && force)
             Utils.removeFileRecursive(f, true);
         return f.mkdir();
     }

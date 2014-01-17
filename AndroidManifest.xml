@@ -12,7 +12,7 @@
     <application
         android:icon="@drawable/icon"
         android:label="@string/app_name"
-        android:name="free.yhc.feeder.FeederApp">
+        android:name=".FeederApp">
         <activity
             android:name=".FeederActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"

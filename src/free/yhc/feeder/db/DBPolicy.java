@@ -858,6 +858,9 @@ UnexpectedExceptionHandler.TrackedModule {
             throws FeederException {
         if (DBG) P.v("UpdateChannel DB Section Start : " + cid);
 
+        // To make sure there is valid channel directory.
+        ContentsManager.get().makeChannelDir(cid, false);
+
         String oldTitle = getChannelInfoString(cid, ColumnChannel.TITLE);
         if (!oldTitle.equals(ch.title)) {
             // update channel information
