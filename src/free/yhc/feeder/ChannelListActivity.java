@@ -57,7 +57,7 @@ import free.yhc.feeder.model.Utils;
 public class ChannelListActivity extends FragmentActivity implements
 ActionBar.TabListener,
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = true;
+    private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelListActivity.class);
 
     // Request codes.

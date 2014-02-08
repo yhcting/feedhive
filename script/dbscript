@@ -6,7 +6,7 @@
 -- Set version of DB.
 -- This should match DB_VERSION of PredefinedChannelActivity
 -- ***************************************************************************
-PRAGMA user_version = 12;
+PRAGMA user_version = 13;
 DROP TABLE "channels";
 DROP TABLE "android_metadata" ;
 
@@ -1060,7 +1060,7 @@ INSERT INTO channels VALUES (!<#>, "[팩트TV] 이이제이 이작가의 결정�
 INSERT INTO channels VALUES (!<#>, "[팩트TV] 이박사와 세작의 역사데칼코마니", "", "!<iblug>facttv00010.xml", "", "팟캐스트", "정치", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "나는 변호사", "", "!<iblug>iamlawyer.xml", "", "팟캐스트", "", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "[팩트TV] 나친박 이썅규의 종횡무진", "", "!<pref>facttv00006.xml", "", "팟캐스트", "정치", "시사", "", "", "kor", 0);
-
+INSERT INTO channels VALUES (!<#>, "밥 한번 먹자", "", "!<pref>babdal.xml", "", "팟캐스트", "사회", "시사", "", "", "kor", 0);
 
 
 -- Think TV
@@ -1271,7 +1271,8 @@ INSERT INTO channels VALUES (!<#>, "김종배의 사사로운 토크", "", "!<pr
 INSERT INTO channels VALUES (!<#>, "나는 잉여다", "", "!<pref>ingyeoin.xml", "", "팟캐스트", "시사", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "라디오 책다방", "", "!<pref>changbi.xml", "", "팟캐스트", "교양", "", "", "", "kor", 0);
 INSERT INTO channels VALUES (!<#>, "박시백의 조선왕조실록", "", "!<pref>human.xml", "", "팟캐스트", "문화", "교양", "", "", "kor", 0);
-
+INSERT INTO channels VALUES (!<#>, "정봉주의 전국구", "", "!<pref>bbong420/bbong420.xml", "", "팟캐스트", "정치", "시사", "", "", "kor", 0);
+INSERT INTO channels VALUES (!<#>, "[연합인포맥스]위기의 경제학자들", "", "!<pref>infomax/economist.xml", "", "팟캐스트", "경제", "", "", "", "kor", 0);
 
 
 -- 국민TV 뉴스
