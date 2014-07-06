@@ -90,8 +90,10 @@ public class NetLoader {
     private void
     closeIstream() throws FeederException {
         try {
-            if (null != mIstream)
+            if (null != mIstream) {
                 mIstream.close();
+                mIstream = null;
+            }
         } catch (IOException e) {
             throw new FeederException (Err.IO_NET);
         }
@@ -105,8 +107,10 @@ public class NetLoader {
     private void
     closeOstream() throws FeederException {
         try {
-            if (null != mOstream)
+            if (null != mOstream) {
                 mOstream.close();
+                mOstream = null;
+            }
         } catch (IOException e) {
             throw new FeederException (Err.IO_FILE);
         }
@@ -132,14 +136,12 @@ public class NetLoader {
     private boolean
     cleanup() {
         try {
-            if (null != mIstream)
-                mIstream.close();
-            if (null != mOstream)
-                mOstream.close();
+            closeIstream();
+            closeOstream();
             if (null != mTmpFile)
                 mTmpFile.delete();
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             return false;
         }
     }
@@ -204,6 +206,14 @@ public class NetLoader {
                            throw new FeederException(Err.INTERRUPTED);
                    }
                }
+           }
+
+           String locurl = conn.getHeaderField("Location");
+           if (locurl != null
+               && !urlStr.equals(locurl)) {
+               // May be redirection
+               download(outstream, locurl, progressListener);
+               return;
            }
 
            try {
@@ -281,7 +291,7 @@ public class NetLoader {
                                .newInstance()
                                .newDocumentBuilder()
                                .parse(mIstream);
-            mIstream.close();
+            closeIstream();
             res = FeedParser.getParser(dom).parse(dom);
         } catch (MalformedURLException e) {
             throw new FeederException(Err.INVALID_URL);
