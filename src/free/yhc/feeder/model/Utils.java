@@ -84,10 +84,10 @@ public class Utils {
     //
     // ========================================================================
     // ext2, ext3, ext4 allows 255 bytes for filename.
-    // but 'char' type in java is 2byte (16-bit unicode).
-    // So, maximum character for filename in java on extN is 127.
-    public static final int    MAX_FILENAME_LENGTH = 127;
-
+    // But, in case of UTF-8 (file name encoding at Linux), one character may
+    // occupy 1-4 bytes.
+    // So, maximum character length for filename is set as 255/4 = 63
+    public static final int    MAX_FILENAME_LENGTH = 63;
 
     public static final long   MIN_IN_MS    = 60 * 1000;
     public static final long   HOUR_IN_MS   = 60 * 60 * 1000;
