@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,9 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.util.regex.Pattern;
 
@@ -53,11 +51,11 @@ public abstract class FeedParser {
     // Result data format from parse.
     static class Result {
         Feed.Channel.ParD channel = new Feed.Channel.ParD();
-        Feed.Item.ParD[]  items   = null;
+        Feed.Item.ParD[] items = null;
     }
 
     protected static class NodeValue {
-        int    priority; // priority value of parsing modules which updates this value.
+        int priority; // priority value of parsing modules which updates this value.
         String value;
 
         NodeValue() {
@@ -67,14 +65,14 @@ public abstract class FeedParser {
         void
         init() {
             priority = -1;
-            value    = "";
+            value = "";
         }
     }
 
     protected static class ChannelValues {
-        NodeValue   title       = new NodeValue();
-        NodeValue   description = new NodeValue();
-        NodeValue   imageref    = new NodeValue();
+        NodeValue title = new NodeValue();
+        NodeValue description = new NodeValue();
+        NodeValue imageref = new NodeValue();
 
         void
         init() {
@@ -94,15 +92,15 @@ public abstract class FeedParser {
     protected static class ItemValues {
         // static pattern to check "String represents web protocol"
         private static final Pattern _sWebProtoPattern
-            = Pattern.compile("^http(s)?\\:\\/\\/.*", Pattern.CASE_INSENSITIVE);
+            = Pattern.compile("^http(s)?\\Q://\\E.*", Pattern.CASE_INSENSITIVE);
 
-        NodeValue   title           = new NodeValue();
-        NodeValue   description     = new NodeValue();
-        NodeValue   link            = new NodeValue();
-        NodeValue   enclosure_length= new NodeValue();
-        NodeValue   enclosure_url   = new NodeValue();
-        NodeValue   enclosure_type  = new NodeValue();
-        NodeValue   pubDate         = new NodeValue();
+        NodeValue title = new NodeValue();
+        NodeValue description = new NodeValue();
+        NodeValue link = new NodeValue();
+        NodeValue enclosure_length = new NodeValue();
+        NodeValue enclosure_url = new NodeValue();
+        NodeValue enclosure_type = new NodeValue();
+        NodeValue pubDate = new NodeValue();
 
         // Below values is NOT required at STANDARD case.
         // But, at some Feed - ex. hanitv sisagate, enclosure url is empty.
@@ -114,7 +112,7 @@ public abstract class FeedParser {
         // (You might be able to regard them as overhead.)
         // Below values SHOULD NOT be exported to Feed data.
         // (This is SHOULD BE EXCLUDED at EXTERNAL interface.)
-        NodeValue   guid            = new NodeValue();
+        NodeValue guid = new NodeValue();
 
         void
         init() {
@@ -168,28 +166,26 @@ public abstract class FeedParser {
     //
     // ===========================================================
     protected abstract static class NSParser {
-        private static final int    NS_PRI_SHIFT       = 16;
-        private static final short  NODE_PRI_DEFAULT   = 0;
+        private static final int NS_PRI_SHIFT = 16;
+        private static final short NODE_PRI_DEFAULT = 0;
 
-        private short     _mNspri;
+        private short _mNspri;
 
+        @SuppressWarnings("unused")
         private NSParser(){} // block default constructor.
 
         NSParser(short priority) {
             _mNspri = priority;
         }
 
-        private final int
+        private int
         pri(int nsPri, int nodePri) {
             return (nsPri << NS_PRI_SHIFT) | nodePri;
         }
 
         /**
          * Set value of this node if priority is higher than node value.
-         * @param nv
-         * @param value
-         * @return
-         *   true(value is set) false(value is not set)
+         * @return true(value is set) false(value is not set)
          */
         protected boolean
         setValue(NodeValue nv, String value) {
@@ -198,12 +194,8 @@ public abstract class FeedParser {
 
         /**
          * Set value of this node if priority is higher than node value.
-         * @param nv
-         * @param value
-         * @param nodePri
-         *   should be 2 byte value.
-         * @return
-         *   true(value is set) false(value is not set)
+         * @param nodePri should be 2 byte value.
+         * @return true(value is set) false(value is not set)
          */
         protected boolean
         setValue(NodeValue nv, String value, short nodePri) {
@@ -218,10 +210,7 @@ public abstract class FeedParser {
 
         /**
          *
-         * @param cv
-         * @param n
-         * @return
-         *   true(handled) false(passed)
+         * @return true(handled) false(passed)
          * @throws FeederException
          */
         abstract boolean
@@ -229,13 +218,10 @@ public abstract class FeedParser {
                 throws FeederException;
 
         /**
-        *
-        * @param iv
-        * @param n
-        * @return
-        *   true(handled) false(passed)
-        * @throws FeederException
-        */
+         *
+         * @return true(handled) false(passed)
+         * @throws FeederException
+         */
         abstract boolean
         parseItem(ItemValues iv, Node n)
                 throws FeederException;
@@ -249,8 +235,8 @@ public abstract class FeedParser {
     // ========================================
     /**
      * Print(logI) next node name.
-     * @param n
      */
+    @SuppressWarnings("unused")
     protected final void
     printNexts(Node n) {
         String msg = "";
@@ -285,7 +271,7 @@ public abstract class FeedParser {
         if (Thread.interrupted())
             throw new FeederException(Err.INTERRUPTED);
 
-        String text = "";
+        String text;
         Node t = findNodeByNameFromSiblings(n.getFirstChild(), "#text");
 
         //
@@ -381,12 +367,10 @@ public abstract class FeedParser {
     // ========================================
     /**
      * Get real parser for this document
-     * @param dom
-     * @return
      */
     static FeedParser
     getParser(Document dom) throws FeederException {
-        eAssert(null != dom);
+        Utils.eAssert(null != dom);
         Element root = dom.getDocumentElement();
         if (null == root)
             throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);

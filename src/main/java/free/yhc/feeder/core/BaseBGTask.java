@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,40 +34,41 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 
 public abstract class BaseBGTask extends ThreadEx<Err> {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(BaseBGTask.class);
 
     // Event if this is KeyBasedLinkedList, DO NOT USE KeyBasedLinkedList.
     // Using KeyBasedLinkedList here just increases code complexity.
     // Accessed only on 'Owner's thread context'.
-    private final LinkedList<Elem> mEventListenerl = new LinkedList<Elem>();
+    private final LinkedList<Elem> mEventListenerl = new LinkedList<>();
 
-    private Object  mCancelParam    = null;
+    private Object mCancelParam = null;
 
     public static class OnEventListener {
         // return : false (DO NOT run this task)
-        public void onPreRun       (BaseBGTask task) { }
-        public void onPostRun      (BaseBGTask task, Err result) { }
-        public void onCancel       (BaseBGTask task, Object param) { }
-        public void onCancelled    (BaseBGTask task, Object param) { }
-        public void onProgress     (BaseBGTask task, int progress) { }
+        public void onPreRun (BaseBGTask task) { }
+        public void onPostRun (BaseBGTask task, Err result) { }
+        public void onCancel (@SuppressWarnings("unused") BaseBGTask task,
+                              @SuppressWarnings("unused") Object param) { }
+        public void onCancelled (BaseBGTask task, Object param) { }
+        public void onProgress (BaseBGTask task, int progress) { }
     }
 
     private static class Elem {
-        final Object            key;
-        final OnEventListener   listener;
+        final Object key;
+        final OnEventListener listener;
         Elem(Object aKey, OnEventListener aListener) {
-            eAssert(null != aListener);
-            key         = aKey;
-            listener    = aListener;
+            Utils.eAssert(null != aListener);
+            key = aKey;
+            listener = aListener;
         }
     }
 
@@ -87,36 +88,37 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
      * This will be called prior to all other registered listeners
      */
     protected void
-    onEarlyPostRun (Err result) {}
+    onEarlyPostRun (@SuppressWarnings("unused") Err result) {}
 
     /**
      * This will be called after all other registered listeners
      */
     protected void
-    onLatePostRun (Err result) {}
+    onLatePostRun (@SuppressWarnings("unused") Err result) {}
 
     /**
      * This will be called prior to all other registered listeners
      */
     protected void
-    onEarlyCancel(Object param) {}
+    onEarlyCancel(@SuppressWarnings("unused") Object param) {}
+
     /**
      * This will be called after all other registered listeners
      */
     protected void
-    onLateCancel(Object param) {}
+    onLateCancel(@SuppressWarnings("unused") Object param) {}
 
     /**
      * This will be called prior to all other registered listeners
      */
     protected void
-    onEarlyCancelled(Object param) {}
+    onEarlyCancelled(@SuppressWarnings("unused") Object param) {}
 
     /**
      * This will be called after all other registered listeners
      */
     protected void
-    onLateCancelled(Object param) {}
+    onLateCancelled(@SuppressWarnings("unused") Object param) {}
 
     /**
      * Register event listener with it's key value.
@@ -126,14 +128,11 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
      * Key value is used to find event listener (onEvent).
      * Several event listener may share one key value.
      * Event callback will be called on owner thread message loop.
-     * @param key
-     * @param listener
-     * @param hasPriority
-     *   true if this event listener
+     * @param hasPriority true if listener should be added at the first position.
      */
     void
     registerEventListener(Object key, OnEventListener listener, boolean hasPriority) {
-        eAssert(isOwnerThread(Thread.currentThread()));
+        Utils.eAssert(isOwnerThread(Thread.currentThread()));
         Elem e = new Elem(key, listener);
         //logI("BGTask : registerEventListener : key(" + key + ") onEvent(" + onEvent + ")");
         if (hasPriority)
@@ -145,17 +144,15 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
     /**
      * Unregister event listener whose key and listener match.
      * one of 'key' and 'listener' can be null, but NOT both.
-     * @param key
-     *   'null' means ignore key value.
-     *   otherwise listeners having matching key value, are unregistered.
-     * @param listener
-     *   'null' means unregister all listeners whose key value matches.
-     *   otherwise, unregister listener whose key and listener both match.
+     * @param key 'null' means ignore key value.
+     *            otherwise listeners having matching key value, are unregistered.
+     * @param listener 'null' means unregister all listeners whose key value matches.
+     *                 otherwise, unregister listener whose key and listener both match.
      */
     void
     unregisterEventListener(Object key, OnEventListener listener) {
-        eAssert(isOwnerThread(Thread.currentThread()));
-        eAssert(null != key || null != listener);
+        Utils.eAssert(isOwnerThread(Thread.currentThread()));
+        Utils.eAssert(null != key || null != listener);
         Iterator<Elem> iter = mEventListenerl.iterator();
         while (iter.hasNext()) {
             Elem e = iter.next();
@@ -177,7 +174,7 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
      */
     void
     clearEventListener() {
-        eAssert(isOwnerThread(Thread.currentThread()));
+        Utils.eAssert(isOwnerThread(Thread.currentThread()));
         //logI("BGTask : clearEventListener");
         mEventListenerl.clear();
     }
@@ -192,9 +189,8 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
     protected void
     onPreRun() {
         onEarlyPreRun();
-        Iterator<Elem> iter = mEventListenerl.iterator();
-        while (iter.hasNext())
-            iter.next().listener.onPreRun(this);
+        for (Elem e : mEventListenerl)
+            e.listener.onPreRun(this);
         onLatePreRun();
     }
 
@@ -202,9 +198,8 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
     protected void
     onPostRun(Err result) {
         onEarlyPostRun(result);
-        Iterator<Elem> iter = mEventListenerl.iterator();
-        while (iter.hasNext())
-            iter.next().listener.onPostRun(this, result);
+        for (Elem e : mEventListenerl)
+            e.listener.onPostRun(this, result);
         onLatePostRun(result);
     }
 
@@ -212,9 +207,8 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
     protected void
     onCancel() {
         onEarlyCancel(mCancelParam);
-        Iterator<Elem> iter = mEventListenerl.iterator();
-        while (iter.hasNext())
-            iter.next().listener.onCancel(this, mCancelParam);
+        for (Elem e : mEventListenerl)
+            e.listener.onCancel(this, mCancelParam);
         onLateCancel(mCancelParam);
     }
 
@@ -222,17 +216,15 @@ public abstract class BaseBGTask extends ThreadEx<Err> {
     protected void
     onCancelled() {
         onEarlyCancelled(mCancelParam);
-        Iterator<Elem> iter = mEventListenerl.iterator();
-        while (iter.hasNext())
-            iter.next().listener.onCancelled(this, mCancelParam);
+        for (Elem e : mEventListenerl)
+            e.listener.onCancelled(this, mCancelParam);
         onLateCancelled(mCancelParam);
     }
 
     @Override
     protected void
     onProgress(int prog) {
-        Iterator<Elem> iter = mEventListenerl.iterator();
-        while (iter.hasNext())
-            iter.next().listener.onProgress(this, prog);
+        for (Elem e : mEventListenerl)
+            e.listener.onProgress(this, prog);
     }
 }

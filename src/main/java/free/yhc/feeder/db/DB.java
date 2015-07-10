@@ -36,7 +36,7 @@
 
 package free.yhc.feeder.db;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -46,12 +46,12 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.ListenerManager;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 // This is singleton
 public final class DB extends SQLiteOpenHelper implements
@@ -59,7 +59,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(DB.class);
 
-    public static final long INVALID_ITEM_ID    = -1;
+    public static final long INVALID_ITEM_ID = -1;
     /**************************************
      *
      * Database design
@@ -69,17 +69,17 @@ UnexpectedExceptionHandler.TrackedModule {
      *      <prefix string> + channel-id
      *
      **************************************/
-    static final String TABLE_CATEGORY  = "category";
-    static final String TABLE_CHANNEL   = "channel";
-    static final String TABLE_ITEM      = "item";
+    static final String TABLE_CATEGORY = "category";
+    static final String TABLE_CHANNEL = "channel";
+    static final String TABLE_ITEM = "item";
 
     // NOTE
     // Oops... mistake on spelling - 'feeder.db' is right.
     // But, software is already released and this is not big problem...
     // So, let's ignore it until real DB structure is needed to be changed.
     // => this can be resolved by 'DB Upgrade operation'.
-    private static final String NAME            = "feader.db";
-    private static final int    VERSION         = 3;
+    private static final String NAME = "feader.db";
+    private static final int VERSION = 3;
 
     private static final long FLAG_CATEGORY_TABLE = 0x1;
     private static final long FLAG_CHANNEL_TABLE  = 0x10;
@@ -106,7 +106,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         private final long _mFlag;
 
-        private UpdateType(long flag) {
+        UpdateType(long flag) {
             _mFlag = flag;
         }
 
@@ -133,8 +133,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Verify that given DB is compatible with this application?
-     * @param db
-     * @return
      */
     public static Err
     verifyDB(SQLiteDatabase db) {
@@ -155,7 +153,7 @@ UnexpectedExceptionHandler.TrackedModule {
                             "type = 'table'",
                             null, null, null, null);
 
-        HashMap<String, String> map = new HashMap<String, String>();
+        HashMap<String, String> map = new HashMap<>();
         if (c.moveToFirst()) {
             do {
                 // Key : table name, Value : sql text
@@ -227,11 +225,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * This function will generate SQL string like below
      * cols[0] 'operator' vals[0] 'join' cols[1] 'operator' vals[1] 'join' ...
-     * @param cols
-     * @param vals
-     * @param operator
-     * @param join
-     * @return
      */
     private static String
     buildSQLWhere(Column[] cols, Object[] vals, String operator, String join) {
@@ -276,11 +269,8 @@ UnexpectedExceptionHandler.TrackedModule {
      **************************************/
     /**
      * Get SQL statement for creating table
-     * @param table
-     *   name of table
-     * @param cols
-     *   columns of table.
-     * @return
+     * @param table name of table
+     * @param cols columns of table.
      */
     private static String
     buildTableSQL(String table, Column[] cols) {
@@ -298,8 +288,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Convert column[] to string[] of column's name
-     * @param cols
-     * @return
      */
     private static String[]
     getColumnNames(Column[] cols) {
@@ -309,6 +297,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return strs;
     }
 
+    @SuppressWarnings("unused")
     private boolean
     doesTableExists(String tablename) {
         Cursor c = mDb.query("sqlite_master",
@@ -360,6 +349,7 @@ UnexpectedExceptionHandler.TrackedModule {
         c.close();
     }
 
+    @SuppressWarnings("unused")
     private void
     upgradeTo3(SQLiteDatabase db) {
 
@@ -523,6 +513,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return nr;
     }
 
+    @SuppressWarnings("unused")
     long
     deleteCategory(String name) {
         int nr =  mDb.delete(TABLE_CATEGORY,
@@ -535,9 +526,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Update category name
-     * @param id
-     * @param name
-     * @return
      */
     long
     updateCategory(long id, String name) {
@@ -552,10 +540,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param column
-     * @param where
-     * @param value
-     * @return
      */
     Cursor
     queryCategory(ColumnCategory column, ColumnCategory where, Object value) {
@@ -564,12 +548,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param columns
-     * @param where
-     *   if (null == value) than this is ignored.
-     * @param value
-     *   if (null == where) than this is ignored.
-     * @return
+     * @param where if (null == value) than this is ignored.
+     * @param value if (null == where) than this is ignored.
      */
     Cursor
     queryCategory(ColumnCategory[] columns, ColumnCategory where, Object value) {
@@ -593,8 +573,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * BE CAREFUL FOR USING THIS.
      * This will insert values without any sanity checking.
      * This function is visible to outside only for PERFORMANCE.
-     * @param values
-     * @return
      */
     long
     insertChannel(ContentValues values) {
@@ -610,9 +588,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * This function doesn't do any sanity check for passing arguments.
      * So, if there is invalid column name in ContentValues, this function issues exception.
      * Please be careful when use this function!
-     * @param cid
-     * @param values
-     * @return
      */
     long
     updateChannel(long cid, ContentValues values) {
@@ -627,11 +602,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     * @param field
-     * @param v
-     *   only String, Long and byte[] are supported.
-     * @return
+     * @param v only String, Long and byte[] are supported.
      */
     long
     updateChannel(long cid, ColumnChannel field, Object v) {
@@ -656,14 +627,10 @@ UnexpectedExceptionHandler.TrackedModule {
      *     ...
      *   END
      * WHERE id IN (whereValues[0], whereValues[1], ...)
-     * @param target
-     *   Column to be changed.
-     * @param targetValues
-     *   Target value array
-     * @param where
-     *   Column to compare
-     * @param whereValues
-     *   Values to compare with value of 'where' field.
+     * @param target Column to be changed.
+     * @param targetValues Target value array
+     * @param where Column to compare
+     * @param whereValues Values to compare with value of 'where' field.
      */
     void
     updateChannelSet(ColumnChannel target, Object[] targetValues,
@@ -674,12 +641,15 @@ UnexpectedExceptionHandler.TrackedModule {
 
         StringBuilder sbldr = new StringBuilder();
         sbldr.append("UPDATE " + TABLE_CHANNEL + " ")
-             .append(" SET " + target.getName() + " = CASE " + where.getName());
+             .append(" SET ")
+             .append(target.getName())
+             .append(" = CASE ")
+             .append(where.getName());
         for (int i = 0; i < targetValues.length; i++) {
-            sbldr.append(" WHEN " + DatabaseUtils.sqlEscapeString(whereValues[i].toString()))
-                 .append(" THEN " + DatabaseUtils.sqlEscapeString(targetValues[i].toString()));
+            sbldr.append(" WHEN ").append(DatabaseUtils.sqlEscapeString(whereValues[i].toString()))
+                 .append(" THEN ").append(DatabaseUtils.sqlEscapeString(targetValues[i].toString()));
         }
-        sbldr.append(" END WHERE " + where.getName() + " IN (");
+        sbldr.append(" END WHERE ").append(where.getName()).append(" IN (");
         for (int i = 0; i < whereValues.length;) {
             sbldr.append(DatabaseUtils.sqlEscapeString(whereValues[i].toString()));
             if (++i < whereValues.length)
@@ -695,13 +665,6 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * @param columns
-     * @param where
-     * @param value
-     * @param orderColumn
-     * @param bAsc
-     * @param limit
-     * @return
      */
     Cursor
     queryChannel(ColumnChannel[] columns,
@@ -717,17 +680,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param columns
-     * @param wheres
-     *   if (null == values) than this is ignored.
-     * @param values
-     *   if (null == wheres) than this is ignored.
-     * @param orderColumn
-     * @param bAsc
-     *   if (null == orderColumn) than this is ignored.
-     * @param limit
-     *   ( <= 0) means "All"
-     * @return
+     * @param wheres if (null == values) than this is ignored.
+     * @param values if (null == wheres) than this is ignored.
+     * @param bAsc if (null == orderColumn) than this is ignored.
+     * @param limit ( <= 0) means "All"
      */
     Cursor
     queryChannel(ColumnChannel[] columns,
@@ -749,8 +705,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Select channel that has max 'column' value.
-     * @param column
-     * @return
      */
     Cursor
     queryChannelMax(ColumnChannel column) {
@@ -759,11 +713,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Delete channel
-     * @param where
-     * @param value
-     * @return
-     *   number of items deleted.
+     * @return number of items deleted.
      */
+    @SuppressWarnings("unused")
     long
     deleteChannel(ColumnChannel where, Object value) {
         return deleteChannelOR(new ColumnChannel[] { where }, new Object[] { value });
@@ -773,10 +725,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * Delete channels and all belonging items
      * wheres and values are joined with "OR".
      * That is, wheres[0] == values[0] OR wheres[1] == values[1] ...
-     * @param wheres
-     * @param values
-     * @return
-     *   number of items deleted.
+     * @return number of items deleted.
      */
     long
     deleteChannelOR(ColumnChannel[] wheres, Object[] values) {
@@ -844,8 +793,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * BE CAREFUL FOR USING THIS.
      * This will insert values without any sanity checking.
      * This function is visible to outside only for PERFORMANCE.
-     * @param values
-     * @return
      */
     long
     insertItem(ContentValues values) {
@@ -859,8 +806,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * BE CAREFUL FOR USING THIS.
      * This will insert values without any sanity checking.
      * This function is visible to outside only for PERFORMANCE.
-     * @param values
-     * @return
      */
     long
     updateItem(long id, ContentValues values) {
@@ -872,11 +817,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param id
-     * @param field
-     * @param v
-     *   only String, Long and byte[] type are allowed
-     * @return
+     * @param v only String, Long and byte[] type are allowed
      */
     long
     updateItem(long id, ColumnItem field, Object v) {
@@ -893,11 +834,6 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * @param columns
-     * @param where
-     * @param value
-     * @param limit
-     * @return
      */
     Cursor
     queryItem(ColumnItem[] columns, ColumnItem where, Object value, long limit) {
@@ -910,16 +846,9 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * wheres and values are joined with "AND".
      * That is, wheres[0] == values[0] AND wheres[1] == values[1] ...
-     * @param columns
-     * @param wheres
-     *   if (null == values) than this is ignored.
-     * @param values
-     *   if (null == wheres) than this is ignored.
-     * @param limit
-     *   ( <= 0) means "All"
-     * @param ordered
-     *   true for ordered by pubtime
-     * @return
+     * @param wheres if (null == values) than this is ignored.
+     * @param values if (null == wheres) than this is ignored.
+     * @param limit ( <= 0) means "All"
      */
     Cursor
     queryItemAND(ColumnItem[] columns, ColumnItem[] wheres, Object[] values, long limit) {
@@ -936,19 +865,9 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * where clause is generated as follows.
      *   "(where & mask) = value"
-     * @param columns
-     * @param where
-     * @param mask
-     *   mask value used to masking 'where' value.
-     * @param value
-     *   value should be same after masking operation.
-     * @param searchFields
-     * @param searchs
-     * @param fromPubtime
-     * @param toPubtime
-     * @param ordered
-     *   true for ordered by pubtime
-     * @return
+     * @param mask mask value used to masking 'where' value.
+     * @param value value should be same after masking operation.
+     * @param ordered true for ordered by pubtime
      */
     Cursor
     queryItemMask(ColumnItem[] columns,
@@ -977,20 +896,10 @@ UnexpectedExceptionHandler.TrackedModule {
      * That is, wheres[0] == values[0] OR wheres[1] == values[1] ...
      *
      *
-     * @param columns
-     * @param wheres
-     *   if (null == values) than this is ignored.
-     * @param values
-     *   if (null == wheres) than this is ignored.
-     * @param searchFields
-     * @param searchs
-     * @param fromPubtime
-     * @param toPubtime
-     * @param limit
-     *   ( <= 0) means "All"
-     * @param ordered
-     *   true for ordered by pubtime
-     * @return
+     * @param wheres if (null == values) than this is ignored.
+     * @param values if (null == wheres) than this is ignored.
+     * @param limit ( <= 0) means "All"
+     * @param ordered true for ordered by pubtime
      */
     Cursor
     queryItemOR(ColumnItem[] columns,
@@ -1020,11 +929,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param column
-     *   column to count.
-     * @param where
-     * @param value
-     * @return
+     * @param column column to count.
      */
     Cursor
     queryItemCount(ColumnItem column, ColumnItem where, long value) {
@@ -1036,10 +941,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Delete item from item table.
-     * @param where
-     * @param value
-     * @return
-     *   number of items deleted.
+     * @return number of items deleted.
      */
     long
     deleteItem(ColumnItem where, Object value) {
@@ -1050,9 +952,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * Delete item from item table.
      * wheres and values are joined with "OR".
      * That is, wheres[0] == values[0] OR wheres[1] == values[1] ...
-     * @param wheres
-     * @param values
-     * @return
      */
     long
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
@@ -1086,9 +985,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * Why this function is NOT general form?
      * That is only for performance (Nothing else!).
      *
-     * @param cid
-     * @param limit
-     * @return
      */
     Cursor
     queryItemIds(long cid, long limit) {
@@ -1101,11 +997,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cids
-     *   'null' for all items.
-     * @param column
-     * @param bMax
-     * @return
+     * @param cids 'null' for all items.
      */
     Cursor
     queryItemMinMax(long[] cids, ColumnItem column, boolean bMax) {
@@ -1128,12 +1020,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param where
-     * @param mask
-     * @param value
-     * @param column
-     * @param bMax
-     * @return
      */
     Cursor
     queryItemMinMax(ColumnItem where, long mask, long value, ColumnItem column, boolean bMax) {
@@ -1148,13 +1034,10 @@ UnexpectedExceptionHandler.TrackedModule {
     // -----------------------------------------------------------------------
     /**
      *
-     * @param cid
-     *   channel id to delete old items.
-     *   '-1' means 'for all channel'.
-     * @param percent
-     *   percent to delete.
-     * @return
-     *   number of items deleted
+     * @param cid channel id to delete old items.
+     *            '-1' means 'for all channel'.
+     * @param percent percent to delete.
+     * @return number of items deleted
      */
     int
     deleteOldItems(long cid, int percent) {
@@ -1169,7 +1052,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // See comment of "SQLiteDatabase.delete".
             wh = "1";
         else {
-            Cursor c = null;
+            Cursor c;
 
             // Default is sorted by ID in decrementing order.
             if (cid >= 0)

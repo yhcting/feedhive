@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.util.LinkedList;
 
@@ -46,37 +46,39 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.ThreadEx;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.ThreadEx;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class AsyncAdapter extends BaseAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(AsyncAdapter.class);
 
     // Variables to store information - not changed in dynamic
-    protected final Context       mContext;
-    private   final int           mDataReqSz;
-    private   final int           mMaxArrSz; // max array size of items
-    private   final boolean       mHasLimit;
-    private   final int           mRowLayout;
-    private   final int           mFirstLDahead;
+    protected final Context mContext;
+    private final int mDataReqSz;
+    private final int mMaxArrSz; // max array size of items
+    private final boolean mHasLimit;
+    private final int mRowLayout;
+    private final int mFirstLDahead;
     // We cannot control the moment of GC is triggered.
     // So, to GC memory used for items ASAP, below list is used.
-    private   final LinkedList<Object>  mGarbageIteml = new LinkedList<Object>();
+    private final LinkedList<Object> mGarbageIteml = new LinkedList<>();
 
 
     // Variables set at init() function
-    private   ListView      mLv = null;
-    private   DataProvideStateListener mDpsListener = null;
-    private   Object        mDummyItem = null;
-    private   View          mFirstLoadingView = null;
+    private ListView mLv = null;
+    private DataProvideStateListener mDpsListener = null;
+    private Object mDummyItem = null;
+    private View mFirstLoadingView = null;
 
 
-    private   DataProvider mDp          = null;
+    private DataProvider mDp = null;
 
     // Variables those are changed dynamically
     // NOTE!
@@ -88,27 +90,27 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // position of top item
     // this is position of item located at item array[0].
-    private   int           mPosTop     = 0;
+    private int mPosTop = 0;
 
     // NOTE
     // Accessed only in UI Thread Context!
     // real-data-count.
     // This is decided when provider set 'eod - End Of Data' flag.
-    private   int           mDataCnt    = -1;
+    private int mDataCnt = -1;
 
     // NOTE
     // variable 'items' SHOULD BE MODIFIED ONLY ON UI THREAD CONTEXT!!!
-    protected Object[]      mItems;
+    protected Object[] mItems;
 
     // This is used only on UI Thread context.
     // So, this is not needed to be 'volatile'
-    private   int           mNrseq      = 0;
+    private int mNrseq = 0;
 
     // For synchronization
     // Read/Write operation to java primitive/reference is atomic!
     // So, use with 'volatile'
-    private volatile boolean mDpDone    = false;
-    private ThreadEx<Err>    mDpTask    = null;
+    private volatile boolean mDpDone = false;
+    private ThreadEx<Err> mDpTask = null;
 
     /**
      * provide data to this adapter asynchronously
@@ -120,13 +122,7 @@ UnexpectedExceptionHandler.TrackedModule {
          * And this function may be called at multiple thread.
          * So, function should be "MULTI-THREAD SAFE"
          * Or, thread may be interrupted in the middle of running.
-         * @param adapter
-         * @param nrseq
-         *   request sequence number
-         * @param from
-         * @param sz
-         * @return
-         *   return value is not used yet. it is just reserved.
+         * @return return value is not used yet. it is just reserved.
          */
         int requestData(AsyncAdapter adapter, Object priv, long nrseq, int from, int sz);
 
@@ -135,8 +131,6 @@ UnexpectedExceptionHandler.TrackedModule {
          * Let data provider know that item will not be used anymore.
          * Data provider may do some operation to prevent resource leak for the item
          * This callback will be called at main UI thread context.
-         * @param adapter
-         * @param items
          */
         void destroyData(AsyncAdapter adapter, Object data);
     }
@@ -144,18 +138,15 @@ UnexpectedExceptionHandler.TrackedModule {
     interface DataProvideStateListener {
         /**
          * Called before starting async data provider.
-         * @param adapter
          */
         void onPreDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq);
         /**
          * called after data is provided and before notifying dataSetChanged on UI Thread context
-         * @param adapter
          */
         void onPostDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq);
 
         /**
          * called when dataProvide is cancelled
-         * @param adapter
          */
         void onCancelledDataProvide(AsyncAdapter adapter, int anchorPos, long nrseq);
     }
@@ -169,31 +160,22 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * SHOULD BE created on UI Thread Context!
-     * @param context
-     * @param rowLayout
-     * @param lv
-     * @param dummyItem
-     *   {@link DataProvider#destroyData(AsyncAdapter, Object)} will not be called for dummyItem.
-     * @param dataReqSz
-     *
-     * @param maxArrSz
-     *   if hasLimit == false than
-     *     this value SHOULD BE LARGER than number of items that can be shown at one-screen!
-     * @param hasLimit
+     * @param maxArrSz if hasLimit == false than
+     *                 this value SHOULD BE LARGER than number of items that can be shown at one-screen!
      */
     protected
-    AsyncAdapter(Context        context,
-                 int            rowLayout,
-                 final int      dataReqSz,
-                 final int      maxArrSz,
-                 boolean        hasLimit) {
+    AsyncAdapter(Context context,
+                 int rowLayout,
+                 final int dataReqSz,
+                 final int maxArrSz,
+                 boolean hasLimit) {
         eAssert(dataReqSz < maxArrSz);
 
-        mContext     = context;
-        mRowLayout   = rowLayout;
-        mDataReqSz   = dataReqSz;
-        mMaxArrSz    = maxArrSz;
-        mHasLimit    = hasLimit;
+        mContext = context;
+        mRowLayout = rowLayout;
+        mDataReqSz = dataReqSz;
+        mMaxArrSz = maxArrSz;
+        mHasLimit = hasLimit;
         // NOTE
         // This is policy.
         // When reload data, some of previous data would better to be loaded.
@@ -202,14 +184,14 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     protected void
-    init(View       firstLoadingView,
-         ListView   lv,
+    init(View firstLoadingView,
+         ListView lv,
          DataProvideStateListener dpsListener,
-         Object     dummyItem) { // dummy item for first load
-        mLv          = lv;
+         Object dummyItem) { // dummy item for first load
+        mLv = lv;
         mDpsListener = dpsListener;
         mFirstLoadingView = firstLoadingView;
-        mDummyItem   = dummyItem;
+        mDummyItem = dummyItem;
         mItems = new Object[] { mDummyItem };
     }
 
@@ -226,7 +208,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Should be run on main UI thread.
-     * @param item
      */
     protected void
     destroyItem(Object item) {
@@ -256,12 +237,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param pos
-     *   position of this value is like below.
-     *   +--------+---------+--------+---------+-----
-     *   | pos[0] | item[0] | pos[1] | item[1] | ...
-     *   +--------+---------+--------+---------+-----
-     * @param item
+     * @param pos position of this value is like below.
+     *            +--------+---------+--------+---------+-----
+     *            | pos[0] | item[0] | pos[1] | item[1] | ...
+     *            +--------+---------+--------+---------+-----
      */
     protected void
     insertItem(int pos, Object item) {
@@ -279,7 +258,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Remove item.
      * Item count is decreased by 1
-     * @param pos
      */
     protected void
     removeItem(int pos) {
@@ -298,12 +276,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param ldtype
-     * @param from
-     *   meaningful only for LDType.RELOAD
-     * @param sz
-     * @return
-     *   new items
+     * @param from meaningful only for LDType.RELOAD
+     * @return new items
      */
     private Object[]
     buildNewItemsArray(LDType ldtype, int from, int sz) {
@@ -316,14 +290,17 @@ UnexpectedExceptionHandler.TrackedModule {
             // Ignore all previous loading information.
             newItems = new Object[sz];
             mPosTop = from;
+            //noinspection ManualArrayToCollectionCopy
             for (Object o : mItems)
                 mGarbageIteml.add(o);
         } else if (LDType.NEXT == ldtype) {
+            //noinspection UnnecessaryLocalVariable
             int sz2grow = sz;
             int sz2shrink = mItems.length + sz2grow - mMaxArrSz;
             sz2shrink = sz2shrink < 0? 0: sz2shrink;
             newItems = new Object[mItems.length + sz2grow - sz2shrink];
             System.arraycopy(mItems, sz2shrink, newItems, 0, mItems.length - sz2shrink);
+            //noinspection ManualArrayToCollectionCopy
             for (int i = 0; i < sz2shrink; i++)
                 mGarbageIteml.add(mItems[i]);
             mPosTop += sz2shrink;
@@ -331,13 +308,14 @@ UnexpectedExceptionHandler.TrackedModule {
             eAssert(0 < mPosTop && sz <= mPosTop);
             // After initial loading done in the middle of mItems
             int sz2grow = mPosTop;
-            int sz2shrink = 0;
+            int sz2shrink;
             sz2grow = sz2grow > sz? sz: sz2grow;
             sz2shrink = sz2grow + mItems.length - mMaxArrSz;
             sz2shrink = sz2shrink < 0? 0: sz2shrink;
 
             newItems = new Object[mItems.length + sz2grow - sz2shrink];
             System.arraycopy(mItems, 0, newItems, sz2grow, mItems.length - sz2shrink);
+            //noinspection ManualArrayToCollectionCopy
             for (int i = mItems.length - sz2shrink; i < mItems.length; i++)
                 mGarbageIteml.add(mItems[i]);
             mPosTop -= sz2grow;
@@ -354,7 +332,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 Thread.sleep(ms);
                 summs += ms;
             }
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException ignored) {}
         eAssert(summs < timeoutms);
     }
 
@@ -451,7 +429,7 @@ UnexpectedExceptionHandler.TrackedModule {
      *   - lots of change in item order (ex. one of item in the middle is deleted etc)
      */
     public void
-    reloadDataSetAsync(DataProvideStateListener dpsListener) {
+    reloadDataSetAsync(@SuppressWarnings("unused") DataProvideStateListener dpsListener) {
         eAssert(Utils.isUiThread());
         int from = mPosTop + mLv.getFirstVisiblePosition() - mFirstLDahead;
         from = from < 0? 0: from;
@@ -475,11 +453,8 @@ UnexpectedExceptionHandler.TrackedModule {
      * So, after calling this function, reload should be called to apply.
      * And if new posTop is near data count - that is, there is too few items left to be shown
      *   at list, newly set top may be adjusted to smaller value. And it will be returned.
-     * @param adataCnt
-     *   number of real-data-count. This is larger than getCount() value which returns loaded data count.
-     * @return
-     *   changed posTop. This may different with given value.
      */
+    @SuppressWarnings("unused")
     public void
     moveToLastDataSet() {
         eAssert(Utils.isUiThread());
@@ -490,20 +465,18 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
     /**
-     * @param priv
-     *   Internal value passed by {@link AsyncAdapter}
-     *   This value should be passed as it is.
-     * @param reqSeq
-     *   sequence number. (Given by adapter)
-     *   This also should be passed as it is.
-     * @param from
-     * @param aitems
-     * @param eod
-     *   End Of Data
-     *   If
+     * @param priv Internal value passed by {@link AsyncAdapter}
+     *             This value should be passed as it is.
+     * @param reqSeq sequence number. (Given by adapter)
+     *               This also should be passed as it is.
+     * @param eod  End Of Data
      */
     public void
-    provideItems(final Object priv, final long reqSeq, final int from, final Object[] items, final boolean eod) {
+    provideItems(final Object priv,
+                 @SuppressWarnings("unused") final long reqSeq,
+                 final int from,
+                 final Object[] items,
+                 final boolean eod) {
         //logI("AsyncAdapter provideItems - START : from " + from + ", # " + aitems.length);
         eAssert(mMaxArrSz > items.length);
 
@@ -595,8 +568,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * @return
-     *   number of items that is loaded to array.(NOT real count.)
+     * @return number of items that is loaded to array.(NOT real count.)
      */
     @Override
     public int

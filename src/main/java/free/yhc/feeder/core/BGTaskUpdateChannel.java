@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,85 +34,62 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
-import static free.yhc.feeder.model.Utils.eAssert;
-
-import java.io.File;
-
-public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
+public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(BGTaskDownloadToFile.class);
+    @SuppressWarnings("unused")
+    private static final Utils.Logger P = new Utils.Logger(BGTaskUpdateChannel.class);
 
-    private volatile NetLoader      mLoader   = null;
-    private volatile int            mProgress = 0;
+    private volatile NetLoader mLoader = null;
 
     public static class Arg {
-        final String url;
-        final File   toFile;
-        final File   tempFile;
+        final long cid;
+        final String customIconref;
 
-        public Arg(String aUrl, File aToFile, File aTempFile) {
-            eAssert(null != aUrl && null != aToFile && null != aTempFile);
-            url = aUrl;
-            toFile = aToFile;
-            tempFile = aTempFile;
+        public Arg(long aCid) {
+            cid = aCid;
+            customIconref = null;
         }
-    }
+        public Arg(long aCid, String aCustomIconref) {
+            cid = aCid;
+            customIconref = aCustomIconref;
+        }
 
-    private boolean
-    cleanupStream() {
-        return true;
     }
 
     public
-    BGTaskDownloadToFile(Arg arg) {
-        super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
-    }
-
-    @Override
-    public void
-    registerEventListener(Object key, OnEventListener listener, boolean hasPriority) {
-        super.registerEventListener(key, listener, hasPriority);
-        publishProgress(mProgress);
+    BGTaskUpdateChannel(Arg arg) {
+        super(arg, OPT_WAKELOCK | OPT_WIFILOCK);
     }
 
     @Override
     protected Err
     doBgTask(Arg arg) {
-        //logI("* Start background Job : DownloadToFileTask\n" +
-        //     "    Url : " + arg.url);
-        mLoader = new NetLoader();
-
-        Err result = Err.NO_ERR;
         try {
-            mLoader.downloadToFile(arg.url,
-                                   arg.tempFile,
-                                   arg.toFile,
-                                   new NetLoader.OnProgress() {
-                @Override
-                public void
-                onProgress(NetLoader loader, long prog) {
-                    mProgress = (int)prog;
-                    publishProgress(mProgress);
-                }
-            });
+            mLoader = new NetLoader();
+            if (null == arg.customIconref)
+                mLoader.updateLoad(arg.cid);
+            else
+                mLoader.updateLoad(arg.cid, arg.customIconref);
         } catch (FeederException e) {
-            result = e.getError();
+            //logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
+            return e.getError();
         }
-
-        return result;
+        return Err.NO_ERR;
     }
 
     @Override
     public boolean
     cancel(Object param) {
-        // HACK for fast-interrupt
-        // Raise IOException in force
-        super.cancel(param);
+        // I may misunderstand that canceling background task may corrupt DB
+        //   by interrupting in the middle of transaction.
+        // But java thread doesn't interrupt it's executing.
+        // So, I don't worry about this (different from C.)
+        super.cancel(param); // cancel thread
         if (null != mLoader)
-            mLoader.cancel();
-        cleanupStream();
+            mLoader.cancel();     // This is HACK for fast-interrupt.
         return true;
     }
 }

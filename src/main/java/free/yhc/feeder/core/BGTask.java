@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,30 +34,32 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
-import static free.yhc.feeder.model.Utils.eAssert;
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.os.PowerManager;
 
+// CancelParam is not used. But it is preserved for future use.
 public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(BGTask.class);
 
-    public static final int OPT_WAKELOCK  = 0x01;
-    public static final int OPT_WIFILOCK  = 0x02;
+    public static final int OPT_WAKELOCK = 0x01;
+    public static final int OPT_WIFILOCK = 0x02;
 
     private static final String WLTAG = "BGTask";
 
-    private volatile Err            mResult         = Err.NO_ERR;
+    private volatile Err mResult = Err.NO_ERR;
 
-    private int                     mOpt            = 0;
-    private RunParam                mRunParam       = null;
+    private int mOpt = 0;
+    private RunParam mRunParam = null;
 
-    private Object                  mWlmx           = new Object(); // Wakelock mutex
-    private PowerManager.WakeLock   mWl             = null;
-    private WifiManager.WifiLock    mWfl            = null;
+    private final Object mWlmx = new Object(); // Wakelock mutex
+    private PowerManager.WakeLock mWl = null;
+    private WifiManager.WifiLock mWfl = null;
 
     public BGTask(RunParam arg, int option) {
         super();
@@ -65,7 +67,7 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
         // Even if, BGTask is designed considering multi-threaded environment,
         //   to help understanding code structure, only UI Thread can create BG Task.
         // (Actually, this is NOT constraints for BGTask, but for Feeder app.
-        eAssert(Utils.isUiThread());
+        Utils.eAssert(Utils.isUiThread());
         mRunParam = arg;
         mOpt = option;
     }
@@ -73,6 +75,7 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
     // ==========================================
     // Private
     // ==========================================
+    @SuppressWarnings("unused")
     private void
     releaseWLock() {
         synchronized (mWlmx) {
@@ -89,6 +92,7 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
         }
     }
 
+    @SuppressWarnings("unused")
     private void
     aquireWLock() {
         synchronized (mWlmx) {
@@ -116,20 +120,20 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
      */
     void
     resetResult() {
-        eAssert(ThreadEx.State.RUNNING != getState());
+        Utils.eAssert(ThreadEx.State.RUNNING != getState());
         mResult = Err.NO_ERR;
     }
 
     Err
     getResult() {
-        eAssert(null != mResult);
+        Utils.eAssert(null != mResult);
         return mResult;
     }
 
     @Override
     protected void
     onPostRun(Err result) {
-        eAssert(null != result);
+        Utils.eAssert(null != result);
         // See ThreadEx.bgRun()
         // result can be null in two cases
         //   - doAsyncTask() returns 'null' -- (*1)
@@ -137,6 +141,7 @@ public abstract class BGTask<RunParam, CancelParam> extends BaseBGTask {
         // In case of BaseBGTask, (*1) is unexpected case and SHOULD NOT happen.
         // And (*2) is also definitely unexpected case (Runtime exception... or something...).
         // So, set to Err.UNKNOWN for those two cases.
+        //noinspection ConstantConditions
         if (null == result)
             result = Err.UNKNOWN;
 

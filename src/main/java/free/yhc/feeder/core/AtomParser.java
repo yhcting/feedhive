@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,9 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.util.LinkedList;
 
@@ -47,7 +45,9 @@ import org.w3c.dom.Node;
 
 public class AtomParser extends FeedParser implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(AtomParser.class);
 
     // parsing priority of namespace supported (larger number has priority)
@@ -64,8 +64,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         boolean
-        parseChannel(ChannelValues cv, Node n)
-                throws FeederException {
+        parseChannel(ChannelValues cv, Node n)  throws FeederException {
            boolean ret = true;
 
            if (n.getNodeName().equalsIgnoreCase("title"))
@@ -82,11 +81,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
        @Override
        boolean
-       parseItem(ItemValues iv, Node n)
-               throws FeederException {
+       parseItem(ItemValues iv, Node n) throws FeederException {
            // 'published' has priority
-           final short priUpdated    = 0;
-           final short priPublished  = 1;
+           final short priUpdated   = 0;
+           final short priPublished = 1;
 
            boolean ret = true;
 
@@ -125,7 +123,7 @@ UnexpectedExceptionHandler.TrackedModule {
         setContent(ItemValues iv, Node n) {
             NamedNodeMap nnm = n.getAttributes();
             short nodepri = 0;
-            Node attrN = null;
+            Node attrN ;
             // NOTE YOUTUBE hack
             // YOUTUBE SPECIFIC PARSING - START
             // handle attribute for youtube "yt" namespace in "media:content"
@@ -133,7 +131,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // use yt:format value as node priority.
             if (Utils.bitIsSet(extend, extend_youtube, extend_mask)) {
                 attrN = nnm.getNamedItem("yt:format");
-                short  ytformat = 1;
+                short ytformat = 1;
                 if (null != attrN)
                     ytformat = Short.parseShort(attrN.getNodeValue());
 
@@ -168,15 +166,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         boolean
-        parseChannel(ChannelValues cv, Node n)
-                throws FeederException {
+        parseChannel(ChannelValues cv, Node n) throws FeederException {
             return false;
         }
 
         @Override
         boolean
-        parseItem(ItemValues iv, Node n)
-                throws FeederException {
+        parseItem(ItemValues iv, Node n) throws FeederException {
             if (!n.getNodeName().equalsIgnoreCase("media:group"))
                 return false;
 
@@ -197,8 +193,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // ===========================================================
 
     private void
-    constructNSParser(LinkedList<NSParser> pl, Node n)
-            throws FeederException {
+    constructNSParser(LinkedList<NSParser> pl, Node n) throws FeederException {
         NamedNodeMap nnm = n.getAttributes();
         // add default namespace parser
         pl.add(new NSDefaultParser());
@@ -217,25 +212,24 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private String
-    getTextConstructsValue(Node n)
-            throws FeederException {
+    getTextConstructsValue(Node n) throws FeederException {
         NamedNodeMap nnm = n.getAttributes();
         Node typeN = nnm.getNamedItem("type");
         String type = null != typeN? typeN.getNodeValue(): "text";
         String text = getTextValue(n);
+        //noinspection StatementWithEmptyBody
         if ("html".equalsIgnoreCase(type)) {
-            // text is html value. So, we need to extract pure text contents
-            // FIXME
-        } else if ("xhtml".equalsIgnoreCase(type)) {
-            // text is xhtml value. So, we need to extract pure text contents
-            // FIXME
+            // FIXME : text is html value. So, we need to extract pure text contents
+        } else
+        //noinspection StatementWithEmptyBody
+        if ("xhtml".equalsIgnoreCase(type)) {
+            // FIXME text is xhtml value. So, we need to extract pure text contents
         }
         return text;
     }
 
     private String
-    getTimeConstructsValue(Node n)
-            throws FeederException {
+    getTimeConstructsValue(Node n) throws FeederException {
         // Nothing specical.
         return getTextValue(n);
     }
@@ -255,13 +249,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
     private void
-    nodeFeed(Result res, NSParser[] parser, Node fn)
-            throws FeederException {
+    nodeFeed(Result res, NSParser[] parser, Node fn)  throws FeederException {
         ChannelValues cv = new ChannelValues();
         ItemValues iv = new ItemValues();
         // count number of items in this channel
 
-        LinkedList<Feed.Item.ParD> iteml = new LinkedList<Feed.Item.ParD>();
+        LinkedList<Feed.Item.ParD> iteml = new LinkedList<>();
         cv.init();
         Node n = fn.getFirstChild();
         while (null != n) {
@@ -290,7 +283,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         cv.set(res.channel);
-        res.items = iteml.toArray(new Feed.Item.ParD[0]);
+        res.items = iteml.toArray(new Feed.Item.ParD[iteml.size()]);
     }
 
     @Override
@@ -301,25 +294,24 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     Result
-    parse(Document dom)
-            throws FeederException {
-        eAssert(null != dom);
+    parse(Document dom)  throws FeederException {
+        Utils.eAssert(null != dom);
         Result res = null;
         UnexpectedExceptionHandler.get().registerModule(this);
         try {
             Element root = dom.getDocumentElement();
             verifyFormat(root.getNodeName().equalsIgnoreCase("feed"));
 
-            LinkedList<NSParser> pl = new LinkedList<NSParser>();
+            LinkedList<NSParser> pl = new LinkedList<>();
             constructNSParser(pl, root);
             res = new Result();
 
             // NOTE YOUTUBE hack
-            for (NSParser p : pl.toArray(new NSParser[0]))
+            for (NSParser p : pl.toArray(new NSParser[pl.size()]))
                 if ((p instanceof NSMediaParser) && ((NSMediaParser)p).isYoutubeEnabled())
                     res.channel.type = Feed.Channel.Type.EMBEDDED_MEDIA;
 
-            nodeFeed(res, pl.toArray(new NSParser[0]), root);
+            nodeFeed(res, pl.toArray(new NSParser[pl.size()]), root);
         } finally {
             UnexpectedExceptionHandler.get().unregisterModule(this);
         }

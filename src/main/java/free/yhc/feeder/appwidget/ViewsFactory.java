@@ -36,7 +36,7 @@
 
 package free.yhc.feeder.appwidget;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
 import java.util.HashSet;
@@ -54,16 +54,16 @@ import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.ItemActionHandler;
-import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.BGTask;
+import free.yhc.feeder.core.BaseBGTask;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.ItemActionHandler;
+import free.yhc.feeder.core.ListenerManager;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class ViewsFactory implements
 RemoteViewsService.RemoteViewsFactory,
@@ -71,15 +71,20 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ViewsFactory.class);
 
-    private static final int    COLI_ID                 = 0;
-    private static final int    COLI_CHANNELID          = 1;
-    private static final int    COLI_TITLE              = 2;
-    private static final int    COLI_DESCRIPTION        = 3;
-    private static final int    COLI_ENCLOSURE_LENGTH   = 4;
-    private static final int    COLI_ENCLOSURE_URL      = 5;
-    private static final int    COLI_ENCLOSURE_TYPE     = 6;
-    private static final int    COLI_PUBDATE            = 7;
-    private static final int    COLI_LINK               = 8;
+    private static final int COLI_ID                 = 0;
+    private static final int COLI_CHANNELID          = 1;
+    private static final int COLI_TITLE              = 2;
+    private static final int COLI_DESCRIPTION        = 3;
+    @SuppressWarnings("unused")
+    private static final int COLI_ENCLOSURE_LENGTH   = 4;
+    @SuppressWarnings("unused")
+    private static final int COLI_ENCLOSURE_URL      = 5;
+    @SuppressWarnings("unused")
+    private static final int COLI_ENCLOSURE_TYPE     = 6;
+    @SuppressWarnings("unused")
+    private static final int COLI_PUBDATE            = 7;
+    @SuppressWarnings("unused")
+    private static final int COLI_LINK               = 8;
 
     private static final ColumnItem[] sQueryProjection = new ColumnItem[] {
             ColumnItem.ID, // Mandatory.
@@ -94,27 +99,25 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private final DBPolicy  mDbp = DBPolicy.get();
     private final ContentsManager mCm = ContentsManager.get();
-    private final RTTask    mRtt = RTTask.get();
-    private final int       mAppWidgetId;
-    private final DBWatcher         mDbWatcher;
+    private final RTTask mRtt = RTTask.get();
+    private final int mAppWidgetId;
+    private final DBWatcher mDbWatcher;
     private final ItemActionHandler mItemAction;
 
-    private long    mCategoryId;
-    private long[]  mCids = null;
-    private Cursor  mCursor = null;
+    private long mCategoryId;
+    private long[] mCids = null;
+    private Cursor mCursor = null;
     private final Object mCursorLock = new Object();
 
     private class DBWatcher implements ListenerManager.Listener {
-        private final HashSet<Long> _mCidSet = new HashSet<Long>();
+        private final HashSet<Long> _mCidSet = new HashSet<>();
 
         // See comment at 'onNotify'
-        private AtomicReference<Boolean> _mClosed = new AtomicReference<Boolean>(false);
+        private AtomicReference<Boolean> _mClosed = new AtomicReference<>(false);
 
         private boolean
         isInCategory(Long cid) {
-            if (null == cid)
-                return false;
-            return _mCidSet.contains(cid);
+            return null != cid && _mCidSet.contains(cid);
         }
 
         private boolean
@@ -205,7 +208,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     break; // ignore
 
                 default:
-                    assert(false);
+                    eAssert(false);
                 }
             } else if (type instanceof ContentsManager.UpdateType) {
                 switch ((ContentsManager.UpdateType)type) {
@@ -219,7 +222,6 @@ UnexpectedExceptionHandler.TrackedModule {
                     break;
 
                 case CHAN_DATA:
-                    boolean in = false;
                     for (long cid : (long[])arg0) {
                         if (isInCategory(cid)) {
                             refreshItemList();
@@ -247,6 +249,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private class DownloadDataBGTaskListener extends BaseBGTask.OnEventListener {
+        @SuppressWarnings("unused")
         private long _mId = -1;
         DownloadDataBGTaskListener(long id) {
             _mId = id;

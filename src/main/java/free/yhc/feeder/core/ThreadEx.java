@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -59,7 +59,7 @@
 //   ----------------------------------------------
 //
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -69,17 +69,21 @@ public abstract class ThreadEx<R> {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ThreadEx.class);
 
-    public static final int PRIORITY_MIN    = Thread.MIN_PRIORITY;  // 1
-    public static final int PRIORITY_MAX    = Thread.MAX_PRIORITY;  // 10
-    public static final int PRIORITY_NORM   = Thread.NORM_PRIORITY; // 5
+    @SuppressWarnings("unused")
+    public static final int PRIORITY_MIN = Thread.MIN_PRIORITY;  // 1
+    @SuppressWarnings("unused")
+    public static final int PRIORITY_MAX = Thread.MAX_PRIORITY;  // 10
+    @SuppressWarnings("unused")
+    public static final int PRIORITY_NORM = Thread.NORM_PRIORITY; // 5
     public static final int PRIORITY_MIDLOW = 3;
-    public static final int PRIORITY_MIDHIGH= 7;
+    @SuppressWarnings("unused")
+    public static final int PRIORITY_MIDHIGH = 7;
 
     private static final String DEFAULT_THREAD_NAME = "ThreadEx";
 
-    private final Thread            mThread;
-    private final Handler           mOwner;
-    private final Object            mStateLock  = new Object();
+    private final Thread mThread;
+    private final Handler mOwner;
+    private final Object mStateLock = new Object();
     // NOTE
     // Why this special variable 'mUserCancel' is required?
     // Most of interface functions work asynchronously to keep order of State-event.
@@ -87,7 +91,7 @@ public abstract class ThreadEx<R> {
     // But, just after 'cancel' is called, this Task should be regarded as 'cancelled'
     //   even if canceling is still ongoing.(User already cancel the task!)
     // To resolve this issue, mUserCancel is introduced.
-    private final AtomicReference<Boolean> mUserCancel = new AtomicReference<Boolean>(false);
+    private final AtomicReference<Boolean> mUserCancel = new AtomicReference<>(false);
     private State   mState  = State.READY;
 
     public enum State {
@@ -195,7 +199,7 @@ public abstract class ThreadEx<R> {
                     break;
 
                 default:
-                    ;// unexpected... just ignore it...
+                    // unexpected... just ignore it...
                 }
             }
         }
@@ -227,13 +231,10 @@ public abstract class ThreadEx<R> {
     // ========================================================================
     /**
      *
-     * @param name
-     *   Thread name
-     * @param owner
-     *   Owner handler. All other action functions except for 'doAsyncTask' will be run on
-     *     given owner handler's context. If null, UI context is used as default.
-     * @param priority
-     *   Java thread priority LOW[1, 10]High
+     * @param name Thread name
+     * @param owner Owner handler. All other action functions except for 'doAsyncTask' will be run on
+     *              given owner handler's context. If null, UI context is used as default.
+     * @param priority Java thread priority LOW[1, 10]High
      */
     public ThreadEx(String name,
                     Handler owner,
@@ -249,14 +250,17 @@ public abstract class ThreadEx<R> {
         mOwner = owner;
     }
 
+    @SuppressWarnings("unused")
     public ThreadEx(String name, int priority) {
         this(name, Environ.getUiHandler(), priority);
     }
 
+    @SuppressWarnings("unused")
     public ThreadEx(int priority) {
         this(DEFAULT_THREAD_NAME, Environ.getUiHandler(), priority);
     }
 
+    @SuppressWarnings("unused")
     public ThreadEx(Handler owner) {
         this(DEFAULT_THREAD_NAME, owner, PRIORITY_MIDLOW);
     }
@@ -295,13 +299,13 @@ public abstract class ThreadEx<R> {
     /**
      * Is task cancelled by user? (by calling 'cancel()')
      * This function returns 'true' even if task is under CANCELING state.
-     * @return
      */
     public final boolean
     isCancelled() {
         return mUserCancel.get();
     }
 
+    @SuppressWarnings("unused")
     public final boolean
     isInterrupted() {
         return mThread.isInterrupted();
@@ -319,9 +323,7 @@ public abstract class ThreadEx<R> {
     }
 
     /**
-     * @param interrupt
-     * @return
-     *   'false' if task is already cancelled - cancel() is called more than once!
+     * @return 'false' if task is already cancelled - cancel() is called more than once!
      */
     public final boolean
     cancel(final boolean interrupt) {

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,9 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.io.File;
 
@@ -52,15 +50,17 @@ import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
 
 public class ItemActionHandler {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(ItemActionHandler.class);
 
     public static final int REQC_ITEM_VIEW = 0;
 
-    private final DBPolicy      mDbp = DBPolicy.get();
-    private final RTTask        mRtt = RTTask.get();
-    private final Activity      mActivity;
-    private final Context       mContext;
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final RTTask mRtt = RTTask.get();
+    private final Activity mActivity;
+    private final Context mContext;
     private final AdapterBridge mABridge;
 
     public interface AdapterBridge {
@@ -120,13 +120,14 @@ public class ItemActionHandler {
                 return;
             }
         } else
-            eAssert(false);
+            Utils.eAssert(false);
 
         changeItemState_opened(id, position);
     }
 
     private void
-    onActionOpen_rtsp(long action, long id, int position, String url, String protocol) {
+    onActionOpen_rtsp(@SuppressWarnings("unused") long action,
+                      long id, int position, String url, String protocol) {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         finalizeIntent(intent);
         try {
@@ -151,10 +152,11 @@ public class ItemActionHandler {
     }
 
     private void
-    onActionDn(long action, long id, int position, String url, String encType) {
+    onActionDn(@SuppressWarnings("unused") long action,
+               long id, int position, String url, String encType) {
         // 'enclosure' is used.
         File f = ContentsManager.get().getItemInfoDataFile(id);
-        eAssert(null != f);
+        Utils.eAssert(null != f);
         if (f.exists()) {
             // "RSS described media type" vs "mime type by guessing from file extention".
             // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
@@ -217,7 +219,7 @@ public class ItemActionHandler {
             } break;
 
             default:
-                eAssert(false);
+                Utils.eAssert(false);
             }
         }
     }
@@ -237,7 +239,7 @@ public class ItemActionHandler {
             // Items that have both invalid link and enclosure url, SHOULD NOT be added to DB.
             // Parser give those away in parsing phase.
             // See RSSParser/AtomParser.
-            eAssert(null != url);
+            Utils.eAssert(null != url);
             if (enclosure.equals(url))
                 onActionDn(action, id, position, url, encType);
             else
@@ -247,7 +249,7 @@ public class ItemActionHandler {
             action = Utils.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
             onActionOpen(action, id, position, enclosure);
         } else
-            eAssert(false);
+            Utils.eAssert(false);
     }
 
     public ItemActionHandler(Activity activity,

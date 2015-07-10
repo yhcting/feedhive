@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,79 +34,64 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
-import static free.yhc.feeder.model.Utils.isValidValue;
+package free.yhc.feeder.core;
 
 //
 // Policy of decisions that is made based on Feed information.
 //
 public class FeedPolicy {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(FeedPolicy.class);
     /**
      * Check that is this valid item?
      * (Result of parsing has enough information required by this application?)
-     * @param item
-     * @return
      */
     public static boolean
     verifyConstraints(Feed.Item.ParD item) {
         // 'title' is mandatory!!!
-        if (!isValidValue(item.title))
+        if (!Utils.isValidValue(item.title))
             return false;
 
         // Item should have one of link or enclosure url.
-        if (!isValidValue(item.link)
-             && !isValidValue(item.enclosureUrl))
-            return false;
-
-        return true;
+        return Utils.isValidValue(item.link)
+               || Utils.isValidValue(item.enclosureUrl);
     }
 
     /**
      * Check that is this valid channel?
      * (Result of parsing has enough information required by this application?)
-     * @param ch
-     * @return
      */
+    @SuppressWarnings("unused")
     public static boolean
     verifyConstraints(Feed.Channel.ParD ch) {
-        if (!isValidValue(ch.title))
-            return false;
-
-        return true;
+        return Utils.isValidValue(ch.title);
     }
 
     /**
      * Guessing default action type from Feed data.
-     * @param cParD
-     * @param iParD
-     * @return
-     *   Feed.Channel.FActxxxx
+     * @return Feed.Channel.FActxxxx
      */
     public static long
     decideActionType(long action, Feed.Channel.ParD cParD, Feed.Item.ParD iParD) {
-        long    actFlag;
+        long actFlag;
 
         if (null == iParD) {
             if (Feed.FINVALID == action)
                 return Feed.FINVALID; // do nothing if there is no items at first insertion.
-
-            // default value
-            actFlag = Feed.Channel.FACT_DEFAULT;
         }
 
         switch (cParD.type) {
         case NORMAL:
+            //noinspection PointlessBitwiseExpression
             actFlag = Feed.Channel.FACT_TYPE_DYNAMIC | Feed.Channel.FACT_PROG_IN;
             break;
         case EMBEDDED_MEDIA: // special for youtube!
             actFlag = Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA | Feed.Channel.FACT_PROG_EX;
             break;
         default:
-            eAssert(false);
+            Utils.eAssert(false);
             actFlag = Feed.Channel.FACT_DEFAULT;
         }
 
@@ -136,7 +121,7 @@ public class FeedPolicy {
             else if (Utils.isValidValue(enclosure))
                 return enclosure;
             else
-                eAssert(false); // there is no valid link or enclosure value...
+                Utils.eAssert(false); // there is no valid link or enclosure value...
         }
         return null;
     }

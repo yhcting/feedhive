@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,9 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -55,7 +53,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(RTTask.class);
 
-    private static RTTask   sInstance = null;
+    private static RTTask sInstance = null;
 
     // Dependency on only following modules are allowed
     // - Utils
@@ -63,10 +61,10 @@ UnexpectedExceptionHandler.TrackedModule {
     // - DB / DBThread
     // - UIPolicy
     // - DBPolicy
-    private final DBPolicy              mDbp    = DBPolicy.get();
-    private final BGTaskManager         mBgtm   = new BGTaskManager();;
-    private final LinkedList<BGTask>    mReadyQ = new LinkedList<BGTask>();
-    private final LinkedList<BGTask>    mRunQ   = new LinkedList<BGTask>();
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final BGTaskManager mBgtm = new BGTaskManager();
+    private final LinkedList<BGTask> mReadyQ = new LinkedList<>();
+    private final LinkedList<BGTask> mRunQ = new LinkedList<>();
 
     // NOTE
     // Why mTaskQSync is used instead of using 'mReadyQ' and 'mRunQ' object directly as an sync object for each list?
@@ -82,11 +80,11 @@ UnexpectedExceptionHandler.TrackedModule {
     //   synchronized (mRunQ) {
     //       mRunQ.addLast(t);
     //   }
-    private final Object       mTaskQSync = new Object();
+    private final Object mTaskQSync = new Object();
     private final KeyBasedLinkedList<OnRegisterListener> mRegisterListenerl
-                    = new KeyBasedLinkedList<OnRegisterListener>();
+                    = new KeyBasedLinkedList<>();
     private final KeyBasedLinkedList<OnTaskQueueChangedListener> mTaskQChangedListenerl
-                    = new KeyBasedLinkedList<OnTaskQueueChangedListener>();
+                    = new KeyBasedLinkedList<>();
 
     public interface OnRegisterListener {
         void onRegister(BGTask task, long id, Action act);
@@ -99,7 +97,7 @@ UnexpectedExceptionHandler.TrackedModule {
         void onDeQ(BGTask task, long id, Action act);
     }
 
-    public static enum TaskState {
+    public enum TaskState {
         IDLE,
         READY, // ready to run. waiting turn!
         RUNNING,
@@ -193,8 +191,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Check that task is running or waiting to be run.
-     * @param task
-     * @return
      */
     private boolean
     isTaskInAction(BGTask task) {
@@ -202,18 +198,17 @@ UnexpectedExceptionHandler.TrackedModule {
             if (mRunQ.contains(task) || mReadyQ.contains(task))
                 return true;
         }
-        eAssert(ThreadEx.State.RUNNING != task.getState());
+        Utils.eAssert(ThreadEx.State.RUNNING != task.getState());
         return false;
     }
 
     /**
      * Get DB ids that are under given action.
-     * @return
      */
     private long[]
     getIdsInAction(Action action) {
         String[] tids;
-        LinkedList<Long> l = new LinkedList<Long>();
+        LinkedList<Long> l = new LinkedList<>();
         synchronized (mBgtm) {
             tids = mBgtm.getTaskIds();
             for (String tid : tids) {
@@ -226,7 +221,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 }
             }
         }
-        return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
+        return Utils.convertArrayLongTolong(l.toArray(new Long[l.size()]));
     }
 
     private void
@@ -235,7 +230,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // But to increase readability... because mTaskQChangedListenerl assumes handled on ui thread.
         //   - not thread safe!
 
-        eAssert(Utils.isUiThread());
+        Utils.eAssert(Utils.isUiThread());
         String tid;
         synchronized (mBgtm) {
             tid = mBgtm.getTaskId(task);
@@ -267,32 +262,30 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Listener is notified whenever a task is registered or unregistered.
-     * @param key
-     * @param listener
      */
     public void
     registerRegisterEventListener(Object key, OnRegisterListener listener) {
-        eAssert(Utils.isUiThread());
-        eAssert(null != key && null != listener);
+        Utils.eAssert(Utils.isUiThread());
+        Utils.eAssert(null != key && null != listener);
         mRegisterListenerl.add(key, listener);
     }
 
     public void
     unregisterRegisterEventListener(Object key) {
-        eAssert(Utils.isUiThread());
+        Utils.eAssert(Utils.isUiThread());
         mRegisterListenerl.remove(key);
     }
 
     public void
     registerTaskQChangedListener(Object key, OnTaskQueueChangedListener listener) {
-        eAssert(Utils.isUiThread());
-        eAssert(null != key && null != listener);
+        Utils.eAssert(Utils.isUiThread());
+        Utils.eAssert(null != key && null != listener);
         mTaskQChangedListenerl.add(key,  listener);
     }
 
     public void
     unregisterTaskQChangedListener(Object key) {
-        eAssert(Utils.isUiThread());
+        Utils.eAssert(Utils.isUiThread());
         mTaskQChangedListenerl.remove(key);
     }
 
@@ -301,13 +294,9 @@ UnexpectedExceptionHandler.TrackedModule {
      * All BG task used SHOULD BE registered at RTTask.
      * If not, task cannot be handled anymore.
      * It should be called only in UI Thread context
-     * @param id
-     *   ID of task
-     * @param act
-     *   Action type of task.
-     * @param task
-     *   task to register
-     * @return
+     * @param id ID of task
+     * @param act Action type of task.
+     * @param task task to register
      */
     public boolean
     register(final long id, final Action act, final BGTask task) {
@@ -347,7 +336,7 @@ UnexpectedExceptionHandler.TrackedModule {
         //eAssert(Utils.isUiThread());
         String taskId = tid(act, id);
 
-        boolean r = false;
+        boolean r;
         final BGTask task;
         synchronized (mBgtm) {
             // remove from manager.
@@ -372,9 +361,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Unbind all event listener of BGTask, whose event key matches given one.
-     * @param key
-     * @return
-     *   number of tasks unbinded.
+     * @return number of tasks unbinded.
      */
     public int
     unbind(Object key) {
@@ -385,11 +372,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Bind event listener of BGTask with key value.
-     * @param id
-     * @param act
-     * @param key
-     * @param listener
-     * @return
      */
     public BGTask
     bind(long id, Action act, Object key, BaseBGTask.OnEventListener listener) {
@@ -401,8 +383,8 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * get Number of active tasks.
      * (Running task + task waiting it's turn in the ready queue.)
-     * @return
      */
+    @SuppressWarnings("unused")
     public int
     getNRActiveTask() {
         synchronized (mTaskQSync) {
@@ -411,12 +393,10 @@ UnexpectedExceptionHandler.TrackedModule {
     }
     /**
      *
-     * @param id
-     *   ID of task
-     * @param act
-     *   Action type of task
-     * @return
+     * @param id ID of task
+     * @param act Action type of task
      */
+    @SuppressWarnings("unused")
     public BGTask
     getTask(long id, Action act) {
         synchronized (mBgtm) {
@@ -426,9 +406,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param id
-     * @param act
-     * @return
      */
     public TaskState
     getState(long id, Action act) {
@@ -461,8 +438,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Result of BG task is stored internally to refer later after BG task is terminated.
      * This function reset stored result value manually.
-     * @param id
-     * @param act
      */
     public void
     consumeResult(long id, Action act) {
@@ -473,22 +448,19 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == task)
             return;
 
-        eAssert(!isTaskInAction(task));
+        Utils.eAssert(!isTaskInAction(task));
         task.resetResult();
     }
 
     /**
      * Start task.
-     * @param id
-     * @param act
-     * @return
      */
     public boolean
     start(long id, Action act) {
         int maxConcurrent = Utils.getPrefMaxNrBgTask();
 
         String taskId = tid(act, id);
-        BGTask t = null;
+        BGTask t;
         synchronized (mBgtm) {
             t = mBgtm.peek(taskId);
             if (null == t)
@@ -533,15 +505,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param id
-     * @param act
-     * @param arg
-     *   This value is passed onCancel() as argument.
-     * @return
+     * @param arg This value is passed onCancel() as argument.
      */
     public boolean
     cancel(long id, Action act, Object arg) {
-        BGTask t = null;
+        BGTask t;
         synchronized (mBgtm) {
             t = mBgtm.peek(tid(act, id));
             if (null == t)
@@ -571,9 +539,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Get result of BG task.
-     * @param id
-     * @param act
-     * @return
      */
     public Err
     getErr(long id, Action act) {
@@ -582,6 +547,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    @SuppressWarnings("unused")
     public void
     cancelAll() {
         synchronized (mBgtm) {
@@ -595,7 +561,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Get item ids that are under downloading.
      * In other words, item ids that are bindded to BGTask whose action type is 'Download'
-     * @return
      */
     public long[]
     getItemsDownloading() {
@@ -606,8 +571,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * Get items that are under downloading and belonging to given channel.
      * In other words, item ids that are bindded to BGTask whose action type is 'Download'
      *   and item's channel id is same with given cid.
-     * @param cid
-     * @return
      */
     public long[]
     getItemsDownloading(long cid) {
@@ -618,17 +581,15 @@ UnexpectedExceptionHandler.TrackedModule {
      * Get items that are under downloading and belonging to given channels.
      * In other words, item ids that are bindded to BGTask whose action type is 'Download'
      *   and item's channel id is same with one of given cids.
-     * @param cids
-     * @return
      */
     public long[]
     getItemsDownloading(long[] cids) {
         long[] dnids = getItemsDownloading();
-        HashSet<Long> set = new HashSet<Long>();
+        HashSet<Long> set = new HashSet<>();
         for (long cid : cids)
             set.add(cid);
 
-        LinkedList<Long> l = new LinkedList<Long>();
+        LinkedList<Long> l = new LinkedList<>();
         try {
             mDbp.getDelayedChannelUpdate();
             for (long dnid : dnids)
@@ -637,14 +598,13 @@ UnexpectedExceptionHandler.TrackedModule {
         } finally {
             mDbp.putDelayedChannelUpdate();
         }
-        return Utils.convertArrayLongTolong(l.toArray(new Long[0]));
+        return Utils.convertArrayLongTolong(l.toArray(new Long[l.size()]));
     }
 
     /**
      * Get channel id where this download task is belonging to.
-     * @param task
-     * @return
      */
+    @SuppressWarnings("unused")
     public long
     getItemIdOfDownloadTask(BGTask task) {
         // Nick is task id.
@@ -653,7 +613,7 @@ UnexpectedExceptionHandler.TrackedModule {
         synchronized (mBgtm) {
             tid = mBgtm.getTaskId(task);
         }
-        eAssert(Action.DOWNLOAD == actionFromTid(tid));
+        Utils.eAssert(Action.DOWNLOAD == actionFromTid(tid));
         return idFromTid(tid);
     }
 

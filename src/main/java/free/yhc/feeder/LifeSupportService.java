@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -35,19 +35,19 @@
  *****************************************************************************/
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.os.IBinder;
 import android.os.PowerManager;
-import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.RTTask.Action;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.BGTask;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.RTTask.Action;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class LifeSupportService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
@@ -59,11 +59,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final String WLTAG = "free.yhc.feeder.LifeSupportService";
 
     private static PowerManager.WakeLock sWl = null;
-    private static WifiManager.WifiLock  sWfl = null;
-    private static int                   sWlcnt = 0;
-
-    private static final TaskQListener   sTaskQListener = new TaskQListener();
-
+    private static WifiManager.WifiLock sWfl = null;
+    private static int sWlcnt = 0;
+    private static final TaskQListener sTaskQListener = new TaskQListener();
 
     private static class TaskQListener implements RTTask.OnTaskQueueChangedListener {
         private int _mNrAction = 0;

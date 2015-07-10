@@ -36,7 +36,7 @@
 
 package free.yhc.feeder.appwidget;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.util.HashMap;
 
@@ -52,9 +52,9 @@ import android.widget.RemoteViewsService;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class ViewsService extends RemoteViewsService implements
 UnexpectedExceptionHandler.TrackedModule {
@@ -62,7 +62,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Utils.Logger P = new Utils.Logger(ViewsService.class);
 
     private static HashMap<Integer, ViewsFactory> sViewsFactoryMap
-        = new HashMap<Integer, ViewsFactory>();
+        = new HashMap<>();
+    @SuppressWarnings("FieldCanBeLocal")
     private static PreferenceChangedListener sSPCListener = null; // Shared Preference Changed Listener
 
     public static class ListPendingIntentReceiver extends BroadcastReceiver {

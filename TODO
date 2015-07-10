@@ -1,0 +1,2 @@
+* Avoid downloading same contents file.
+    : Using 'checksum, sha1 or crc etc'.

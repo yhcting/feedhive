@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -54,7 +55,6 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -64,18 +64,20 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.AssetSQLiteHelper;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.AssetSQLiteHelper;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 
 public class PredefinedChannelActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(PredefinedChannelActivity.class);
 
-    public static final String KEY_URLS     = "urls";
+    public static final String KEY_URLS = "urls";
     public static final String KEY_ICONURLS = "iconurls";
 
     // ========================================================================
@@ -84,20 +86,21 @@ UnexpectedExceptionHandler.TrackedModule {
     // These values SHOULD MATCH asset DB.
     //
     // ========================================================================
-    private static final int    DB_VERSION      = 13;
+    private static final int DB_VERSION = 13;
 
-    private static final String DB_NAME         = "predefined_channels.db";
-    private static final String DB_ASSET        = "channels.db";
+    private static final String DB_NAME = "predefined_channels.db";
+    private static final String DB_ASSET = "channels.db";
 
-    private static final String DB_TABLE        = "channels";
-    private static final String DB_COL_ID       = "_id";
-    private static final String DB_COL_TITLE    = "title";
-    private static final String DB_COL_DESC     = "description";
-    private static final String DB_COL_URL      = "url";
-    private static final String DB_COL_ICONURL  = "iconurl";
+    private static final String DB_TABLE = "channels";
+    private static final String DB_COL_ID = "_id";
+    private static final String DB_COL_TITLE = "title";
+    private static final String DB_COL_DESC = "description";
+    private static final String DB_COL_URL = "url";
+    private static final String DB_COL_ICONURL = "iconurl";
     // country code value defined by "ISO 3166-1 alpha-3"
-    private static final String DB_COL_CCODE    = "countrycode";
-    private static final String DB_COL_STATE    = "state";
+    @SuppressWarnings("unused")
+    private static final String DB_COL_CCODE = "countrycode";
+    private static final String DB_COL_STATE = "state";
     private static final String[] sDbColCategories = new String[] {"category0",
                                                                    "category1",
                                                                    "category2",
@@ -118,18 +121,18 @@ UnexpectedExceptionHandler.TrackedModule {
     // ========================================================================
     // Members
     // ========================================================================
-    private final DBPolicy      mDbp    = DBPolicy.get();
+    private final DBPolicy mDbp = DBPolicy.get();
 
     // Variables set only once.
-    private AssetSQLiteHelper   mAssetDB    = null;
-    private HashMap<Long, ChanInfo> mChanMap    = new HashMap<Long, ChanInfo>();
+    private AssetSQLiteHelper mAssetDB = null;
+    private HashMap<Long, ChanInfo> mChanMap = new HashMap<>();
 
     // Runtime variable
     private String prevCategory = "";
-    private String prevSearch   = "";
+    private String prevSearch = "";
 
     public static class ListRow extends LinearLayout {
-        ChanInfo    chaninfo = new ChanInfo();
+        ChanInfo chaninfo = new ChanInfo();
         public ListRow(Context context, AttributeSet attrs) {
             super(context, attrs);
         }
@@ -148,7 +151,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private class ListAdapter extends ResourceCursorAdapter {
         public
         ListAdapter(Context context, int layout, Cursor c) {
-            super(context, layout, c);
+            super(context, layout, c, true);
         }
 
         @Override
@@ -197,7 +200,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // ========================================================================
     private String[]
     getCategories() {
-        SortedSet<String> ss = new TreeSet<String>();
+        SortedSet<String> ss = new TreeSet<>();
         for (String col : sDbColCategories) {
             Cursor c = mAssetDB.sqlite().query(true,
                                                DB_TABLE,
@@ -217,7 +220,7 @@ UnexpectedExceptionHandler.TrackedModule {
         String[] cats = new String[ss.size() + 1];
         // cats[0] is for 'all'
         cats[0] = getResources().getString(R.string.all);
-        System.arraycopy(ss.toArray(new String[0]), 0, cats, 1, ss.size());
+        System.arraycopy(ss.toArray(new String[ss.size()]), 0, cats, 1, ss.size());
         return cats;
     }
 
@@ -249,10 +252,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param category
-     *   empty : for all categories
-     * @param search
-     *   empty : all channels.
+     * @param category empty : for all categories
+     * @param search empty : all channels.
      */
     private void
     refreshList(String category, String search) {
@@ -269,7 +270,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void run() {
                 boolean needRefresh = false;
                 String category = "";
-                String search = "";
+                String search;
                 Spinner sp = (Spinner)findViewById(R.id.sp_category);
                 EditText et = (EditText)findViewById(R.id.editbox);
                 if (0 != sp.getSelectedItemPosition())
@@ -316,9 +317,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     setCategorySpinner(final Spinner sp) {
         final ArrayAdapter<String> adapter
-            = new ArrayAdapter<String>(this,
-                                       android.R.layout.simple_spinner_item,
-                                       getCategories());
+            = new ArrayAdapter<>(this,
+                                 android.R.layout.simple_spinner_item,
+                                 getCategories());
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         sp.setAdapter(adapter);
         sp.setSelection(0); // default is 'all'
@@ -354,6 +355,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     setListView(final ListView lv) {
+        // closing cursor is Adapter's responsibility.
+        @SuppressLint("Recycle")
         Cursor c = mAssetDB.sqlite().query(DB_TABLE,
                                            sListCursorProj,
                                            null, null,
@@ -364,8 +367,8 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ListRow row = (ListRow)view;
-                CheckBox cb = (CheckBox)view.findViewById(R.id.checkbtn);
+                ListRow row = (ListRow) view;
+                CheckBox cb = (CheckBox) view.findViewById(R.id.checkbtn);
                 cb.setChecked(!cb.isChecked());
                 onCheck(id, row.chaninfo, cb.isChecked());
             }
@@ -393,11 +396,12 @@ UnexpectedExceptionHandler.TrackedModule {
         setSearchEdit((EditText)findViewById(R.id.editbox));
         setListView((ListView)findViewById(R.id.list));
 
-        ((Button)findViewById(R.id.append)).setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.append)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void
             onClick(View v) {
                 Intent intent = new Intent();
+                //noinspection ToArrayCallWithZeroLengthArrayArgument
                 ChanInfo[] cis = mChanMap.values().toArray(new ChanInfo[0]);
                 String[] urls = new String[cis.length];
                 String[] iconurls = new String[cis.length];
@@ -411,7 +415,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 finish();
             }
         });
-        ((Button)findViewById(R.id.cancel)).setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.cancel)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void
             onClick(View v) {

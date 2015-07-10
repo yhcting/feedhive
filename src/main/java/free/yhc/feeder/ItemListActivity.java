@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,12 +36,13 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
 import java.util.Calendar;
 import java.util.HashSet;
 
+import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -74,62 +75,65 @@ import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BGTaskUpdateChannel;
-import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.ItemActionHandler;
-import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.BGTask;
+import free.yhc.feeder.core.BGTaskUpdateChannel;
+import free.yhc.feeder.core.BaseBGTask;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.ItemActionHandler;
+import free.yhc.feeder.core.ListenerManager;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 public class ItemListActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(ItemListActivity.class);
 
-    private static final int DATA_REQ_SZ    = 20;
-    private static final int DATA_ARR_MAX   = 500;
+    private static final int DATA_REQ_SZ = 20;
+    private static final int DATA_ARR_MAX = 500;
 
     // Keys for extra value of intent : IKey (Intent Key)
-    public static final String IKEY_MODE    = "mode";  // mode
-    public static final String IKEY_FILTER  = "filter";// filter
+    public static final String IKEY_MODE = "mode";  // mode
+    public static final String IKEY_FILTER = "filter";// filter
 
     // Option flags
 
     // bit[0:2] mode : scope of items to list
     // others are reserved (ex. ALL or ALL_LINK or ALL_ENCLOSURE)
     // Base query outline to create cursor, depends on this Mode value.
-    public static final int MODE_CHANNEL    = 0; // items of channel
-    public static final int MODE_CATEGORY   = 1; // items of category
-    public static final int MODE_FAVORITE   = 2; // favorite items
-    public static final int MODE_ALL        = 3; // all items
+    public static final int MODE_CHANNEL  = 0; // items of channel
+    public static final int MODE_CATEGORY = 1; // items of category
+    public static final int MODE_FAVORITE = 2; // favorite items
+    public static final int MODE_ALL      = 3; // all items
 
     // bit[3:7] filter : select items
     // others are reserved (ex. filtering items with time (specific period of time) etc)
     // Filtering from cursor depends on this value.
-    public static final int FILTER_NONE     = 0; // no filter
-    public static final int FILTER_NEW      = 1; // new items of each channel.
+    public static final int FILTER_NONE = 0; // no filter
+    @SuppressWarnings("unused")
+    public static final int FILTER_NEW  = 1; // new items of each channel.
 
-    private final DBPolicy      mDbp = DBPolicy.get();
-    private final RTTask        mRtt = RTTask.get();
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final RTTask mRtt = RTTask.get();
 
-    private final RTTaskQChangedListener    mRttqcl = new RTTaskQChangedListener();
+    private final RTTaskQChangedListener mRttqcl = new RTTaskQChangedListener();
 
-    private DBWatcher   mDbWatcher  = null;
-    private OpMode      mOpMode  = null;
-    private ListView    mList    = null;
+    private DBWatcher mDbWatcher = null;
+    private OpMode mOpMode = null;
+    private ListView mList = null;
     private ItemActionHandler mItemAction;
 
     private static class DBWatcher implements ListenerManager.Listener {
-        private final HashSet<Long> _mUpdatedChannelSet = new HashSet<Long>();
+        private final HashSet<Long> _mUpdatedChannelSet = new HashSet<>();
         // NOTE
         // initial value should be 'true' because we don't know what happened to DB
         //   while this activity instance DOESN'T exist!
-        private boolean             _mItemTableUpdated  = true;
+        private boolean _mItemTableUpdated = true;
 
         void
         register() {
@@ -156,7 +160,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         long[]
         getUpdatedChannels() {
-            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[0]));
+            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[_mUpdatedChannelSet.size()]));
         }
 
         @Override
@@ -195,25 +199,26 @@ UnexpectedExceptionHandler.TrackedModule {
                     ColumnItem.LINK };
 
         protected String _mSearch = "";
-        protected long   _mFromPubtime = -1;
-        protected long   _mToPubtime = -1;
+        protected long _mFromPubtime = -1;
+        protected long _mToPubtime = -1;
         protected volatile boolean _mBgtaskRunning = false;
 
-        void    onCreate() {
+        void
+        onCreate() {
+            //noinspection ConstantConditions
             getActionBar().setDisplayShowHomeEnabled(false);
         }
 
-        void    onResume() {}
-        long[]  getCids()  { return new long[0]; }
-        Cursor  query()    { return null; }
+        void onResume() {}
+        long[] getCids() { return new long[0]; }
+        Cursor query() { return null; }
 
         boolean
         doesRunningBGTaskExists() {
             return _mBgtaskRunning;
         }
 
-        long
-        minPubtime() {
+        long minPubtime() {
             return -1;
         }
 
@@ -224,6 +229,7 @@ UnexpectedExceptionHandler.TrackedModule {
             _mToPubtime = toPubtime;
         }
 
+        @SuppressWarnings("unused")
         boolean
         isFilterEnabled() {
             return !_mSearch.isEmpty()
@@ -270,6 +276,8 @@ UnexpectedExceptionHandler.TrackedModule {
             //
             // Set custom action bar
             ActionBar bar = getActionBar();
+            eAssert(null != bar);
+            @SuppressLint("InflateParams")
             LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
             bar.setCustomView(abView, new ActionBar.LayoutParams(
                     LayoutParams.WRAP_CONTENT,
@@ -277,6 +285,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     Gravity.RIGHT));
 
             int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
+            //noinspection ResourceType
             bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM);
             // Update "OLDLAST_ITEMID" when user opens item views.
             mDbp.updateChannel_lastItemId(_mCid);
@@ -314,8 +323,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private class OpModeCategory extends OpMode {
-        private long    _mCategoryid; // category id
-        private long[]  _mCids = null;
+        private long _mCategoryid; // category id
+        private long[] _mCids = null;
 
         OpModeCategory(Intent intent) {
             _mCategoryid = intent.getLongExtra("categoryid", -1);
@@ -379,7 +388,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private class OpModeFavorite extends OpMode {
-        OpModeFavorite(Intent intent) {
+        OpModeFavorite(@SuppressWarnings("unused")  Intent intent) {
         }
 
         @Override
@@ -441,7 +450,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private class OpModeAll extends OpMode {
         private long[] mCids = null;
 
-        OpModeAll(Intent intent) {
+        OpModeAll(@SuppressWarnings("unused")  Intent intent) {
             mCids = mDbp.getChannelIds();
         }
 
@@ -654,7 +663,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    dataSetChanged(long id) {
+    dataSetChanged(@SuppressWarnings("unused") long id) {
         if (null == mList || null == getListAdapter())
             return;
 
@@ -674,6 +683,7 @@ UnexpectedExceptionHandler.TrackedModule {
         la.notifyDataSetChanged();
     }
 
+    @SuppressWarnings("unused")
     private void
     refreshList(long id) {
         if (null == mList || null == getListAdapter())
@@ -767,6 +777,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
 
         ActionBar bar = getActionBar();
+        eAssert(null != bar);
         if (null == bar.getCustomView())
             return; // action bar is not initialized yet.
 
@@ -793,6 +804,7 @@ UnexpectedExceptionHandler.TrackedModule {
             break;
 
         case RUNNING:
+            //noinspection ResourceType
             iv.setImageResource(R.anim.download);
             ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
@@ -827,7 +839,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onContext_deleteDnFile(final long id, final int position) {
+    onContext_deleteDnFile(final long id,
+                           @SuppressWarnings("unused") final int position) {
         // Create "Enter Url" dialog
         AlertDialog dialog =
                 UiHelper.createWarningDialog(this,
@@ -862,7 +875,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onContext_delete(final long id, final int position) {
+    onContext_delete(final long id,
+                     @SuppressWarnings("unused") final int position) {
         AlertDialog dialog =
                 UiHelper.createWarningDialog(this,
                                              R.string.delete_item,
@@ -940,6 +954,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onOptionsItemSelected(MenuItem item) {
         super.onOptionsItemSelected(item);
 
+        //noinspection StatementWithEmptyBody
         switch (item.getItemId()) {
         }
         return true;
@@ -947,10 +962,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * build string array of numbers. (from <= x < to)
-     * @param from
-     * @param to
-     *   exclusive
-     * @return
+     * @param to exclusive
      */
     private String[]
     buildStringArray(int from, int to) {
@@ -966,7 +978,7 @@ UnexpectedExceptionHandler.TrackedModule {
                AdapterView.OnItemSelectedListener selectedListener) {
         Spinner sp = (Spinner)v.findViewById(id);
         ArrayAdapter<String> spinnerArrayAdapter
-            = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, entries);
+            = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, entries);
         sp.setAdapter(spinnerArrayAdapter);
         sp.setSelection(selectpos);
         if (null != selectedListener)
@@ -996,15 +1008,19 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR) + position);
+                eAssert(null != mons);
                 String[] months = buildStringArray(mons[0], mons[1] + 1);
                 setSpinner(diagV, R.id.sp_month0, months, 0, null); // select first (eariest) month
             }
+
             @Override
             public void
-            onNothingSelected(AdapterView<?> parent) {}
+            onNothingSelected(AdapterView<?> parent) {
+            }
         }); // select first (eariest) year
 
         int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR));
+        eAssert(null != mons);
         String[] months = buildStringArray(mons[0], mons[1] + 1);
         setSpinner(diagV, R.id.sp_month0, months, 0, null); // select first (eariest) month
 
@@ -1013,6 +1029,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR) + position);
+                eAssert(null != mons);
                 String[] months = buildStringArray(mons[0], mons[1] + 1);
                 setSpinner(diagV, R.id.sp_month1, months, months.length - 1, null); // select first (eariest) month
             }
@@ -1021,6 +1038,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onNothingSelected(AdapterView<?> parent) {}
         }); // select last (latest) year
         mons = Utils.getMonths(since, now, now.get(Calendar.YEAR));
+        eAssert(null != mons);
         months = buildStringArray(mons[0], mons[1] + 1);
         setSpinner(diagV, R.id.sp_month1, months, months.length - 1, null); // select last (latest) month
 
@@ -1044,6 +1062,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 // Set as min value.
                 from.set(Calendar.YEAR, y0);
+                //noinspection ResourceType
                 from.set(Calendar.MONDAY, Utils.monthToCalendarMonth(m0));
                 from.set(Calendar.DAY_OF_MONTH, from.getMinimum(Calendar.DAY_OF_MONTH));
                 from.set(Calendar.HOUR_OF_DAY, from.getMinimum(Calendar.HOUR_OF_DAY));
@@ -1052,6 +1071,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 // Set as max value.
                 to.set(Calendar.YEAR, y1);
+                //noinspection ResourceType
                 to.set(Calendar.MONDAY, Utils.monthToCalendarMonth(m1));
                 to.set(Calendar.DAY_OF_MONTH, to.getMaximum(Calendar.DAY_OF_MONTH));
                 to.set(Calendar.HOUR_OF_DAY, to.getMaximum(Calendar.HOUR_OF_DAY));
@@ -1114,6 +1134,7 @@ UnexpectedExceptionHandler.TrackedModule {
         UnexpectedExceptionHandler.get().registerModule(this);
         super.onCreate(savedInstanceState);
         //logI("==> ItemListActivity : onCreate");
+        //noinspection ConstantConditions
         getActionBar().show();
 
         mItemAction = new ItemActionHandler(this, new ListAdapterBridge());
@@ -1158,7 +1179,7 @@ UnexpectedExceptionHandler.TrackedModule {
         });
         registerForContextMenu(mList);
 
-        ((ImageView)findViewById(R.id.searchbtn)).setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.searchbtn)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void
             onClick(View v) {
@@ -1279,7 +1300,7 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             while (mOpMode.doesRunningBGTaskExists())
                 Thread.sleep(50);
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException ignored) {}
         super.onBackPressed();
     }
 }

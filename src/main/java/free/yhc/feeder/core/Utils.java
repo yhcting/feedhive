@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,7 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -87,23 +87,23 @@ public class Utils {
     // But, in case of UTF-8 (file name encoding at Linux), one character may
     // occupy 1-4 bytes.
     // So, maximum character length for filename is set as 255/4 = 63
-    public static final int    MAX_FILENAME_LENGTH = 63;
+    public static final int MAX_FILENAME_LENGTH = 63;
 
-    public static final long   MIN_IN_MS    = 60 * 1000;
-    public static final long   HOUR_IN_MS   = 60 * 60 * 1000;
-    public static final long   DAY_IN_MS    = 24 * HOUR_IN_MS;
-    public static final int    HOUR_IN_SEC  = 60 * 60;
-    public static final int    DAY_IN_SEC   = 24 * HOUR_IN_SEC;
+    public static final long MIN_IN_MS = 60 * 1000;
+    public static final long HOUR_IN_MS = 60 * 60 * 1000;
+    public static final long DAY_IN_MS = 24 * HOUR_IN_MS;
+    public static final int HOUR_IN_SEC = 60 * 60;
+    public static final int DAY_IN_SEC = 24 * HOUR_IN_SEC;
 
     private static SharedPreferences sPrefs = null;
 
     // To enable logging to file - NOT LOGCAT
     // These are for debugging purpose
     private static final boolean ENABLE_LOGF = false;
-    private static final String  LOGF        = Environment.getExternalStorageDirectory().getAbsolutePath()
-                                                  + "/feedhive.log";
-    private static final String  LOGF_LAST   = LOGF + "-last";
-    private static FileWriter    sLogout     = null;
+    private static final String LOGF = Environment.getExternalStorageDirectory().getAbsolutePath()
+                                       + "/feedhive.log";
+    private static final String LOGF_LAST = LOGF + "-last";
+    private static FileWriter sLogout = null;
 
     // Format of nString (Number String)
     // <number>/<number>/ ... '/' is delimiter between number.
@@ -116,10 +116,15 @@ public class Utils {
     // Belows are not used.
     // Instead of self-implementation, predefined-android-classes are used.
     // index of each value.
+    @SuppressWarnings("unused")
     private static final int EXT2MIME_OFFSET_EXT = 0;
+    @SuppressWarnings("unused")
     private static final int EXT2MIME_OFFSET_MIME = 1;
+    @SuppressWarnings("unused")
     private static final int EXT2MIME_OFFSET_SZ = 2;
-    private static String[] mExt2mimeMap = {
+
+    @SuppressWarnings({"MismatchedReadAndWriteOfArray", "unused"})
+    private static final String[] mExt2mimeMap = {
             // Image
             "gif",           "image/gif",
             "jpeg",          "image/jpeg",
@@ -143,7 +148,8 @@ public class Utils {
             "xml",           "text/xml",
     };
 
-    private static String[] mMimeTypes = {
+    @SuppressWarnings({"MismatchedReadAndWriteOfArray", "unused"})
+    private static final String[] mMimeTypes = {
             "application",
             "audio",
             "image",
@@ -178,7 +184,7 @@ public class Utils {
             "yyyy.MM.d HH:mm:ss",
         };
 
-    private static enum LogLV{
+    private enum LogLV{
         V ("[V]", 6),
         D ("[D]", 5),
         I ("[I]", 4),
@@ -187,16 +193,18 @@ public class Utils {
         F ("[F]", 1);
 
         private String pref; // prefix string
-        private int    pri;  // priority
+        private int pri;  // priority
         LogLV(String pref, int pri) {
             this.pref = pref;
             this.pri = pri;
         }
 
+        @SuppressWarnings("unused")
         String pref() {
             return pref;
         }
 
+        @SuppressWarnings("unused")
         int pri() {
             return pri;
         }
@@ -219,13 +227,13 @@ public class Utils {
     }
 
 
-    public static enum PrefLayout {
+    public enum PrefLayout {
         // Name of echo elements should match values used in the preference.
         RIGHT,
         LEFT,
     }
 
-    public static enum PrefLevel {
+    public enum PrefLevel {
         HIGH,
         MEDIUM,
         LOW
@@ -239,7 +247,9 @@ public class Utils {
             try {
                 File logf = new File(LOGF);
                 File logfLast = new File(LOGF_LAST);
+                //noinspection ResultOfMethodCallIgnored
                 logfLast.delete();
+                //noinspection ResultOfMethodCallIgnored
                 logf.renameTo(logfLast);
                 sLogout = new FileWriter(logf);
             } catch (IOException e) {
@@ -260,7 +270,7 @@ public class Utils {
             try {
                 sLogout.write(lv.pref + " " + msg + "\n");
                 sLogout.flush();
-            } catch (IOException e) {}
+            } catch (IOException ignored) {}
         } else {
             switch(lv) {
             case V: Log.v(cls.getSimpleName(), msg); break;
@@ -275,11 +285,8 @@ public class Utils {
 
     /**
      * Decode image from file path(String) or raw data (byte[]).
-     * @param image
-     *   Two types are supported.
-     *   String for file path / byte[] for raw image data.
-     * @param opt
-     * @return
+     * @param image Two types are supported.
+     *              String for file path / byte[] for raw image data.
      */
     private static Bitmap
     decodeImageRaw(Object image, BitmapFactory.Options opt) {
@@ -319,17 +326,20 @@ public class Utils {
     public static <T> T[]
     toArray(List<T> list, T[] a) {
         if (a.length < list.size())
+            //noinspection unchecked
             a = (T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), list.size());
         return list.toArray(a);
     }
 
     public static <T> T[]
     toArray(List<T> list, Class<T> k) {
+        //noinspection unchecked
         return list.toArray((T[])java.lang.reflect.Array.newInstance(k, list.size()));
     }
 
     public static <T> T[]
     newArray(Class<T> k, int size) {
+        //noinspection unchecked
         return (T[])java.lang.reflect.Array.newInstance(k, size);
     }
 
@@ -382,6 +392,7 @@ public class Utils {
         return i;
     }
 
+    @SuppressWarnings("unused")
     public static Integer[]
     convertArrayintToInteger(int[] i) {
         Integer[] I = new Integer[i.length];
@@ -393,19 +404,19 @@ public class Utils {
     /**
      * Is is valid string?
      * Valid means "Not NULL and Not empty".
-     * @param v
-     * @return
      */
     public static boolean
     isValidValue(String v) {
         return !(null == v || v.isEmpty());
     }
 
+    @SuppressWarnings("unused")
     public static int
     dpToPx(int dp) {
         return (int) (dp * Environ.getAppContext().getResources().getDisplayMetrics().density);
     }
 
+    @SuppressWarnings("unused")
     public static long
     hourToMs(long hour) {
         return hour * 60 * 60 * 1000;
@@ -419,8 +430,6 @@ public class Utils {
     /**
      * Convert number string to number array.
      * This function is pair with 'nrsToNString'.
-     * @param timeString
-     * @return
      */
     public static long[]
     nStringToNrs(String timeString) {
@@ -443,8 +452,6 @@ public class Utils {
      * Convert number array to single number string.
      * This is good way to store number array as single string.
      * This function is pair with 'nStringToNrs'.
-     * @param nrs
-     * @return
      */
     public static String
     nrsToNString(long[] nrs) {
@@ -472,9 +479,7 @@ public class Utils {
 
     /**
      * Convert data string to times in milliseconds since 1970 xxx.
-     * @param dateString
-     * @return
-     *   times in milliseconds. -1 if failed to parse.
+     * @return times in milliseconds. -1 if failed to parse.
      */
     public static long
     dateStringToTime(String dateString) {
@@ -483,18 +488,15 @@ public class Utils {
         try {
             // instead of using android's DateUtils, apache's DateUtils is used because it is faster.
             date = DateUtils.parseDate(dateString, sDateFormats);
-        } catch (DateParseException e) { }
+        } catch (DateParseException ignored) { }
         return (null == date)? -1: date.getTime();
     }
 
     /**
      * Get size(width, height) of given image.
-     * @param image
-     *   'image file path' or 'byte[]' image data
-     * @param out
-     *   out[0] : width of image / out[1] : height of image
-     * @return
-     *   false if image cannot be decode. true if success
+     * @param image 'image file path' or 'byte[]' image data
+     * @param out out[0] : width of image / out[1] : height of image
+     * @return false if image cannot be decode. true if success
      */
     public static boolean
     imageSize(Object image, int[] out) {
@@ -515,18 +517,12 @@ public class Utils {
      *   bound rectangle(boundW, boundH) with fixed ratio.
      * If input rectangle is included in bound, then input rectangle itself will be
      *   returned. (we don't need to adjust)
-     * @param boundW
-     *   width of bound rect
-     * @param boundH
-     *   height of bound rect
-     * @param width
-     *   width of rect to be shrunk
-     * @param height
-     *   height of rect to be shrunk
-     * @param out
-     *   calculated value [ out[0](width) out[1](height) ]
-     * @return
-     *   false(not shrunk) / true(shrunk)
+     * @param boundW width of bound rect
+     * @param boundH height of bound rect
+     * @param width width of rect to be shrunk
+     * @param height height of rect to be shrunk
+     * @param out calculated value [ out[0](width) out[1](height) ]
+     * @return false(not shrunk) / true(shrunk)
      */
     public static boolean
     shrinkFixedRatio(int boundW, int boundH, int width, int height, int[] out) {
@@ -556,14 +552,9 @@ public class Utils {
     /**
      * Make fixed-ration-bounded-bitmap with file.
      * If (0 >= boundW || 0 >= boundH), original-size-bitmap is trying to be created.
-     * @param fpath
-     *   image file path (absolute path)
-     * @param boundW
-     *   bound width
-     * @param boundH
-     *   bound height
-     * @return
-     *   null if fails
+     * @param boundW bound width
+     * @param boundH bound height
+     * @return null if fails
      */
     public static Bitmap
     decodeImage(Object image, int boundW, int boundH) {
@@ -572,10 +563,9 @@ public class Utils {
         BitmapFactory.Options opt = null;
         if (0 < boundW && 0 < boundH) {
             int[] imgsz = new int[2]; // image size : [0]=width / [1] = height
-            if (false == imageSize(image, imgsz)) {
+            if (!imageSize(image, imgsz))
                 // This is not proper image data
                 return null;
-            }
 
             int[] bsz = new int[2]; // adjusted bitmap size
             boolean bShrink = shrinkFixedRatio(boundW, boundH, imgsz[0], imgsz[1], bsz);
@@ -609,8 +599,6 @@ public class Utils {
 
     /**
      * Compress give bitmap to JPEG formatted image data.
-     * @param bm
-     * @return
      */
     public static byte[]
     compressBitmap(Bitmap bm) {
@@ -623,9 +611,8 @@ public class Utils {
 
     /**
      * Text in given TextView is ellipsed?
-     * @param tv
-     * @return
      */
+    @SuppressWarnings("unused")
     public static boolean
     isEllipsed(TextView tv) {
         Layout l = tv.getLayout();
@@ -639,10 +626,8 @@ public class Utils {
     }
 
     /**
-     * @param file
-     * @param data
-     * @return
      */
+    @SuppressWarnings("unused")
     public static Err
     writeToFile(File file, byte[] data) {
         FileOutputStream fos = null;
@@ -657,22 +642,20 @@ public class Utils {
             try {
                 if (null != fos)
                     fos.close();
-            } catch (IOException e) {}
+            } catch (IOException ignored) {}
         }
         return Err.NO_ERR;
     }
 
     /**
      *
-     * @param file
-     *   Text file.
-     * @return
-     *   value when reading non-text files, is not defined.
+     * @param file Text file.
+     * @return value when reading non-text files, is not defined.
      */
     public static String
     readTextFile(File file) {
         try {
-            StringBuffer fileData = new StringBuffer(4096);
+            StringBuilder fileData = new StringBuilder(4096);
             BufferedReader reader = new BufferedReader(new FileReader(file));
             char[] buf = new char[4096];
             int bytes;
@@ -689,8 +672,6 @@ public class Utils {
 
     /**
      * Copy from input stream to output stream.
-     * @param os
-     * @param is
      */
     public static void
     copy(OutputStream os, InputStream is) throws IOException {
@@ -745,8 +726,6 @@ public class Utils {
 
     /**
      * Does given string represents Mime Type?
-     * @param str
-     * @return
      */
     public static boolean
     isMimeType(String str) {
@@ -758,8 +737,6 @@ public class Utils {
      * Convert given string to valid (OS supported) file name.
      * To do this, some characters that are not allowed as file name, are replaced with
      *   other characters.
-     * @param str
-     * @return
      */
     public static String
     convertToFilename(String str) {
@@ -774,12 +751,9 @@ public class Utils {
 
     /**
      * Remove file and directory recursively
-     * @param f
-     *   file or directory.
-     * @param bDeleteMe
-     *   'true' means delete given directory itself too.
-     * @return
-     *   false:  fail to full-delete
+     * @param f file or directory.
+     * @param bDeleteMe 'true' means delete given directory itself too.
+     * @return false:  fail to full-delete
      */
     public static boolean
     removeFileRecursive(File f, boolean bDeleteMe) {
@@ -823,7 +797,6 @@ public class Utils {
 
     /**
      * Is any available active network at this device?
-     * @return
      */
     public static boolean
     isNetworkAvailable() {
@@ -837,10 +810,7 @@ public class Utils {
         else
             ni = cm.getActiveNetworkInfo();
 
-        if (null != ni)
-            return ni.isConnectedOrConnecting();
-        else
-            return false;
+        return null != ni && ni.isConnectedOrConnecting();
     }
 
     public static File
@@ -887,10 +857,9 @@ public class Utils {
 
     /**
      * Get BG task thread priority from shared preference.
-     * @param context
-     * @return
-     *   Value of Java Thread priority (between Thread.MIN_PRIORITY and Thread.MAX_PRIORITY)
+     * @return Value of Java Thread priority (between Thread.MIN_PRIORITY and Thread.MAX_PRIORITY)
      */
+    @SuppressWarnings("unused")
     public static int
     getPrefBGTaskPriority() {
         String prio = sPrefs.getString(getResString(R.string.csbgtask_prio),
@@ -944,8 +913,6 @@ public class Utils {
      * Get time milliseconds at 00:00:00(hh:mm:ss) of given day.
      * For example, calling function with argument "2012-12-25, 13:46:57" calendar value,
      *   gives time milliseconds of "2012-12-25, 00:00:00".
-     * @param cal
-     * @return
      */
     public static long
     dayBaseMs(Calendar cal) {
@@ -971,16 +938,14 @@ public class Utils {
     /**
      * NOTE
      * 'secs' array is [in/out] argument.
-     * @param calNow
-     * @param secs
-     *   [in/out] After return, array is sorted by ascending numerical order.
-     *   00:00:00 based value.
-     *   seconds since 00:00:00 (12:00 AM)
-     *   (negative value is NOT ALLOWED)
-     *   Order may be changed (sorted) to ascending order.
-     * @return
-     *   time(ms based on 1970) to next nearest time of given second-of-day array.
+     * @param secs [in/out] After return, array is sorted by ascending numerical order.
+     *             00:00:00 based value.
+     *             seconds since 00:00:00 (12:00 AM)
+     *             (negative value is NOT ALLOWED)
+     *             Order may be changed (sorted) to ascending order.
+     * @return time(ms based on 1970) to next nearest time of given second-of-day array.
      */
+    @SuppressWarnings("unused")
     public static long
     nextNearestTime(Calendar calNow, long[] secs) {
         eAssert(secs.length > 0);
@@ -1012,8 +977,6 @@ public class Utils {
     /**
      * Covert month(Gregorian calendar) to Android Calendar's month-value.
      * For example, 1 -> Calendar.JANUARY
-     * @param mon
-     * @return
      */
     public static int
     monthToCalendarMonth(int mon) {
@@ -1025,8 +988,6 @@ public class Utils {
     /**
      * Android Calendar's month-value to month(Gregorian calendar).
      * For example, Calendar.JANUARY -> 1
-     * @param calMon
-     * @return
      */
     public static int
     calendarMonthToMonth(int calMon) {
@@ -1036,14 +997,10 @@ public class Utils {
     }
     /**
      *
-     * @param since
-     * @param now
-     * @param year
-     * @return
-     *   null if error (ex. "since > now", "year < since" or "year > now")
-     *   otherwise int[2] is returned.
-     *   int[0] : min month (inclusive) [1 ~ 12]
-     *   int[1] : max month (inclusive) [1 ~ 12]
+     * @return null if error (ex. "since > now", "year < since" or "year > now")
+     *         otherwise int[2] is returned.
+     *         int[0] : min month (inclusive) [1 ~ 12]
+     *         int[1] : max month (inclusive) [1 ~ 12]
      */
     public static int[]
     getMonths(Calendar since, Calendar now, int year) {

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -41,17 +41,17 @@ import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ListView;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class AsyncCursorListAdapter extends AsyncCursorAdapter {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(AsyncCursorListAdapter.class);
 
     private static final int INVALID_POS = -1;
-    private static final DataProvideStateHandler   sDpsHandler = new DataProvideStateHandler();
+    private static final DataProvideStateHandler sDpsHandler = new DataProvideStateHandler();
 
-    private int     mAsyncLoadingAnchor = INVALID_POS;
+    private int mAsyncLoadingAnchor = INVALID_POS;
 
     private static class DataProvideStateHandler implements AsyncAdapter.DataProvideStateListener {
         @Override
@@ -85,15 +85,15 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
         return super.dump(lv) + "[ AsyncCursorListAdapter ]";
     }
 
-    AsyncCursorListAdapter(Context      context,
-                           Cursor       cursor,
-                           ItemBuilder  bldr,
-                           int          rowLayout,
-                           ListView     lv,
-                           Object       firstLoadingDummyItem,
-                           int          dataReqSz,
-                           int          maxArrSz,
-                           boolean      hasLimit) {
+    AsyncCursorListAdapter(Context context,
+                           Cursor cursor,
+                           ItemBuilder bldr,
+                           int rowLayout,
+                           ListView lv,
+                           Object firstLoadingDummyItem,
+                           int dataReqSz,
+                           int maxArrSz,
+                           boolean hasLimit) {
         super(context,
               cursor,
               bldr,
@@ -127,14 +127,12 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
 
     /**
      *
-     * @param v
-     * @param context
-     * @param position
-     * @return
-     *   true : keep going to bind / false : stop binding.
+     * @return true : keep going to bind / false : stop binding.
      */
     protected final boolean
-    preBindView(View v, final Context context, int position)  {
+    preBindView(View v,
+                @SuppressWarnings("unused") final Context context,
+                int position)  {
         ImageView loadingIv = (ImageView)v.findViewById(R.id.loading);
         View contentv = v.findViewById(R.id.content);
         if (isLoadingItem(position)) {

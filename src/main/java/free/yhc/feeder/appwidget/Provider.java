@@ -42,9 +42,11 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
+import android.support.annotation.NonNull;
+
 import free.yhc.feeder.db.DB;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class Provider extends AppWidgetProvider implements
 UnexpectedExceptionHandler.TrackedModule {
@@ -95,7 +97,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     public void
-    onReceive(Context context, Intent intent) {
+    onReceive(@NonNull Context context, @NonNull Intent intent) {
         super.onReceive(context, intent);
         if (DBG) P.v("Exit");
     }
@@ -106,12 +108,13 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
         if (DBG) P.v("widget ids : " + Utils.nrsToNString(appWidgetIds));
 
-        ArrayList<Integer> wl = new ArrayList<Integer>(appWidgetIds.length);
+        ArrayList<Integer> wl = new ArrayList<>(appWidgetIds.length);
         for (int awid : appWidgetIds) {
             long catid = AppWidgetUtils.getWidgetCategory(awid);
             if (DB.INVALID_ITEM_ID != catid)
                 wl.add(awid);
         }
-        UpdateService.update(context, Utils.convertArrayIntegerToint(wl.toArray(new Integer[0])));
+        UpdateService.update(context,
+                             Utils.convertArrayIntegerToint(wl.toArray(new Integer[wl.size()])));
     }
 }

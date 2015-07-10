@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,30 +34,65 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
-import java.io.File;
+import android.os.Handler;
 
-public class BGTaskDownloadToItemContent extends BGTaskDownloadToFile {
-    private long mId;
-    public BGTaskDownloadToItemContent(String url, long id) {
-        super(new Arg(url,
-                      ContentsManager.get().getItemInfoDataFile(id),
-                      Utils.getNewTempFile()));
-        mId = id;
-    }
+@SuppressWarnings("unused")
+public class DelayedAction implements
+UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = false;
+    private static final Utils.Logger P = new Utils.Logger(DelayedAction.class);
+
+    private final Handler mHandler;
+    private final Runnable mAction;
+    // action can be delayed at most 'mDelayLimist' time.
+    private final int mDelayLimit; // ms
+    private final int mDelay; // ms
+    private final Object mDelaySumLock = new Object();
+    private int mDelaySum = 0;
+
+    private final Runnable mActionTrigger = new Runnable() {
+        @Override
+        public void
+        run() {
+            synchronized (mDelaySumLock) {
+                mDelaySum = 0; // action is done. So, initialize it.
+            }
+            if (null != mAction)
+                mAction.run();
+        }
+    };
 
     @Override
-    protected Err
-    doBgTask(Arg arg) {
-        if (null == arg.toFile)
-            return Err.IO_FILE;
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ DelayedAction ]";
+    }
 
-        new File(arg.toFile.getParent()).mkdirs();
-        ContentsManager cm = ContentsManager.get();
-        Err ret = super.doBgTask(arg);
-        if (Err.NO_ERR == ret)
-            cm.addItemContent(cm.getItemInfoDataFile(mId), mId);
-        return ret;
+    public DelayedAction(Handler actionContextHandler,
+                         Runnable action,
+                         int delayLimit,
+                         int delay) {
+        mHandler = actionContextHandler;
+        if (delayLimit < delay)
+            delayLimit = delay;
+        mAction = action;
+        mDelayLimit = delayLimit;
+        mDelay = delay;
+    }
+
+    public void
+    triggerAction() {
+        boolean delayable = true;
+        synchronized (mDelaySumLock) {
+            mDelaySum += mDelay;
+            if (mDelaySum > mDelayLimit)
+                delayable = false;
+        }
+        if (delayable) {
+            mHandler.removeCallbacks(mActionTrigger);
+            mHandler.postDelayed(mActionTrigger, mDelay);
+        }
     }
 }

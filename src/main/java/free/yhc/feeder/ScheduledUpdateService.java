@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.util.Calendar;
 import java.util.Comparator;
@@ -53,13 +53,13 @@ import android.database.Cursor;
 import android.os.IBinder;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BGTaskUpdateChannel;
-import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.BGTaskUpdateChannel;
+import free.yhc.feeder.core.BaseBGTask;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 // There is no way to notify result of scheduled-update to user.
 // So, even if scheduled update may fail, there is no explicit notification.
@@ -73,30 +73,30 @@ UnexpectedExceptionHandler.TrackedModule {
     // Should match manifest's intent filter
     private static final String SCHEDUPDATE_INTENT_ACTION = "feeder.intent.action.SCHEDULED_UPDATE";
 
-    private static final String CMD_ALARM   = "alarm";
+    private static final String CMD_ALARM = "alarm";
     private static final String CMD_RESCHED = "resched";
-    private static final String CMD_UPDATE  = "update";
+    private static final String CMD_UPDATE = "update";
 
-    private static final String KEY_CMD     = "cmd";
-    private static final String KEY_TIME    = "time";
-    private static final String KEY_CHANS   = "chans";
+    private static final String KEY_CMD = "cmd";
+    private static final String KEY_TIME = "time";
+    private static final String KEY_CHANS = "chans";
 
-    private static final int    RETRY_DELAY = 1000; // ms
+    private static final int RETRY_DELAY = 1000; // ms
 
     // Number of running service command
     // This is used to check whether there is running scheduled update service instance or not.
     // NOTE
     // This variable only be accessed by main UI thread!
-    private static int                   mSrvcnt = 0;
+    private static int mSrvcnt = 0;
 
     // Scheduled update is enabled/disabled.
     // If disabled, requested command is continuously posted to message Q until
     //   scheduled update is re-enabled again.
-    private static boolean               mEnabled = true;
+    private static boolean mEnabled = true;
 
-    private final DBPolicy               mDbp = DBPolicy.get();
-    private final RTTask                 mRtt = RTTask.get();
-    private final HashSet<Long>          mTaskset = new HashSet<Long>();
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final RTTask mRtt = RTTask.get();
+    private final HashSet<Long> mTaskset = new HashSet<>();
 
     // If time is changed Feeder need to re-scheduling scheduled-update.
     public static class DateChangedReceiver extends BroadcastReceiver {
@@ -155,9 +155,10 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private class UpdateBGTask extends BGTaskUpdateChannel {
-        private final EventListener   mListener = new EventListener();
-        private long            mCid = -1;
-        private int             mStartId = -1;
+        private final EventListener mListener = new EventListener();
+        private long mCid = -1;
+        @SuppressWarnings("unused")
+        private int mStartId = -1;
 
         private class EventListener extends BaseBGTask.OnEventListener {
             @Override
@@ -198,8 +199,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class StartCmdPost implements Runnable {
         private Intent _mIntent;
-        private int    _mFlags;
-        private int    _mStartId;
+        private int _mFlags;
+        private int _mStartId;
         StartCmdPost(Intent intent, int flags, int startId) {
             _mIntent = intent;
             _mFlags = flags;
@@ -226,6 +227,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    @SuppressWarnings("unused")
     private static class ChannelValueComparator implements Comparator<ChannelValue> {
         @Override
         public int compare(ChannelValue cv0, ChannelValue cv1) {
@@ -324,7 +326,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Schedule update for 'cids' right now.
-     * @param cids
      */
     static void
     scheduleImmediateUpdate(long[] cids) {
@@ -341,7 +342,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * NOTE
      * Next updates which are at least 1-min after, will be scheduled.
-     * @param calNow
      */
     static void
     scheduleNextUpdate(Calendar calNow) {
@@ -409,6 +409,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // So, I don't need to worry about race-condition caused from re-entrance of this function
             // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
             RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
+            //noinspection StatementWithEmptyBody
             if (RTTask.TaskState.CANCELING == state
                 || RTTask.TaskState.RUNNING == state
                 || RTTask.TaskState.READY == state) {
@@ -435,7 +436,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    doCmdResched(int startId) {
+    doCmdResched(@SuppressWarnings("unused") int startId) {
         // Just reschedule and return.
         scheduleNextUpdate(Calendar.getInstance());
     }
@@ -462,7 +463,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 ColumnChannel.ID,
                 ColumnChannel.SCHEDUPDATETIME });
         // below values are 'Column Index' for above query.
-        final int iId   = 0;
+        final int iId = 0;
         final int iTime = 1;
 
         if (!c.moveToFirst()) {
@@ -475,7 +476,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, service should run scheduled-update whose planed-sched-time is
         //   between 'schedTime' and 'current'.
         long schedError = calNow.getTimeInMillis() - schedTime;
-        LinkedList<Long> chl = new LinkedList<Long>();
+        LinkedList<Long> chl = new LinkedList<>();
         do {
             String sStr = c.getString(iTime);
             //   We cannot guarantee that service is started at exact time.
@@ -495,7 +496,7 @@ UnexpectedExceptionHandler.TrackedModule {
         } while (c.moveToNext());
         c.close();
 
-        long[] cids = Utils.convertArrayLongTolong(chl.toArray(new Long[0]));
+        long[] cids = Utils.convertArrayLongTolong(chl.toArray(new Long[chl.size()]));
         startUpdates(startId, cids);
 
         // register next scheduled-update.
@@ -509,12 +510,14 @@ UnexpectedExceptionHandler.TrackedModule {
         scheduleNextUpdate(calNow);
     }
 
+
+    @SuppressWarnings("StringConcatenationInsideStringBufferAppend")
     private void
     doCmdUpdate(int startId, long[] cids) {
         if (DBG) {
             StringBuilder bldr = new StringBuilder("");
-            bldr.append("DO Command update!! : " + startId + "\n");
-            bldr.append("Cids: ");
+            bldr.append("DO Command update!! : " + startId + "\n")
+                .append("Cids: ");
             for (long cid : cids)
                 bldr.append(cid + ", ");
             bldr.append("\n");
@@ -525,7 +528,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    runStartCommand(Intent intent, int flags, int startId) {
+    runStartCommand(Intent intent,
+                    @SuppressWarnings("unused") int flags,
+                    int startId) {
         String cmd = intent.getStringExtra(KEY_CMD);
         //logI("ScheduledUpdate : runStartCommand : " + cmd);
         // 'cmd' can be null.

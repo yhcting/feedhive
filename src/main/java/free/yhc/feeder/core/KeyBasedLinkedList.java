@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,16 +34,18 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 
 public class KeyBasedLinkedList<T> {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(KeyBasedLinkedList.class);
 
-    private LinkedList<Elem> mL = new LinkedList<Elem>();
+    private LinkedList<Elem> mL = new LinkedList<>();
 
     private static class Elem {
         final Object key;
@@ -66,6 +68,7 @@ public class KeyBasedLinkedList<T> {
         @Override
         public T
         next() {
+            //noinspection unchecked
             return (T)itr.next().item;
         }
 
@@ -84,11 +87,13 @@ public class KeyBasedLinkedList<T> {
         return mL.add(new Elem(key, item));
     }
 
+    @SuppressWarnings("unused")
     public void
     addFirst(Object key, T item) {
         mL.addFirst(new Elem(key, item));
     }
 
+    @SuppressWarnings("unused")
     public void
     addLast(Object key, T item) {
         mL.addLast(new Elem(key, item));
@@ -125,10 +130,12 @@ public class KeyBasedLinkedList<T> {
     public T[]
     toArray(T[] a) {
         // NOT TESTED enough yet!
-        Elem[] es = mL.toArray(new Elem[0]);
+        Elem[] es = mL.toArray(new Elem[mL.size()]);
         if (a.length < es.length)
+            //noinspection unchecked
             a = (T[])Utils.newArray(a.getClass().getComponentType(), es.length);
         for (int i = 0; i < es.length; i++)
+            //noinspection unchecked
             a[i] = (T)es[i].item;
         return a;
     }

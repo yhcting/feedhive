@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -45,15 +45,17 @@ import android.preference.PreferenceManager;
 import free.yhc.feeder.appwidget.ViewsService;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.UsageReport;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.UsageReport;
+import free.yhc.feeder.core.Utils;
 
 public class FeederApp extends Application {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(FeederApp.class);
 
     private void
@@ -88,7 +90,9 @@ public class FeederApp extends Application {
     }
 
     private void
-    onAppUpgrade(Context context, int from, int to) {
+    onAppUpgrade(Context context,
+                 int from,
+                 @SuppressWarnings("unused")  int to) {
         if (from < 56)
             onUpgradeTo56(context);
     }

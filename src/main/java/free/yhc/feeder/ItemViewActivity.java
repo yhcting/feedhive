@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,16 +36,18 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -58,14 +60,14 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BGTaskDownloadToItemContent;
-import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.BGTask;
+import free.yhc.feeder.core.BGTaskDownloadToItemContent;
+import free.yhc.feeder.core.BaseBGTask;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class ItemViewActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
@@ -74,31 +76,34 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static final int RESULT_DOWNLOAD = 1;
 
-    private final DBPolicy      mDbp = DBPolicy.get();
+    private final DBPolicy mDbp = DBPolicy.get();
     private final ContentsManager mCm = ContentsManager.get();
-    private final RTTask        mRtt = RTTask.get();
+    private final RTTask mRtt = RTTask.get();
 
-    private long        mId      = -1;
-    private String      mNetUrl  = "";
-    private String      mFileUrl = "";
-    private String      mCurUrl = "";
-    private WebView     mWv      = null;
-    private ProgressBar mPb      = null;
+    private long mId = -1;
+    private String mNetUrl = "";
+    private String mFileUrl = "";
+    private String mCurUrl = "";
+    private WebView mWv = null;
+    private ProgressBar mPb = null;
 
     private class WVClient extends WebViewClient {
         @Override
-        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+        public void
+        onPageStarted(WebView view, String url, Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
         }
 
         @Override
-        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        public boolean
+        shouldOverrideUrlLoading(WebView view, String url) {
             // Should NOT open at NEW window.
             return false;
         }
 
         @Override
-        public void onPageFinished(WebView view, String url) {
+        public void
+        onPageFinished(WebView view, String url) {
             super.onPageFinished(view, url);
             mPb.setVisibility(View.GONE);
         }
@@ -106,15 +111,18 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class WCClient extends WebChromeClient {
         @Override
-        public void onProgressChanged(WebView view, int progress) {
+        public void
+        onProgressChanged(WebView view, int progress) {
             // Activities and WebViews measure progress with different scales.
             // The progress meter will automatically disappear when we reach 100%
             mPb.setProgress(progress);
         }
 
         @Override
-        public void onReachedMaxAppCacheSize(long spaceNeeded, long totalUsedQuota,
-                                             WebStorage.QuotaUpdater quotaUpdater) {
+        public void
+        onReachedMaxAppCacheSize(long spaceNeeded,
+                                 long totalUsedQuota,
+                                 @NonNull WebStorage.QuotaUpdater quotaUpdater) {
             if (DBG) P.d("space : " + spaceNeeded);
             quotaUpdater.updateQuota(spaceNeeded * 2);
         }
@@ -129,7 +137,8 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         @Override
-        public void onUnregister(BGTask task, long cid, RTTask.Action act) { }
+        public void
+        onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
     private class DownloadBGTaskListener extends BaseBGTask.OnEventListener {
@@ -232,6 +241,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         case RUNNING:
         case READY:
+            //noinspection ResourceType
             imgbtn.setImageResource(R.anim.download);
             ((AnimationDrawable)imgbtn.getDrawable()).start();
             imgbtn.setOnClickListener(new View.OnClickListener() {
@@ -269,6 +279,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private void
     setWebSettings(WebView wv) {
         WebSettings ws = wv.getSettings();
@@ -278,7 +289,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Enabling cache.
         ws.setDomStorageEnabled(true);
         // Set cache size to 8 mb by default. should be more than enough
-        ws.setAppCacheMaxSize(1024*1024*8);
+        ws.setAppCacheMaxSize(1024 * 1024 * 8);
         ws.setAppCachePath(getCacheDir().getAbsolutePath());
         ws.setAllowFileAccess(true);
         ws.setAppCacheEnabled(true);

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,7 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.util.LinkedList;
 
@@ -45,13 +45,15 @@ import org.w3c.dom.Node;
 
 public class RSSParser extends FeedParser implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(RSSParser.class);
 
     // parsing priority of namespace supported (larger number has priority)
-    private static final short PRI_ITUNES     = 2;
-    private static final short PRI_DEFAULT    = 1; // RSS default
-    private static final short PRI_DC         = 0;
+    private static final short PRI_ITUNES  = 2;
+    private static final short PRI_DEFAULT = 1; // RSS default
+    private static final short PRI_DC      = 0;
 
     // ========================================
     //        To Support 'itunes' Namespace
@@ -63,8 +65,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         boolean
-        parseChannel(ChannelValues cv, Node n)
-                throws FeederException {
+        parseChannel(ChannelValues cv, Node n) throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("itunes:summary"))
@@ -82,8 +83,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         boolean
-        parseItem(ItemValues iv, Node n)
-                throws FeederException {
+        parseItem(ItemValues iv, Node n) throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("itunes:summary"))
@@ -166,8 +166,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         boolean
-        parseChannel(ChannelValues cv, Node n)
-                throws FeederException {
+        parseChannel(ChannelValues cv, Node n) throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("title"))
@@ -184,8 +183,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         boolean
-        parseItem(ItemValues iv, Node n)
-                throws FeederException {
+        parseItem(ItemValues iv, Node n) throws FeederException {
             boolean ret = true;
 
             if (n.getNodeName().equalsIgnoreCase("title"))
@@ -212,9 +210,9 @@ UnexpectedExceptionHandler.TrackedModule {
     // ===========================================================
 
     private void
-    constructNSParser(LinkedList<NSParser> pl, Node n)
-            throws FeederException {
+    constructNSParser(LinkedList<NSParser> pl, Node n) throws FeederException {
         NamedNodeMap nnm = n.getAttributes();
+        @SuppressWarnings("unused")
         Node nVer = nnm.getNamedItem("version");
 
         /*
@@ -236,13 +234,12 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    nodeChannel(Result res, NSParser[] parser, Node chn)
-            throws FeederException {
+    nodeChannel(Result res, NSParser[] parser, Node chn) throws FeederException {
         ChannelValues cv = new ChannelValues();
         ItemValues iv = new ItemValues();
         // count number of items in this channel
 
-        LinkedList<Feed.Item.ParD> iteml = new LinkedList<Feed.Item.ParD>();
+        LinkedList<Feed.Item.ParD> iteml = new LinkedList<>();
         cv.init();
         Node n = chn.getFirstChild();
         while (null != n) {
@@ -271,7 +268,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         cv.set(res.channel);
-        res.items = iteml.toArray(new Feed.Item.ParD[0]);
+        res.items = iteml.toArray(new Feed.Item.ParD[iteml.size()]);
     }
 
     // false (fail)
@@ -295,15 +292,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     protected Result
-    parse(Document dom)
-            throws FeederException {
+    parse(Document dom) throws FeederException {
         Result res = null;
         UnexpectedExceptionHandler.get().registerModule(this);
         try {
             Element root = dom.getDocumentElement();
             verifyFormat(root.getNodeName().equalsIgnoreCase("rss"));
 
-            LinkedList<NSParser> pl = new LinkedList<NSParser>();
+            LinkedList<NSParser> pl = new LinkedList<>();
             constructNSParser(pl, root);
 
             res = new Result();
@@ -320,7 +316,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // For Channel node
             Node n = findNodeByNameFromSiblings(root.getFirstChild(), "channel");
 
-            nodeChannel(res, pl.toArray(new NSParser[0]), n);
+            nodeChannel(res, pl.toArray(new NSParser[pl.size()]), n);
 
             if (!verifyNotNullPolicy(res))
                 throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);

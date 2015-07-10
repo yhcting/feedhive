@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,9 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -53,29 +51,25 @@ public class AssetSQLiteHelper {
     private static final Utils.Logger P = new Utils.Logger(AssetSQLiteHelper.class);
 
     // Constructing arguments
-    private String  mDbName;
-    private String  mAssetDBFile;
-    private int     mVersion;
+    private String mDbName;
+    private String mAssetDBFile;
+    private int mVersion;
 
     private SQLiteDatabase mDb = null;
 
     /**
      *
-     * @param context
-     * @param dbName
-     *   db file name of application private directory.
-     * @param assetDBFile
-     *   asset database file
-     * @param version
-     *   Current version of asset database file.
-     *   If this is greater than existing db file in application private directory,
-     *     existing db is replaced with new db file by copying from asset db file.
-     *   Starts from 1.
+     * @param dbName db file name of application private directory.
+     * @param assetDBFile asset database file
+     * @param version Current version of asset database file.
+     *                If this is greater than existing db file in application private directory,
+     *                existing db is replaced with new db file by copying from asset db file.
+     *                Starts from 1.
      */
     public AssetSQLiteHelper(String dbName, String assetDBFile, int version) {
-        mDbName     = dbName;
-        mAssetDBFile= assetDBFile;
-        mVersion    = version;
+        mDbName = dbName;
+        mAssetDBFile = assetDBFile;
+        mVersion = version;
     }
 
     public void
@@ -101,10 +95,8 @@ public class AssetSQLiteHelper {
                 mDb = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
             }
             is.close();
-        } catch (SQLiteException e0) {
-            eAssert(false);
-        } catch (IOException e1) {
-            eAssert(false);
+        } catch (SQLiteException | IOException e) {
+            Utils.eAssert(false);
         }
     }
 

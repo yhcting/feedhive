@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,12 +34,9 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.content.SharedPreferences;
@@ -56,7 +53,9 @@ import free.yhc.feeder.db.DBPolicy;
 //
 public class ContentsManager implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(ContentsManager.class);
 
     // Current Contents Version
@@ -71,18 +70,20 @@ UnexpectedExceptionHandler.TrackedModule {
     private final ListenerManager mLm = new ListenerManager();
 
     // Only for bug reporting.
-    private final LinkedList<String>  mWiredChannl = new LinkedList<String>();
+    private final LinkedList<String> mWiredChannl = new LinkedList<>();
 
+    @SuppressWarnings("unused")
     public interface OnContentsUpdatedListener {
         void onContentsUpdated(UpdateType type, Object arg0, Object arg1);
     }
 
     public enum UpdateType implements ListenerManager.Type {
-        CHAN_DATA (FLAG_CHAN_DATA),// arg0 : channel id array
-        ITEM_DATA (FLAG_ITEM_DATA);// arg0 : channel id array
+        CHAN_DATA (FLAG_CHAN_DATA), // arg0 : channel id array
+        ITEM_DATA (FLAG_ITEM_DATA); // arg0 : channel id array
+
         private final long _mFlag;
 
-        private UpdateType(long flag) {
+        UpdateType(long flag) {
             _mFlag = flag;
         }
 
@@ -129,6 +130,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     Utils.removeFileRecursive(f, true);
                 else
                     // rename to human readable format.
+                    //noinspection ResultOfMethodCallIgnored
                     f.renameTo(new File(newDirPath));
             }
         }
@@ -162,9 +164,9 @@ UnexpectedExceptionHandler.TrackedModule {
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         StringBuilder bldr = new StringBuilder("[ ContentManager ]\n");
         synchronized (mWiredChannl) {
-            Iterator<String> itr = mWiredChannl.iterator();
-            while (itr.hasNext())
-                bldr.append("  Wired Channel : " + itr.next() + "\n");
+            for (String c : mWiredChannl)
+                //noinspection StringConcatenationInsideStringBufferAppend
+                bldr.append("  Wired Channel : " + c + "\n");
         }
         return bldr.toString();
     }
@@ -184,6 +186,7 @@ UnexpectedExceptionHandler.TrackedModule {
         notifyUpdated(type, arg0, null);
     }
 
+    @SuppressWarnings("unused")
     private void
     notifyUpdated(final UpdateType type) {
         notifyUpdated(type, null, null);
@@ -208,8 +211,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * ChannelDirLink is human-readable directory name.
      * This is for user to access to feed contents easily by using external tools.
-     * @param cid
-     * @return
      */
     private static String
     getChannelDirPath(long cid) {
@@ -231,9 +232,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * Create channel dir.
      * If @force == true and directory already exists, all files in it are deleted,
      *   and new empty directory will be generated.
-     * @param cid
-     * @param force
-     * @return
      */
     public boolean
     makeChannelDir(long cid, boolean force) {
@@ -247,8 +245,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * This deletes channel directory itself.
-     * @param cid
-     * @return
      */
     public boolean
     removeChannelDir(long cid) {
@@ -280,11 +276,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public boolean
     cleanChannelDirs(long[] cids) {
-        boolean ret = true;
         for (long cid : cids)
             cleanChannelDir(cid, false);
         notifyUpdated(UpdateType.CHAN_DATA, cids);
-        return ret;
+        return true;
     }
 
     public void
@@ -306,7 +301,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public LinkedList<File>
     getContentFiles(long cids[]) {
-        LinkedList<File> l = new LinkedList<File>();
+        LinkedList<File> l = new LinkedList<>();
         for (long cid : cids)
             Utils.getFilesRecursive(l, getChannelDirFile(cid));
         return l;
@@ -317,7 +312,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = DBPolicy.get().queryChannel(ColumnChannel.ID);
         if (!c.moveToFirst()) {
             c.close();
-            return new LinkedList<File>(); // return empty list.
+            return new LinkedList<>(); // return empty list.
         }
 
         long[] cids = new long[c.getCount()];
@@ -333,8 +328,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * Get file which contains data for given feed item.
      * Usually, this file is downloaded from internet.
      * (Ex. downloaded web page / downloaded mp3 etc)
-     * @param id
-     * @return
      */
     public File
     getItemInfoDataFile(long id) {
@@ -349,16 +342,11 @@ UnexpectedExceptionHandler.TrackedModule {
      * NOTE
      * Why these parameters - title, url - are given even if we can get from DB?
      * This is only for performance reason!
-     * @param id
-     *   item id
-     * @param cid
-     *   channel id of this item. if '< 0', than value read from DB is used.
-     * @param title
-     *   title of this item. if '== null' or 'isEmpty()', than value read from DB is used.
-     * @param url
-     *   target url of this item. link or enclosure is possible.
-     *   if '== null' or is 'isEmpty()', then value read from DB is used.
-     * @return
+     * @param id item id
+     * @param cid channel id of this item. if '< 0', than value read from DB is used.
+     * @param title title of this item. if '== null' or 'isEmpty()', than value read from DB is used.
+     * @param url target url of this item. link or enclosure is possible.
+     *            if '== null' or is 'isEmpty()', then value read from DB is used.
      */
     public File
     getItemInfoDataFile(long id, long cid, String title, String url) {
@@ -438,10 +426,11 @@ UnexpectedExceptionHandler.TrackedModule {
     public int
     deleteItemContents(long ids[]) {
         int failcnt = 0;
-        LinkedList<Long> l = new LinkedList<Long>();
+        LinkedList<Long> l = new LinkedList<>();
         for (long id : ids) {
             File f = getItemInfoDataFile(id);
-            eAssert(null != f);
+            Utils.eAssert(null != f);
+            //noinspection ConstantConditions
             if (null == f
                 || !f.delete())
                 ++failcnt;
@@ -449,7 +438,8 @@ UnexpectedExceptionHandler.TrackedModule {
                 l.add(id);
         }
         // Item ids that fails to delete it's content, are ignored intentionally.
-        notifyUpdated(UpdateType.ITEM_DATA, Utils.convertArrayLongTolong(l.toArray(new Long[0])));
+        notifyUpdated(UpdateType.ITEM_DATA,
+                      Utils.convertArrayLongTolong(l.toArray(new Long[l.size()])));
         return failcnt;
     }
 
@@ -458,7 +448,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // NOTE
         // There is no use case that "null == f" here.
         File f = getItemInfoDataFile(id);
-        eAssert(null != f);
+        Utils.eAssert(null != f);
         if (f.delete()) {
             notifyUpdated(UpdateType.ITEM_DATA, new long[] { id });
             return true;

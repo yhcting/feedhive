@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
 
@@ -54,20 +54,22 @@ import android.widget.TextView;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.BaseBGTask;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class ItemListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(ItemListAdapter.class);
 
-    private final DBPolicy  mDbp = DBPolicy.get();
-    private final RTTask    mRtt = RTTask.get();
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final RTTask mRtt = RTTask.get();
 
     private final OnActionListener  mActionListener;
     // To avoid using mutex in "DownloadProgressListener", mDummyTextView is used.
@@ -92,19 +94,19 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     private static class ItemInfo {
-        long        id              = -1;
-        long        state           = 0;
-        long        cid             = -1;
-        boolean     hasDnFile       = false;
-        boolean     bChannel        = false;
-        String      cTitle          = "";
-        String      title           = "";
-        String      desc            = "";
-        String      pubDate         = "";
-        String      link            = "";
-        String      enclosureLen    = "";
-        String      enclosureUrl    = "";
-        String      enclosureType   = "";
+        long id = -1;
+        long state = 0;
+        long cid = -1;
+        boolean hasDnFile = false;
+        boolean bChannel = false;
+        String cTitle = "";
+        String title = "";
+        String desc = "";
+        String pubDate = "";
+        String link = "";
+        String enclosureLen = "";
+        String enclosureUrl = "";
+        String enclosureType = "";
     }
 
     private class DownloadProgressListener extends BaseBGTask.OnEventListener {
@@ -148,9 +150,9 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     public static class ImageViewFavorite extends ImageView {
-        long id     = -1;
-        long state  = 0;
-        int  position = -1;
+        long id = -1;
+        long state = 0;
+        int position = -1;
 
         public
         ImageViewFavorite(Context context, AttributeSet attrs) {
@@ -158,13 +160,13 @@ AsyncCursorAdapter.ItemBuilder {
         }
     }
 
-    private final int
+    private int
     getTitleColor(long stateFlag) {
         return Feed.Item.isStateOpenNew(stateFlag)?
                 R.color.title_color_new: R.color.text_color_opened;
     }
 
-    private final int
+    private int
     getTextColor(long stateFlag) {
         return Feed.Item.isStateOpenNew(stateFlag)?
                 R.color.text_color_new: R.color.text_color_opened;
@@ -177,12 +179,12 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     public
-    ItemListAdapter(Context             context,
-                    Cursor              cursor,
-                    ListView            lv,
-                    final int           dataReqSz,
-                    final int           maxArrSz,
-                    OnActionListener    listener) {
+    ItemListAdapter(Context context,
+                    Cursor cursor,
+                    ListView lv,
+                    final int dataReqSz,
+                    final int maxArrSz,
+                    OnActionListener listener) {
         super(context,
               cursor,
               null,
@@ -325,15 +327,15 @@ AsyncCursorAdapter.ItemBuilder {
 
         ItemInfo ii = (ItemInfo)getItem(position);
 
-        final boolean           favorite    = Feed.Item.isStatFavOn(ii.state);
-        final TextView          channelv    = (TextView)v.findViewById(R.id.channel);
-        final TextView          titlev      = (TextView)v.findViewById(R.id.title);
-        final TextView          descv       = (TextView)v.findViewById(R.id.description);
-        final ProgressTextView  progressv   = (ProgressTextView)v.findViewById(R.id.progress);
-        final TextView          datev       = (TextView)v.findViewById(R.id.date);
-        final TextView          infov       = (TextView)v.findViewById(R.id.info);
-        final ImageView         imgv        = (ImageView)v.findViewById(R.id.image);
-        final ImageViewFavorite favImgv     = (ImageViewFavorite)v.findViewById(R.id.favorite);
+        final boolean favorite = Feed.Item.isStatFavOn(ii.state);
+        final TextView channelv = (TextView)v.findViewById(R.id.channel);
+        final TextView titlev = (TextView)v.findViewById(R.id.title);
+        final TextView descv = (TextView)v.findViewById(R.id.description);
+        final ProgressTextView progressv = (ProgressTextView)v.findViewById(R.id.progress);
+        final TextView datev = (TextView)v.findViewById(R.id.date);
+        final TextView infov = (TextView)v.findViewById(R.id.info);
+        final ImageView imgv = (ImageView)v.findViewById(R.id.image);
+        final ImageViewFavorite favImgv = (ImageViewFavorite)v.findViewById(R.id.favorite);
 
         if (ii.bChannel) {
             channelv.setVisibility(View.VISIBLE);
@@ -386,6 +388,7 @@ AsyncCursorAdapter.ItemBuilder {
                 break;
 
             case RUNNING:
+                //noinspection ResourceType
                 imgv.setImageResource(R.anim.download);
                 // Why "post runnable and start animation?"
                 // In Android 4.0.3 (ICS)

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,64 +34,43 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
-import android.os.Handler;
 
-public class DelayedAction implements
-UnexpectedExceptionHandler.TrackedModule {
+public class FeederException extends Exception {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(DelayedAction.class);
+    @SuppressWarnings("unused")
+    private static final Utils.Logger P = new Utils.Logger(FeederException.class);
 
-    private final Handler   mHandler;
-    private final Runnable  mAction;
-    // action can be delayed at most 'mDelayLimist' time.
-    private final int       mDelayLimit; // ms
-    private final int       mDelay; // ms
-    private final Object    mDelaySumLock = new Object();
-    private int mDelaySum = 0;
+    private Err err = Err.UNKNOWN; // default error value
 
-    private final Runnable mActionTrigger = new Runnable() {
-        @Override
-        public void
-        run() {
-            synchronized (mDelaySumLock) {
-                mDelaySum = 0; // action is done. So, initialize it.
-            }
-            if (null != mAction)
-                mAction.run();
-        }
-    };
-
-    @Override
-    public String
-    dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ DelayedAction ]";
+    @SuppressWarnings("unused")
+    public FeederException() {
+        super();
     }
 
-    public DelayedAction(Handler actionContextHandler,
-                         Runnable action,
-                         int delayLimit,
-                         int delay) {
-        mHandler = actionContextHandler;
-        if (delayLimit < delay)
-            delayLimit = delay;
-        mAction = action;
-        mDelayLimit = delayLimit;
-        mDelay = delay;
+    @SuppressWarnings("unused")
+    public FeederException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public void
-    triggerAction() {
-        boolean delayable = true;
-        synchronized (mDelaySumLock) {
-            mDelaySum += mDelay;
-            if (mDelaySum > mDelayLimit)
-                delayable = false;
-        }
-        if (delayable) {
-            mHandler.removeCallbacks(mActionTrigger);
-            mHandler.postDelayed(mActionTrigger, mDelay);
-        }
+    @SuppressWarnings("unused")
+    public FeederException(String message) {
+        super(message);
+    }
+
+    @SuppressWarnings("unused")
+    public FeederException(Throwable cause) {
+        super(cause);
+    }
+
+    public FeederException(Err err) {
+        this.err = err;
+    }
+
+    public Err
+    getError() {
+        return err;
     }
 }

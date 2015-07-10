@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,17 +36,19 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
 
+import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -57,25 +59,27 @@ import android.widget.LinearLayout;
 import android.widget.Spinner;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class ChannelSettingActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(ChannelSettingActivity.class);
 
     // match string-array 'strarr_updatemode_setting'
-    private static final int SPPOS_UPDATEMODE_NORMAL    = 0;
-    private static final int SPPOS_UPDATEMODE_DOWNLOAD  = 1;
+    private static final int SPPOS_UPDATEMODE_NORMAL = 0;
+    private static final int SPPOS_UPDATEMODE_DOWNLOAD = 1;
 
     // match string-array 'strarr_browser_setting'
-    private static final int SPPOS_BROWSER_IN           = 0;
-    private static final int SPPOS_BROWSER_EX           = 1;
+    private static final int SPPOS_BROWSER_IN = 0;
+    private static final int SPPOS_BROWSER_EX = 1;
 
     private final DBPolicy mDbp = DBPolicy.get();
-    private long           mCid = -1;
+    private long mCid = -1;
 
     private void
     updateSchedUpdateSetting() {
@@ -83,7 +87,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         LinearLayout schedlo = (LinearLayout)findViewById(R.id.sched_layout);
         // sodhs : Seconds Of Day HashSet
-        HashSet<Long> sodhs = new HashSet<Long>();
+        HashSet<Long> sodhs = new HashSet<>();
         int i = 0;
         while (i < schedlo.getChildCount()) {
             View v = schedlo.getChildAt(i);
@@ -94,7 +98,7 @@ UnexpectedExceptionHandler.TrackedModule {
             i++;
         }
 
-        long[] sods = Utils.convertArrayLongTolong(sodhs.toArray(new Long[0]));
+        long[] sods = Utils.convertArrayLongTolong(sodhs.toArray(new Long[sodhs.size()]));
         Arrays.sort(sods);
         if (!Utils.nrsToNString(sods).equals(oldSchedUpdate)) {
             mDbp.updateChannel_schedUpdate(mCid, sods);
@@ -158,6 +162,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     addSchedUpdateRow(final ViewGroup parent, int hourOfDay) {
         LayoutInflater inflater = (LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        @SuppressLint("InflateParams")
         final View itemv = inflater.inflate(R.layout.channel_setting_sched, null);
         ImageView ivClose = (ImageView)itemv.findViewById(R.id.imgbtn_close);
         ivClose.setOnClickListener(new View.OnClickListener() {
@@ -172,7 +177,7 @@ UnexpectedExceptionHandler.TrackedModule {
             hours[i] = "" + i;
 
         ArrayAdapter<String> spinnerArrayAdapter
-            = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, hours);
+            = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, hours);
         sp.setAdapter(spinnerArrayAdapter);
         // hourOfDay is same with position at spinner
         sp.setSelection(hourOfDay);
@@ -195,6 +200,7 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(mCid >= 0);
 
         ActionBar ab = getActionBar();
+        eAssert(null != ab);
         setTitle(mDbp.getChannelInfoString(mCid, ColumnChannel.TITLE));
         ab.setDisplayShowHomeEnabled(false);
 
@@ -260,7 +266,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
+    public boolean onKeyDown(int keyCode,
+                             @NonNull KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK)
             updateSetting();
 

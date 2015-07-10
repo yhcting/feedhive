@@ -51,11 +51,11 @@ import free.yhc.feeder.AppWidgetMenuActivity;
 import free.yhc.feeder.AppWidgetUpdateCategoryActivity;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.DB;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.ThreadEx;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.ThreadEx;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class UpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
@@ -63,9 +63,9 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Utils.Logger P = new Utils.Logger(UpdateService.class);
 
     private class AppWidgetUpdater extends ThreadEx<Err> {
-        private final AppWidgetManager  _mAwm;
-        private final int[]             _mAppWidgetIds;
-        private final int               _mStartId;
+        private final AppWidgetManager _mAwm;
+        private final int[] _mAppWidgetIds;
+        private final int _mStartId;
 
         private Intent
         createBaseIntent(Class<?> rcvrCls, long catid, int awid,
@@ -201,9 +201,11 @@ UnexpectedExceptionHandler.TrackedModule {
         protected Err
         doAsyncTask() {
             if (DBG) P.v("Enter");
+            /*
             try {
                 //Thread.sleep(5000);
             } catch (Exception ignored) { }
+            */
             return Err.NO_ERR;
         }
     }
@@ -222,7 +224,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public static void
     update(Context context, long[] cats) {
         if (DBG) P.v("Category Ids : " + Utils.nrsToNString(cats));
-        ArrayList<Integer> al = new ArrayList<Integer>(cats.length);
+        ArrayList<Integer> al = new ArrayList<>(cats.length);
         for (long cat : cats) {
             int[] awids = AppWidgetUtils.getCategoryWidget(cat);
             for (int awid : awids)
@@ -230,9 +232,10 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (al.size() > 0)
-            update(context, Utils.convertArrayIntegerToint(al.toArray(new Integer[0])));
+            update(context, Utils.convertArrayIntegerToint(al.toArray(new Integer[al.size()])));
     }
 
+    @SuppressWarnings("unused")
     public static void
     updateAll(Context context) {
         update(context, AppWidgetUtils.getAppWidgetIds());

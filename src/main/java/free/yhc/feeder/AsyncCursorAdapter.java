@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,35 +36,37 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 import android.content.Context;
 import android.database.Cursor;
 import free.yhc.feeder.db.DB;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class AsyncCursorAdapter extends AsyncAdapter implements
 AsyncAdapter.DataProvider {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(AsyncCursorAdapter.class);
 
-    private final Object    mCurlock = new Object();
+    private final Object mCurlock = new Object();
 
-    private Cursor          mCur;
-    private ItemBuilder     mIbldr;
+    private Cursor mCur;
+    private ItemBuilder mIbldr;
 
     interface ItemBuilder {
         Object buildItem(AsyncCursorAdapter adapter, Cursor c);
-        void   destroyItem(AsyncCursorAdapter adapter, Object item);
+        void destroyItem(AsyncCursorAdapter adapter, Object item);
     }
 
-    AsyncCursorAdapter(Context        context,
-                       Cursor         cursor,
-                       ItemBuilder    bldr,
-                       int            rowLayout,
-                       final int      dataReqSz,
-                       final int      maxArrSz,
-                       boolean        hasLimit) {
+    AsyncCursorAdapter(Context context,
+                       Cursor cursor,
+                       ItemBuilder bldr,
+                       int rowLayout,
+                       final int dataReqSz,
+                       final int maxArrSz,
+                       boolean hasLimit) {
         super(context,
               rowLayout,
               dataReqSz,
@@ -84,8 +86,7 @@ AsyncAdapter.DataProvider {
      * Change cursor of this adapter.
      * Adapter items are NOT reloaded.
      * To loading from cursor, call {@link AsyncCursorAdapter#reloadItem(int)},
-     *   {@link AsyncCursorAdapter#reloadItem(int[])} or {@link AsyncAdapter#reloadDataSetAsync()}
-     * @param newCur
+     *   {@link AsyncCursorAdapter#reloadItem(int[])} or {@link AsyncAdapter#reloadDataSetAsync(DataProvideStateListener)}
      */
     public void
     changeCursor(Cursor newCur) {
@@ -107,6 +108,7 @@ AsyncAdapter.DataProvider {
         return c.getLong(c.getColumnIndex(col.getName()));
     }
 
+    @SuppressWarnings("unused")
     protected byte[]
     getCursorBlob(Cursor c, DB.Column col) {
         return c.getBlob(c.getColumnIndex(col.getName()));
@@ -122,7 +124,6 @@ AsyncAdapter.DataProvider {
 
     /**
      * reload only 1 item synchronously!
-     * @param itemId
      */
     public void
     reloadItem(int itemId) {
@@ -131,7 +132,6 @@ AsyncAdapter.DataProvider {
 
     /**
      * reload several items synchronously.
-     * @param itemIds
      */
     public void
     reloadItem(int[] itemIds) {
@@ -140,8 +140,6 @@ AsyncAdapter.DataProvider {
             synchronized (mCurlock) {
                 if (mCur.moveToPosition(id))
                     destroyItem(setItem(pos ,mIbldr.buildItem(this, mCur)));
-                else
-                    ;// ignore
             }
         }
     }

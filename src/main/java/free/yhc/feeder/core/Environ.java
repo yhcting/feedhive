@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,7 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.io.File;
 import java.util.Locale;
@@ -49,18 +49,21 @@ import android.preference.PreferenceManager;
 
 public class Environ implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(Environ.class);
 
-    public static final String  PREF_KEY_APP_ROOT = "app_root";
-    public static final String  PREF_KEY_APP_VERSION = "app_version";
-    public static final long    USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
+    public static final String PREF_KEY_APP_ROOT = "app_root";
+    public static final String PREF_KEY_APP_VERSION = "app_version";
+    @SuppressWarnings("unused")
+    public static final long USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
 
 
     // Even if these two variables are not 'final', those should be handled like 'final'
     //   because those are set only at init() function, and SHOULD NOT be changed.
-    private static Context  sAppContext  = null;
-    private static Handler  sUiHandler   = null;
+    private static Context sAppContext = null;
+    private static Handler sUiHandler = null;
 
     // NOTE
     // UIPolicy shouldn't includes DBPolicy at it's constructor!
@@ -69,10 +72,10 @@ UnexpectedExceptionHandler.TrackedModule {
     private static Environ sInstance = null;
 
     private String mAppRootDir;
-    private File   mAppTempDirFile;
-    private File   mAppLogDirFile;
-    private File   mAppErrLogFile;
-    private File   mAppUsageLogFile;
+    private File mAppTempDirFile;
+    private File mAppLogDirFile;
+    private File mAppErrLogFile;
+    private File mAppUsageLogFile;
 
     public interface OnAppUpgrade {
         void onUpgrade(Context context, int from, int to);
@@ -92,7 +95,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * This is called very early stage.
      * So, this SHOULD NOT have any dependencies on other modules!
-     * @param aAppContext
      */
     public static void
     init(Context aAppContext, OnAppUpgrade onUpgrade) {
@@ -142,18 +144,20 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * SHOULD be called only by FeederPreferenceActivity.
-     * @param root
      */
     public void
     setAppDirectories(String root) {
         mAppRootDir = root;
+        //noinspection ResultOfMethodCallIgnored
         new File(mAppRootDir).mkdirs();
         if (!root.endsWith("/"))
             mAppRootDir += "/";
 
         mAppTempDirFile = new File(mAppRootDir + "temp/");
+        //noinspection ResultOfMethodCallIgnored
         mAppTempDirFile.mkdirs();
         mAppLogDirFile = new File(mAppRootDir + "log/");
+        //noinspection ResultOfMethodCallIgnored
         mAppLogDirFile.mkdirs();
         mAppErrLogFile = new File(mAppLogDirFile.getAbsoluteFile() + "/last_error");
         mAppUsageLogFile = new File(mAppLogDirFile.getAbsoluteFile() + "/usage_file");
@@ -161,7 +165,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * returned directory path ends with '/'
-     * @return
      */
     public String
     getAppRootDirectoryPath() {
@@ -183,6 +186,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return mAppUsageLogFile;
     }
 
+    @SuppressWarnings("unused")
     public String
     getPredefinedChannelsAssetPath() {
         Locale lc = java.util.Locale.getDefault();

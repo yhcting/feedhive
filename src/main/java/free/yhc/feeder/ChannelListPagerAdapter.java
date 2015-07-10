@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -41,16 +41,16 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.view.ViewGroup;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.Utils;
 
 public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelListPagerAdapter.class);
 
-    private final DBPolicy          mDbp = DBPolicy.get();
-    private long[]                  mCatIds;
-    private ChannelListFragment[]   mFragments;
+    private final DBPolicy mDbp = DBPolicy.get();
+    private long[] mCatIds;
+    private ChannelListFragment[] mFragments;
 
     private void
     reset(Feed.Category[] cats) {
@@ -83,6 +83,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
         return -1;
     }
 
+    @SuppressWarnings("unused")
     public void
     refreshDataSet() {
         if (DBG) P.v("Enter");
@@ -104,6 +105,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
         super.notifyDataSetChanged();
     }
 
+    @SuppressWarnings("unused")
     public void
     categoryDeleted(long catId) {
         if (DBG) P.v("id : " + catId);
@@ -125,8 +127,7 @@ public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
 
     public ChannelListFragment
     getPrimaryFragment() {
-        ChannelListFragment clf = (ChannelListFragment)super.getCurrentPrimaryFragment();
-        return clf;
+        return (ChannelListFragment)super.getCurrentPrimaryFragment();
     }
 
     public ChannelListFragment

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 import android.R.style;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -46,20 +46,23 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.KeyEvent;
 import android.widget.ArrayAdapter;
 import free.yhc.feeder.appwidget.AppWidgetUtils;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class AppWidgetMenuActivity extends Activity  implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(AppWidgetMenuActivity.class);
 
     private final Intent mResultValue = new Intent();
-    private boolean      mFinishOnDismiss = true;
+    private boolean mFinishOnDismiss = true;
 
     private void
     onSelectDeleteAllDownloadded() {
@@ -118,7 +121,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         AlertDialog.Builder bldr = new AlertDialog.Builder(this);
         ArrayAdapter<String> adapter
-            = new ArrayAdapter<String>(this, android.R.layout.select_dialog_item, menus);
+            = new ArrayAdapter<>(this, android.R.layout.select_dialog_item, menus);
         bldr.setAdapter(adapter, new DialogInterface.OnClickListener() {
             @Override
             public void
@@ -159,7 +162,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     @Override
     protected void
-    onApplyThemeResource(Resources.Theme theme, int resid, boolean first) {
+    onApplyThemeResource(@NonNull Resources.Theme theme, int resid, boolean first) {
         super.onApplyThemeResource(theme, resid, first);
         // no background panel is shown
         theme.applyStyle(style.Theme_Panel, true);

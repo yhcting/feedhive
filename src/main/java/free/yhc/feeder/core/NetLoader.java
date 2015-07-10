@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,9 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -72,10 +70,10 @@ public class NetLoader {
 
     private final DBPolicy  mDbp = DBPolicy.get();
 
-    private volatile boolean        mCancelled = false;
-    private volatile InputStream    mIstream = null; // Multi-thread access
-    private volatile OutputStream   mOstream = null;
-    private volatile File           mTmpFile = null;
+    private volatile boolean mCancelled = false;
+    private volatile InputStream mIstream = null; // Multi-thread access
+    private volatile OutputStream mOstream = null;
+    private volatile File mTmpFile = null;
 
     interface OnProgress {
         // "progress < 0" means "Unknown progress"
@@ -118,7 +116,6 @@ public class NetLoader {
 
     /**
      * Delete temp file - mTmpFile - used.
-     * @return
      */
     private boolean
     clearTempFile() {
@@ -131,7 +128,6 @@ public class NetLoader {
     /**
      * Close input/output stream (mIstream, mOstream) and
      *   delete temp file (mTmpFile)
-     * @return
      */
     private boolean
     cleanup() {
@@ -139,6 +135,7 @@ public class NetLoader {
             closeIstream();
             closeOstream();
             if (null != mTmpFile)
+                //noinspection ResultOfMethodCallIgnored
                 mTmpFile.delete();
             return true;
         } catch (Exception e) {
@@ -160,118 +157,118 @@ public class NetLoader {
      *   If another exception need to be thrown, all callers should be checked and verified!
      *
      * FeederException : Err.IONet / Err.UserCancelled / Err.Interrupted
-     * @param outstream
-     * @param urlStr
-     * @param progressListener
      * @throws FeederException
      */
     private void
     download(OutputStream outstream, String urlStr, OnProgress progressListener)
-            throws FeederException {
-           URL           url = null;
-           URLConnection conn = null;
-           int           retry = NET_RETRY;
+        throws FeederException {
+        URL url;
+        URLConnection conn = null;
+        int retry = NET_RETRY;
+        try {
+            url = new URL(urlStr);
+        } catch (MalformedURLException e) {
+            throw new FeederException(Err.INVALID_URL);
+        }
+
+        // What happen if network state is changed
+        //   in the middle of download or something like that?
+        if (!Utils.isNetworkAvailable())
+            throw new FeederException(Err.IO_NET);
+
+        while (0 < retry--) {
            try {
-               url = new URL(urlStr);
-           } catch (MalformedURLException e) {
-               throw new FeederException(Err.INVALID_URL);
-           }
-
-           // What happen if network state is changed
-           //   in the middle of download or something like that?
-           if (!Utils.isNetworkAvailable())
-                throw new FeederException(Err.IO_NET);
-
-           while (0 < retry--) {
-               try {
-                   conn = url.openConnection();
-                   conn.setConnectTimeout(NET_CONN_TIMEOUT);
-                   conn.connect();
-                   break; // done
-               } catch (Exception e) {
-                   // SocketTimeoutException
-                   // IOException
-                   if (mCancelled)
-                       throw new FeederException(Err.USER_CANCELLED);
-
-                   if (0 >= retry)
-                       throw new FeederException(Err.IO_NET);
-
-                   try {
-                       Thread.sleep(500);
-                   } catch (InterruptedException ie) {
-                       if (mCancelled)
-                           throw new FeederException(Err.USER_CANCELLED);
-                       else
-                           throw new FeederException(Err.INTERRUPTED);
-                   }
-               }
-           }
-
-           String locurl = conn.getHeaderField("Location");
-           if (locurl != null
-               && !urlStr.equals(locurl)) {
-               // May be redirection
-               download(outstream, locurl, progressListener);
-               return;
-           }
-
-           try {
-               int lengthOfFile = -1;
-               retry = NET_RETRY;
-               while (0 < retry--) {
-                   lengthOfFile = conn.getContentLength();
-                   if (lengthOfFile >= 0)
-                       break;
-               }
-               mIstream = new BufferedInputStream(conn.getInputStream());
-
-               if (Thread.currentThread().isInterrupted()) {
-                   cancel();
-                   throw new FeederException(Err.INTERRUPTED);
-               }
-
-               byte data[] = new byte[256*1024];
-
-               long total = 0;
-               int  count;
-               long prevProgress = -1;
-               while (true) {
-                   // Check network state as often as possible to confirm that
-                   //   network what user want to use is available.
-                   if (!Utils.isNetworkAvailable())
-                       throw new FeederException(Err.IO_NET);
-
-                   if (-1 == (count = mIstream.read(data)))
-                       break;
-                   outstream.write(data, 0, count);
-                   total += count;
-                   long progress = (total * 100 / lengthOfFile);
-                   if (lengthOfFile < 0 && null != progressListener) {
-                       progressListener.onProgress(this, -total);
-                   } else if (progress > prevProgress) {
-                       if (null != progressListener)
-                           progressListener.onProgress(this, progress);
-                       prevProgress = progress;
-                   }
-               }
-
-               outstream.flush();
-               outstream.close();
-           } catch (IOException e) {
-               // User's canceling operation close in/out stream in force.
-               // And this leads to IOException here.
-               // So, we should check that this Exception is caused by user's cancel or real IOException.
+               conn = url.openConnection();
+               conn.setConnectTimeout(NET_CONN_TIMEOUT);
+               conn.connect();
+               break; // done
+           } catch (Exception e) {
+               // SocketTimeoutException
+               // IOException
                if (mCancelled)
                    throw new FeederException(Err.USER_CANCELLED);
-               else {
-                   e.printStackTrace();
-                   if (DBG) P.w(e.getMessage());
+
+               if (0 >= retry)
                    throw new FeederException(Err.IO_NET);
+
+               try {
+                   Thread.sleep(500);
+               } catch (InterruptedException ie) {
+                   if (mCancelled)
+                       throw new FeederException(Err.USER_CANCELLED);
+                   else
+                       throw new FeederException(Err.INTERRUPTED);
                }
-           } finally {
-               closeIstream();
            }
+        }
+
+        if (null == conn)
+            throw new FeederException(Err.UNKNOWN);
+
+        String locurl = conn.getHeaderField("Location");
+        if (locurl != null
+           && !urlStr.equals(locurl)) {
+           // May be redirection
+           download(outstream, locurl, progressListener);
+           return;
+        }
+
+        try {
+           int lengthOfFile = -1;
+           retry = NET_RETRY;
+           while (0 < retry--) {
+               lengthOfFile = conn.getContentLength();
+               if (lengthOfFile >= 0)
+                   break;
+           }
+           mIstream = new BufferedInputStream(conn.getInputStream());
+
+           if (Thread.currentThread().isInterrupted()) {
+               cancel();
+               throw new FeederException(Err.INTERRUPTED);
+           }
+
+           byte data[] = new byte[256*1024];
+
+           long total = 0;
+           int  count;
+           long prevProgress = -1;
+           while (true) {
+               // Check network state as often as possible to confirm that
+               //   network what user want to use is available.
+               if (!Utils.isNetworkAvailable())
+                   throw new FeederException(Err.IO_NET);
+
+               if (-1 == (count = mIstream.read(data)))
+                   break;
+               outstream.write(data, 0, count);
+               total += count;
+               long progress = (total * 100 / lengthOfFile);
+               if (lengthOfFile < 0 && null != progressListener) {
+                   progressListener.onProgress(this, -total);
+               } else if (progress > prevProgress) {
+                   if (null != progressListener)
+                       progressListener.onProgress(this, progress);
+                   prevProgress = progress;
+               }
+           }
+
+           outstream.flush();
+           outstream.close();
+        } catch (IOException e) {
+           // User's canceling operation close in/out stream in force.
+           // And this leads to IOException here.
+           // So, we should check that this Exception is caused by user's cancel or real IOException.
+           if (mCancelled)
+               throw new FeederException(Err.USER_CANCELLED);
+           else {
+               e.printStackTrace();
+               if (DBG) P.w(e.getMessage());
+               throw new FeederException(Err.IO_NET);
+           }
+        } finally {
+           closeIstream();
+        }
     }
 
 
@@ -280,7 +277,7 @@ public class NetLoader {
 
     private RSSParser.Result
     parseFeedUrl(String url)
-            throws FeederException {
+        throws FeederException {
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         RSSParser.Result res = null;
@@ -300,15 +297,9 @@ public class NetLoader {
                 throw new FeederException(Err.USER_CANCELLED);
             else
                 throw new FeederException(Err.IO_NET);
-        } catch (DOMException e) {
-            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
-        } catch (SAXException e) {
+        } catch (DOMException | SAXException | ParserConfigurationException e) {
             e.printStackTrace();
             throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
-        } catch (ParserConfigurationException e) {
-            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
-        } catch (FeederException e) {
-            throw e;
         } finally {
             try {
                 os.close();
@@ -320,21 +311,18 @@ public class NetLoader {
 
     /**
      * Update feed information.
-     * @param cid
-     * @param imageref
-     *   if (null != imageref)
-     *   then 'imageref' is used instead of given by RSS channel infomation.
+     * @param imageref if (null != imageref)
+     *                 then 'imageref' is used instead of given by RSS channel infomation.
      * @throws FeederException
      */
     private void
     update(long cid, String imageref)
-            throws FeederException {
+        throws FeederException {
         String url = mDbp.getChannelInfoString(cid, ColumnChannel.URL);
-        eAssert(null != url);
+        Utils.eAssert(null != url);
 
         //logI("Loading Items: " + url);
 
-        long time = System.currentTimeMillis();
         RSSParser.Result parD = parseFeedUrl(url);
         //logI("TIME: Loading + Parsing : " + (System.currentTimeMillis() - time));
 
@@ -352,38 +340,37 @@ public class NetLoader {
             mDbp.updateChannel(cid, ColumnChannel.ACTION, action);
 
         if (null == mDbp.getChannelImageBitmap(cid)) {
-            time = System.currentTimeMillis();
             // Kind Of Policy!!
             // Original image reference always has priority!
             byte[] bmdata = null;
             try {
                 if (Utils.isValidValue(parD.channel.imageref))
                     bmdata = downloadToRaw(parD.channel.imageref, null);
-            } catch (FeederException e) { }
+            } catch (FeederException ignored) { }
             checkInterrupted();
 
             try {
                 if (null == bmdata && Utils.isValidValue(imageref))
                     bmdata = downloadToRaw(imageref, null);
-            } catch (FeederException e) { }
+            } catch (FeederException ignored) { }
             checkInterrupted();
 
             if (null != bmdata) {
                 Bitmap bm = Utils.decodeImage(bmdata,
                                               Feed.Channel.ICON_MAX_WIDTH,
                                               Feed.Channel.ICON_MAX_HEIGHT);
-                byte[] imageblob = Utils.compressBitmap(bm);
-                bm.recycle();
-                if (null != imageblob)
-                    mDbp.updateChannel(cid, ColumnChannel.IMAGEBLOB, imageblob);
+                if (null != bm) {
+                    byte[] imageblob = Utils.compressBitmap(bm);
+                    bm.recycle();
+                    if (null != imageblob)
+                        mDbp.updateChannel(cid, ColumnChannel.IMAGEBLOB, imageblob);
+                }
             }
             //logI("TIME: Handle Image : " + (System.currentTimeMillis() - time));
             checkInterrupted();
         }
 
-        time = System.currentTimeMillis();
-
-        LinkedList<Feed.Item.ParD> newItems = new LinkedList<Feed.Item.ParD>();
+        LinkedList<Feed.Item.ParD> newItems = new LinkedList<>();
         mDbp.getNewItems(cid, parD.items, newItems);
 
         DBPolicy.ItemDataOpInterface idop = null;
@@ -415,39 +402,33 @@ public class NetLoader {
 
     /**
      * Update given channel
-     * @param cid
-     * @throws FeederException
      */
     public void
     updateLoad(long cid)
-            throws FeederException {
+        throws FeederException {
         update(cid, null);
     }
 
     /**
      * Update given channel.
-     * @param cid
-     * @param imageref
-     *   URL of channel icon.
+     * @param imageref URL of channel icon.
      * @throws FeederException
      */
     public void
     updateLoad(long cid, String imageref)
-            throws FeederException {
-        eAssert(null != imageref);
+        throws FeederException {
+        Utils.eAssert(null != imageref);
         update(cid, imageref);
     }
 
     /**
      * Download to memory(byte[]).
-     * @param url
-     * @param progressListener
-     * @return
      * @throws FeederException
      */
     public byte[]
-    downloadToRaw(String url, OnProgress progressListener)
-            throws FeederException {
+    downloadToRaw(String url,
+                  @SuppressWarnings("unused") OnProgress progressListener)
+        throws FeederException {
         // set as class private for future cleanup.
         mOstream = new ByteArrayOutputStream();
         byte[] ret = null;
@@ -463,13 +444,9 @@ public class NetLoader {
 
     /**
      * Download data and make it as file.
-     * @param url
-     * @param tempFile
-     *   Where downloaded data is written during download is in progress.
-     *   This file is renamed to final target file when download is complete.
-     * @param toFile
-     *   Final target file path where downloaded data is stored at.
-     * @param progressListener
+     * @param tempFile Where downloaded data is written during download is in progress.
+     *                 This file is renamed to final target file when download is complete.
+     * @param toFile Final target file path where downloaded data is stored at.
      * @throws FeederException
      */
     public void
@@ -477,8 +454,10 @@ public class NetLoader {
         throws FeederException {
         // secure directory in which tempFile and toFile are located in.
         String parent = tempFile.getParent();
+        //noinspection ResultOfMethodCallIgnored
         new File(parent).mkdirs();
         parent = toFile.getParent();
+        //noinspection ResultOfMethodCallIgnored
         new File(parent).mkdirs();
 
         // Set as class private for future cleanup.
@@ -499,7 +478,6 @@ public class NetLoader {
 
     /**
      * Cancel network loading (usually downloading.)
-     * @return
      */
     public boolean
     cancel() {
@@ -511,6 +489,7 @@ public class NetLoader {
         return true;
     }
 
+    @SuppressWarnings("unused")
     void finish() {
         // This is not needed... cleanup should be done before finish()...
         //cleanup();

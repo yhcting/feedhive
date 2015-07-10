@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,11 +36,12 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.util.Calendar;
 import java.util.HashSet;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -69,48 +70,48 @@ import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.BGTask;
-import free.yhc.feeder.model.BGTaskUpdateChannel;
-import free.yhc.feeder.model.BaseBGTask;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.FeederException;
-import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.BGTask;
+import free.yhc.feeder.core.BGTaskUpdateChannel;
+import free.yhc.feeder.core.BaseBGTask;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.FeederException;
+import free.yhc.feeder.core.ListenerManager;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class ChannelListFragment extends Fragment implements
 UnexpectedExceptionHandler.TrackedModule {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(ChannelListFragment.class);
 
-    private static final int DATA_ARR_MAX       = 100;
-    private static final int DATA_REQ_SZ        = 20;
-    private static final int REQC_PICK_IMAGE    = 0;
+    private static final int DATA_ARR_MAX = 100;
+    private static final int DATA_REQ_SZ = 20;
+    private static final int REQC_PICK_IMAGE = 0;
 
-    private static final String KEY_CATID       = "categoryid";
-    private static final String KEY_PRIMARY     = "primary";
+    private static final String KEY_CATID = "categoryid";
+    private static final String KEY_PRIMARY = "primary";
 
 
-    private final DBPolicy      mDbp = DBPolicy.get();
-    private final RTTask        mRtt = RTTask.get();
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final RTTask mRtt = RTTask.get();
 
     private DBWatcher mDbWatcher = null;
     private boolean mPrimary = false;
-    private long    mCatId  =   -1;
+    private long mCatId = -1;
 
-    private ListView    mListView = null;
+    private ListView mListView = null;
     // Saved cid for Async execution.
-    private long        mCidPickImage = -1;
+    private long mCidPickImage = -1;
 
     private static class DBWatcher implements ListenerManager.Listener {
         // NOTE
         // initial value should be 'true' because we don't know what happened to DB
         //   while this fragment instance DOESN'T exist!
-        private boolean             _mChannelTableUpdated = true;
-        private final HashSet<Long> _mUpdatedChannelSet   = new HashSet<Long>();
+        private boolean _mChannelTableUpdated = true;
+        private final HashSet<Long> _mUpdatedChannelSet = new HashSet<>();
 
         void
         register() {
@@ -132,7 +133,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         long[]
         getUpdatedChannels() {
-            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[0]));
+            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[_mUpdatedChannelSet.size()]));
         }
 
         boolean
@@ -379,7 +380,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Notify that dataset for adapter is changed.
      * All list item will try to rebind their own view.
-     * @param lv
      */
     private void
     dataSetChanged() {
@@ -395,9 +395,8 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Notify that dataset of given 'cid' in adapter is changed.
      * List item of only given 'cid' - one list item - will try to rebind it's view.
-     * @param lv ListView
-     * @param cid
      */
+    @SuppressWarnings("unused")
     private void
     dataSetChanged(long cid) {
         /*
@@ -434,8 +433,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Delete channel and it's items from DB.
      * This completely deletes all channel and items.
-     * @param tab
-     * @param cid
      */
     private void
     deleteChannel(long cid) {
@@ -456,7 +453,8 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onContextBtn_channelUpdate(ImageView ibtn, long cid) {
+    onContextBtn_channelUpdate(@SuppressWarnings("unused") ImageView ibtn,
+                               long cid) {
         RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
         switch (state) {
         case IDLE: {
@@ -533,7 +531,8 @@ UnexpectedExceptionHandler.TrackedModule {
         AlertDialog diag = UiHelper.buildDeleteUsedDnFilesConfirmDialog(cid, this.getActivity(), null, null);
         if (null == diag)
             UiHelper.showTextToast(this.getActivity(), R.string.del_dnfiles_not_allowed_msg);
-        diag.show();
+        else
+            diag.show();
     }
 
     private void
@@ -572,7 +571,6 @@ UnexpectedExceptionHandler.TrackedModule {
                                    REQC_PICK_IMAGE);
         } catch (ActivityNotFoundException e) {
             UiHelper.showTextToast(getActivity(), R.string.warn_find_gallery_app);
-            return;
         }
     }
 
@@ -595,7 +593,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Cursor is changed and all view should be rebinded.
-     * @param tab
      */
     public void
     refreshListAsync() {
@@ -609,7 +606,7 @@ UnexpectedExceptionHandler.TrackedModule {
         eAssert(url != null);
         url = Utils.removeTrailingSlash(url);
 
-        long cid = -1;
+        long cid;
         try {
             cid = mDbp.insertNewChannel(getCategoryId(), url);
         } catch (FeederException e) {
@@ -701,7 +698,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     public void
-    onCreateContextMenu2(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+    onCreateContextMenu2(ContextMenu menu,
+                         @SuppressWarnings("unused") View v,
+                         ContextMenuInfo menuInfo) {
         eAssert(mPrimary);
         MenuInflater inflater = getActivity().getMenuInflater();
         inflater.inflate(R.menu.channel_context, menu);
@@ -807,6 +806,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public View
     onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
+        @SuppressLint("InflateParams")
         LinearLayout ll = (LinearLayout)inflater.inflate(R.layout.channel_listview, null);
         mListView = (ListView)ll.findViewById(R.id.list);
         eAssert(null != mListView);
@@ -865,11 +865,11 @@ UnexpectedExceptionHandler.TrackedModule {
         //   we may miss binding some updating task!
         mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
 
-        HashSet<Long> updatedCids = new HashSet<Long>();
+        HashSet<Long> updatedCids = new HashSet<>();
         for (long cid : mDbWatcher.getUpdatedChannels())
             updatedCids.add(cid);
 
-        HashSet<Long> myUpdatedCids = new HashSet<Long>();
+        HashSet<Long> myUpdatedCids = new HashSet<>();
         // Check channel state and bind it.
         // Why here? Not 'onStart'.
         // See comments in 'onPause()'
@@ -902,7 +902,7 @@ UnexpectedExceptionHandler.TrackedModule {
             && myUpdatedCids.size() > 0) {
             refreshListAsync();
         } else
-            refreshListItem(Utils.convertArrayLongTolong(myUpdatedCids.toArray(new Long[0])));
+            refreshListItem(Utils.convertArrayLongTolong(myUpdatedCids.toArray(new Long[myUpdatedCids.size()])));
 
         // We don't need to worry about item table change.
         // Because, if item is newly inserted, that means some of channel is updated.

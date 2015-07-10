@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
 
@@ -44,14 +44,16 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class FeederPreferenceActivity extends PreferenceActivity implements
 SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(FeederPreferenceActivity.class);
 
     private String mAppRootOld = null;
@@ -67,6 +69,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equals(Environ.PREF_KEY_APP_ROOT)) {
             String appRoot = sharedPreferences.getString(Environ.PREF_KEY_APP_ROOT, null);
+            eAssert(null != appRoot);
             File appRootFile = new File(appRoot);
             if (!appRootFile.canWrite()) {
                 UiHelper.showTextToast(this, R.string.warn_file_access_denied);

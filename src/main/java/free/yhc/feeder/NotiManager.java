@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.util.HashSet;
 
@@ -52,10 +52,10 @@ import android.os.HandlerThread;
 import android.os.Process;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.ListenerManager;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 
 public class NotiManager implements
@@ -64,21 +64,21 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Utils.Logger P = new Utils.Logger(NotiManager.class);
 
     private static final String NOTI_INTENT_DELETE_ACTION = "feeder.intent.action.NOTIFICATION_DELETE";
-
     private static NotiManager sInstance = null;
 
-    private final Handler               mBgWorkHandler;
+    private final Handler mBgWorkHandler;
 
     // active notification set.
-    private final HashSet<NotiType>     mAnset = new HashSet<NotiType>();
-    private final NotificationManager   mNm = (NotificationManager)Environ.getAppContext()
-                                                                          .getSystemService(Context.NOTIFICATION_SERVICE);
-    private final ChannUpdatedListener  mChannUpdatedListener = new ChannUpdatedListener();
+    private final HashSet<NotiType> mAnset = new HashSet<>();
+    private final NotificationManager mNm = (NotificationManager)Environ.getAppContext()
+                                                                        .getSystemService(Context.NOTIFICATION_SERVICE);
+    @SuppressWarnings("FieldCanBeLocal")
+    private final ChannUpdatedListener mChannUpdatedListener = new ChannUpdatedListener();
 
     // Should be accessed only by NewItemChecker to avoid race-condition.
-    private final HashSet<Long>         mNewItemChannSet = new HashSet<Long>();
+    private final HashSet<Long> mNewItemChannSet = new HashSet<>();
 
-    private static enum NotiType {
+    private enum NotiType {
         NEWITEM   (true,
                    R.drawable.noti_newitem,
                    R.string.noti_newitem_title,
@@ -90,13 +90,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // true : for keep notification alive even if app. is killed.
         // false: notification should be removed when app. is killed.
-        private final boolean   _mSticky;
-        private final int       _mIcon;
-        private final int       _mTitle;
-        private final int       _mDesc;
-        private final int       _mNotiId; // notification id
+        private final boolean _mSticky;
+        private final int _mIcon;
+        private final int _mTitle;
+        private final int _mDesc;
+        private final int _mNotiId; // notification id
 
-        private Notification    _mNoti;
+        private Notification _mNoti;
 
         private Notification
         buildNotification() {
@@ -178,11 +178,11 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private static enum NewItemCheckCmd {
+    private enum NewItemCheckCmd {
         SCAN,
         NEW,
         READ
-    };
+    }
 
     public static class NotiIntentReceiver extends BroadcastReceiver {
         @Override
@@ -215,8 +215,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private class NewItemChecker implements Runnable {
         // Channels that have new items.
-        private final long[]            _mCids;
-        private final NewItemCheckCmd   _mCmd;
+        private final long[] _mCids;
+        private final NewItemCheckCmd _mCmd;
 
         NewItemChecker(long[] cids, NewItemCheckCmd cmd) {
             _mCids = cids;

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,7 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -52,16 +52,18 @@ import free.yhc.feeder.R;
 public class UsageReport implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(UsageReport.class);
 
-    public  static final String REPORT_RECEIVER         = "yhcting77@gmail.com";
-    public  static final String FEEDBACK_REPORT_SUBJECT = "[FeedHive] Feedback Report.";
+    public static final String REPORT_RECEIVER = "yhcting77dev0@gmail.com";
+    public static final String FEEDBACK_REPORT_SUBJECT = "[FeedHive] Feedback Report.";
 
-    private static final long   USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
-    private static final String ERR_REPORT_SUBJECT      = "[FeedHive] Exception Report.";
-    private static final String USAGE_REPORT_SUBJECT    = "[FeedHive] Usage Report.";
-    private static final String TIME_STAMP_FILE_SUFFIX  = "____tmstamp___";
+    private static final long USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
+    private static final String ERR_REPORT_SUBJECT = "[FeedHive] Exception Report.";
+    private static final String USAGE_REPORT_SUBJECT = "[FeedHive] Usage Report.";
+    private static final String TIME_STAMP_FILE_SUFFIX = "____tmstamp___";
 
     private static UsageReport sInstance = null;
 
@@ -85,7 +87,9 @@ OnSharedPreferenceChangeListener {
     private void
     cleanReportFile(File f) {
         File tmstamp = getTimeStampFile(f);
+        //noinspection ResultOfMethodCallIgnored
         tmstamp.delete();
+        //noinspection ResultOfMethodCallIgnored
         f.delete();
     }
 
@@ -94,18 +98,18 @@ OnSharedPreferenceChangeListener {
         try {
             File tmstamp = getTimeStampFile(f);
             if (!tmstamp.exists())
+                //noinspection ResultOfMethodCallIgnored
                 tmstamp.createNewFile();
 
             BufferedWriter bw = new BufferedWriter(new FileWriter(f, true));
             bw.write(report);
             bw.flush();
             bw.close();
-        } catch (IOException e) { }
+        } catch (IOException ignored) { }
     }
 
     /**
      * Send stored report - crash, improvement etc - to developer as E-mail.
-     * @param context
      */
     private void
     sendReportMail(Context context, File reportf, int diagTitle, String subject) {
@@ -115,22 +119,21 @@ OnSharedPreferenceChangeListener {
         if (!reportf.exists())
             return; // nothing to do
 
-        StringBuilder sbr = new StringBuilder();
-        sbr.append(Utils.readTextFile(reportf)).append("\n\n");
+        String text = Utils.readTextFile(reportf) + "\n\n";
         // we successfully read all log files.
         // let's clean it.
         cleanReportFile(reportf);
 
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.putExtra(Intent.EXTRA_EMAIL, new String[] { REPORT_RECEIVER });
-        intent.putExtra(Intent.EXTRA_TEXT, sbr.toString());
+        intent.putExtra(Intent.EXTRA_TEXT, text);
         intent.putExtra(Intent.EXTRA_SUBJECT, subject);
         intent.setType("message/rfc822");
         intent = Intent.createChooser(intent, context.getResources().getText(diagTitle));
         try {
             context.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            ; // ignore this report
+        } catch (ActivityNotFoundException ignored) {
+            // ignore this report
         }
     }
 
@@ -161,7 +164,6 @@ OnSharedPreferenceChangeListener {
 
     /**
      * Overwrite
-     * @param report
      */
     void
     storeErrReport(String report) {
@@ -172,7 +174,6 @@ OnSharedPreferenceChangeListener {
 
     /**
      * Send stored report - crash, improvement etc - to developer as E-mail.
-     * @param context
      */
     public void
     sendErrReportMail(Context context) {

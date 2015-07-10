@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -38,6 +38,7 @@ package free.yhc.feeder;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
@@ -46,14 +47,14 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.PagerAdapter;
 import android.view.View;
 import android.view.ViewGroup;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Utils;
 
 public abstract class FragmentPagerAdapterEx extends PagerAdapter {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(FragmentPagerAdapterEx.class);
-
     private static final AtomicInteger sId = new AtomicInteger(0);
-
     private static final String KEY_PARENT_STATE = "FragmentPagerAdapterEx:parent_state";
 
     private final int mId;
@@ -96,6 +97,7 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
     public void
     startUpdate(ViewGroup container) { }
 
+    @SuppressLint("CommitTransaction")
     @Override
     public Object
     instantiateItem(ViewGroup container, int position) {
@@ -122,6 +124,7 @@ public abstract class FragmentPagerAdapterEx extends PagerAdapter {
         return fragment;
     }
 
+    @SuppressLint("CommitTransaction")
     @Override
     public void
     destroyItem(ViewGroup container, int position, Object object) {

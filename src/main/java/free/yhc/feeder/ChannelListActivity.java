@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.AlertDialog;
@@ -62,13 +62,13 @@ import free.yhc.feeder.UiHelper.EditTextDialogAction;
 import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.UsageReport;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.ListenerManager;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.UsageReport;
+import free.yhc.feeder.core.Utils;
 
 public class ChannelListActivity extends FragmentActivity implements
 ActionBar.TabListener,
@@ -77,24 +77,25 @@ UnexpectedExceptionHandler.TrackedModule {
     private static final Utils.Logger P = new Utils.Logger(ChannelListActivity.class);
 
     // Request codes.
-    private static final int REQC_PICK_PREDEFINED_CHANNEL  = 1;
+    private static final int REQC_PICK_PREDEFINED_CHANNEL = 1;
 
     // Saved instance
     private static final String KEY_CURRENT_CATEGORY = "current_category";
 
-    private final DBPolicy      mDbp = DBPolicy.get();
-    private final RTTask        mRtt = RTTask.get();
-    private final UsageReport   mUr  = UsageReport.get();
+    private final DBPolicy mDbp = DBPolicy.get();
+    @SuppressWarnings("unused")
+    private final RTTask mRtt = RTTask.get();
+    private final UsageReport mUr = UsageReport.get();
 
-    private ActionBar                   mAb             = null;
-    private ViewPager                   mPager          = null;
-    private ChannelListFragment         mContextMenuOwner = null;
-    private DBWatcher                   mDbWatcher      = null;
+    private ActionBar mAb = null;
+    private ViewPager mPager = null;
+    private ChannelListFragment mContextMenuOwner = null;
+    private DBWatcher mDbWatcher = null;
 
     private final ViewPager.OnPageChangeListener mPCListener = new OnPageViewChange();
 
     private static class TabTag {
-        long         categoryid;
+        long categoryid;
     }
 
     private static class DBWatcher implements ListenerManager.Listener {
@@ -185,7 +186,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private long
     getCurrentCategoryId() {
-        return getPagerAdapter().getPrimaryFragment().getCategoryId();
+        if (null != getPagerAdapter())
+            return getPagerAdapter().getPrimaryFragment().getCategoryId();
+        else
+            return mDbp.getDefaultCategoryId();
     }
 
     private int
@@ -205,6 +209,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     setAsCurrentCategory(long categoryid) {
+        if (null == getPagerAdapter())
+            return; // do nothing.
         mPager.setCurrentItem(getPagerAdapter().getPosition(categoryid));
         mAb.setSelectedNavigationItem(getTabPosition(categoryid));
     }
@@ -236,7 +242,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * All channels belonging to this category will be moved to default category.
-     * @param categoryid
      */
     private void
     deleteCategory(long categoryid) {
@@ -246,7 +251,6 @@ UnexpectedExceptionHandler.TrackedModule {
         // PagerView's working mechanism is NOT GOOD for deleting item in the middle.
         // So, just restart channel list activity...to reload all!!!
         restartThisActivity();
-        return;
         /*
         Tab curTab = mAb.getSelectedTab();
         mAb.removeTab(curTab);
@@ -256,6 +260,7 @@ UnexpectedExceptionHandler.TrackedModule {
         */
     }
 
+    @SuppressWarnings("unused")
     private String
     getTabText(Tab tab) {
         return tab.getText().toString();
@@ -264,11 +269,11 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Add channel to current selected category.
      * List will be scrolled to newly added channel.
-     * @param url
      */
     private void
     addChannel(String url, String iconurl) {
-        getPagerAdapter().getPrimaryFragment().addChannel(url, iconurl);
+        if (null != getPagerAdapter())
+            getPagerAdapter().getPrimaryFragment().addChannel(url, iconurl);
     }
 
 
@@ -314,7 +319,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
     private void
-    onOpt_addChannel_url(final View anchor) {
+    onOpt_addChannel_url(@SuppressWarnings("unused") final View anchor) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -330,7 +335,7 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onOk(Dialog dialog, EditText edit) {
                 String url = edit.getText().toString();
-                if (!url.matches("http\\:\\/\\/\\s*")) {
+                if (!url.matches("http\\Q://\\E\\s*")) {
                     addChannel(url, null);
                     mUr.storeUsageReport("URL : " + url + "\n");
                 }
@@ -340,7 +345,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_addChannel_predefined(View anchor) {
+    onOpt_addChannel_predefined(@SuppressWarnings("unused") View anchor) {
         Intent intent = new Intent(this, PredefinedChannelActivity.class);
         startActivityForResult(intent, REQC_PICK_PREDEFINED_CHANNEL);
     }
@@ -389,7 +394,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_category_add(final View anchor) {
+    onOpt_category_add(@SuppressWarnings("unused") final View anchor) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -418,7 +423,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_category_rename(final View anchor) {
+    onOpt_category_rename(@SuppressWarnings("unused") final View anchor) {
         // Set action for dialog.
         final EditTextDialogAction action = new EditTextDialogAction() {
             @Override
@@ -442,7 +447,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_category_delete(final View anchor) {
+    onOpt_category_delete(@SuppressWarnings("unused") final View anchor) {
         final long categoryid = getCurrentCategoryId();
         if (DBG) P.v("category(" + categoryid + ")");
         if (mDbp.isDefaultCategoryId(categoryid)) {
@@ -493,7 +498,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_itemsAll(final View anchor) {
+    onOpt_itemsAll(@SuppressWarnings("unused") final View anchor) {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
         intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_ALL);
         intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
@@ -501,7 +506,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_updateAll(final View anchor) {
+    onOpt_updateAll(@SuppressWarnings("unused") final View anchor) {
         UiHelper.OnConfirmDialogAction action = new UiHelper.OnConfirmDialogAction() {
             @Override
             public void
@@ -523,7 +528,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_itemsCategory(final View anchor) {
+    onOpt_itemsCategory(@SuppressWarnings("unused") final View anchor) {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
         intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_CATEGORY);
         intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
@@ -532,7 +537,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_itemsFavorite(final View anchor) {
+    onOpt_itemsFavorite(@SuppressWarnings("unused") final View anchor) {
         Intent intent = new Intent(ChannelListActivity.this, ItemListActivity.class);
         intent.putExtra(ItemListActivity.IKEY_MODE, ItemListActivity.MODE_FAVORITE);
         intent.putExtra(ItemListActivity.IKEY_FILTER, ItemListActivity.FILTER_NONE);
@@ -540,17 +545,18 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_moreMenu_about(final View anchor) {
+    onOpt_moreMenu_about(@SuppressWarnings("unused") final View anchor) {
         PackageManager pm = getPackageManager();
         PackageInfo pi = null;
         try {
             pi = pm.getPackageInfo(getPackageName(), 0);
-        }catch (NameNotFoundException e) { ; }
+        }catch (NameNotFoundException ignored) { }
 
         if (null == pi)
             return; // never happen
 
         CharSequence title = getResources().getText(R.string.about_app);
+        //noinspection StringBufferReplaceableByString
         StringBuilder strbldr = new StringBuilder();
         strbldr.append(getResources().getText(R.string.version)).append(" : ").append(pi.versionName).append("\n")
                .append(getResources().getText(R.string.about_app_email)).append("\n")
@@ -561,7 +567,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_moreMenu_license(final View anchor) {
+    onOpt_moreMenu_license(@SuppressWarnings("unused") final View anchor) {
         View v = UiHelper.inflateLayout(this, R.layout.info_dialog);
         TextView tv = ((TextView)v.findViewById(R.id.text));
         tv.setTypeface(Typeface.MONOSPACE);
@@ -573,23 +579,25 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_moreMenu_deleteAllDnFiles(final View anchor) {
+    onOpt_moreMenu_deleteAllDnFiles(@SuppressWarnings("unused") final View anchor) {
         AlertDialog diag = UiHelper.buildDeleteAllDnFilesConfirmDialog(this, null, null);
         if (null == diag)
             UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
-        diag.show();
+        else
+            diag.show();
     }
 
     private void
-    onOpt_moreMenu_deleteAllUsedDnFiles(final View anchor) {
+    onOpt_moreMenu_deleteAllUsedDnFiles(@SuppressWarnings("unused") final View anchor) {
         AlertDialog diag = UiHelper.buildDeleteUsedDnFilesConfirmDialog(0, this, null, null);
         if (null == diag)
             UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
-        diag.show();
+        else
+            diag.show();
     }
 
     private void
-    onOpt_moreMenu_feedbackOpinion(final View anchor) {
+    onOpt_moreMenu_feedbackOpinion(@SuppressWarnings("unused") final View anchor) {
         if (!Utils.isNetworkAvailable()) {
             UiHelper.showTextToast(this, R.string.warn_network_unavailable);
             return;
@@ -600,13 +608,13 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_moreMenu_dbManagement(final View anchor) {
+    onOpt_moreMenu_dbManagement(@SuppressWarnings("unused") final View anchor) {
         Intent intent = new Intent(this, DBManagerActivity.class);
         startActivity(intent);
     }
 
     private void
-    onOpt_moreMenu(final View anchor) {
+    onOpt_moreMenu(@SuppressWarnings("unused") final View anchor) {
         PopupMenu popup = new PopupMenu(this, anchor);
         popup.getMenuInflater().inflate(R.menu.popup_more_menu, popup.getMenu());
         popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
@@ -642,7 +650,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private void
-    onOpt_setting(final View anchor) {
+    onOpt_setting(@SuppressWarnings("unused") final View anchor) {
         Intent intent = new Intent(this, FeederPreferenceActivity.class);
         startActivity(intent);
     }
@@ -744,6 +752,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public void
     categoryDataSetChanged(long catId) {
+        if (null == getPagerAdapter())
+            return;
         ChannelListFragment fragmentTo = getPagerAdapter().getFragment(catId);
         if (null != fragmentTo)
             fragmentTo.refreshListAsync();
@@ -763,6 +773,8 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public void
     onTabReselected(Tab tab, FragmentTransaction ft) {
+        if (null == getPagerAdapter())
+            return;
         mPager.setCurrentItem(getPagerAdapter().getPosition(getTag(tab).categoryid));
     }
 
@@ -788,8 +800,10 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
-        mContextMenuOwner = getPagerAdapter().getPrimaryFragment();;
-        mContextMenuOwner.onCreateContextMenu2(menu, v, menuInfo);
+        if (null != getPagerAdapter()) {
+            mContextMenuOwner = getPagerAdapter().getPrimaryFragment();
+            mContextMenuOwner.onCreateContextMenu2(menu, v, menuInfo);
+        }
     }
 
     @Override
@@ -816,6 +830,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Setup Tabs
         mAb = getActionBar();
+        eAssert(null != mAb);
         mAb.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         mAb.setDisplayShowTitleEnabled(false);
         mAb.setDisplayShowHomeEnabled(false);
@@ -852,7 +867,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // ignore all unexpected operation.
         try {
             outState.putLong(KEY_CURRENT_CATEGORY, getCurrentCategoryId());
-        } catch (RuntimeException ignore) { };
+        } catch (RuntimeException ignored) { }
     }
 
     @Override

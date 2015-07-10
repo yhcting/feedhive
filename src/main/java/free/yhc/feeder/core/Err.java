@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,7 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import free.yhc.feeder.R;
 
@@ -66,7 +66,6 @@ public enum Err {
     /**
      * Get string resource id.
      * This string has message to notify err to user.
-     * @return
      */
     public int getMsgId() {
         return msgId;

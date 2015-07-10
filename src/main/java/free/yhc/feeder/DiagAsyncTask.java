@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,35 +36,37 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.view.KeyEvent;
 import android.view.View;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.ThreadEx;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.ThreadEx;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class DiagAsyncTask extends ThreadEx<Err> implements
 UnexpectedExceptionHandler.TrackedModule,
 DialogInterface.OnDismissListener,
 View.OnClickListener {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(DiagAsyncTask.class);
 
-    private Context         mContext        = null;
-    private ProgressDialog  mDialog         = null;
-    private CharSequence    mTitle          = null;
-    private CharSequence    mMessage        = null;
-    private Style           mStyle          = Style.SPIN;
-    private Worker          mWorker         = null;
-    private boolean         mUserCancelled  = false;
-    private boolean         mCancelable     = true;
-    private boolean         mInterruptOnCancel = true;
+    private Context mContext = null;
+    private ProgressDialog mDialog = null;
+    private CharSequence mTitle = null;
+    private CharSequence mMessage = null;
+    private Style mStyle = Style.SPIN;
+    private Worker mWorker = null;
+    private boolean mUserCancelled = false;
+    private boolean mCancelable = true;
+    private boolean mInterruptOnCancel = true;
     private DialogInterface.OnDismissListener mOnDismissListener = null;
 
     public static abstract class Worker {
@@ -72,7 +74,7 @@ View.OnClickListener {
         doBackgroundWork(DiagAsyncTask task);
 
         public void
-        onPreExecute(DiagAsyncTask task) { }
+        onPreExecute(@SuppressWarnings("unused")  DiagAsyncTask task) { }
 
         public void
         onPostExecute(DiagAsyncTask task, Err result) { }
@@ -84,7 +86,7 @@ View.OnClickListener {
         onCancelled(DiagAsyncTask task) { }
     }
 
-    public static enum Style {
+    public enum Style {
         SPIN        (ProgressDialog.STYLE_SPINNER),
         PROGRESS    (ProgressDialog.STYLE_HORIZONTAL);
 
@@ -115,6 +117,7 @@ View.OnClickListener {
         mInterruptOnCancel = interruptOnCancel;
     }
 
+    @SuppressWarnings("unused")
     public DiagAsyncTask(Context context,
             Worker listener,
             Style style,
@@ -124,6 +127,7 @@ View.OnClickListener {
         this(context, listener, style, context.getResources().getText(msg), cancelable, interruptOnCancel);
     }
 
+    @SuppressWarnings("unused")
     public DiagAsyncTask(Context context,
                          Worker listener,
                          Style style,
@@ -132,6 +136,7 @@ View.OnClickListener {
         this(context, listener, style, msg, cancelable, true);
     }
 
+    @SuppressWarnings("unused")
     public DiagAsyncTask(Context context,
             Worker listener,
             Style style,
@@ -140,6 +145,7 @@ View.OnClickListener {
         this(context, listener, style, context.getResources().getText(msg), cancelable, true);
     }
 
+    @SuppressWarnings("unused")
     public DiagAsyncTask(Context context,
                          Worker listener,
                          Style style,
@@ -154,6 +160,7 @@ View.OnClickListener {
         this(context, listener, style, context.getResources().getText(msg), false, true);
     }
 
+    @SuppressWarnings("unused")
     public void
     setOnDismissListener(DialogInterface.OnDismissListener listener) {
         eAssert(Utils.isUiThread());
@@ -170,6 +177,7 @@ View.OnClickListener {
         setTitle(mContext.getResources().getText(title));
     }
 
+    @SuppressWarnings("unused")
     public void
     publishMessage(final String message) {
         Environ.getUiHandler().post(new Runnable() {
@@ -196,6 +204,7 @@ View.OnClickListener {
      * But be careful to use it.
      * This function dismiss ONLY dialog and doens't cancel background job!
      */
+    @SuppressWarnings("unused")
     public void
     forceDismissDialog() {
         if (null != mDialog)
@@ -276,11 +285,8 @@ View.OnClickListener {
             @Override
             public boolean
             onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-                if (KeyEvent.KEYCODE_SEARCH == keyCode
-                    && 0 == event.getRepeatCount()) {
-                    return true;
-                }
-                return false;
+                return KeyEvent.KEYCODE_SEARCH == keyCode
+                       && 0 == event.getRepeatCount();
             }
         });
 

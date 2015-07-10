@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,9 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
-
-import static free.yhc.feeder.model.Utils.eAssert;
+package free.yhc.feeder.core;
 
 import java.util.HashMap;
 
@@ -46,14 +44,16 @@ import java.util.HashMap;
 // This should be THREAD-SAFE
 class BGTaskManager implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(BGTaskManager.class);
 
-    private final HashMap<String, TaskMapElem> mMap = new HashMap<String, TaskMapElem>();
+    private final HashMap<String, TaskMapElem> mMap = new HashMap<>();
 
     // TaskMap Value
     private class TaskMapElem {
-        BGTask          task   = null;
+        BGTask task = null;
         TaskMapElem(BGTask aTask, String taskId) {
             task = aTask;
             task.setName(taskId);
@@ -72,16 +72,13 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Register task with given taskId.
      * Registering task whose Id is already used, is NOT ALLOWED (assert will be issued.)
-     * @param taskId
-     * @param task
-     * @return
-     *   false if there is already same-id-task (this SHOULD NOT happen).
+     * @return false if there is already same-id-task (this SHOULD NOT happen).
      */
     boolean
     register(String taskId, BGTask task) {
         //logI("BGTM : register :" + taskId);
         if (null != mMap.get(taskId)) {
-            eAssert(false);
+            Utils.eAssert(false);
             return false;
         }
         mMap.put(taskId, new TaskMapElem(task, taskId));
@@ -90,13 +87,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Unbind tasks that owner and onEventKey match.
-     * @param key
-     * @return
-     *   number of tasks unbinded.
+     * @return number of tasks unbinded.
      */
     int
     unbind(Object key) {
-        int        ret = 0;
+        int ret = 0;
+        //noinspection ToArrayCallWithZeroLengthArrayArgument
         TaskMapElem[] vs = mMap.values().toArray(new TaskMapElem[0]);
         for (TaskMapElem v : vs) {
             v.task.unregisterEventListener(key, null);
@@ -109,8 +105,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Getting BGTask.
      * This doesn't change any state.
-     * @param taskId
-     * @return
      */
     BGTask
     peek(String taskId) {
@@ -121,13 +115,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Newly bound event will be registered to the last of listener list.
-     * @param taskId
-     * @param key
-     *   this can be associated with several onEvent.
-     * @param listener
-     * @param hasPriority
-     *   true if listener SHOULD receive event prior to other existing listeners.
-     * @return
+     * @param key this can be associated with several onEvent.
+     * @param hasPriority true if listener SHOULD receive event prior to other existing listeners.
      */
     BGTask
     bind(String taskId, Object key, BaseBGTask.OnEventListener listener, boolean hasPriority) {
@@ -141,9 +130,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Clear event listener of given BGTask.
-     * @param taskId
-     * @return
      */
+    @SuppressWarnings("unused")
     int
     clear(String taskId) {
         TaskMapElem v = mMap.get(taskId);
@@ -157,8 +145,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Unregister task.
      * This doens't interrupt(or cancel) running background task.
-     * @param taskId
-     * @return
      */
     boolean
     unregister(String taskId) {
@@ -172,9 +158,7 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * THIS SHOULD BE CALLED ONLY BY 'RTTask'
      * Start task
-     * @param taskId
-     * @return
-     *   true (success) / false (fail to find task)
+     * @return true (success) / false (fail to find task)
      */
     boolean
     start(String taskId) {
@@ -190,17 +174,11 @@ UnexpectedExceptionHandler.TrackedModule {
      * THIS SHOULD BE CALLED ONLY BY 'RTTask'
      * Cancel background task.
      * given 'arg' is passed to onCancel() of each listener.
-     * @param taskId
-     * @param arg
-     * @return
      */
     boolean
     cancel(String taskId, Object arg) {
         TaskMapElem v = mMap.get(taskId);
-        if (null == v)
-            return false;
-
-        return v.task.cancel(arg);
+        return null != v && v.task.cancel(arg);
     }
 
     String
@@ -210,19 +188,20 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Get all task Ids registered.
-     * @return
      */
     String[]
     getTaskIds() {
+        //noinspection ToArrayCallWithZeroLengthArrayArgument
         return mMap.keySet().toArray(new String[0]);
     }
 
     /**
      * Get all BGTasks registered.
-     * @return
      */
+    @SuppressWarnings("unused")
     BGTask[]
     getTasks() {
+        //noinspection ToArrayCallWithZeroLengthArrayArgument
         TaskMapElem[] mv = mMap.values().toArray(new TaskMapElem[0]);
         BGTask[] ts = new BGTask[mv.length];
         for (int i = 0; i < ts.length; i++)
@@ -235,6 +214,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     void
     cancelAll() {
+        //noinspection ToArrayCallWithZeroLengthArrayArgument
         TaskMapElem[] vs = mMap.values().toArray(new TaskMapElem[0]);
         for (TaskMapElem v : vs) {
             v.task.clearEventListener();

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,10 +36,9 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.app.AlertDialog;
@@ -57,14 +56,16 @@ import android.widget.EditText;
 import android.widget.Toast;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.Utils;
 
 public class UiHelper {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(UiHelper.class);
 
     public interface EditTextDialogAction {
@@ -86,9 +87,9 @@ public class UiHelper {
     }
 
     public static class DeleteAllDnfilesWorker extends DiagAsyncTask.Worker {
-        private final Context                 _mContext;
-        private final OnPostExecuteListener   _mOnPostExecute;
-        private final Object                  _mUser;
+        private final Context _mContext;
+        private final OnPostExecuteListener _mOnPostExecute;
+        private final Object _mUser;
         public DeleteAllDnfilesWorker(Context context,
                                       OnPostExecuteListener onPostExecute,
                                       Object user) {
@@ -115,10 +116,10 @@ public class UiHelper {
     }
 
     public static class DeleteUsedDnfilesWorker extends DiagAsyncTask.Worker {
-        private final long                    _mCid;
-        private final Context                 _mContext;
-        private final OnPostExecuteListener   _mOnPostExecute;
-        private final Object                  _mUser;
+        private final long _mCid;
+        private final Context _mContext;
+        private final OnPostExecuteListener _mOnPostExecute;
+        private final Object _mUser;
         public DeleteUsedDnfilesWorker(long cid,
                                        Context context,
                                        OnPostExecuteListener onPostExecute,
@@ -134,17 +135,15 @@ public class UiHelper {
         doBackgroundWork(DiagAsyncTask task) {
             DBPolicy dbp = DBPolicy.get();
             ContentsManager cm = ContentsManager.get();
-            LinkedList<File> l = new LinkedList<File>();
+            LinkedList<File> l;
             if (_mCid > 0)
                 l = cm.getContentFiles(new long[] { _mCid });
             else
                 l = cm.getContentFiles();
 
             // check each content file to know whether they are valid or not.
-            LinkedList<Long> idsl = new LinkedList<Long>();
-            Iterator<File> i = l.iterator();
-            while (i.hasNext()) {
-                File f = i.next();
+            LinkedList<Long> idsl = new LinkedList<>();
+            for (File f : l) {
                 long id = cm.getIdFromContentFileName(f.getName());
                 if (0 > id)
                     // unexpected content file.
@@ -153,7 +152,7 @@ public class UiHelper {
                 if (!Feed.Item.isStateOpenNew(state))
                     idsl.add(id);
             }
-            cm.deleteItemContents(Utils.convertArrayLongTolong(idsl.toArray(new Long[0])));
+            cm.deleteItemContents(Utils.convertArrayLongTolong(idsl.toArray(new Long[idsl.size()])));
             return Err.NO_ERR;
         }
 
@@ -170,9 +169,8 @@ public class UiHelper {
 
     /**
      * This is for future use...
-     * @param context
-     * @param root
      */
+    @SuppressWarnings("unused")
     private static void
     showToast(Context context, ViewGroup root) {
         Toast t = Toast.makeText(context, "", Toast.LENGTH_SHORT);
@@ -214,6 +212,7 @@ public class UiHelper {
         return dialog;
     }
 
+    @SuppressWarnings("unused")
     public static AlertDialog
     createAlertDialog(Context context, int icon, int title, int message) {
         eAssert(0 != title);
@@ -342,10 +341,10 @@ public class UiHelper {
 
     public static AlertDialog
     selectCategoryDialog(final Context  context,
-                         final int      title,
+                         final int title,
                          final OnCategorySelectedListener action,
-                         final long     catIdExcluded,
-                         final Object   user) {
+                         final long catIdExcluded,
+                         final Object tag) {
         // Create Adapter for list and set it.
         DBPolicy dbp = DBPolicy.get();
         Feed.Category[] cats = dbp.getCategories();
@@ -375,12 +374,12 @@ public class UiHelper {
 
         AlertDialog.Builder bldr = new AlertDialog.Builder(context);
         ArrayAdapter<String> adapter
-            = new ArrayAdapter<String>(context, android.R.layout.select_dialog_item, menus);
+            = new ArrayAdapter<>(context, android.R.layout.select_dialog_item, menus);
         bldr.setAdapter(adapter, new DialogInterface.OnClickListener() {
             @Override
             public void
             onClick(DialogInterface dialog, int which) {
-                action.onSelected(catIds[which], user);
+                action.onSelected(catIds[which], tag);
                 dialog.dismiss();
             }
         });
@@ -424,12 +423,7 @@ public class UiHelper {
     }
 
     /**
-     * @param cid
-     *     0 means 'all channels'
-     * @param context
-     * @param onPostExecute
-     * @param postExecuteUser
-     * @return
+     * @param cid 0 means 'all channels'
      */
     public static AlertDialog
     buildDeleteUsedDnFilesConfirmDialog(final long cid,

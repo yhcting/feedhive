@@ -36,12 +36,11 @@
 
 package free.yhc.feeder.db;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,14 +51,14 @@ import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.LruCache;
-import free.yhc.feeder.model.ContentsManager;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.Feed;
-import free.yhc.feeder.model.FeedPolicy;
-import free.yhc.feeder.model.FeederException;
-import free.yhc.feeder.model.ListenerManager;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.ContentsManager;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.FeedPolicy;
+import free.yhc.feeder.core.FeederException;
+import free.yhc.feeder.core.ListenerManager;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 //
 // DB synchronizing concept.
@@ -93,12 +92,12 @@ UnexpectedExceptionHandler.TrackedModule {
     // To do that, below factor is used.
     // At most, recent items by amount of "<current # items> * DUP_CHECK_SCOPE_FACTOR" is used
     //   for comparison to check duplication.
-    private static final int   DUP_SCOPE_FACTOR       = 2;
+    private static final int DUP_SCOPE_FACTOR = 2;
     // At least, <DUP_SCOPE_MIN> items SHOULD be used to compare duplication.
-    private static final int   DUP_SCOPE_MIN          = 200;
+    private static final int DUP_SCOPE_MIN = 200;
     // unexpectedly large number of scope.
     // Warning log will be shown.
-    private static final int   DUP_SCOPE_WARNING      = 3000;
+    private static final int DUP_SCOPE_WARNING = 3000;
 
     private static DBPolicy sInstance = null;
 
@@ -107,14 +106,14 @@ UnexpectedExceptionHandler.TrackedModule {
     // - UnexpectedExceptionHandler
     // - DB / DBThread
     // - UIPolicy
-    private final DB        mDb     = DB.get();
-    private final Handler   mAsyncHandler;
+    private final DB mDb = DB.get();
+    private final Handler mAsyncHandler;
 
     // Getting max item id of channel takes longer time than expected.
     // So, let's caching it.
     // It is used at very few places.
     // Therefore, it is easy to caching and easy to avoid cache-synchronization issue.
-    private final HashMap<Long, Long> mMaxIdCache = new HashMap<Long, Long>(); // special cache for max Id.
+    private final HashMap<Long, Long> mMaxIdCache = new HashMap<>(); // special cache for max Id.
 
     // channel thumbnail cache.
     private final LruChannBitmapCache mChannImgCache;
@@ -125,10 +124,11 @@ UnexpectedExceptionHandler.TrackedModule {
     //   it may take too long time because DB is continuously accessed by channel updater.
     // This may let user annoying.
     // So, this HACK is used!
-    private final AtomicInteger     mDelayedChannelUpdate = new AtomicInteger(0);
+    private final AtomicInteger mDelayedChannelUpdate = new AtomicInteger(0);
 
-    private final ListenerManager   mLm = new ListenerManager();
+    private final ListenerManager mLm = new ListenerManager();
 
+    @SuppressWarnings("unused")
     public interface OnChannelUpdatedListener {
         // Called back after updating channel in case that new items are newly inserted.
         void onNewItemsUpdated(long cid, int nrNewItems);
@@ -141,7 +141,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         private final long _mFlag;
 
-        private UpdateType(long flag) {
+        UpdateType(long flag) {
             _mFlag = flag;
         }
 
@@ -152,13 +152,14 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
+    @SuppressWarnings("unused")
     public enum ItemDataType {
         RAW,
         FILE
     }
 
     public interface ItemDataOpInterface {
-        File   getFile(Feed.Item.ParD parD) throws FeederException;
+        File getFile(Feed.Item.ParD parD) throws FeederException;
     }
 
     private class DBAsyncThread extends HandlerThread {
@@ -168,9 +169,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private static class ItemUrls {
-        final long    id;
-        final String  link;
-        final String  enclosure;
+        final long id;
+        final String link;
+        final String enclosure;
         ItemUrls(long aId, String aLink, String aEnclosure) {
             id = aId;
             link = aLink;
@@ -215,9 +216,11 @@ UnexpectedExceptionHandler.TrackedModule {
         int chnnCacheSize;
         switch (Utils.getPrefMemConsumptionLevel()) {
         case LOW:
-            chnnCacheSize = 1 * 1024 * 1024; // 1MB
+            chnnCacheSize = 1024 * 1024; // 1MB
+            break;
         case HIGH:
             chnnCacheSize = 4 * 1024 * 1024;
+            break;
         case MEDIUM:
         default:
             chnnCacheSize = 2 * 1024 * 1024;
@@ -244,9 +247,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // This is used only for new 'insertion'
     /**
      * Build ContentValues for DB insertion with some default values.
-     * @param parD
-     * @param dbD
-     * @return
      */
     private ContentValues
     buildNewItemContentValues(Feed.Item.ParD parD, Feed.Item.DbD dbD) {
@@ -275,10 +275,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // This is used only for new 'insertion'
     /**
      * Build ContentValues for DB insertion with some default values.
-     * @param profD
-     * @param parD
-     * @param dbD
-     * @return
      */
     private ContentValues
     buildNewChannelContentValues(Feed.Channel.ProfD profD, Feed.Channel.ParD parD, Feed.Channel.DbD dbD) {
@@ -308,10 +304,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * FIELD_TYPE BLOB is not supported.
-     * @param c
-     * @param columnIndex
-     *   column index of given cursor.
-     * @return
+     * @param columnIndex column index of given cursor.
      */
     private Object
     getCursorValue(Cursor c, int columnIndex) {
@@ -340,15 +333,12 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Find channel
-     * @param state
-     *   [out] result read from DB is stored here.
-     * @param url
-     * @return
-     *   -1 (fail to find) / channel id (success)
+     * @param state [out] result read from DB is stored here.
+     * @return -1 (fail to find) / channel id (success)
      */
     private long
     findChannel(long[] state, String url) {
-        long ret = -1;
+        long ret;
         Cursor c = mDb.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
                                                           ColumnChannel.STATE},
                                     ColumnChannel.URL, url,
@@ -358,13 +348,10 @@ UnexpectedExceptionHandler.TrackedModule {
             return -1;
         }
 
-        do {
-            if (null != state)
-                state[0] = c.getLong(1);
-            ret = c.getLong(0);
-            break;
-        } while(c.moveToNext());
-
+        // find the fisrt matching channel
+        if (null != state)
+            state[0] = c.getLong(1);
+        ret = c.getLong(0);
         c.close();
         return ret;
     }
@@ -378,7 +365,7 @@ UnexpectedExceptionHandler.TrackedModule {
         while (0 < mDelayedChannelUpdate.get()) {
             try {
                 Thread.sleep(100);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException ignored) {}
             if (System.currentTimeMillis() - timems > 10 * 60 * 1000)
                 // Over 10 minutes, updating is delayed!
                 // This is definitely unexpected error!!
@@ -389,6 +376,7 @@ UnexpectedExceptionHandler.TrackedModule {
     // ======================================================
     //
     // ======================================================
+    @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
@@ -471,16 +459,19 @@ UnexpectedExceptionHandler.TrackedModule {
     //
     // ======================================================
 
+    @SuppressWarnings("unused")
     public void
     beginTransaction() {
         mDb.beginTransaction();
     }
 
+    @SuppressWarnings("unused")
     public void
     setTransactionSuccessful() {
         mDb.setTransactionSuccessful();
     }
 
+    @SuppressWarnings("unused")
     public void
     endTransaction() {
         mDb.endTransaction();
@@ -505,8 +496,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * check channel url is already in the DB.
-     * @param url
-     * @return
      */
     public boolean
     isDuplicatedChannelUrl(String url) {
@@ -539,9 +528,7 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Duplicated category name is also allowed.
      * (This function doens't check duplication.)
-     * @param category
-     * @return
-     *   0 (success)
+     * @return 0 (success)
      */
     public int
     insertCategory(Feed.Category category) {
@@ -559,8 +546,6 @@ UnexpectedExceptionHandler.TrackedModule {
      * Delete category.
      * category id field of channels which have this category id as their field value,
      *   is changed to default category id.
-     * @param id
-     * @return
      */
     public int
     deleteCategory(long id) {
@@ -575,9 +560,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Update category name.
-     * @param id
-     * @param name
-     * @return
      */
     public long
     updateCategory(long id, String name) {
@@ -586,7 +568,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Get all categories from DB.
-     * @return
      */
     public Feed.Category[]
     getCategories() {
@@ -613,10 +594,7 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Insert new channel - url.
      * This is to insert channel url and holding place for this new channel at DB.
-     * @param categoryid
-     * @param url
-     * @return
-     *   cid (success)
+     * @return cid (success)
      * @throws FeederException
      */
     public long
@@ -646,10 +624,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Filtering items that are not in DB from given item array.
-     * @param items
-     * @param newItems
-     *   new item's are added to the last of this linked list.
-     * @return
+     * @param newItems new item's are added to the last of this linked list.
      */
     public Err
     getNewItems(long cid, Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
@@ -660,8 +635,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return Err.NO_ERR;
 
         boolean pubDateAvail = Utils.isValidValue(items[0].pubDate);
-        HashMap<String, HashMap<String, ItemUrls>> mainMap
-            = new HashMap<String, HashMap<String, ItemUrls>>();
+        HashMap<String, HashMap<String, ItemUrls>> mainMap = new HashMap<>();
         HashMap<String, ItemUrls> subMap;
 
         // -----------------------------------------------------------------------
@@ -718,22 +692,22 @@ UnexpectedExceptionHandler.TrackedModule {
         // NOTE
         // main/sub key SHOULD MATCH DB query's where clause, below!
         // -----------------------------------------------------------------------
-        Cursor c = null;
-        int    nrscope = items.length * DUP_SCOPE_FACTOR;
+        Cursor c;
+        int nrscope = items.length * DUP_SCOPE_FACTOR;
         nrscope = (nrscope < DUP_SCOPE_MIN)? DUP_SCOPE_MIN: nrscope;
 
         if (nrscope > DUP_SCOPE_WARNING)
             if (DBG) P.w("DB Update : Number of scope to check duplication is unexpectedly big! : " + nrscope + "\n" +
                          "    OOM is concerned!!");
 
-        final int idI        = 0;
-        final int linkI      = 1;
+        final int idI = 0;
+        final int linkI = 1;
         final int enclosureI = 2;
-        int       mainKeyI;
-        int       subKeyI;
-        String    mainKey;
-        String    subKey;
-        ItemUrls  iurls;
+        int mainKeyI;
+        int subKeyI;
+        String mainKey;
+        String subKey;
+        ItemUrls iurls;
         if (pubDateAvail) {
             c = mDb.queryItemAND(new ColumnItem[] { ColumnItem.ID,           // SHOULD BE index 0
                                                     ColumnItem.LINK,         // SHOULD BE index 1
@@ -764,7 +738,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     subKey = c.getString(subKeyI);
                     subMap = mainMap.get(mainKey);
                     if (null == subMap) {
-                        subMap = new HashMap<String, ItemUrls>();
+                        subMap = new HashMap<>();
                         mainMap.put(mainKey, subMap);
                     }
                     iurls = subMap.get(subKey);
@@ -808,7 +782,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
                 subMap = mainMap.get(mainKey);
                 if (null == subMap) {
-                    subMap = new HashMap<String, ItemUrls>();
+                    subMap = new HashMap<>();
                     mainMap.put(mainKey, subMap);
                 }
 
@@ -860,13 +834,8 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Update channel.
      * ColumnChannel.LASTUPDATE value is set only at this function.
-     * @param cid
-     * @param ch
-     * @param newItems
-     *   new items to be added to this channel.
-     * @param idop
-     *   interface to get item-data-file.
-     * @return
+     * @param newItems new items to be added to this channel.
+     * @param idop interface to get item-data-file.
      * @throws FeederException
      */
     public int
@@ -886,11 +855,8 @@ UnexpectedExceptionHandler.TrackedModule {
             mDb.updateChannel(cid, channelUpdateValues);
         }
 
-        Iterator<Feed.Item.ParD> iter = newItems.iterator();
-
-        while (iter.hasNext()) {
-            Feed.Item.ParD itemParD = iter.next();
-            Feed.Item.DbD  itemDbD = new Feed.Item.DbD();
+        for (Feed.Item.ParD itemParD : newItems) {
+            Feed.Item.DbD itemDbD = new Feed.Item.DbD();
             itemDbD.cid = cid;
 
 
@@ -941,12 +907,13 @@ UnexpectedExceptionHandler.TrackedModule {
                     // At this moment, race-condition can be issued.
                     // But, as I mentioned above, it's not harmful and very rare case.
                     if (!ContentsManager.get().addItemContent(f, itemDbD.id))
+                        //noinspection ResultOfMethodCallIgnored
                         f.delete();
                 }
             } catch (FeederException e) {
                 if (Err.DB_UNKNOWN == e.getError())
                     throw e;
-                ; // if feeder fails to get item data, just ignore it!
+                // if feeder fails to get item data, just ignore it!
             }
             checkDelayedChannelUpdate();
             checkInterrupted();
@@ -963,10 +930,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * update given channel value.
-     * @param cid
-     * @param column
-     * @param value
-     * @return
      */
     public long
     updateChannel(long cid, ColumnChannel column, long value) {
@@ -991,9 +954,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * switch ColumnChannel.POSITION values.
-     * @param cid0
-     * @param cid1
-     * @return
      */
     public long
     updatechannel_switchPosition(long cid0, long cid1) {
@@ -1008,11 +968,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     * @param sec
-     *   day of second.
-     * @return
+     * @param sec day of second.
      */
+    @SuppressWarnings("unused")
     public long
     updateChannel_schedUpdate(long cid, long sec) {
         return updateChannel_schedUpdate(cid, new long[] { sec });
@@ -1020,10 +978,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     * @param secs
-     *   array of day of second.
-     * @return
+     * @param secs array of day of second.
      */
     public long
     updateChannel_schedUpdate(long cid, long[] secs) {
@@ -1036,7 +991,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Update OLDLAST_ITEMID field to up-to-date.
      * (update to current largest item ID)
-     * @param cid
      */
     public void
     updateChannel_lastItemId(long cid) {
@@ -1046,7 +1000,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Update OLDLAST_ITEMID field to up-to-date.
      * (update to current largest item ID)
-     * @param cids
      */
     public void
     updateChannel_lastItemIds(long[] cids) {
@@ -1060,6 +1013,7 @@ UnexpectedExceptionHandler.TrackedModule {
         notifyLastItemIdUpdated(cids);
     }
 
+    @SuppressWarnings("unused")
     public int
     getChannelCount() {
         Cursor c = queryChannel(ColumnChannel.ID);
@@ -1071,9 +1025,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Query USED channel column those are belonging to given category.
      * (unused channels are not selected.)
-     * @param categoryid
-     * @param column
-     * @return
      */
     public Cursor
     queryChannel(long categoryid, ColumnChannel column) {
@@ -1083,9 +1034,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Query USED channel columns those are belonging to given category.
      * (unused channels are not selected.)
-     * @param categoryid
-     * @param column
-     * @return
      */
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
@@ -1100,8 +1048,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Query column of all channels
-     * @param column
-     * @return
      */
     public Cursor
     queryChannel(ColumnChannel column) {
@@ -1110,8 +1056,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Query columns of all channels
-     * @param column
-     * @return
      */
     public Cursor
     queryChannel(ColumnChannel[] columns) {
@@ -1120,10 +1064,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     * @return
-     *   number of items deleted
+     * @return number of items deleted
      */
+    @SuppressWarnings("unused")
     public long
     deleteChannel(long cid) {
         return deleteChannel(new long[] { cid });
@@ -1131,9 +1074,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cids
-     * @return
-     *   number of items deleted
+     * @return number of items deleted
      */
     public long
     deleteChannel(long[] cids) {
@@ -1147,7 +1088,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * get all channel ids.
-     * @return
      */
     public long[]
     getChannelIds() {
@@ -1165,8 +1105,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Get all channel ids belonging to given category.
-     * @param categoryid
-     * @return
      */
     public long[]
     getChannelIds(long categoryid) {
@@ -1199,9 +1137,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Get field value of given 'USED' channel.
-     * @param cid
-     * @param column
-     * @return
      */
     private Object
     getChannelInfoObject(long cid, ColumnChannel column) {
@@ -1229,11 +1164,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     * @param columns
-     * @return
-     *   each string values of given column.
+     * @return each string values of given column.
      */
+    @SuppressWarnings("unused")
     public String[]
     getChannelInfoStrings(long cid, ColumnChannel[] columns) {
         Cursor c = mDb.queryChannel(columns,
@@ -1255,8 +1188,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Get maximum value of given column.
      * Field type of give column should be 'integer'.
-     * @param column
-     * @return
      */
     public long
     getChannelInfoMaxLong(ColumnChannel column) {
@@ -1272,13 +1203,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return max;
     }
 
-    /**
-     * channel should be USED one.
-     * @param cid
-     * @return
-     */
-
-
     public Bitmap
     getChannelImageBitmap(long cid) {
         return mChannImgCache.get(cid);
@@ -1286,8 +1210,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Get number items belonging to the given channel.
-     * @param cid
-     * @return
      */
     public int
     getChannelInfoNrItems(long cid) {
@@ -1306,8 +1228,6 @@ UnexpectedExceptionHandler.TrackedModule {
     // So, cache should be used to improve it!
     /**
      * Get maximum value of item id of given channel.
-     * @param cid
-     * @return
      */
     public long
     getItemInfoMaxId(long cid) {
@@ -1334,7 +1254,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @return
      */
     public long
     getItemMinPubtime() {
@@ -1343,9 +1262,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     * @return
-     *   -1 if there is no item otherwise time in millis.
+     * @return -1 if there is no item otherwise time in millis.
      */
     public long
     getItemMinPubtime(long cid) {
@@ -1354,9 +1271,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cids
-     * @return
-     *   -1 if there is no item otherwise time in millis.
+     * @return -1 if there is no item otherwise time in millis.
      */
     public long
     getItemMinPubtime(long[] cids) {
@@ -1370,11 +1285,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param where
-     * @param mask
-     * @param value
-     * @return
-     *   -1 if there is no item otherwise time in millis.
+     * @return -1 if there is no item otherwise time in millis.
      */
     public long
     getItemMinPubtime(ColumnItem where, long mask, long value) {
@@ -1413,9 +1324,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param id
-     * @param columns
-     * @return
      */
     public String[]
     getItemInfoStrings(long id, ColumnItem[] columns) {
@@ -1436,7 +1344,7 @@ UnexpectedExceptionHandler.TrackedModule {
         return v;
     }
 
-
+    @SuppressWarnings("unused")
     public Cursor
     queryItem(ColumnItem[] columns) {
         return queryItem(null, columns);
@@ -1450,10 +1358,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Query item information belonging to given channel.
-     * @param cid
-     * @param columns
-     * @return
      */
+    @SuppressWarnings("unused")
     public Cursor
     queryItem(long cid, ColumnItem[] columns) {
         return queryItem(cid, columns, null, -1, -1);
@@ -1461,12 +1367,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Query item information belonging to given channel.
-     * @param cid
-     * @param columns
-     * @param search
-     * @param fromPubtime
-     * @param toPubtime
-     * @return
      */
     public Cursor
     queryItem(long cid, ColumnItem[] columns,
@@ -1477,9 +1377,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Query item information belonging to given channels.
-     * @param cids
-     * @param columns
-     * @return
      */
     public Cursor
     queryItem(long[] cids, ColumnItem[] columns) {
@@ -1488,12 +1385,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Query item information belonging to given channels.
-     * @param cids
-     * @param columns
-     * @param search
-     * @param fromPubtime
-     * @param toPubtime
-     * @return
      */
     public Cursor
     queryItem(long[] cids, ColumnItem[] columns,
@@ -1519,11 +1410,8 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Query items with masking value.
      * Usually used to select items with flag value.
-     * @param columns
-     * @param mask
-     * @param value
-     * @return
      */
+    @SuppressWarnings("unused")
     public Cursor
     queryItemMask(ColumnItem[] columns, ColumnItem where, long mask, long value) {
         return queryItemMask(columns, where, mask, value, null, -1, -1);
@@ -1532,13 +1420,6 @@ UnexpectedExceptionHandler.TrackedModule {
     /**
      * Query items with masking value.
      * Usually used to select items with flag value.
-     * @param columns
-     * @param mask
-     * @param value
-     * @param search
-     * @param fromPubtime
-     * @param toPubtime
-     * @return
      */
     public Cursor
     queryItemMask(ColumnItem[] columns,
@@ -1553,10 +1434,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Update state value of item.
-     * @param id
-     * @param state
-     *   see Feed.Item.FStatxxx values
-     * @return
+     * @param state see Feed.Item.FStatxxx values
      */
     public long
     updateItem_state(long id, long state) {
@@ -1566,9 +1444,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * See {@link DBPolicy#updateItem_state(long, long)}
-     * @param id
-     * @param state
-     * @return
      */
     public void
     updateItemAsync_state(final long id, final long state) {
@@ -1584,16 +1459,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * delete items.
-     * @param where
-     * @param value
-     * @return
-     *   number of deleted items.
+     * @return number of deleted items.
      */
     public long
     deleteItem(ColumnItem where, Object value) {
         return mDb.deleteItem(where, value);
     }
 
+    @SuppressWarnings("unused")
     public long
     deleteItemOR(ColumnItem[] wheres, Object[] values) {
         return mDb.deleteItemOR(wheres, values);
@@ -1606,13 +1479,10 @@ UnexpectedExceptionHandler.TrackedModule {
     // ===============================================
     /**
      *
-     * @param cid
-     *   channel id to delete old items.
-     *   '-1' means 'for all channel'.
-     * @param percent
-     *   percent to delete.
-     * @return
-     *   number of items deleted
+     * @param cid channel id to delete old items.
+     *            '-1' means 'for all channel'.
+     * @param percent percent to delete.
+     * @return number of items deleted
      */
     public int
     deleteOldItems(long cid, int percent) {

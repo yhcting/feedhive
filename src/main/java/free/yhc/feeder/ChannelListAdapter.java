@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.text.DateFormat;
 import java.util.Date;
@@ -52,9 +52,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class ChannelListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
@@ -72,14 +72,14 @@ AsyncCursorAdapter.ItemBuilder {
     };
 
     private final DBPolicy mDbp = DBPolicy.get();
-    private final RTTask   mRtt = RTTask.get();
+    private final RTTask mRtt = RTTask.get();
 
-    private final OnActionListener     mActionListener;
+    private final OnActionListener mActionListener;
     private final View.OnClickListener mChIconOnClick;
     private final View.OnClickListener mPosUpOnClick;
     private final View.OnClickListener mPosDnOnClick;
 
-    private final HashMap<View, Integer> mView2PosMap = new HashMap<View, Integer>();
+    private final HashMap<View, Integer> mView2PosMap = new HashMap<>();
 
     interface OnActionListener {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -88,14 +88,14 @@ AsyncCursorAdapter.ItemBuilder {
     }
 
     private static class ItemInfo {
-        long        cid             = -1;
-        String      url             = "";
-        String      title           = "";
-        String      desc            = "";
-        Date        lastUpdate      = sDummyDate;
-        long        maxItemId       = 0;
-        long        oldLastItemId   = 0;
-        Bitmap      bm              = null;
+        long cid = -1;
+        String url = "";
+        String title = "";
+        String desc = "";
+        Date lastUpdate = sDummyDate;
+        long maxItemId = 0;
+        long oldLastItemId = 0;
+        Bitmap bm = null;
     }
 
     @Override
@@ -104,11 +104,11 @@ AsyncCursorAdapter.ItemBuilder {
         return super.dump(lv) + "[ ChannelListAdapter ]";
     }
 
-    ChannelListAdapter(Context          context,
-                       Cursor           cursor,
-                       ListView         lv,
-                       final int        dataReqSz,
-                       final int        maxArrSz,
+    ChannelListAdapter(Context context,
+                       Cursor cursor,
+                       ListView lv,
+                       final int dataReqSz,
+                       final int maxArrSz,
                        OnActionListener listener) {
         super(context,
               cursor,
@@ -127,7 +127,7 @@ AsyncCursorAdapter.ItemBuilder {
             public void onClick(View v) {
                 if (null == mActionListener)
                     return;
-                mActionListener.onUpdateClick((ImageView)v, (long)(Long)v.getTag());
+                mActionListener.onUpdateClick((ImageView)v, (Long)v.getTag());
             }
         };
 
@@ -136,7 +136,7 @@ AsyncCursorAdapter.ItemBuilder {
             public void onClick(View v) {
                 if (null == mActionListener)
                     return;
-                mActionListener.onMoveUpClick((ImageView)v, (long)(Long)v.getTag());
+                mActionListener.onMoveUpClick((ImageView)v, (Long)v.getTag());
             }
         };
 
@@ -145,7 +145,7 @@ AsyncCursorAdapter.ItemBuilder {
             public void onClick(View v) {
                 if (null == mActionListener)
                     return;
-                mActionListener.onMoveDownClick((ImageView)v, (long)(Long)v.getTag());
+                mActionListener.onMoveDownClick((ImageView)v, (Long)v.getTag());
             }
         };
     }
@@ -177,8 +177,6 @@ AsyncCursorAdapter.ItemBuilder {
     /**
      * Data is NOT reloaded.
      * Only item array is changed.
-     * @param pos0
-     * @param pos1
      */
     public void
     switchPos(int pos0, int pos1) {
@@ -192,8 +190,6 @@ AsyncCursorAdapter.ItemBuilder {
     /**
      * Data is NOT reloaded.
      * Only item array is changed.
-     * @param pos0
-     * @param pos1
      */
     public void
     notifyChannelIconChanged(long cid) {
@@ -225,13 +221,13 @@ AsyncCursorAdapter.ItemBuilder {
 
     /**
      * rebind view of given cid only.
-     * @param cid
      */
     public void
     notifyChannelRttStateChanged(long cid) {
         int pos = findPosition(cid);
         if (pos < 0)
             return; // Not an visible channel
+        //noinspection ToArrayCallWithZeroLengthArrayArgument
         for (View v : mView2PosMap.keySet().toArray(new View[0])) {
             if (pos == mView2PosMap.get(v)) {
                 doBindView(v, (ItemInfo)getItem(pos));

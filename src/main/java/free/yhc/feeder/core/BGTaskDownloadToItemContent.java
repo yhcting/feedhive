@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,37 +34,32 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
+import java.io.File;
 
-public class FeederException extends Exception {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(FeederException.class);
-
-    private Err err = Err.UNKNOWN; // default error value
-
-    public FeederException() {
-        super();
+public class BGTaskDownloadToItemContent extends BGTaskDownloadToFile {
+    private long mId;
+    public BGTaskDownloadToItemContent(String url, long id) {
+        super(new Arg(url,
+                      ContentsManager.get().getItemInfoDataFile(id),
+                      Utils.getNewTempFile()));
+        mId = id;
     }
 
-    public FeederException(String message, Throwable cause) {
-        super(message, cause);
-    }
+    @Override
+    protected Err
+    doBgTask(Arg arg) {
+        //noinspection ConstantConditions
+        if (null == arg.toFile)
+            return Err.IO_FILE;
 
-    public FeederException(String message) {
-        super(message);
-    }
-
-    public FeederException(Throwable cause) {
-        super(cause);
-    }
-
-    public FeederException(Err err) {
-        this.err = err;
-    }
-
-    public Err
-    getError() {
-        return err;
+        //noinspection ResultOfMethodCallIgnored
+        new File(arg.toFile.getParent()).mkdirs();
+        ContentsManager cm = ContentsManager.get();
+        Err ret = super.doBgTask(arg);
+        if (Err.NO_ERR == ret)
+            cm.addItemContent(cm.getItemInfoDataFile(mId), mId);
+        return ret;
     }
 }

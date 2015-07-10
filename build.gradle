@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 15
-    buildToolsVersion '20.0.0'
+    buildToolsVersion '22.0.0'
 
     defaultConfig {
         applicationId "free.yhc.feeder"
@@ -19,7 +19,7 @@ android {
 
     buildTypes {
         release {
-            runProguard false
+            minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
@@ -27,5 +27,5 @@ android {
 
 dependencies {
     compile files('libs/commons-lang-2.6.jar')
-    compile 'com.android.support:support-v4:20.0.0'
+    compile 'com.android.support:support-v4:22.0.0'
 }

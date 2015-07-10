@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,7 +34,7 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.util.regex.Pattern;
 
@@ -42,6 +42,7 @@ import android.text.Html;
 
 // Private implementation is NOT used.
 // Now this is just wrapper of predefined Html class of Android.
+@SuppressWarnings("unused")
 class HtmlParser {
     private static final boolean DBG = false;
     private static final Utils.Logger P = new Utils.Logger(HtmlParser.class);
@@ -148,8 +149,6 @@ class HtmlParser {
 
     /**
      * Guess that give text is html string or not.
-     * @param text
-     * @return
      */
     static boolean
     guessIsHttpText(String text) {
@@ -159,8 +158,6 @@ class HtmlParser {
 
     /**
      * Removes TAG-LIKE text from string.
-     * @param text
-     * @return
      */
     static String
     removeTags(String text) {
@@ -169,8 +166,6 @@ class HtmlParser {
 
     /**
      * Convert html string to normal text string.
-     * @param source
-     * @return
      */
     static String
     fromHtml(String source) {

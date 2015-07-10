@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,12 +34,11 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.Iterator;
 import java.util.LinkedList;
 
 import android.content.Context;
@@ -49,7 +48,9 @@ import android.content.pm.PackageManager.NameNotFoundException;
 
 public class UnexpectedExceptionHandler implements
 UncaughtExceptionHandler {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(UnexpectedExceptionHandler.class);
 
     private static final String UNKNOWN = "unknown";
@@ -63,33 +64,33 @@ UncaughtExceptionHandler {
     //
     // Dependency on only following modules are allowed
     // - Utils
-    private final Thread.UncaughtExceptionHandler   mOldHandler = Thread.getDefaultUncaughtExceptionHandler();
-    private final LinkedList<TrackedModule>         mMods = new LinkedList<TrackedModule>();
+    private final Thread.UncaughtExceptionHandler mOldHandler = Thread.getDefaultUncaughtExceptionHandler();
+    private final LinkedList<TrackedModule> mMods = new LinkedList<>();
     private final PackageReport mPr = new PackageReport();
-    private final BuildReport   mBr = new BuildReport();
+    private final BuildReport mBr = new BuildReport();
 
     private class PackageReport {
-        String packageName          = UNKNOWN;
-        String versionName          = UNKNOWN;
-        String filesDir             = UNKNOWN;
+        String packageName = UNKNOWN;
+        String versionName = UNKNOWN;
+        String filesDir    = UNKNOWN;
     }
     // Useful Informations
     private class BuildReport {
-        String androidVersion       = UNKNOWN;
-        String board                = UNKNOWN;
-        String brand                = UNKNOWN;
-        String device               = UNKNOWN;
-        String display              = UNKNOWN;
-        String fingerPrint          = UNKNOWN;
-        String host                 = UNKNOWN;
-        String id                   = UNKNOWN;
-        String manufacturer         = UNKNOWN;
-        String model                = UNKNOWN;
-        String product              = UNKNOWN;
-        String tags                 = UNKNOWN;
-        long   time                 = 0;
-        String type                 = UNKNOWN;
-        String user                 = UNKNOWN;
+        String androidVersion = UNKNOWN;
+        String board          = UNKNOWN;
+        String brand          = UNKNOWN;
+        String device         = UNKNOWN;
+        String display        = UNKNOWN;
+        String fingerPrint    = UNKNOWN;
+        String host           = UNKNOWN;
+        String id             = UNKNOWN;
+        String manufacturer   = UNKNOWN;
+        String model          = UNKNOWN;
+        String product        = UNKNOWN;
+        String tags           = UNKNOWN;
+        long   time           = 0;
+        String type           = UNKNOWN;
+        String user           = UNKNOWN;
     }
 
     public enum DumpLevel {
@@ -110,9 +111,7 @@ UncaughtExceptionHandler {
             PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
             mPr.versionName = pi.versionName;
             mPr.packageName = pi.packageName;
-        }catch (NameNotFoundException e) {
-            ; // ignore
-        }
+        }catch (NameNotFoundException ignored) { }
         mPr.filesDir        = context.getFilesDir().getAbsolutePath();
         mBr.model           = android.os.Build.MODEL;
         mBr.androidVersion  = android.os.Build.VERSION.RELEASE;
@@ -133,6 +132,7 @@ UncaughtExceptionHandler {
 
     private void
     appendCommonReport(StringBuilder report) {
+        //noinspection StringConcatenationInsideStringBufferAppend
         report.append("==================== Package Information ==================\n")
               .append("  - name        : " + mPr.packageName + "\n")
               .append("  - version     : " + mPr.versionName + "\n")
@@ -174,8 +174,6 @@ UncaughtExceptionHandler {
 
     /**
      * register module that will be dumped when unexpected exception is issued.
-     * @param m
-     * @return
      */
     public boolean
     registerModule(TrackedModule m) {
@@ -205,11 +203,8 @@ UncaughtExceptionHandler {
         appendCommonReport(report);
 
         // collect dump informations
-        Iterator<TrackedModule> iter = mMods.iterator();
-        while (iter.hasNext()) {
-            TrackedModule tm = iter.next();
+        for (TrackedModule tm : mMods)
             report.append(tm.dump(DumpLevel.FULL)).append("\n\n");
-        }
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         ex.printStackTrace(pw);

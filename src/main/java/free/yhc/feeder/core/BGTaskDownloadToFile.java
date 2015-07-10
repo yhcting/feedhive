@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,60 +34,85 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
-public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
+import java.io.File;
+
+public class BGTaskDownloadToFile extends BGTask<BGTaskDownloadToFile.Arg, Object> {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(BGTaskUpdateChannel.class);
+    @SuppressWarnings("unused")
+    private static final Utils.Logger P = new Utils.Logger(BGTaskDownloadToFile.class);
 
     private volatile NetLoader mLoader = null;
+    private volatile int mProgress = 0;
 
     public static class Arg {
-        final long    cid;
-        final String  customIconref;
+        final String url;
+        final File toFile;
+        final File tempFile;
 
-        public Arg(long aCid) {
-            cid = aCid;
-            customIconref = null;
+        public Arg(String aUrl, File aToFile, File aTempFile) {
+            Utils.eAssert(null != aUrl && null != aToFile && null != aTempFile);
+            url = aUrl;
+            toFile = aToFile;
+            tempFile = aTempFile;
         }
-        public Arg(long aCid, String aCustomIconref) {
-            cid = aCid;
-            customIconref = aCustomIconref;
-        }
+    }
 
+    private boolean
+    cleanupStream() {
+        return true;
     }
 
     public
-    BGTaskUpdateChannel(Arg arg) {
-        super(arg, BGTask.OPT_WAKELOCK | BGTask.OPT_WIFILOCK);
+    BGTaskDownloadToFile(Arg arg) {
+        super(arg, OPT_WAKELOCK | OPT_WIFILOCK);
+    }
+
+    @Override
+    public void
+    registerEventListener(Object key, OnEventListener listener, boolean hasPriority) {
+        super.registerEventListener(key, listener, hasPriority);
+        publishProgress(mProgress);
     }
 
     @Override
     protected Err
     doBgTask(Arg arg) {
+        //logI("* Start background Job : DownloadToFileTask\n" +
+        //     "    Url : " + arg.url);
+        mLoader = new NetLoader();
+
+        Err result = Err.NO_ERR;
         try {
-            mLoader = new NetLoader();
-            if (null == arg.customIconref)
-                mLoader.updateLoad(arg.cid);
-            else
-                mLoader.updateLoad(arg.cid, arg.customIconref);
+            mLoader.downloadToFile(arg.url,
+                                   arg.tempFile,
+                                   arg.toFile,
+                                   new NetLoader.OnProgress() {
+                @Override
+                public void
+                onProgress(NetLoader loader, long prog) {
+                    mProgress = (int)prog;
+                    publishProgress(mProgress);
+                }
+            });
         } catch (FeederException e) {
-            //logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
-            return e.getError();
+            result = e.getError();
         }
-        return Err.NO_ERR;
+
+        return result;
     }
 
     @Override
     public boolean
     cancel(Object param) {
-        // I may misunderstand that canceling background task may corrupt DB
-        //   by interrupting in the middle of transaction.
-        // But java thread doesn't interrupt it's executing.
-        // So, I don't worry about this (different from C.)
-        super.cancel(param); // cancel thread
+        // HACK for fast-interrupt
+        // Raise IOException in force
+        super.cancel(param);
         if (null != mLoader)
-            mLoader.cancel();     // This is HACK for fast-interrupt.
+            mLoader.cancel();
+        cleanupStream();
         return true;
     }
 }

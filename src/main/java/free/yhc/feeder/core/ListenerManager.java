@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,31 +34,35 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.model;
+package free.yhc.feeder.core;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 
 public class ListenerManager implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(ListenerManager.class);
 
-    private final KeyBasedLinkedList<ListenerNode> mList = new KeyBasedLinkedList<ListenerNode>();
+    private final KeyBasedLinkedList<ListenerNode> mList = new KeyBasedLinkedList<>();
 
     public interface Listener {
         void onNotify(Object user, Type type, Object a0, Object a1);
     }
 
     public interface Type {
-        long    flag();
+        long flag();
     }
 
     private class ListenerNode {
-        long        flag;
-        Listener    l;
-        Object      user;
-        ListenerNode(Listener al, Object user, long aflag) {
+        long flag;
+        Listener l;
+        Object user;
+        ListenerNode(Listener al,
+                     @SuppressWarnings("unused") Object user,
+                     long aflag) {
             l = al;
             flag = aflag;
         }
@@ -75,7 +79,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public void
     notifyDirect(final Type type, final Object arg0, final Object arg1) {
-        LinkedList<ListenerNode> n = new LinkedList<ListenerNode>();
+        LinkedList<ListenerNode> n = new LinkedList<>();
         synchronized (mList) {
             // copy
             Iterator<ListenerNode> iter = mList.iterator();
@@ -87,18 +91,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // call notify out of critical section
-        Iterator<ListenerNode> iter = n.iterator();
-        while (iter.hasNext()) {
-            ListenerNode ln = iter.next();
+        for (ListenerNode ln : n)
             ln.l.onNotify(ln.user, type, arg0, arg1);
-        }
     }
 
     /**
      * Post to ui handler
-     * @param type
-     * @param arg0
-     * @param arg1
      */
     public void
     notifyIndirect(final Type type, final Object arg0, final Object arg1) {
@@ -123,6 +121,7 @@ UnexpectedExceptionHandler.TrackedModule {
         notifyDirect(type, arg0, null);
     }
 
+    @SuppressWarnings("unused")
     public void
     notifyDirect(final Type type) {
         notifyDirect(type, null);
@@ -140,8 +139,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Should run on UI Thread.
-     * @param listener
-     * @param flag
      */
     public void
     registerListener(Object key, Listener listener, Object user, long flag) {
@@ -174,8 +171,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-     * Should
-     * @param listener
+     *
      */
     public void
     unregisterListener(Listener listener) {

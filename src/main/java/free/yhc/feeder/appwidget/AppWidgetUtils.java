@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -43,27 +43,27 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
 import free.yhc.feeder.db.DB;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Utils;
-import free.yhc.feeder.model.Utils.Logger;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Utils;
+import free.yhc.feeder.core.Utils.Logger;
 
 public class AppWidgetUtils {
     private static final boolean DBG = false;
     private static final Logger P = new Logger(AppWidgetUtils.class);
 
-    public static final int    INVALID_APPWIDGETID = -1;
+    public static final int INVALID_APPWIDGETID = -1;
     public static final String MAP_KEY_CATEGORYID  = "categoryid";
 
-    static final String ACTION_LIST_PENDING_INTENT            = "feeder.intent.action.LIST_PENDING_INTENT";
+    static final String ACTION_LIST_PENDING_INTENT = "feeder.intent.action.LIST_PENDING_INTENT";
     static final String ACTION_CHANGE_CATEGORY_PENDING_INTENT = "feeder.intent.action.CHANGE_CATEGORY_PENDING_INTENT";
-    static final String ACTION_MOVE_TO_TOP_PENDING_INTENT     = "feeder.intent.action.MOVE_TO_TOP_PENDING_INTENT";
+    static final String ACTION_MOVE_TO_TOP_PENDING_INTENT = "feeder.intent.action.MOVE_TO_TOP_PENDING_INTENT";
     static final String ACTION_UPDATE_CATEGORY_PENDING_INTENT = "feeder.intent.action.UPDATE_CATEGORY_PENDING_INTENT";
-    static final String ACTION_MORE_MENU_PENDING_INTENT       = "feeder.intent.action.MORE_MENU_PENDING_INTENT";
+    static final String ACTION_MORE_MENU_PENDING_INTENT = "feeder.intent.action.MORE_MENU_PENDING_INTENT";
 
-    static final int    INVALID_POSITION    = -1;
+    static final int INVALID_POSITION = -1;
 
-    static final String MAP_KEY_ITEMID      = "itemid";
-    static final String MAP_KEY_POSITION    = "position";
+    static final String MAP_KEY_ITEMID = "itemid";
+    static final String MAP_KEY_POSITION = "position";
 
     private static final String APPWIDGET_PREF_FILE = "appWidgetPref";
 
@@ -71,7 +71,7 @@ public class AppWidgetUtils {
     private static final SharedPreferences sMapPref
         = Environ.getAppContext().getSharedPreferences(APPWIDGET_PREF_FILE, Context.MODE_PRIVATE);
     private static final SharedPreferences.Editor sMapPrefEditor
-        = sMapPref.edit();;
+        = sMapPref.edit();
 
     static int[]
     getAppWidgetIds() {
@@ -94,14 +94,14 @@ public class AppWidgetUtils {
 
     static int[]
     getCategoryWidget(long categoryid) {
-        ArrayList<Integer> al = new ArrayList<Integer>();
+        ArrayList<Integer> al = new ArrayList<>();
         int[] awids = AppWidgetUtils.getAppWidgetIds();
         for (int id : awids) {
             long catid = sMapPref.getLong(String.valueOf(id), DB.INVALID_ITEM_ID);
             if (categoryid == catid)
                 al.add(id);
         }
-        int[] rets = Utils.convertArrayIntegerToint(al.toArray(new Integer[0]));
+        int[] rets = Utils.convertArrayIntegerToint(al.toArray(new Integer[al.size()]));
         if (DBG) P.v("category:" + categoryid +
                      " -> widget:" + Utils.nrsToNString(rets));
         return rets;

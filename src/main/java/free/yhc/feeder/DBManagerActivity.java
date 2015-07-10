@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2015
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,7 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.model.Utils.eAssert;
+import static free.yhc.feeder.core.Utils.eAssert;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,7 +58,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -66,31 +65,34 @@ import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.model.Environ;
-import free.yhc.feeder.model.Err;
-import free.yhc.feeder.model.RTTask;
-import free.yhc.feeder.model.UnexpectedExceptionHandler;
-import free.yhc.feeder.model.Utils;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.RTTask;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+import free.yhc.feeder.core.Utils;
 
 public class DBManagerActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
+    @SuppressWarnings("unused")
     private static final boolean DBG = false;
+    @SuppressWarnings("unused")
     private static final Utils.Logger P = new Utils.Logger(DBManagerActivity.class);
 
+    @SuppressWarnings("unused")
     public static final String KEY_DB_UPDATED = "dbUpdated";
 
-    private static final long  ID_ALL_CHANNEL   = -1;
-    private static final int   POS_ALL_CHANNEL  = -1;
+    private static final long ID_ALL_CHANNEL = -1;
+    private static final int POS_ALL_CHANNEL = -1;
 
-    private final DBPolicy      mDbp = DBPolicy.get();
-    private final RTTask        mRtt = RTTask.get();
+    private final DBPolicy mDbp = DBPolicy.get();
+    private final RTTask mRtt = RTTask.get();
 
     private String mExDBFilePath = null;
     private String mInDBFilePath = null;
-    private DBInfo mDbInfo       = new DBInfo();
+    private DBInfo mDbInfo = new DBInfo();
 
     private static class DBInfo {
-        int         sz;    // db file sz (KB)
+        int sz;    // db file sz (KB)
         ChannInfo[] channs = new ChannInfo[0];
         Comparator<ChannInfo> channInfoComparator = new Comparator<ChannInfo>() {
             @Override
@@ -106,9 +108,9 @@ UnexpectedExceptionHandler.TrackedModule {
         };
 
         static class ChannInfo {
-            long    id;
-            String  title;
-            int     nrItmes; // items of this channel.
+            long id;
+            String title;
+            int nrItmes; // items of this channel.
         }
     }
 
@@ -137,8 +139,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * IMPORTANT : This function should be run on main UI thread!
-     *
-     * @return
      */
     private boolean
     getExclusiveDBAccess() {
@@ -164,7 +164,6 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      * Should be run on main UI thread!
-     * @return
      */
     private void
     putExclusiveDBAccess() {
@@ -173,7 +172,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private Err
     verifyCandidateDB(File dbf) {
-        SQLiteDatabase db = null;
+        SQLiteDatabase db;
         try {
             db = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
         } catch (SQLiteException e0) {
@@ -316,6 +315,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 if (result == Err.NO_ERR) {
                     // All are done successfully!
                     // Delete useless backup file!
+                    //noinspection ResultOfMethodCallIgnored
                     inDbfBackup.delete();
                     onDBChanged(ID_ALL_CHANNEL, 0);
                 } else {
@@ -358,9 +358,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     *   ID_ALL_CHANNEL means 'for all channel' - that is for whole DB.
-     * @param percent
+     * @param cid ID_ALL_CHANNEL means 'for all channel' - that is for whole DB.
      */
     private void
     shrinkItemsAsync(final long cid, final int percent) {
@@ -395,10 +393,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     /**
-    * @param position
-    *   '>= 0' for specific channel located at given position, ID_ALL_CHANNEL for shrinking entire item table.
-    * @param anchor
-    */
+     * @param position '>= 0' for specific channel located at given position,
+     *                 ID_ALL_CHANNEL for shrinking entire item table.
+     */
     private void
     actionShrinkDB(final int position, View anchor) {
         PopupMenu popup = new PopupMenu(this, anchor);
@@ -479,9 +476,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     /**
      *
-     * @param cid
-     *   ID_ALL_CHANNEL for all channels - entire item table.
-     * @param nrDeleted
+     * @param cid ID_ALL_CHANNEL for all channels - entire item table.
      */
     private void
     onDBChanged(long cid, int nrDeleted) {
@@ -535,28 +530,28 @@ UnexpectedExceptionHandler.TrackedModule {
                         + getResources().getText(R.string.app_name) + ".db";
         mInDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
 
-        ((Button)findViewById(R.id.exportdb)).setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.exportdb)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 actionExportDB();
             }
         });
 
-        ((Button)findViewById(R.id.importdb)).setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.importdb)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 actionImportDB();
             }
         });
 
-        ((Button)findViewById(R.id.shrinkdb)).setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.shrinkdb)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 actionShrinkDB(POS_ALL_CHANNEL, v);
             }
         });
 
-        ((Button)findViewById(R.id.per_chann_mgmt)).setOnClickListener(new View.OnClickListener() {
+        (findViewById(R.id.per_chann_mgmt)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 loadChannInfoListAsync();
