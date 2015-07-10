@@ -426,6 +426,8 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     open() {
         mDb = getWritableDatabase();
+        // In general WAL shows better performance.
+        mDb.enableWriteAheadLogging();
     }
 
     @Override

@@ -79,6 +79,9 @@ UnexpectedExceptionHandler.TrackedModule {
     // Request codes.
     private static final int REQC_PICK_PREDEFINED_CHANNEL  = 1;
 
+    // Saved instance
+    private static final String KEY_CURRENT_CATEGORY = "current_category";
+
     private final DBPolicy      mDbp = DBPolicy.get();
     private final RTTask        mRtt = RTTask.get();
     private final UsageReport   mUr  = UsageReport.get();
@@ -175,12 +178,6 @@ UnexpectedExceptionHandler.TrackedModule {
         return null;
     }
 
-    private void
-    selectDefaultAsSelected() {
-        // 0 is index of default tab
-        mAb.setSelectedNavigationItem(0);
-    }
-
     private long
     getCategoryId(Tab tab) {
         return getTag(tab).categoryid;
@@ -189,6 +186,27 @@ UnexpectedExceptionHandler.TrackedModule {
     private long
     getCurrentCategoryId() {
         return getPagerAdapter().getPrimaryFragment().getCategoryId();
+    }
+
+    private int
+    getTabPosition(long categoryid) {
+        for (int i = 0; i < mAb.getTabCount(); i++) {
+            if (categoryid == getCategoryId(mAb.getTabAt(i)))
+                return i;
+        }
+        return -1;
+    }
+
+    private void
+    selectDefaultAsSelected() {
+        // 0 is index of default tab
+        mAb.setSelectedNavigationItem(0);
+    }
+
+    private void
+    setAsCurrentCategory(long categoryid) {
+        mPager.setCurrentItem(getPagerAdapter().getPosition(categoryid));
+        mAb.setSelectedNavigationItem(getTabPosition(categoryid));
     }
 
     private Tab
@@ -815,12 +833,27 @@ UnexpectedExceptionHandler.TrackedModule {
                                                                       cats);
         mPager.setAdapter(adapter);
 
-        selectDefaultAsSelected();
+        long categoryid = -1;
+        if (null != savedInstanceState)
+            categoryid = savedInstanceState.getLong(KEY_CURRENT_CATEGORY, -1);
+
+        if (0 < categoryid)
+            setAsCurrentCategory(categoryid);
+        else
+            selectDefaultAsSelected();
 
         mPager.setOnPageChangeListener(mPCListener);
         mDbWatcher = new DBWatcher();
     }
 
+    @Override
+    protected void
+    onSaveInstanceState(Bundle outState) {
+        // ignore all unexpected operation.
+        try {
+            outState.putLong(KEY_CURRENT_CATEGORY, getCurrentCategoryId());
+        } catch (RuntimeException ignore) { };
+    }
 
     @Override
     protected void
