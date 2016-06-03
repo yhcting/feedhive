@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -41,8 +41,17 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.os.Handler;
+import android.os.Process;
 import android.preference.PreferenceManager;
+
+import java.io.IOException;
+
+import free.yhc.abaselib.ABaselib;
+import free.yhc.abaselib.util.AUtil;
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.appwidget.ViewsService;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.core.ContentsManager;
@@ -50,13 +59,10 @@ import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
 import free.yhc.feeder.core.UsageReport;
-import free.yhc.feeder.core.Utils;
 
 public class FeederApp extends Application {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(FeederApp.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static Logger P = null;
 
     private void
     convertYesNoPreferenceToBoolean(SharedPreferences prefs,
@@ -97,6 +103,17 @@ public class FeederApp extends Application {
             onUpgradeTo56(context);
     }
 
+    public static void
+    initApplicationPostEssentialPermissions() {
+        try {
+            Environ.get().initPostEssentialPermission();
+        } catch (IOException e) {
+            P.bug(false); // This is NOT expected
+        }
+        ContentsManager.get();
+    }
+
+
     @Override
     public void
     onConfigurationChanged(Configuration newConfig) {
@@ -107,6 +124,11 @@ public class FeederApp extends Application {
     public void
     onCreate() {
         super.onCreate();
+        ABaselib.initLibrary(
+                getApplicationContext(),
+                new Handler(),
+                null);
+        P = Logger.create(FeederApp.class, Logger.LOGLV_DEFAULT);
 
         // NOTE
         // Order is important
@@ -120,19 +142,19 @@ public class FeederApp extends Application {
                 onAppUpgrade(context, from, to);
             }
         });
-        Environ.get();
+        Environ env = Environ.get();
 
-        // Utils.init() SHOULD be called before initializing other modules.
-        //   because Utils has application context and offer it to other modules.
+        // Set preference to default values
+        PreferenceManager.setDefaultValues(this, R.xml.preference, false);
+
+        // Util.init() SHOULD be called before initializing other modules.
+        //   because Util has application context and offer it to other modules.
         // And most modules uses application context in it's early stage - ex. constructor.
-        Utils.init();
-        Utils.cleanTempFiles();
+        Util.init();
 
         // register default customized uncaught exception handler for error collecting.
         Thread.setDefaultUncaughtExceptionHandler(UnexpectedExceptionHandler.get());
-
         DB.get().open();
-        ContentsManager.get();
         DBPolicy.get();
         RTTask.get();
         UsageReport.get();
@@ -142,6 +164,8 @@ public class FeederApp extends Application {
 
         // To connect to app widgets
         ViewsService.instantiateViewsFactories();
+        if (env.hasEssentialPermissions())
+            initApplicationPostEssentialPermissions();
     }
 
     @Override

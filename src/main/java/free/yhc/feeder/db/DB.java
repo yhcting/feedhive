@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder.db;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
@@ -46,18 +44,20 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import free.yhc.feeder.core.Environ;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.core.Err;
-import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.core.Util;
+import free.yhc.feeder.feed.Feed;
 import free.yhc.feeder.core.ListenerManager;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 // This is singleton
 public final class DB extends SQLiteOpenHelper implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(DB.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(DB.class, Logger.LOGLV_DEFAULT);
 
     public static final long INVALID_ITEM_ID = -1;
     /**************************************
@@ -201,7 +201,7 @@ UnexpectedExceptionHandler.TrackedModule {
                   + ")";
 
         if (null != columns && null != searchs) {
-            eAssert(columns.length == searchs.length);
+            P.bug(columns.length == searchs.length);
             String whSearch = "";
             int i = 0;
             while (i < columns.length) {
@@ -230,7 +230,7 @@ UnexpectedExceptionHandler.TrackedModule {
     buildSQLWhere(Column[] cols, Object[] vals, String operator, String join) {
         String clause = "";
         if (null != cols && null != vals) {
-            eAssert(cols.length == vals.length);
+            P.bug(cols.length == vals.length);
             clause = "";
             operator = " " + operator + " ";
             join = " " + join + " ";
@@ -338,7 +338,7 @@ UnexpectedExceptionHandler.TrackedModule {
         do {
             String url = c.getString(1);
             if (url.endsWith("/")) {
-                url = Utils.removeTrailingSlash(url);
+                url = Util.removeTrailingSlash(url);
                 ContentValues cvs = new ContentValues();
                 cvs.put(ColumnChannel.URL.getName(), url);
                 db.update(TABLE_CHANNEL, cvs,
@@ -402,7 +402,7 @@ UnexpectedExceptionHandler.TrackedModule {
      * Operation
      **************************************/
     private DB() {
-        super(Environ.getAppContext(), NAME, null, getVersion());
+        super(AppEnv.getAppContext(), NAME, null, getVersion());
         UnexpectedExceptionHandler.get().registerModule(sInstance);
     }
 
@@ -529,7 +529,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     long
     updateCategory(long id, String name) {
-        eAssert(Utils.isValidValue(name));
+        P.bug(Util.isValidValue(name));
         ContentValues cvs = new ContentValues();
         cvs.put(ColumnCategory.NAME.getName(), name);
         return mDb.update(TABLE_CATEGORY,
@@ -611,7 +611,7 @@ UnexpectedExceptionHandler.TrackedModule {
             Method m = cvs.getClass().getMethod("put", String.class, v.getClass());
             m.invoke(cvs, field.getName(), v);
         } catch (Exception e) {
-            eAssert(false);
+            P.bug(false);
         }
         return updateChannel(cid, cvs);
     }
@@ -635,7 +635,7 @@ UnexpectedExceptionHandler.TrackedModule {
     void
     updateChannelSet(ColumnChannel target, Object[] targetValues,
                      ColumnChannel where,  Object[] whereValues) {
-        eAssert(targetValues.length == whereValues.length);
+        P.bug(targetValues.length == whereValues.length);
         if (targetValues.length <= 0)
             return;
 
@@ -829,7 +829,7 @@ UnexpectedExceptionHandler.TrackedModule {
         else if (v instanceof byte[])
             cvs.put(field.getName(), (byte[])v);
         else
-            eAssert(false);
+            P.bug(false);
         return updateItem(id, cvs);
     }
 
@@ -1041,7 +1041,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     int
     deleteOldItems(long cid, int percent) {
-        eAssert(0 <= percent && percent <= 100);
+        P.bug(0 <= percent && percent <= 100);
 
         if (0 == percent)
             return 0;
@@ -1066,7 +1066,7 @@ UnexpectedExceptionHandler.TrackedModule {
             long curCount = c.getCount();
             int pos = (int)(curCount - curCount * percent / 100);
             if (!c.moveToPosition(pos))
-                eAssert(false);
+                P.bug(false);
             long putTimeFrom = c.getLong(0);
             c.close();
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -37,15 +37,21 @@
 package free.yhc.feeder.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedList;
 
-import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.preference.PreferenceManager;
+
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.util.FileUtil;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.R;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.feed.FeedPolicy;
+
+import static free.yhc.baselib.util.Util.convertArrayLongTolong;
 
 
 //
@@ -53,10 +59,8 @@ import free.yhc.feeder.db.DBPolicy;
 //
 public class ContentsManager implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(ContentsManager.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ContentsManager.class, Logger.LOGLV_DEFAULT);
 
     // Current Contents Version
     private static final int CONTENTS_VERSION = 1;
@@ -95,7 +99,7 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private ContentsManager() {
-        int ver = Utils.getPrefContentVersion();
+        int ver = getVersion();
         if (ver < CONTENTS_VERSION)
             upgrade(ver, CONTENTS_VERSION);
     }
@@ -110,12 +114,64 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // ========================================================================
     //
+    //
+    //
+    // ========================================================================
+    private static File
+    getVersionFile() {
+        return new File(Environ.get().getAppRootDirectoryPath() + "/version");
+    }
+
+    private static int
+    getVersion() {
+        File vf = getVersionFile();
+        try {
+            String verstr = FileUtil.readTextFile(vf);
+            return Integer.parseInt(verstr);
+        } catch (NumberFormatException ignored) {
+            P.w("Invalid version file! Reset to version 0!");
+            setVersion(0);
+            return 0;
+        } catch (IOException ignored) {
+            // version file doesn't exist => means version 0.
+            return 0;
+        }
+    }
+
+    private static boolean
+    setVersion(int version) {
+        try {
+            FileUtil.writeTextFile(getVersionFile(), "" + version);
+            return true;
+        } catch (IOException ignored) {
+            P.w("Fail to set version of ContentsManager!");
+            return false;
+        }
+    }
+
+
+    // ========================================================================
+    //
     // UPGRADE
     //
     // ========================================================================
     private static void
     upgradeTo1() {
         File rt = new File(Environ.get().getAppRootDirectoryPath());
+        if (!rt.exists())
+            // This may be the first launch. Nothing to upgrade.
+            return;
+        if (!(rt.isDirectory()
+                && rt.canWrite()
+                && rt.canRead())) {
+            /* FeedHive can't access sdcard directory.
+             * This is critical case.
+             * TODO: More kind feedback for user is required
+             */
+            UxUtil.showTextToast(R.string.err_iofile);
+            P.bug(false);
+        }
+
         for (File f : rt.listFiles()) {
             if (f.isDirectory()
                 && f.getName().matches("^[0-9]+$")) {
@@ -127,7 +183,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     // This directory doens't have matching channel.
                     // This is garbage.
                     // Remove it!
-                    Utils.removeFileRecursive(f, true);
+                    Util.removeFileRecursive(f, true);
                 else
                     // rename to human readable format.
                     //noinspection ResultOfMethodCallIgnored
@@ -147,16 +203,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
             default:
                 // SHOULD NOT reach here.
-                Utils.eAssert(false);
+                P.bug(false);
             }
             dbv++;
         }
-
-        // update contents version string to shared preference
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
-        SharedPreferences.Editor prefEd = prefs.edit();
-        prefEd.putInt(Utils.getResString(R.string.cscontent_version), CONTENTS_VERSION);
-        prefEd.apply();
+        setVersion(CONTENTS_VERSION);
     }
 
     @Override
@@ -216,10 +267,10 @@ UnexpectedExceptionHandler.TrackedModule {
     getChannelDirPath(long cid) {
         DBPolicy dbp = DBPolicy.get();
         String title = dbp.getChannelInfoString(cid, ColumnChannel.TITLE);
-        if (!Utils.isValidValue(title))
+        if (!Util.isValidValue(title))
             return null;
-        String fname = Utils.convertToFilename(title) + "_" + cid;
-        return Environ.get().getAppRootDirectoryPath() + fname + "/";
+        String fname = Util.convertToFilename(title) + "_" + cid;
+        return Environ.get().getAppRootDirectoryPath() + "/" + fname;
     }
 
     private static File
@@ -239,7 +290,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == f)
             return false; // Channel information is NOT updated yet.
         if (f.exists() && force)
-            Utils.removeFileRecursive(f, true);
+            Util.removeFileRecursive(f, true);
         return f.mkdir();
     }
 
@@ -251,7 +302,7 @@ UnexpectedExceptionHandler.TrackedModule {
         File f = getChannelDirFile(cid);
         if (null == f)
             return false; // Channel information is NOT updated yet.
-        boolean ret = Utils.removeFileRecursive(f, true);
+        boolean ret = Util.removeFileRecursive(f, true);
         notifyUpdated(UpdateType.CHAN_DATA, new long[] { cid });
         return ret;
     }
@@ -263,7 +314,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // So, there is no channel directory.
         if (null == f)
             return true;
-        boolean ret = Utils.removeFileRecursive(f, false);
+        boolean ret = Util.removeFileRecursive(f, false);
         if (notify)
             notifyUpdated(UpdateType.CHAN_DATA, new long[] { cid });
         return ret;
@@ -303,7 +354,7 @@ UnexpectedExceptionHandler.TrackedModule {
     getContentFiles(long cids[]) {
         LinkedList<File> l = new LinkedList<>();
         for (long cid : cids)
-            Utils.getFilesRecursive(l, getChannelDirFile(cid));
+            Util.getFilesRecursive(l, getChannelDirFile(cid));
         return l;
     }
 
@@ -358,10 +409,10 @@ UnexpectedExceptionHandler.TrackedModule {
         if (null == chanDirPath)
             return null;
 
-        if (!Utils.isValidValue(title))
+        if (!Util.isValidValue(title))
             title = dbp.getItemInfoString(id, ColumnItem.TITLE);
 
-        if (!Utils.isValidValue(url)) {
+        if (!Util.isValidValue(url)) {
             long action = dbp.getChannelInfoLong(cid, ColumnChannel.ACTION);
             String link = dbp.getItemInfoString(id, ColumnItem.LINK);
             String enclosure = dbp.getItemInfoString(id, ColumnItem.ENCLOSURE_URL);
@@ -369,21 +420,21 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         // we don't need to create valid filename with empty url value.
-        if (!Utils.isValidValue(url)) {
+        if (!Util.isValidValue(url)) {
             synchronized (mWiredChannl) {
                 mWiredChannl.add(dbp.getChannelInfoString(cid, ColumnChannel.URL));
             }
             return null;
         }
 
-        String ext = Utils.getExtentionFromUrl(url);
+        String ext = Util.getExtentionFromUrl(url);
 
         // Title may include character that is not allowed as file name
         // (ex. '/')
         // Item is id is preserved even after update.
         // So, item ID can be used as file name to match item and file.
-        String fname = Utils.convertToFilename(title) + "_" + id;
-        int endIndex = Utils.MAX_FILENAME_LENGTH - ext.length() - 1; // '- 1' for '.'
+        String fname = Util.convertToFilename(title) + "_" + id;
+        int endIndex = Util.MAX_FILENAME_LENGTH - ext.length() - 1; // '- 1' for '.'
         if (endIndex > fname.length())
             endIndex = fname.length();
 
@@ -394,7 +445,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // NOTE
         //   In most UNIX file systems, only '/' and 'null' are reserved.
         //   So, we don't worry about "converting string to valid file name".
-        return new File(chanDirPath + fname);
+        return new File(chanDirPath + "/" + fname);
     }
 
     public long
@@ -429,7 +480,7 @@ UnexpectedExceptionHandler.TrackedModule {
         LinkedList<Long> l = new LinkedList<>();
         for (long id : ids) {
             File f = getItemInfoDataFile(id);
-            Utils.eAssert(null != f);
+            P.bug(null != f);
             //noinspection ConstantConditions
             if (null == f
                 || !f.delete())
@@ -439,7 +490,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         // Item ids that fails to delete it's content, are ignored intentionally.
         notifyUpdated(UpdateType.ITEM_DATA,
-                      Utils.convertArrayLongTolong(l.toArray(new Long[l.size()])));
+                      convertArrayLongTolong(l.toArray(new Long[l.size()])));
         return failcnt;
     }
 
@@ -448,7 +499,8 @@ UnexpectedExceptionHandler.TrackedModule {
         // NOTE
         // There is no use case that "null == f" here.
         File f = getItemInfoDataFile(id);
-        Utils.eAssert(null != f);
+        P.bug(null != f);
+        assert f != null;
         if (f.delete()) {
             notifyUpdated(UpdateType.ITEM_DATA, new long[] { id });
             return true;

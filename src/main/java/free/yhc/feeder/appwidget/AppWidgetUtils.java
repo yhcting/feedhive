@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -42,14 +42,17 @@ import android.appwidget.AppWidgetManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.db.DB;
-import free.yhc.feeder.core.Environ;
-import free.yhc.feeder.core.Utils;
-import free.yhc.feeder.core.Utils.Logger;
+
+import static free.yhc.baselib.util.Util.convertArrayIntegerToint;
+import static free.yhc.feeder.core.Util.nrsToNString;
 
 public class AppWidgetUtils {
-    private static final boolean DBG = false;
-    private static final Logger P = new Logger(AppWidgetUtils.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AppWidgetUtils.class, Logger.LOGLV_DEFAULT);
 
     public static final int INVALID_APPWIDGETID = -1;
     public static final String MAP_KEY_CATEGORYID  = "categoryid";
@@ -69,14 +72,14 @@ public class AppWidgetUtils {
 
     // AppWidget to Category Map.
     private static final SharedPreferences sMapPref
-        = Environ.getAppContext().getSharedPreferences(APPWIDGET_PREF_FILE, Context.MODE_PRIVATE);
+        = AppEnv.getAppContext().getSharedPreferences(APPWIDGET_PREF_FILE, Context.MODE_PRIVATE);
     private static final SharedPreferences.Editor sMapPrefEditor
         = sMapPref.edit();
 
     static int[]
     getAppWidgetIds() {
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(Environ.getAppContext());
-        ComponentName widget = new ComponentName(Environ.getAppContext(), Provider.class);
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(AppEnv.getAppContext());
+        ComponentName widget = new ComponentName(AppEnv.getAppContext(), Provider.class);
         return appWidgetManager.getAppWidgetIds(widget);
     }
 
@@ -101,9 +104,9 @@ public class AppWidgetUtils {
             if (categoryid == catid)
                 al.add(id);
         }
-        int[] rets = Utils.convertArrayIntegerToint(al.toArray(new Integer[al.size()]));
+        int[] rets = convertArrayIntegerToint(al.toArray(new Integer[al.size()]));
         if (DBG) P.v("category:" + categoryid +
-                     " -> widget:" + Utils.nrsToNString(rets));
+                     " -> widget:" + nrsToNString(rets));
         return rets;
     }
 

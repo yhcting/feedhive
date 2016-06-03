@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,19 +36,17 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
 import android.content.Context;
 import android.database.Cursor;
+
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class AsyncCursorAdapter extends AsyncAdapter implements
 AsyncAdapter.DataProvider {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(AsyncCursorAdapter.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AsyncCursorAdapter.class, Logger.LOGLV_DEFAULT);
 
     private final Object mCurlock = new Object();
 
@@ -162,10 +160,10 @@ AsyncAdapter.DataProvider {
         Object[] items;
         boolean eod = true;
         synchronized (mCurlock) {
-            eAssert(null != mCur && null != mIbldr);
+            P.bug(null != mCur && null != mIbldr);
 
             if (mCur.isClosed())
-                eAssert(false);
+                P.bug(false);
 
             int szAvail = mCur.getCount() - from;
             // szAvail has range - [0, sz]
@@ -182,9 +180,9 @@ AsyncAdapter.DataProvider {
                 do {
                     items[i++] = mIbldr.buildItem(this, mCur);
                 } while (i < szAvail && mCur.moveToNext());
-                eAssert(i == szAvail);
+                P.bug(i == szAvail);
             } else
-                eAssert(0 == mCur.getCount() || 0 == szAvail);
+                P.bug(0 == mCur.getCount() || 0 == szAvail);
         }
         adapter.provideItems(priv, nrseq, from, items, eod);
         //logI("AsyncCursorAdapter : requestData - END");

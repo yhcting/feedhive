@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,7 +34,9 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.core;
+package free.yhc.feeder.feed;
+
+import android.support.annotation.NonNull;
 
 import java.util.LinkedList;
 
@@ -43,12 +45,15 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import free.yhc.baselib.Logger;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.FeederException;
+import free.yhc.feeder.core.UnexpectedExceptionHandler;
+
 public class RSSParser extends FeedParser implements
-UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(RSSParser.class);
+        UnexpectedExceptionHandler.TrackedModule {
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(RSSParser.class, Logger.LOGLV_DEFAULT);
 
     // parsing priority of namespace supported (larger number has priority)
     private static final short PRI_ITUNES  = 2;
@@ -285,15 +290,9 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     @Override
-    public String
-    dump(UnexpectedExceptionHandler.DumpLevel lv) {
-        return "[ RSSParser ]";
-    }
-
-    @Override
-    protected Result
-    parse(Document dom) throws FeederException {
-        Result res = null;
+    @NonNull
+    Result
+    parseDom(@NonNull Document dom) throws FeederException {
         UnexpectedExceptionHandler.get().registerModule(this);
         try {
             Element root = dom.getDocumentElement();
@@ -302,7 +301,7 @@ UnexpectedExceptionHandler.TrackedModule {
             LinkedList<NSParser> pl = new LinkedList<>();
             constructNSParser(pl, root);
 
-            res = new Result();
+            Result res = new Result();
 
             // Some channels use itunes namespace even if they don't have any enclosure media.
             // So, below check doesn't have any meaning.
@@ -320,10 +319,15 @@ UnexpectedExceptionHandler.TrackedModule {
 
             if (!verifyNotNullPolicy(res))
                 throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
-            //logI(feed.channel.dump());
+            return res;
         } finally {
             UnexpectedExceptionHandler.get().unregisterModule(this);
         }
-        return res;
+    }
+
+    @Override
+    public String
+    dump(UnexpectedExceptionHandler.DumpLevel lv) {
+        return "[ RSSParser ]";
     }
 }

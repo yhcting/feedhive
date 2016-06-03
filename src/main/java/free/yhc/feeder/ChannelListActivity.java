@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.AlertDialog;
@@ -58,23 +57,26 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.TextView;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.util.AUtil;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.UiHelper.EditTextDialogAction;
-import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.Environ;
-import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.feed.Feed;
 import free.yhc.feeder.core.ListenerManager;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
 import free.yhc.feeder.core.UsageReport;
-import free.yhc.feeder.core.Utils;
 
 public class ChannelListActivity extends FragmentActivity implements
 ActionBar.TabListener,
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ChannelListActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ChannelListActivity.class, Logger.LOGLV_DEFAULT);
 
     // Request codes.
     private static final int REQC_PICK_PREDEFINED_CHANNEL = 1;
@@ -133,7 +135,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (DB.UpdateType.CATEGORY_TABLE == type)
                 _mCategoryTableUpdated = true;
             else
-                eAssert(false);
+                P.bug(false);
         }
     }
 
@@ -219,7 +221,7 @@ UnexpectedExceptionHandler.TrackedModule {
     addCategory(Feed.Category cat) {
         String text;
         if (mDbp.isDefaultCategoryId(cat.id)
-           && !Utils.isValidValue(mDbp.getCategoryName(cat.id)))
+           && !Util.isValidValue(mDbp.getCategoryName(cat.id)))
             text = getResources().getText(R.string.default_category_name).toString();
         else
             text = cat.name;
@@ -289,13 +291,13 @@ UnexpectedExceptionHandler.TrackedModule {
             onOk(Dialog dialog, EditText edit) {
                 switch (item.getItemId()) {
                 case R.id.uploader:
-                    addChannel(Utils.buildYoutubeFeedUrl_uploader(edit.getText().toString()), null);
+                    addChannel(Util.buildYoutubeFeedUrl_uploader(edit.getText().toString()), null);
                     break;
                 case R.id.search:
-                    addChannel(Utils.buildYoutubeFeedUrl_search(edit.getText().toString()), null);
+                    addChannel(Util.buildYoutubeFeedUrl_search(edit.getText().toString()), null);
                     break;
                 default:
-                    eAssert(false);
+                    P.bug(false);
                 }
             }
         };
@@ -353,18 +355,18 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onOpt_addChannel(final View anchor) {
         if (0 == mAb.getNavigationItemCount()) {
-            eAssert(false);
+            P.bug(false);
             return;
         }
 
         if (0 > mAb.getSelectedNavigationIndex()) {
-            UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_select_category_to_add);
+            UxUtil.showTextToast(R.string.warn_select_category_to_add);
             return;
         }
 
-        if (!Utils.isNetworkAvailable()) {
+        if (!Util.isNetworkAvailable()) {
             // TODO Handling error
-            UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_network_unavailable);
+            UxUtil.showTextToast(R.string.warn_network_unavailable);
             return;
         }
 
@@ -385,7 +387,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     onOpt_addChannel_youtube(anchor);
                     break;
                 default:
-                    eAssert(false);
+                    P.bug(false);
                 }
                 return true;
             }
@@ -407,13 +409,13 @@ UnexpectedExceptionHandler.TrackedModule {
             onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
                 if (mDbp.isDuplicatedCategoryName(name)) {
-                    UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                    UxUtil.showTextToast(R.string.warn_duplicated_category);
                 } else {
                     Feed.Category cat = new Feed.Category(name);
                     if (0 > mDbp.insertCategory(cat))
-                        UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_add_category);
+                        UxUtil.showTextToast(R.string.warn_add_category);
                     else {
-                        eAssert(cat.id >= 0);
+                        P.bug(cat.id >= 0);
                         addCategory(cat);
                     }
                 }
@@ -436,7 +438,7 @@ UnexpectedExceptionHandler.TrackedModule {
             onOk(Dialog dialog, EditText edit) {
                 String name = edit.getText().toString();
                 if (mDbp.isDuplicatedCategoryName(name)) {
-                    UiHelper.showTextToast(ChannelListActivity.this, R.string.warn_duplicated_category);
+                    UxUtil.showTextToast(R.string.warn_duplicated_category);
                 } else {
                     mAb.getSelectedTab().setText(name);
                     mDbp.updateCategory(getCurrentCategoryId(), name);
@@ -451,21 +453,21 @@ UnexpectedExceptionHandler.TrackedModule {
         final long categoryid = getCurrentCategoryId();
         if (DBG) P.v("category(" + categoryid + ")");
         if (mDbp.isDefaultCategoryId(categoryid)) {
-            UiHelper.showTextToast(this, R.string.warn_delete_default_category);
+            UxUtil.showTextToast(R.string.warn_delete_default_category);
             return;
         }
 
         // 0 should be default category index!
-        eAssert(mAb.getSelectedNavigationIndex() > 0);
+        P.bug(mAb.getSelectedNavigationIndex() > 0);
 
-        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+        UxUtil.ConfirmAction action = new UxUtil.ConfirmAction() {
             @Override
             public void
-            onOk(Dialog dialog) {
+            onPositive(Dialog dialog) {
                 deleteCategory(categoryid);
             }
             @Override
-            public void onCancel(Dialog dialog) { }
+            public void onNegative(Dialog dialog) { }
         };
         UiHelper.buildConfirmDialog(this, R.string.delete_category, R.string.delete_category_msg, action).show();
     }
@@ -489,7 +491,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     onOpt_category_delete(anchor);
                     break;
                 default:
-                    eAssert(false);
+                    P.bug(false);
                 }
                 return true;
             }
@@ -507,16 +509,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onOpt_updateAll(@SuppressWarnings("unused") final View anchor) {
-        UiHelper.OnConfirmDialogAction action = new UiHelper.OnConfirmDialogAction() {
+        UxUtil.ConfirmAction action = new UxUtil.ConfirmAction() {
             @Override
             public void
-            onOk(Dialog dialog) {
+            onPositive(Dialog dialog) {
                 ScheduledUpdateService.scheduleImmediateUpdate(mDbp.getChannelIds());
             }
 
             @Override
             public void
-            onCancel(Dialog dialog) {
+            onNegative(Dialog dialog) {
             }
         };
 
@@ -562,13 +564,13 @@ UnexpectedExceptionHandler.TrackedModule {
                .append(getResources().getText(R.string.about_app_email)).append("\n")
                .append(getResources().getText(R.string.about_app_blog)).append("\n")
                .append(getResources().getText(R.string.about_app_page)).append("\n");
-        AlertDialog diag = UiHelper.createAlertDialog(this, 0, title, strbldr.toString());
+        AlertDialog diag = UxUtil.createAlertDialog(this, 0, title, strbldr.toString());
         diag.show();
     }
 
     private void
     onOpt_moreMenu_license(@SuppressWarnings("unused") final View anchor) {
-        View v = UiHelper.inflateLayout(this, R.layout.info_dialog);
+        View v = AUtil.inflateLayout(R.layout.info_dialog);
         TextView tv = ((TextView)v.findViewById(R.id.text));
         tv.setTypeface(Typeface.MONOSPACE);
         tv.setText(R.string.license_desc);
@@ -582,7 +584,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onOpt_moreMenu_deleteAllDnFiles(@SuppressWarnings("unused") final View anchor) {
         AlertDialog diag = UiHelper.buildDeleteAllDnFilesConfirmDialog(this, null, null);
         if (null == diag)
-            UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
+            UxUtil.showTextToast(R.string.del_dnfiles_not_allowed_msg);
         else
             diag.show();
     }
@@ -591,20 +593,20 @@ UnexpectedExceptionHandler.TrackedModule {
     onOpt_moreMenu_deleteAllUsedDnFiles(@SuppressWarnings("unused") final View anchor) {
         AlertDialog diag = UiHelper.buildDeleteUsedDnFilesConfirmDialog(0, this, null, null);
         if (null == diag)
-            UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
+            UxUtil.showTextToast(R.string.del_dnfiles_not_allowed_msg);
         else
             diag.show();
     }
 
     private void
     onOpt_moreMenu_feedbackOpinion(@SuppressWarnings("unused") final View anchor) {
-        if (!Utils.isNetworkAvailable()) {
-            UiHelper.showTextToast(this, R.string.warn_network_unavailable);
+        if (!Util.isNetworkAvailable()) {
+            UxUtil.showTextToast(R.string.warn_network_unavailable);
             return;
         }
 
         if (!mUr.sendFeedbackReportMain(this))
-            UiHelper.showTextToast(this, R.string.warn_find_email_app);
+            UxUtil.showTextToast(R.string.warn_find_email_app);
     }
 
     private void
@@ -641,7 +643,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     onOpt_moreMenu_dbManagement(anchor);
                     break;
                 default:
-                    eAssert(false);
+                    P.bug(false);
                 }
                 return true;
             }
@@ -663,12 +665,12 @@ UnexpectedExceptionHandler.TrackedModule {
         final String[] urls = data.getStringArrayExtra(PredefinedChannelActivity.KEY_URLS);
         final String[] iconurls = data.getStringArrayExtra(PredefinedChannelActivity.KEY_ICONURLS);
         for (int i = 0; i < urls.length; i++) {
-            eAssert(Utils.isValidValue(urls[i]));
+            P.bug(Util.isValidValue(urls[i]));
             final String url = urls[i];
             final String iconurl = iconurls[i];
             // NOTE
             // Without using 'post', user may feel bad ui response.
-            Environ.getUiHandler().post(new Runnable() {
+            AppEnv.getUiHandler().post(new Runnable() {
                 @Override
                 public void
                 run() {
@@ -830,7 +832,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // Setup Tabs
         mAb = getActionBar();
-        eAssert(null != mAb);
+        P.bug(null != mAb);
         mAb.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         mAb.setDisplayShowTitleEnabled(false);
         mAb.setDisplayShowHomeEnabled(false);
@@ -838,7 +840,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         Feed.Category[] cats;
         cats = mDbp.getCategories();
-        eAssert(cats.length > 0);
+        P.bug(cats.length > 0);
 
         for (Feed.Category cat : cats)
             addCategory(cat);

@@ -1,9 +1,9 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
- * This file is part of FeedHive
+ * This file is part of NetMBuddy
  *
  * This program is licensed under the FreeBSD license
  *
@@ -36,30 +36,18 @@
 
 package free.yhc.feeder.core;
 
-import java.io.File;
+import free.yhc.baselib.Logger;
 
-public class BGTaskDownloadToItemContent extends BGTaskDownloadToFile {
-    private long mId;
-    public BGTaskDownloadToItemContent(String url, long id) {
-        super(new Arg(url,
-                      ContentsManager.get().getItemInfoDataFile(id),
-                      Utils.getNewTempFile()));
-        mId = id;
-    }
+public class MPlayer {
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(MPlayerUI.class, Logger.LOGLV_DEFAULT);
 
-    @Override
-    protected Err
-    doBgTask(Arg arg) {
-        //noinspection ConstantConditions
-        if (null == arg.toFile)
-            return Err.IO_FILE;
+    private static MPlayer sInstance = null;
 
-        //noinspection ResultOfMethodCallIgnored
-        new File(arg.toFile.getParent()).mkdirs();
-        ContentsManager cm = ContentsManager.get();
-        Err ret = super.doBgTask(arg);
-        if (Err.NO_ERR == ret)
-            cm.addItemContent(cm.getItemInfoDataFile(mId), mId);
-        return ret;
+    public static MPlayer
+    get() {
+        if (null == sInstance)
+            sInstance = new MPlayer();
+        return sInstance;
     }
 }

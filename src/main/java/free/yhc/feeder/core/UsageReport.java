@@ -47,15 +47,17 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.util.FileUtil;
 import free.yhc.feeder.R;
 
 public class UsageReport implements
 UnexpectedExceptionHandler.TrackedModule,
 OnSharedPreferenceChangeListener {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(UsageReport.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(UsageReport.class, Logger.LOGLV_DEFAULT);
 
     public static final String REPORT_RECEIVER = "yhcting77dev0@gmail.com";
     public static final String FEEDBACK_REPORT_SUBJECT = "[FeedHive] Feedback Report.";
@@ -73,7 +75,7 @@ OnSharedPreferenceChangeListener {
     private boolean mUsageReportEnabled = true;
 
     private UsageReport() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(AppEnv.getAppContext());
         prefs.registerOnSharedPreferenceChangeListener(this);
         onSharedPreferenceChanged(prefs, "err_report");
         onSharedPreferenceChanged(prefs, "usage_report");
@@ -113,13 +115,19 @@ OnSharedPreferenceChangeListener {
      */
     private void
     sendReportMail(Context context, File reportf, int diagTitle, String subject) {
-        if (!Utils.isNetworkAvailable())
+        if (!Util.isNetworkAvailable())
             return;
 
         if (!reportf.exists())
             return; // nothing to do
 
-        String text = Utils.readTextFile(reportf) + "\n\n";
+        String text;
+        try {
+            text = FileUtil.readTextFile(reportf);
+        } catch (IOException e) {
+            text = "";
+        }
+        text += "\n\n";
         // we successfully read all log files.
         // let's clean it.
         cleanReportFile(reportf);
@@ -156,10 +164,10 @@ OnSharedPreferenceChangeListener {
     @Override
     public void
     onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-        if (Utils.getResString(R.string.cserr_report).equals(key))
-            mErrReportEnabled = prefs.getBoolean(Utils.getResString(R.string.cserr_report), true);
-        else if (Utils.getResString(R.string.csusage_report).equals(key))
-            mUsageReportEnabled = prefs.getBoolean(Utils.getResString(R.string.csusage_report), true);
+        if (Util.getResString(R.string.cserr_report).equals(key))
+            mErrReportEnabled = prefs.getBoolean(Util.getResString(R.string.cserr_report), true);
+        else if (Util.getResString(R.string.csusage_report).equals(key))
+            mUsageReportEnabled = prefs.getBoolean(Util.getResString(R.string.csusage_report), true);
     }
 
     /**

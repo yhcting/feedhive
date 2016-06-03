@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.util.LinkedList;
 
 import android.content.Context;
@@ -46,18 +44,20 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
-import free.yhc.feeder.core.Environ;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.ThreadEx;
 import free.yhc.feeder.core.Err;
-import free.yhc.feeder.core.ThreadEx;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+import free.yhc.feeder.core.Util;
+
+import static free.yhc.abaselib.util.AUtil.isUiThread;
 
 public class AsyncAdapter extends BaseAdapter implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(AsyncAdapter.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AsyncAdapter.class, Logger.LOGLV_DEFAULT);
 
     // Variables to store information - not changed in dynamic
     protected final Context mContext;
@@ -169,7 +169,7 @@ UnexpectedExceptionHandler.TrackedModule {
                  final int dataReqSz,
                  final int maxArrSz,
                  boolean hasLimit) {
-        eAssert(dataReqSz < maxArrSz);
+        P.bug(dataReqSz < maxArrSz);
 
         mContext = context;
         mRowLayout = rowLayout;
@@ -197,7 +197,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     protected boolean
     initalLoaded() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         return !(1 == mItems.length && mItems[0] == mDummyItem);
     }
 
@@ -211,7 +211,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     protected void
     destroyItem(Object item) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         if (mDummyItem != item && null != item)
             mDp.destroyData(this, item);
     }
@@ -226,7 +226,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     protected Object
     setItem(int pos, Object item) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         if (pos >= 0 && pos < mItems.length) {
             Object prev = mItems[pos];
             mItems[pos] = item;
@@ -244,8 +244,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     protected void
     insertItem(int pos, Object item) {
-        eAssert(Utils.isUiThread());
-        eAssert(pos >= 0 && pos <= mItems.length);
+        P.bug(isUiThread());
+        P.bug(pos >= 0 && pos <= mItems.length);
         Object[] newItems = new Object[mItems.length + 1];
         System.arraycopy(mItems, 0, newItems, 0, pos);
         System.arraycopy(mItems, pos, newItems, pos + 1, mItems.length - pos);
@@ -261,7 +261,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     protected void
     removeItem(int pos) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         if (pos < 0 || pos >= mItems.length)
             // nothing to do
             return;
@@ -281,8 +281,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private Object[]
     buildNewItemsArray(LDType ldtype, int from, int sz) {
-        eAssert(Utils.isUiThread());
-        eAssert(0 <= sz);
+        P.bug(isUiThread());
+        P.bug(0 <= sz);
         Object[] newItems = null;
 
         if (LDType.INIT == ldtype || LDType.RELOAD == ldtype) {
@@ -305,7 +305,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 mGarbageIteml.add(mItems[i]);
             mPosTop += sz2shrink;
         } else if (LDType.PREV == ldtype) {
-            eAssert(0 < mPosTop && sz <= mPosTop);
+            P.bug(0 < mPosTop && sz <= mPosTop);
             // After initial loading done in the middle of mItems
             int sz2grow = mPosTop;
             int sz2shrink;
@@ -320,7 +320,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 mGarbageIteml.add(mItems[i]);
             mPosTop -= sz2grow;
         } else
-            eAssert(false);
+            P.bug(false);
         return newItems;
     }
 
@@ -333,7 +333,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 summs += ms;
             }
         } catch (InterruptedException ignored) {}
-        eAssert(summs < timeoutms);
+        P.bug(summs < timeoutms);
     }
 
     private void
@@ -341,7 +341,7 @@ UnexpectedExceptionHandler.TrackedModule {
                      final int from, int sz) {
         //logI("Data request UI : from " + from + ", # " + sz);
 
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
 
         if (mHasLimit
             && from + sz > mMaxArrSz)
@@ -373,18 +373,18 @@ UnexpectedExceptionHandler.TrackedModule {
 
         default:
             anchorPos = 0;
-            eAssert(false);
+            P.bug(false);
         }
 
         // NOTE
-        // DO NOT call below callback at 'onPreRun' in ThreadEx.
         // 'onPreDataProvide' SHOULD be called BEFORE bindView().
         // See getView() for details.
         if (null != mDpsListener)
             mDpsListener.onPreDataProvide(AsyncAdapter.this, anchorPos, reqSeq);
 
         final int anchorItemPos = anchorPos;
-        mDpTask = new ThreadEx<Err>() {
+        mDpTask = new ThreadEx<Err>(
+                "AsyncAdatprDp", AppEnv.getUiHandlerAdapter(), ThreadEx.TASK_PRIORITY_NORM) {
             private void
             onFinished() {
                 notifyDataSetChanged();
@@ -394,7 +394,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             @Override
             protected void
-            onPostRun(Err result) {
+            onPostRun(Err result, Exception ex) {
                 if (null != mDpsListener)
                     mDpsListener.onPostDataProvide(AsyncAdapter.this, anchorItemPos, reqSeq);
                 onFinished();
@@ -402,7 +402,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
             @Override
             protected void
-            onCancelled() {
+            onCancelled(Exception ex) {
                 if (null != mDpsListener)
                     mDpsListener.onCancelledDataProvide(AsyncAdapter.this, anchorItemPos, reqSeq);
                 onFinished();
@@ -410,17 +410,17 @@ UnexpectedExceptionHandler.TrackedModule {
 
             @Override
             protected Err
-            doAsyncTask() {
+            doAsync() {
                 //logI(">>> async request RUN - START: from " + from + ", # " + sz);
                 mDp.requestData(AsyncAdapter.this, ldtype, reqSeq, from, szToReq);
-                waitDpDone(reqSeq, 50, (int)Utils.MIN_IN_MS * 3); // timeout 3 minutes.
+                waitDpDone(reqSeq, 50, (int)Util.MIN_IN_MS * 3); // timeout 3 minutes.
                 //logI(">>> async request RUN - END: from " + from + ", # " + sz);
                 return Err.NO_ERR;
             }
         };
 
         mDpTask.setName("Asyn request : " + from + " #" + sz);
-        mDpTask.run();
+        mDpTask.start();
     }
 
     /**
@@ -430,7 +430,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     reloadDataSetAsync(@SuppressWarnings("unused") DataProvideStateListener dpsListener) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         int from = mPosTop + mLv.getFirstVisiblePosition() - mFirstLDahead;
         from = from < 0? 0: from;
         // dataset may be changed. So, reset mDataCnt to 'unknown'
@@ -444,7 +444,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     moveToFirstDataSet() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         mPosTop = 0;
     }
 
@@ -457,12 +457,16 @@ UnexpectedExceptionHandler.TrackedModule {
     @SuppressWarnings("unused")
     public void
     moveToLastDataSet() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         mDataCnt = mDp.requestDataCnt(this);
         int newtop = mDataCnt - mDataReqSz + mFirstLDahead;
         mPosTop = (newtop < 0)? 0: newtop;
     }
 
+    public ListView
+    getListView() {
+        return mLv;
+    }
 
     /**
      * @param priv Internal value passed by {@link AsyncAdapter}
@@ -478,7 +482,7 @@ UnexpectedExceptionHandler.TrackedModule {
                  final Object[] items,
                  final boolean eod) {
         //logI("AsyncAdapter provideItems - START : from " + from + ", # " + aitems.length);
-        eAssert(mMaxArrSz > items.length);
+        P.bug(mMaxArrSz > items.length);
 
         final LDType ldtype = (LDType)priv;
         // NOTE
@@ -487,7 +491,7 @@ UnexpectedExceptionHandler.TrackedModule {
         // Why?
         // Most operations are accessing 'mItems' array on UI Thread Context.
         // So, to avoid race-condition!!
-        Environ.getUiHandler().post(new Runnable() {
+        AppEnv.getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 //logI("AsyncAdapter Provide Item Post Run (" + reqSeq + ", " + mNrseq + ") - START");
@@ -523,7 +527,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     System.arraycopy(items, 0, mItems, from - mPosTop, items.length);
                     newItems = mItems;
                 } else {
-                    eAssert(false);
+                    P.bug(false);
                     newItems = null;
                 }
 
@@ -532,9 +536,11 @@ UnexpectedExceptionHandler.TrackedModule {
                 int firstVisiblePos = mLv.getFirstVisiblePosition();
 
                 mItems = newItems;
-
-                if (eod)
+                if (eod) {
+                    P.bug(null != mItems);
+                    assert mItems != null;
                     mDataCnt = mPosTop + mItems.length;
+                }
 
                 // This is run on UI Thread.
                 // So, we don't need to worry about race-condition.
@@ -573,7 +579,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     getCount() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         //Log.i(TAG, ">>> getCount");
         return mItems.length;
     }
@@ -581,7 +587,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public Object
     getItem(int pos) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         //Log.i(TAG, ">>> getItem : " + position);
         if (pos < 0 || pos >= mItems.length)
             return null;

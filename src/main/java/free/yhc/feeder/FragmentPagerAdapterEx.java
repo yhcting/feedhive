@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -47,13 +47,13 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.PagerAdapter;
 import android.view.View;
 import android.view.ViewGroup;
-import free.yhc.feeder.core.Utils;
+
+import free.yhc.baselib.Logger;
 
 public abstract class FragmentPagerAdapterEx extends PagerAdapter {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(FragmentPagerAdapterEx.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(FragmentPagerAdapterEx.class, Logger.LOGLV_DEFAULT);
+
     private static final AtomicInteger sId = new AtomicInteger(0);
     private static final String KEY_PARENT_STATE = "FragmentPagerAdapterEx:parent_state";
 

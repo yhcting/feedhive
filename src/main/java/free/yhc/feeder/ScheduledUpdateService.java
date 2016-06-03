@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,12 +36,10 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.util.Calendar;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -51,15 +49,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.TaskBase;
+import free.yhc.abaselib.util.UxUtil;
+import free.yhc.feeder.core.Environ;
+import free.yhc.feeder.core.Util;
+import free.yhc.feeder.task.UpdateTask;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.BGTaskUpdateChannel;
-import free.yhc.feeder.core.BaseBGTask;
-import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.Err;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+
+import static free.yhc.baselib.util.Util.convertArrayLongTolong;
+import static free.yhc.abaselib.util.AUtil.isUiThread;
 
 // There is no way to notify result of scheduled-update to user.
 // So, even if scheduled update may fail, there is no explicit notification.
@@ -67,8 +73,8 @@ import free.yhc.feeder.core.Utils;
 // (See channelListAdapter for 'age' time)
 public class ScheduledUpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ScheduledUpdateService.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ScheduledUpdateService.class, Logger.LOGLV_DEFAULT);
 
     // Should match manifest's intent filter
     private static final String SCHEDUPDATE_INTENT_ACTION = "feeder.intent.action.SCHEDULED_UPDATE";
@@ -96,7 +102,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private final DBPolicy mDbp = DBPolicy.get();
     private final RTTask mRtt = RTTask.get();
-    private final HashSet<Long> mTaskset = new HashSet<>();
+    private final UpdateTaskListener mUpdateTaskListener = new UpdateTaskListener();
+    private final AtomicInteger mTaskCnt = new AtomicInteger(0);
 
     // If time is changed Feeder need to re-scheduling scheduled-update.
     public static class DateChangedReceiver extends BroadcastReceiver {
@@ -122,7 +129,8 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            LifeSupportService.getWakeLock();
+            // Should we acquire wakelock here?
+            // LifeSupportService.getWakeLock();
         }
     }
 
@@ -141,7 +149,7 @@ UnexpectedExceptionHandler.TrackedModule {
             //logI("AlarmReceiver : onReceive");
             long time = intent.getLongExtra("time", -1);
             if (time < 0) {
-                eAssert(false);
+                P.bug(false);
                 return;
             }
             Intent svc = new Intent(context, ScheduledUpdateService.class);
@@ -150,51 +158,32 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand will be sent!
             context.startService(svc);
             // Update should be started before falling into sleep.
-            LifeSupportService.getWakeLock();
+            // Should we acquire wakelock here?
+            // LifeSupportService.getWakeLock();
         }
     }
 
-    private class UpdateBGTask extends BGTaskUpdateChannel {
-        private final EventListener mListener = new EventListener();
-        private long mCid = -1;
-        @SuppressWarnings("unused")
-        private int mStartId = -1;
-
-        private class EventListener extends BaseBGTask.OnEventListener {
-            @Override
-            public void
-            onCancelled(BaseBGTask task, Object param) {
-                //logI("ScheduledUpdateService(onCancel) : " + cid);
-                synchronized (mTaskset) {
-                    mTaskset.remove(mCid);
-                    //logI("    mTaskset size : " + mTaskset.size());
-                    if (mTaskset.isEmpty())
-                        stopSelf();
-                }
-            }
-
-            @Override
-            public void
-            onPostRun(BaseBGTask task, Err result) {
-                //logI("ScheduledUpdateService(onPostRun) : " + cid + " (" + getResources().getText(result.getMsgId()) + ")");
-                synchronized (mTaskset) {
-                    mTaskset.remove(mCid);
-                    if (mTaskset.isEmpty())
-                        stopSelf();
-                }
-            }
+    private class UpdateTaskListener extends TaskBase.EventListener<UpdateTask, Err> {
+        private void
+        handleTaskDone(@NonNull UpdateTask task) {
+            P.bug(mTaskCnt.get() > 0);
+            if (0 >= mTaskCnt.decrementAndGet())
+                stopSelf();
         }
 
-        UpdateBGTask(long cid, int startId, BGTaskUpdateChannel.Arg arg) {
-            super(arg);
-            mCid = cid;
-            mStartId = startId;
+        @Override
+        public void
+        onCancelled(@NonNull UpdateTask task, Object param) {
+            //logI("ScheduledUpdateService(onCancel) : " + cid);
+            handleTaskDone(task);
         }
 
-        BaseBGTask.OnEventListener
-        getTaskEventListener() {
-            return mListener;
+        @Override
+        public void
+        onPostRun(@NonNull UpdateTask task, Err result, Exception ex) {
+            handleTaskDone(task);
         }
+
     }
 
     private class StartCmdPost implements Runnable {
@@ -212,7 +201,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // try after 500 ms with same runnable instance.
             if (!ScheduledUpdateService.isEnabled()) {
                 //logI("runStartCommand --- POST!!!");
-                Environ.getUiHandler().postDelayed(this, RETRY_DELAY);
+                AppEnv.getUiHandler().postDelayed(this, RETRY_DELAY);
             } else
                 runStartCommand(_mIntent, _mFlags, _mStartId);
         }
@@ -251,7 +240,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private static void
     incInstanceCount() {
-        eAssert(Utils.isUiThread() && mSrvcnt >= 0);
+        P.bug(isUiThread() && mSrvcnt >= 0);
         mSrvcnt++;
     }
 
@@ -260,7 +249,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private static void
     decInstanceCount() {
-        eAssert(Utils.isUiThread() && mSrvcnt > 0);
+        P.bug(isUiThread() && mSrvcnt > 0);
         mSrvcnt--;
     }
 
@@ -269,7 +258,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public static boolean
     doesInstanceExist() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         return mSrvcnt > 0;
     }
 
@@ -280,7 +269,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public static void
     enable() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         mEnabled = true;
     }
 
@@ -291,7 +280,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public static void
     disable() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         mEnabled = false;
     }
 
@@ -300,7 +289,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private static boolean
     isEnabled() {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         return mEnabled;
     }
 
@@ -314,13 +303,13 @@ UnexpectedExceptionHandler.TrackedModule {
     // out[1] : time to go from dayTime1 to dayTime0
     private static void
     dayBasedDistanceMs(long[] out, long dayms0, long dayms1) {
-        eAssert(dayms0 <= Utils.DAY_IN_MS && dayms1 <= Utils.DAY_IN_MS);
+        P.bug(dayms0 <= Util.DAY_IN_MS && dayms1 <= Util.DAY_IN_MS);
         if (dayms0 > dayms1) {
             out[1] = dayms0 - dayms1;
-            out[0] = Utils.DAY_IN_MS - out[1];
+            out[0] = Util.DAY_IN_MS - out[1];
         } else if (dayms0 < dayms1) {
             out[0] = dayms1 - dayms0;
-            out[1] = Utils.DAY_IN_MS - out[0];
+            out[1] = Util.DAY_IN_MS - out[0];
         }
     }
 
@@ -329,14 +318,15 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     static void
     scheduleImmediateUpdate(long[] cids) {
-        Context context = Environ.getAppContext();
+        Context context = AppEnv.getAppContext();
         Intent svc = new Intent(context, ScheduledUpdateService.class);
         svc.putExtra(KEY_CMD, CMD_UPDATE);
         svc.putExtra(KEY_CHANS, cids);
         // onStartCommand will be sent!
         context.startService(svc);
         // Update should be started before falling into sleep.
-        LifeSupportService.getWakeLock();
+        // Should we acquire wakelock here?
+        // LifeSupportService.getWakeLock();
     }
 
     /**
@@ -345,11 +335,11 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     static void
     scheduleNextUpdate(Calendar calNow) {
-        long daybase = Utils.dayBaseMs(calNow);
+        long daybase = Util.dayBaseMs(calNow);
         long dayms = calNow.getTimeInMillis() - daybase;
         if (dayms < 0)
             dayms = 0; // To compensate 1 sec error from '/' operation.
-        eAssert(dayms <= Utils.DAY_IN_MS);
+        P.bug(dayms <= Util.DAY_IN_MS);
 
         // If we get killed, after returning from here, restart
         Cursor c = DBPolicy.get().queryChannel(ColumnChannel.SCHEDUPDATETIME);
@@ -358,20 +348,20 @@ UnexpectedExceptionHandler.TrackedModule {
             return; // There is no channel.
         }
 
-        final long invalidNearestNext = Utils.DAY_IN_MS * 2;
+        final long invalidNearestNext = Util.DAY_IN_MS * 2;
         long nearestNext = invalidNearestNext; // large enough value.
         do {
             String sStr = c.getString(0);
-            if (Utils.isValidValue(sStr)) {
+            if (Util.isValidValue(sStr)) {
                 // NOTE : IMPORTANT
                 //   Time stored at DB is HOUR_OF_DAY (0 - 23)
                 //   (See comments regarding Column at DB.)
                 //   We cannot guarantee that service is started at exact time.
                 //   So, we should compensate it (see comments at 'onStartCommand'
-                long[] secs   = Utils.nStringToNrs(sStr);
+                long[] secs   = Util.nStringToNrs(sStr);
                 long[] out  = new long[2];
                 for (long s : secs) {
-                    long sms = Utils.secToMs(s);
+                    long sms = Util.secToMs(s);
                     dayBasedDistanceMs(out, dayms, sms);
 
                     // out[0] is time to go from 'dayms' to 'hms'
@@ -383,17 +373,18 @@ UnexpectedExceptionHandler.TrackedModule {
         c.close();
 
         if (nearestNext != invalidNearestNext) {
-            Context cxt = Environ.getAppContext();
+            Context cxt = AppEnv.getAppContext();
             // convert into real time.
             nearestNext += calNow.getTimeInMillis();
             Intent intent = new Intent(cxt, AlarmReceiver.class);
             intent.setAction(SCHEDUPDATE_INTENT_ACTION);
             intent.putExtra("time", nearestNext);
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-            PendingIntent pIntent = PendingIntent.getBroadcast(cxt,
-                                                               0,
-                                                               intent,
-                                                               PendingIntent.FLAG_CANCEL_CURRENT);
+            PendingIntent pIntent = PendingIntent.getBroadcast(
+                    cxt,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_CANCEL_CURRENT);
             // Get the AlarmManager service
             AlarmManager am = (AlarmManager)cxt.getSystemService(ALARM_SERVICE);
             am.set(AlarmManager.RTC_WAKEUP, nearestNext, pIntent);
@@ -408,29 +399,23 @@ UnexpectedExceptionHandler.TrackedModule {
             // onStartCommand() is run on UIThread.
             // So, I don't need to worry about race-condition caused from re-entrance of this function
             // That's why 'getState' and 'unregister/register' are not synchronized explicitly.
-            RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
-            //noinspection StatementWithEmptyBody
-            if (RTTask.TaskState.CANCELING == state
-                || RTTask.TaskState.RUNNING == state
-                || RTTask.TaskState.READY == state) {
-                //logI("doCmdAlarm : Channel [" + cid + "] is already active.\n" +
-                //     "             So scheduled update is skipped");
-            } else {
-                // unregister gracefully to start update.
-                // There is sanity check in BGTaskManager - see BGTaskManager
-                //   to know why this 'unregister' is required.
-                mRtt.unregister(cid, RTTask.Action.UPDATE);
-
-                UpdateBGTask task = new UpdateBGTask(cid, startId, new BGTaskUpdateChannel.Arg(cid));
-                mRtt.register(cid, RTTask.Action.UPDATE, task);
-                mRtt.bind(cid, RTTask.Action.UPDATE, this, task.getTaskEventListener());
-                //logI("doCmdAlarm : start update BGTask for [" + cid + "]");
-                synchronized (mTaskset) {
-                    if (!mTaskset.add(cid)) {
-                        if (DBG) P.w("doCmdAlarm : starts duplicated update! : " + cid);
-                    }
+            UpdateTask t = mRtt.getUpdateTask(cid);
+            switch (mRtt.getRtState(t)) {
+            case READY:
+            case RUN:
+            case CANCEL:
+                // Nothing to do
+                break;
+            default:
+                if (null != t) {
+                    P.bug(t.isDone());
+                    mRtt.removeWatchedTask(t);
                 }
-                mRtt.start(cid, RTTask.Action.UPDATE);
+                t = new UpdateTask(cid, null);
+                if (mRtt.addTask(t, cid, RTTask.Action.UPDATE)) {
+                    t.addEventListener(AppEnv.getUiHandlerAdapter(), mUpdateTaskListener);
+                    mTaskCnt.incrementAndGet();
+                } else if (DBG) P.w("doCmdAlarm : starts duplicated update! : " + cid);
             }
         }
     }
@@ -445,12 +430,12 @@ UnexpectedExceptionHandler.TrackedModule {
     doCmdAlarm(int startId, long schedTime) {
         if (DBG) P.v("DO scheduled update!! : " + startId);
         Calendar calNow = Calendar.getInstance();
-        long daybase = Utils.dayBaseMs(calNow);
+        long daybase = Util.dayBaseMs(calNow);
         long dayms = calNow.getTimeInMillis() - daybase;
 
         if (schedTime < 0 // something wrong!!
             || calNow.getTimeInMillis() < schedTime // scheduled too early
-            || calNow.getTimeInMillis() > schedTime + Utils.HOUR_IN_MS) { // scheduled too late
+            || calNow.getTimeInMillis() > schedTime + Util.HOUR_IN_MS) { // scheduled too late
             if (DBG) P.w("WARN : weired scheduling!!!\n" +
                          "    scheduled time(ms) : " + schedTime + "\n" +
                          "    current time(ms)   : " + calNow.getTimeInMillis());
@@ -481,11 +466,11 @@ UnexpectedExceptionHandler.TrackedModule {
             String sStr = c.getString(iTime);
             //   We cannot guarantee that service is started at exact time.
             //   So, we need to check error and find next scheduled based on this error.
-            long[] ss  = Utils.nStringToNrs(sStr);
+            long[] ss  = Util.nStringToNrs(sStr);
             long   cid = c.getLong(iId);
             long[] out = new long[2];
             for (long s : ss) {
-                long sms = Utils.secToMs(s);
+                long sms = Util.secToMs(s);
                 dayBasedDistanceMs(out, dayms, sms);
 
                 // out[1] is time to go from 'hms' to 'dayms'
@@ -496,7 +481,7 @@ UnexpectedExceptionHandler.TrackedModule {
         } while (c.moveToNext());
         c.close();
 
-        long[] cids = Utils.convertArrayLongTolong(chl.toArray(new Long[chl.size()]));
+        long[] cids = convertArrayLongTolong(chl.toArray(new Long[chl.size()]));
         startUpdates(startId, cids);
 
         // register next scheduled-update.
@@ -544,12 +529,11 @@ UnexpectedExceptionHandler.TrackedModule {
             long[] cids = intent.getLongArrayExtra(KEY_CHANS);
             doCmdUpdate(startId, cids);
         } else
-            eAssert(false);
+            P.bug(false);
 
-        synchronized (mTaskset) {
-            if (mTaskset.isEmpty())
-                stopSelf();
-        }
+        P.bug(mTaskCnt.get() >= 0);
+        if (0 >= mTaskCnt.get())
+            stopSelf();
     }
 
     @Override
@@ -562,8 +546,12 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onCreate() {
         super.onCreate();
+        if (!Environ.get().hasEssentialPermissions()) {
+            UxUtil.showTextToast(R.string.err_essential_perm);
+            stopSelf();
+            return;
+        }
         UnexpectedExceptionHandler.get().registerModule(this);
-
         incInstanceCount();
     }
 
@@ -577,15 +565,17 @@ UnexpectedExceptionHandler.TrackedModule {
         try {
             // try after some time again.
             if (!ScheduledUpdateService.isEnabled())
-                Environ.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
+                AppEnv.getUiHandler().postDelayed(new StartCmdPost(intent, flags, startId), RETRY_DELAY);
             else
                 runStartCommand(intent, flags, startId);
         } finally {
             // At any case wakelock should be released.
-            // BGTask itself will manage wakelock for the background tasking.
+            // Task itself will manage wakelock for the background tasking.
             // We don't need to worry about update jobs.
             // Just release wakelock for this command.
-            LifeSupportService.putWakeLock();
+            // Wakelock will be handled by LifeSupportService.
+            // LifeSupportService.putWakeLock();
+            ;
         }
         return START_NOT_STICKY;
     }

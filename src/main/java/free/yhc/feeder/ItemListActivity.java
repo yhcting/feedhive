@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -53,6 +51,7 @@ import android.database.Cursor;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
@@ -71,28 +70,36 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.Spinner;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.TmTask;
+import free.yhc.baselib.async.TaskBase;
+import free.yhc.baselib.async.TaskManagerBase;
+import free.yhc.baselib.net.NetReadTask;
+import free.yhc.abaselib.util.AUtil;
+import free.yhc.abaselib.util.UxUtil;
+import free.yhc.feeder.core.Util;
+import free.yhc.feeder.task.DownloadTask;
+import free.yhc.feeder.task.UpdateTask;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.BGTask;
-import free.yhc.feeder.core.BGTaskUpdateChannel;
-import free.yhc.feeder.core.BaseBGTask;
 import free.yhc.feeder.core.ContentsManager;
-import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.Err;
-import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.feed.Feed;
 import free.yhc.feeder.core.ItemActionHandler;
 import free.yhc.feeder.core.ListenerManager;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+
+import static free.yhc.baselib.util.Util.convertArrayLongTolong;
+
 public class ItemListActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(ItemListActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ItemListActivity.class, Logger.LOGLV_DEFAULT);
 
     private static final int DATA_REQ_SZ = 20;
     private static final int DATA_ARR_MAX = 500;
@@ -121,7 +128,13 @@ UnexpectedExceptionHandler.TrackedModule {
     private final DBPolicy mDbp = DBPolicy.get();
     private final RTTask mRtt = RTTask.get();
 
-    private final RTTaskQChangedListener mRttqcl = new RTTaskQChangedListener();
+    private final HashSet<UpdateTask> mUpTasks = new HashSet<>();
+    private final HashSet<DownloadTask> mDnTasks = new HashSet<>();
+    private final UpdateTaskListener mUpdateTaskListener = new UpdateTaskListener();
+    private final DownloadTaskListener mDownloadTaskListener = new DownloadTaskListener();
+    private final RtTaskQEventListener mRtTaskQEventListener = new RtTaskQEventListener();
+    private final RtTaskQEventListenerPaused mRtTaskQEventListenerPaused
+            = new RtTaskQEventListenerPaused();
 
     private DBWatcher mDbWatcher = null;
     private OpMode mOpMode = null;
@@ -160,7 +173,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         long[]
         getUpdatedChannels() {
-            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[_mUpdatedChannelSet.size()]));
+            return convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[_mUpdatedChannelSet.size()]));
         }
 
         @Override
@@ -176,7 +189,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 break;
 
             default:
-                eAssert(false);
+                P.bug(false);
             }
         }
     }
@@ -257,7 +270,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         OpModeChannel(Intent i) {
             _mCid = i.getLongExtra("cid", -1);
-            eAssert(-1 != _mCid);
+            P.bug(-1 != _mCid);
         }
 
         @Override
@@ -276,7 +289,8 @@ UnexpectedExceptionHandler.TrackedModule {
             //
             // Set custom action bar
             ActionBar bar = getActionBar();
-            eAssert(null != bar);
+            P.bug(null != bar);
+            assert null != bar;
             @SuppressLint("InflateParams")
             LinearLayout abView = (LinearLayout)getLayoutInflater().inflate(R.layout.item_list_actionbar,null);
             bar.setCustomView(abView, new ActionBar.LayoutParams(
@@ -297,15 +311,7 @@ UnexpectedExceptionHandler.TrackedModule {
             super.onResume();
             // See comments in 'ChannelListActivity.onPause()'
             // Bind update task if needed
-            RTTask.TaskState state = mRtt.getState(_mCid, RTTask.Action.UPDATE);
-            if (RTTask.TaskState.IDLE != state)
-                mRtt.bind(_mCid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(_mCid));
-
-            // Bind downloading tasks
-            long[] ids = mRtt.getItemsDownloading(_mCid);
-            for (long id : ids)
-                mRtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
-
+            addChannelTaskEventListeners(new long[] {_mCid});
             setUpdateButton();
         }
 
@@ -328,7 +334,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         OpModeCategory(Intent intent) {
             _mCategoryid = intent.getLongExtra("categoryid", -1);
-            eAssert(-1 != _mCategoryid);
+            P.bug(-1 != _mCategoryid);
             _mCids = mDbp.getChannelIds(_mCategoryid);
         }
 
@@ -363,15 +369,7 @@ UnexpectedExceptionHandler.TrackedModule {
         onResume() {
             super.onResume();
             // Bind update task if needed
-            for (long cid : _mCids) {
-                RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
-                if (RTTask.TaskState.IDLE != state)
-                    mRtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
-            }
-
-            long[] ids = mRtt.getItemsDownloading(_mCids);
-            for (long id : ids)
-                mRtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
+            addChannelTaskEventListeners(_mCids);
         }
 
         @Override
@@ -407,7 +405,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 mDbp.getDelayedChannelUpdate();
                 for (long id : ids)
                     if (Feed.Item.isStatFavOn(mDbp.getItemInfoLong(id, ColumnItem.STATE)))
-                        mRtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
+                        addItemTaskEventListeners(new long[] {id});
             } finally {
                 mDbp.putDelayedChannelUpdate();
             }
@@ -423,7 +421,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     // Toggle Favorite bit.
                     state = state ^ Feed.Item.MSTAT_FAV;
                     mDbp.updateItemAsync_state(id, state);
-                    eAssert(!Feed.Item.isStatFavOn(state));
+                    P.bug(!Feed.Item.isStatFavOn(state));
                     adapter.removeItem(position);
                     dataSetChanged();
                 }
@@ -487,10 +485,7 @@ UnexpectedExceptionHandler.TrackedModule {
         void
         onResume() {
             super.onResume();
-            // Bind downloading tasks
-            long[] ids = mRtt.getItemsDownloading();
-            for (long id : ids)
-                mRtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadDataBGTaskListener(id));
+            addItemTaskEventListeners(mRtt.getItemsDownloading());
         }
 
         @Override
@@ -506,15 +501,12 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    public class UpdateBGTaskListener extends BaseBGTask.OnEventListener {
-        private long chid = -1;
-        UpdateBGTaskListener(long chid) {
-            this.chid = chid;
-        }
+    public class UpdateTaskListener extends TaskBase.EventListener<UpdateTask, Err> {
+        UpdateTaskListener() {}
 
         @Override
         public void
-        onCancelled(BaseBGTask task, Object param) {
+        onCancelled(@NonNull UpdateTask task, Object param) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
@@ -524,13 +516,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        onPreRun(BaseBGTask task) {
+        onStarted(@NonNull UpdateTask task) {
             requestSetUpdateButton();
         }
 
         @Override
         public void
-        onPostRun(BaseBGTask task, Err result) {
+        onPostRun(@NonNull UpdateTask task, Err result, Exception ex) {
             // WHY below code is required?
             // Even if activity is already in 'pause', 'stop' or 'destroy' state,
             //   corresponding callback is run on UI Thread.
@@ -551,81 +543,100 @@ UnexpectedExceptionHandler.TrackedModule {
                 // User already know that there is new feed because
                 //   user starts to update in feed screen!.
                 // So, we can assume that user knows latest updates here.
-                mDbp.updateChannel_lastItemId(chid);
+                mDbp.updateChannel_lastItemId(task.getChannelId());
                 refreshListAsync();
             }
         }
     }
 
-    private class DownloadDataBGTaskListener extends BaseBGTask.OnEventListener {
-        private long _mId = -1;
-        DownloadDataBGTaskListener(long id) {
-            _mId = id;
-        }
+    private class DownloadTaskListener extends TaskBase.EventListener<DownloadTask, NetReadTask.Result> {
+        DownloadTaskListener() {}
 
         @Override
         public void
-        onCancelled(BaseBGTask task, Object param) {
+        onCancelled(@NonNull DownloadTask task, Object param) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
-
-            dataSetChanged(_mId);
+            itemDataChanged(task.getItemId());
         }
 
         @Override
         public void
-        onPreRun(BaseBGTask task) {
+        onStarted(@NonNull DownloadTask task) {
             // icon should be changed from 'ready' to 'running'
-            dataSetChanged(_mId);
+            itemDataChanged(task.getItemId());
         }
 
         @Override
         public void
-        onPostRun(BaseBGTask task, Err result) {
+        onPostRun(@NonNull DownloadTask task,
+                  NetReadTask.Result result,
+                  Exception ex) {
             //logI("+++ Item Activity DownloadData PostRun");
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (isActivityFinishing())
                 return;
 
-            if (Err.NO_ERR == result)
-                getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(_mId), true);
+            if (Err.NO_ERR == task.getErr())
+                getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(task.getItemId()), true);
 
-            dataSetChanged(_mId);
+            itemDataChanged(task.getItemId());
         }
     }
 
-    private class RTTaskQChangedListener implements RTTask.OnTaskQueueChangedListener {
+    private class RtTaskQEventListener implements TaskManagerBase.TaskQEventListener {
         @Override
         public void
-        onEnQ(BGTask task, long id, RTTask.Action act) {
-        }
-
-        @Override
-        public void
-        onDeQ(BGTask task, long id, RTTask.Action act) {
-            if (RTTask.Action.DOWNLOAD == act) {
-                // This will be run after activity is paused.
-                File df = ContentsManager.get().getItemInfoDataFile(id);
-                getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id),
-                                                     null != df && df.exists());
+        onEvent(@NonNull TaskManagerBase tm,
+                @NonNull TaskManagerBase.TaskQEvent ev,
+                int szReady, int szRun,
+                @NonNull TmTask task) {
+            RTTask rtt = (RTTask)tm;
+            RTTask.TaskInfo ti = rtt.getTaskInfo(task);
+            // This should be run on ui handler thread.
+            switch (ev) {
+            case ADDED_TO_READY:
+                if (RTTask.Action.UPDATE == ti.ttype)
+                    addUpdateTaskListener(task);
+                else if (RTTask.Action.DOWNLOAD == ti.ttype)
+                    addDownloadTaskListener(task);
+                else
+                    P.bug(false);
+                break;
+            case REMOVED_FROM_READY:
+            case REMOVED_FROM_RUN:
+            case MOVED_TO_RUN:
             }
         }
     }
 
-    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
+    private class RtTaskQEventListenerPaused implements RTTask.TaskQEventListener {
         @Override
         public void
-        onRegister(BGTask task, long id, RTTask.Action act) {
-            if (RTTask.Action.UPDATE == act)
-                mRtt.bind(id, act, ItemListActivity.this, new UpdateBGTaskListener(id));
-            else if (RTTask.Action.DOWNLOAD == act)
-                mRtt.bind(id, act, ItemListActivity.this, new DownloadDataBGTaskListener(id));
+        onEvent(@NonNull TaskManagerBase tm,
+                @NonNull TaskManagerBase.TaskQEvent ev,
+                int szReady, int szRun,
+                @NonNull TmTask task) {
+            RTTask rtt = (RTTask)tm;
+            RTTask.TaskInfo ti = rtt.getTaskInfo(task);
+            // This should be run on ui handler thread.
+            switch (ev) {
+            case REMOVED_FROM_READY:
+            case REMOVED_FROM_RUN:
+                if (RTTask.Action.DOWNLOAD == ti.ttype) {
+                    DownloadTask t = (DownloadTask)task;
+                    // This will be run after activity is paused.
+                    File df = ContentsManager.get().getItemInfoDataFile(t.getItemId());
+                    getListAdapter().updateItemHasDnFile(
+                            getListAdapter().findPosition(t.getItemId()),
+                            null != df && df.exists());
+                }
+                break;
+            case ADDED_TO_READY:
+            case MOVED_TO_RUN:
+            }
         }
-
-        @Override
-        public void
-        onUnregister(BGTask task, long id, RTTask.Action act) { }
     }
 
     private class ListAdapterBridge implements ItemActionHandler.AdapterBridge {
@@ -637,8 +648,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         public void
-        dataSetChanged(long id) {
-            ItemListActivity.this.dataSetChanged(id);
+        itemDataChanged(long id) {
+            ItemListActivity.this.itemDataChanged(id);
+        }
+
+        @Override
+        public void
+        dataSetChanged() {
+            ItemListActivity.this.dataSetChanged();
         }
     }
 
@@ -649,38 +666,85 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private ItemListAdapter
     getListAdapter() {
-        eAssert(null != mList);
+        if (DBG)P.bug(null != mList);
         return (ItemListAdapter)mList.getAdapter();
     }
 
+    //=========================================================================
+    //
+    //=========================================================================
+    private void
+    addUpdateTaskListener(@NonNull TmTask t) {
+        UpdateTask upt = (UpdateTask)t;
+        if (upt.addEventListener(AppEnv.getUiHandlerAdapter(), mUpdateTaskListener))
+            mUpTasks.add(upt);
+    }
+
+    private void
+    addDownloadTaskListener(@NonNull TmTask t) {
+        DownloadTask dnt = (DownloadTask)t;
+        if (dnt.addEventListener(AppEnv.getUiHandlerAdapter(), mDownloadTaskListener))
+            mDnTasks.add(dnt);
+    }
+
+    private void
+    addItemTaskEventListeners(@NonNull long[] ids) {
+        for (long id : ids) {
+            DownloadTask t = mRtt.getDownloadTask(id);
+            if (RTTask.RtState.IDLE != mRtt.getRtState(t)) {
+                P.bug(null != t);
+                assert null != t;
+                addDownloadTaskListener(t);
+            }
+        }
+    }
+
+    private void
+    addChannelTaskEventListeners(@NonNull long[] cids) {
+        // See comments in 'ChannelListActivity.onPause()'
+        // Bind update task if needed
+        for (long cid : cids) {
+            UpdateTask t = mRtt.getUpdateTask(cid);
+            if (RTTask.RtState.IDLE != mRtt.getRtState(t)) {
+                P.bug(null != t);
+                assert null != t;
+                addUpdateTaskListener(t);
+            }
+        }
+        // Bind downloading tasks
+        addItemTaskEventListeners(mRtt.getItemsDownloading(cids));
+    }
+
+    private void
+    removeTaskEventListeners() {
+        for (UpdateTask t : mUpTasks)
+            t.removeEventListener(mUpdateTaskListener);
+        for (DownloadTask t : mDnTasks)
+            t.removeEventListener(mDownloadTaskListener);
+    }
+
+    //=========================================================================
+    //
+    //=========================================================================
     private void
     dataSetChanged() {
         if (null == mList || null == getListAdapter())
             return;
-
         //getListAdapter().clearChangeState();
         getListAdapter().notifyDataSetChanged();
     }
 
+    @SuppressWarnings("unused")
     private void
-    dataSetChanged(@SuppressWarnings("unused") long id) {
+    dataSetChanged(long id) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    private void
+    itemDataChanged(long id) {
         if (null == mList || null == getListAdapter())
             return;
-
-        ItemListAdapter la = getListAdapter();
-        /*
-        la.clearChangeState();
-        for (int i = mList.getFirstVisiblePosition();
-             i <= mList.getLastVisiblePosition();
-             i++) {
-            long itemId = la.getItem(i).id;
-            if (itemId == id)
-                la.addChanged(la.getItemId(i));
-            else
-                la.addUnchanged(la.getItemId(i));
-        }
-        */
-        la.notifyDataSetChanged();
+        getListAdapter().notifyItemDataChanged(id);
     }
 
     @SuppressWarnings("unused")
@@ -726,8 +790,10 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onClick(View v) {
                 // Update is supported only at channel item list.
-                eAssert(mOpMode instanceof OpModeChannel);
-                mRtt.cancel(mOpMode.getCids()[0], RTTask.Action.UPDATE, null);
+                P.bug(mOpMode instanceof OpModeChannel);
+                UpdateTask t = mRtt.getUpdateTask(mOpMode.getCids()[0]);
+                if (null != t)
+                    mRtt.cancelTask(t, null);
                 requestSetUpdateButton();
             }
         });
@@ -739,7 +805,7 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onClick(View v) {
-                UiHelper.showTextToast(ItemListActivity.this, msg);
+                UxUtil.showTextToast(msg);
             }
         });
     }
@@ -751,9 +817,11 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onClick(View v) {
                 // Update is supported only at channel item list.
-                eAssert(mOpMode instanceof OpModeChannel);
-                UiHelper.showTextToast(ItemListActivity.this, result.getMsgId());
-                mRtt.consumeResult(mOpMode.getCids()[0], RTTask.Action.UPDATE);
+                P.bug(mOpMode instanceof OpModeChannel);
+                UxUtil.showTextToast(result.getMsgId());
+                UpdateTask t = mRtt.getUpdateTask(mOpMode.getCids()[0]);
+                if (null != t)
+                    mRtt.removeWatchedTask(t);
                 requestSetUpdateButton();
             }
         });
@@ -762,12 +830,11 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     updateItems() {
         // Update is supported only at channel item list.
-        eAssert(mOpMode instanceof OpModeChannel);
+        P.bug(mOpMode instanceof OpModeChannel);
         long cid = mOpMode.getCids()[0];
-        BGTaskUpdateChannel updateTask = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
-        mRtt.register(cid, RTTask.Action.UPDATE, updateTask);
-        mRtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
-        mRtt.start(cid, RTTask.Action.UPDATE);
+        UpdateTask t = new UpdateTask(cid, null);
+        addUpdateTaskListener(t);
+        t.start();
     }
 
     private void
@@ -777,7 +844,8 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
 
         ActionBar bar = getActionBar();
-        eAssert(null != bar);
+        P.bug(null != bar);
+        assert null != bar;
         if (null == bar.getCustomView())
             return; // action bar is not initialized yet.
 
@@ -791,46 +859,51 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         iv.setAlpha(1.0f);
         iv.setClickable(true);
-        RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
-        switch(state) {
+        UpdateTask t = mRtt.getUpdateTask(cid);
+        switch (mRtt.getRtState(t)) {
         case IDLE:
+            if (DBG) P.v("updateButton : IDLE");
             iv.setImageResource(R.drawable.ic_refresh);
             setOnClick_startUpdate(iv);
             break;
 
         case READY:
+            if (DBG) P.v("updateButton : READY");
             iv.setImageResource(R.drawable.ic_pause);
             setOnClick_cancelUpdate(iv);
             break;
 
-        case RUNNING:
+        case RUN:
+            if (DBG) P.v("updateButton : RUN");
             //noinspection ResourceType
-            iv.setImageResource(R.anim.download);
+            iv.setImageResource(R.drawable.download);
             ((AnimationDrawable)iv.getDrawable()).start();
             setOnClick_cancelUpdate(iv);
             break;
 
-        case CANCELING:
+        case CANCEL:
+            if (DBG) P.v("updateButton : CANCEL");
             iv.setImageResource(R.drawable.ic_block);
             iv.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
             iv.setClickable(false);
             setOnClick_notification(iv, R.string.wait_cancel);
             break;
 
-        case FAILED: {
+        case FAIL: {
+            if (DBG) P.v("updateButton : FAIL");
             iv.setImageResource(R.drawable.ic_info);
-            Err result = mRtt.getErr(cid, RTTask.Action.UPDATE);
+            Err result = t.getErr();
             setOnClick_errResult(iv, result);
         } break;
 
         default:
-            eAssert(false);
+            P.bug(false);
         }
     }
 
     private void
     requestSetUpdateButton() {
-        Environ.getUiHandler().post(new Runnable() {
+        AppEnv.getUiHandler().post(new Runnable() {
             @Override
             public void run() {
                 setUpdateButton();
@@ -854,10 +927,10 @@ UnexpectedExceptionHandler.TrackedModule {
                 // NOTE
                 // There is no use case that "null == f" here.
                 if (!ContentsManager.get().deleteItemContent(id))
-                    UiHelper.showTextToast(ItemListActivity.this, Err.IO_FILE.getMsgId());
+                    UxUtil.showTextToast(Err.IO_FILE.getMsgId());
                 else {
                     getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), false);
-                    dataSetChanged(id);
+                    itemDataChanged(id);
                 }
                 dialog.dismiss();
             }
@@ -993,12 +1066,12 @@ UnexpectedExceptionHandler.TrackedModule {
         since.setTimeInMillis(mOpMode.minPubtime());
         final Calendar now = Calendar.getInstance();
         if (now.getTimeInMillis() < since.getTimeInMillis()) {
-            UiHelper.showTextToast(this, R.string.warn_no_item_before_now);
+            UxUtil.showTextToast(R.string.warn_no_item_before_now);
             return;
         }
 
         // Setup search dialog controls
-        final View diagV  =  UiHelper.inflateLayout(this, R.layout.item_list_search);
+        final View diagV  =  AUtil.inflateLayout(R.layout.item_list_search);
         final AlertDialog diag =
                 UiHelper.createEditTextDialog(this, diagV, R.string.feed_search);
 
@@ -1007,8 +1080,9 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR) + position);
-                eAssert(null != mons);
+                int[] mons = Util.getMonths(since, now, since.get(Calendar.YEAR) + position);
+                P.bug(null != mons);
+                assert null != mons;
                 String[] months = buildStringArray(mons[0], mons[1] + 1);
                 setSpinner(diagV, R.id.sp_month0, months, 0, null); // select first (eariest) month
             }
@@ -1019,8 +1093,9 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         }); // select first (eariest) year
 
-        int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR));
-        eAssert(null != mons);
+        int[] mons = Util.getMonths(since, now, since.get(Calendar.YEAR));
+        P.bug(null != mons);
+        assert null != mons;
         String[] months = buildStringArray(mons[0], mons[1] + 1);
         setSpinner(diagV, R.id.sp_month0, months, 0, null); // select first (eariest) month
 
@@ -1028,8 +1103,9 @@ UnexpectedExceptionHandler.TrackedModule {
             @Override
             public void
             onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                int[] mons = Utils.getMonths(since, now, since.get(Calendar.YEAR) + position);
-                eAssert(null != mons);
+                int[] mons = Util.getMonths(since, now, since.get(Calendar.YEAR) + position);
+                P.bug(null != mons);
+                assert null != mons;
                 String[] months = buildStringArray(mons[0], mons[1] + 1);
                 setSpinner(diagV, R.id.sp_month1, months, months.length - 1, null); // select first (eariest) month
             }
@@ -1037,8 +1113,9 @@ UnexpectedExceptionHandler.TrackedModule {
             public void
             onNothingSelected(AdapterView<?> parent) {}
         }); // select last (latest) year
-        mons = Utils.getMonths(since, now, now.get(Calendar.YEAR));
-        eAssert(null != mons);
+        mons = Util.getMonths(since, now, now.get(Calendar.YEAR));
+        P.bug(null != mons);
+        assert null != mons;
         months = buildStringArray(mons[0], mons[1] + 1);
         setSpinner(diagV, R.id.sp_month1, months, months.length - 1, null); // select last (latest) month
 
@@ -1063,7 +1140,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // Set as min value.
                 from.set(Calendar.YEAR, y0);
                 //noinspection ResourceType
-                from.set(Calendar.MONDAY, Utils.monthToCalendarMonth(m0));
+                from.set(Calendar.MONDAY, Util.monthToCalendarMonth(m0));
                 from.set(Calendar.DAY_OF_MONTH, from.getMinimum(Calendar.DAY_OF_MONTH));
                 from.set(Calendar.HOUR_OF_DAY, from.getMinimum(Calendar.HOUR_OF_DAY));
                 from.set(Calendar.MINUTE, 0);
@@ -1072,7 +1149,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 // Set as max value.
                 to.set(Calendar.YEAR, y1);
                 //noinspection ResourceType
-                to.set(Calendar.MONDAY, Utils.monthToCalendarMonth(m1));
+                to.set(Calendar.MONDAY, Util.monthToCalendarMonth(m1));
                 to.set(Calendar.DAY_OF_MONTH, to.getMaximum(Calendar.DAY_OF_MONTH));
                 to.set(Calendar.HOUR_OF_DAY, to.getMaximum(Calendar.HOUR_OF_DAY));
                 to.set(Calendar.MINUTE, 59);
@@ -1082,7 +1159,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 mOpMode.setFilter(search, from.getTimeInMillis(), to.getTimeInMillis());
                 mList.setSelection(0);
                 getListAdapter().moveToFirstDataSet();
-                Environ.getUiHandler().post(new Runnable() {
+                AppEnv.getUiHandler().post(new Runnable() {
                    @Override
                    public void run() {
                        refreshListAsync();
@@ -1112,13 +1189,13 @@ UnexpectedExceptionHandler.TrackedModule {
                 long id = data.getLongExtra("id", -1);
                 if (id > 0) {
                     getListAdapter().updateItemHasDnFile(getListAdapter().findPosition(id), true);
-                    dataSetChanged(id);
+                    itemDataChanged(id);
                 }
             }
             break;
 
         default:
-            eAssert(false);
+            P.bug(false);
         }
     }
 
@@ -1140,7 +1217,7 @@ UnexpectedExceptionHandler.TrackedModule {
         mItemAction = new ItemActionHandler(this, new ListAdapterBridge());
 
         int mode = getIntent().getIntExtra(IKEY_MODE, -1);
-        eAssert(-1 != mode);
+        P.bug(-1 != mode);
         switch (mode) {
         case MODE_CHANNEL:
             mOpMode = new OpModeChannel(getIntent());
@@ -1155,11 +1232,11 @@ UnexpectedExceptionHandler.TrackedModule {
             mOpMode = new OpModeAll(getIntent());
             break;
         default:
-            eAssert(false);
+            P.bug(false);
         }
         setContentView(R.layout.item_list);
         mList = ((ListView)findViewById(R.id.list));
-        eAssert(null != mList);
+        P.bug(null != mList);
         mList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void
@@ -1213,8 +1290,8 @@ UnexpectedExceptionHandler.TrackedModule {
         //logI("==> ItemListActivity : onResume");
         // Register to get notification regarding RTTask.
         // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
-        mRtt.unregisterTaskQChangedListener(this);
-        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
+        mRtt.removeTaskQEventListener(mRtTaskQEventListenerPaused);
+        mRtt.addTaskQEventListener(AppEnv.getUiHandlerAdapter(), mRtTaskQEventListener);
         View searchBtn = findViewById(R.id.searchbtn);
         if (getListAdapter().isEmpty())
             searchBtn.setVisibility(View.GONE);
@@ -1263,11 +1340,9 @@ UnexpectedExceptionHandler.TrackedModule {
     onPause() {
         //logI("==> ItemListActivity : onPause");
         mDbWatcher.register();
-        // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
-        mRtt.unregisterRegisterEventListener(this);
-        // See comments in 'ChannelListActivity.onPause()'
-        mRtt.unbind(this);
-        mRtt.registerTaskQChangedListener(this, mRttqcl);
+        removeTaskEventListeners();
+        mRtt.removeTaskQEventListener(mRtTaskQEventListener);
+        mRtt.addTaskQEventListener(AppEnv.getUiHandlerAdapter(), mRtTaskQEventListenerPaused);
         super.onPause();
     }
 

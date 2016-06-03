@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
 import android.R.style;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -49,17 +48,16 @@ import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.appwidget.AppWidgetUtils;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class AppWidgetUpdateCategoryActivity extends Activity  implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(AppWidgetUpdateCategoryActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AppWidgetUpdateCategoryActivity.class, Logger.LOGLV_DEFAULT);
 
     @Override
     public String
@@ -73,7 +71,7 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         final int appWidgetId = getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                         AppWidgetUtils.INVALID_APPWIDGETID);
-        eAssert(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
+        P.bug(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
         final Intent result = new Intent();
         result.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         final long catid = getIntent().getLongExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, -1);
@@ -84,23 +82,24 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
         }
 
-        UiHelper.OnConfirmDialogAction action = new UiHelper.OnConfirmDialogAction() {
+        UxUtil.ConfirmAction action = new UxUtil.ConfirmAction() {
             @Override
             public void
-            onOk(Dialog dialog) {
+            onPositive(@NonNull Dialog dialog) {
                 ScheduledUpdateService.scheduleImmediateUpdate(DBPolicy.get().getChannelIds(catid));
             }
 
             @Override
             public void
-            onCancel(Dialog dialog) {
+            onNegative(@NonNull Dialog dialog) {
             }
         };
 
-        AlertDialog diag = UiHelper.buildConfirmDialog(this,
-                                                       R.string.update_category_channels,
-                                                       R.string.update_category_channels_msg,
-                                                       action);
+        AlertDialog diag = UiHelper.buildConfirmDialog(
+                this,
+                R.string.update_category_channels,
+                R.string.update_category_channels_msg,
+                action);
         diag.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void

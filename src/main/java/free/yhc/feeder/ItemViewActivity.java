@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,9 +36,8 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
+import java.io.IOException;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -58,27 +57,34 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.TmTask;
+import free.yhc.baselib.async.TaskBase;
+import free.yhc.baselib.async.TaskManagerBase;
+import free.yhc.baselib.net.NetReadTask;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.BGTask;
-import free.yhc.feeder.core.BGTaskDownloadToItemContent;
-import free.yhc.feeder.core.BaseBGTask;
+import free.yhc.feeder.task.DownloadTask;
 import free.yhc.feeder.core.ContentsManager;
 import free.yhc.feeder.core.Err;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class ItemViewActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ItemViewActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ItemViewActivity.class, Logger.LOGLV_DEFAULT);
 
     public static final int RESULT_DOWNLOAD = 1;
 
     private final DBPolicy mDbp = DBPolicy.get();
     private final ContentsManager mCm = ContentsManager.get();
     private final RTTask mRtt = RTTask.get();
+    private final RtTaskQEventListener mRtTaskQEventListener = new RtTaskQEventListener();
+    private final DownloadTaskListener mDownloadTaskListener = new DownloadTaskListener();
 
     private long mId = -1;
     private String mNetUrl = "";
@@ -128,61 +134,93 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
+    private class RtTaskQEventListener implements RTTask.TaskQEventListener {
         @Override
         public void
-        onRegister(BGTask task, long cid, RTTask.Action act) {
-            if (RTTask.Action.DOWNLOAD == act)
-                mRtt.bind(mId, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener());
+        onEvent(@NonNull TaskManagerBase tm,
+                @NonNull TaskManagerBase.TaskQEvent ev,
+                int szReady, int szRun,
+                @NonNull TmTask task) {
+            RTTask rtt = (RTTask)tm;
+            RTTask.TaskInfo ti = rtt.getTaskInfo(task);
+            // This should be run on ui handler thread.
+            switch (ev) {
+            case ADDED_TO_READY:
+                if (RTTask.Action.DOWNLOAD == ti.ttype) {
+                    DownloadTask t = (DownloadTask)task;
+                    t.addEventListener(mDownloadTaskListener);
+                }
+                break;
+            case MOVED_TO_RUN:
+            case REMOVED_FROM_READY:
+            case REMOVED_FROM_RUN:
+            }
         }
-
-        @Override
-        public void
-        onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
-    private class DownloadBGTaskListener extends BaseBGTask.OnEventListener {
+    private class DownloadTaskListener extends TaskBase.EventListener<DownloadTask, NetReadTask.Result> {
+        private void
+        handleTaskDone(@NonNull DownloadTask task) {
+            task.removeEventListener(mDownloadTaskListener);
+        }
+
         @Override
         public void
-        onCancelled(BaseBGTask task, Object param) {
+        onStarted(@NonNull DownloadTask task) {
             postSetupLayout();
         }
 
         @Override
         public void
-        onPreRun(BaseBGTask task) {
+        onCancel(@NonNull DownloadTask task, Object param) {
             postSetupLayout();
         }
 
         @Override
         public void
-        onPostRun(BaseBGTask task, Err result) {
+        onCancelled(@NonNull DownloadTask task, Object param) {
+            postSetupLayout();
+            handleTaskDone(task);
+        }
+
+        @Override
+        public void
+        onPostRun(@NonNull DownloadTask task,
+                  NetReadTask.Result result,
+                  Exception ex) {
             if (DBG) P.v("Enter");
             Intent i = new Intent();
             i.putExtra("id", mId);
             setResult(RESULT_DOWNLOAD, i);
             postSetupLayout();
+            handleTaskDone(task);
         }
     }
 
     private void
     startDownload() {
-        BGTaskDownloadToItemContent dnTask
-            = new BGTaskDownloadToItemContent(mNetUrl, mId);
-        mRtt.register(mId, RTTask.Action.DOWNLOAD, dnTask);
-        mRtt.start(mId, RTTask.Action.DOWNLOAD);
+        try {
+            DownloadTask t = DownloadTask.create(mNetUrl, mId);
+            mRtt.addTask(t, mId, RTTask.Action.DOWNLOAD);
+        } catch (IOException e) {
+            UxUtil.showTextToast(Err.IO_FILE.getMsgId());
+        }
     }
 
     private void
     cancelDownload() {
-        mRtt.cancel(mId, RTTask.Action.DOWNLOAD, null);
+        DownloadTask t = mRtt.getDownloadTask(mId);
+        if (null != t)
+            mRtt.cancelTask(t, null);
     }
 
     private void
     notifyResult() {
-        Err result = mRtt.getErr(mId, RTTask.Action.DOWNLOAD);
-        UiHelper.showTextToast(ItemViewActivity.this, result.getMsgId());
-        mRtt.consumeResult(mId, RTTask.Action.DOWNLOAD);
+        DownloadTask t = mRtt.getDownloadTask(mId);
+        if (null == t)
+            return; // nothing to do
+        UxUtil.showTextToast(t.getErr().getMsgId());
+        mRtt.removeWatchedTask(t);
         setupLayout();
     }
 
@@ -207,9 +245,8 @@ UnexpectedExceptionHandler.TrackedModule {
             anim.reset();
         }
 
-        RTTask.TaskState state = mRtt.getState(mId, RTTask.Action.DOWNLOAD);
-        if (DBG) P.v("state : " + state.name());
-        switch(state) {
+        DownloadTask t = mRtt.getDownloadTask(mId);
+        switch (mRtt.getRtState(t)) {
         case IDLE:
             if (mCurUrl.equals(mFileUrl)) {
                 imgbtn.setImageResource(R.drawable.ic_goto);
@@ -220,7 +257,6 @@ UnexpectedExceptionHandler.TrackedModule {
                         mPb.setProgress(0);
                         mPb.setVisibility(View.VISIBLE);
                         mWv.loadUrl(mCurUrl);
-                        postSetupLayout();
                     }
                 });
             } else {
@@ -232,39 +268,37 @@ UnexpectedExceptionHandler.TrackedModule {
                         @Override
                         public void onClick(View v) {
                             startDownload();
-                            postSetupLayout();
                         }
                     });
                 }
             }
             break;
 
-        case RUNNING:
+        case RUN:
         case READY:
             //noinspection ResourceType
-            imgbtn.setImageResource(R.anim.download);
+            imgbtn.setImageResource(R.drawable.download);
             ((AnimationDrawable)imgbtn.getDrawable()).start();
             imgbtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     cancelDownload();
-                    postSetupLayout();
                 }
             });
             break;
 
-        case CANCELING:
+        case CANCEL:
             imgbtn.setImageResource(R.drawable.ic_block);
             imgbtn.startAnimation(AnimationUtils.loadAnimation(this, R.anim.fade_inout));
             imgbtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    UiHelper.showTextToast(ItemViewActivity.this, R.string.wait_cancel);
+                    UxUtil.showTextToast(R.string.wait_cancel);
                 }
             });
             break;
 
-        case FAILED:
+        case FAIL:
             imgbtn.setImageResource(R.drawable.ic_info);
             imgbtn.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -275,7 +309,7 @@ UnexpectedExceptionHandler.TrackedModule {
             break;
 
         default:
-            eAssert(false);
+            P.bug(false);
         }
     }
 
@@ -316,12 +350,12 @@ UnexpectedExceptionHandler.TrackedModule {
         setWebSettings(mWv);
 
         mId = getIntent().getLongExtra("id", -1);
-        eAssert(mId >= 0);
+        P.bug(mId >= 0);
 
         // NOTE
         // There is no use case that 'null == f' here!
         File f = mCm.getItemInfoDataFile(mId);
-        eAssert(null != f);
+        P.bug(null != f);
         mNetUrl = mDbp.getItemInfoString(mId, ColumnItem.LINK);
         mFileUrl = "file:///" + f.getAbsolutePath();
         mCurUrl = f.exists()? mFileUrl: mNetUrl;
@@ -332,24 +366,26 @@ UnexpectedExceptionHandler.TrackedModule {
     protected void
     onResume() {
         super.onResume();
-        // See comments in 'ChannelListActivity.onResume' around 'registerManagerEventListener'
-        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
-
-        // Bind download task if needed
-        RTTask.TaskState state = mRtt.getState(mId, RTTask.Action.DOWNLOAD);
-        if (RTTask.TaskState.IDLE != state)
-            mRtt.bind(mId, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener());
-
+        mRtt.addTaskQEventListener(AppEnv.getUiHandlerAdapter(), mRtTaskQEventListener);
+        DownloadTask t = mRtt.getDownloadTask(mId);
+        if (RTTask.RtState.IDLE != mRtt.getRtState(t)) {
+            P.bug(null != t);
+            assert null != t;
+            t.addEventListener(AppEnv.getUiHandlerAdapter(), mDownloadTaskListener);
+        }
         setupLayout();
     }
 
     @Override
     protected void
     onPause() {
-        // See comments in 'ChannelListActivity.onPause' around 'unregisterManagerEventListener'
-        mRtt.unregisterRegisterEventListener(this);
-        // See comments in 'ChannelListActivity.onPause()'
-        mRtt.unbind(this);
+        mRtt.removeTaskQEventListener(mRtTaskQEventListener);
+        DownloadTask t = mRtt.getDownloadTask(mId);
+        if (RTTask.RtState.IDLE != mRtt.getRtState(t)) {
+            P.bug(null != t);
+            assert null != t;
+            t.removeEventListener(mDownloadTaskListener);
+        }
         super.onPause();
     }
 

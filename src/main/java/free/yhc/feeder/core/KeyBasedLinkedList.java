@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -39,11 +39,13 @@ package free.yhc.feeder.core;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import free.yhc.baselib.Logger;
+
+import static free.yhc.baselib.util.Util.newArray;
+
 public class KeyBasedLinkedList<T> {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(KeyBasedLinkedList.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(KeyBasedLinkedList.class, Logger.LOGLV_DEFAULT);
 
     private LinkedList<Elem> mL = new LinkedList<>();
 
@@ -133,7 +135,7 @@ public class KeyBasedLinkedList<T> {
         Elem[] es = mL.toArray(new Elem[mL.size()]);
         if (a.length < es.length)
             //noinspection unchecked
-            a = (T[])Utils.newArray(a.getClass().getComponentType(), es.length);
+            a = (T[])newArray(a.getClass().getComponentType(), es.length);
         for (int i = 0; i < es.length; i++)
             //noinspection unchecked
             a[i] = (T)es[i].item;

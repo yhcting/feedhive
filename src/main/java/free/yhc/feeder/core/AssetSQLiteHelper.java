@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -44,11 +44,14 @@ import java.io.InputStream;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+
 // NOTE
 // This module is NOT THREAD SAFE!
 public class AssetSQLiteHelper {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(AssetSQLiteHelper.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AssetSQLiteHelper.class, Logger.LOGLV_DEFAULT);
 
     // Constructing arguments
     private String mDbName;
@@ -74,13 +77,13 @@ public class AssetSQLiteHelper {
 
     public void
     open() {
-        File dbf = Environ.getAppContext().getDatabasePath(mDbName);
+        File dbf = AppEnv.getAppContext().getDatabasePath(mDbName);
         try {
-            InputStream is = Environ.getAppContext().getAssets().open(mAssetDBFile);
+            InputStream is = AppEnv.getAppContext().getAssets().open(mAssetDBFile);
             if (!dbf.exists()) {
                 FileOutputStream fos = new FileOutputStream(dbf);
                 // This is first time. Just copy it!
-                Utils.copy(fos, is);
+                Util.copy(fos, is);
                 fos.close();
             }
 
@@ -90,13 +93,13 @@ public class AssetSQLiteHelper {
                 // need to overwrite old db with new asset db.
                 mDb.close();
                 FileOutputStream fos = new FileOutputStream(dbf);
-                Utils.copy(fos, is);
+                Util.copy(fos, is);
                 fos.close();
                 mDb = SQLiteDatabase.openDatabase(dbf.getAbsolutePath(), null, SQLiteDatabase.OPEN_READONLY);
             }
             is.close();
         } catch (SQLiteException | IOException e) {
-            Utils.eAssert(false);
+            P.bug(false);
         }
     }
 

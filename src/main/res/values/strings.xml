@@ -87,8 +87,9 @@
     <string name="err_duplicated_channel">It is duplicated one. The channel already registered.</string>
     <string name="err_dbunknown">Unknown DB error. Something wicked issued on DB.</string>
     <string name="err_dbcrash">Database is crashed. All application data SHOULD be cleaned by using application manager.</string>
-    <string name="err_unknwon">Unknown error! Something wicked issued on application.</string>
     <string name="err_user_cancelled">Operation is cancelled by user.</string>
+    <string name="err_essential_perm">Essential permissions - write to external storage - are not granted.</string>
+    <string name="err_unknwon">Unknown error! Something wicked issued on application.</string>
     <string name="del_dnfiles_not_allowed_msg">Deleting files is not allowed. There may be files under downloading.</string>
     <string name="delete_downloadded_file">Delete downloadded files</string>
     <string name="delete_used_downloadded_file">Delete used downloadded files</string>

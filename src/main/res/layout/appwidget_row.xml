@@ -6,6 +6,7 @@
     android:paddingLeft="@dimen/list_item_left_padding"
     android:paddingRight="@dimen/list_item_left_padding"
     android:layout_marginTop="3dp"
+    android:background="#000000"
     android:orientation="vertical"
     >
     <ImageView

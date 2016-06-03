@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -39,12 +39,13 @@ package free.yhc.feeder.core;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+
 public class ListenerManager implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(ListenerManager.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ListenerManager.class, Logger.LOGLV_DEFAULT);
 
     private final KeyBasedLinkedList<ListenerNode> mList = new KeyBasedLinkedList<>();
 
@@ -101,7 +102,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     notifyIndirect(final Type type, final Object arg0, final Object arg1) {
         synchronized (mList) {
-            Environ.getUiHandler().post(new Runnable() {
+            AppEnv.getUiHandler().post(new Runnable() {
                 @Override
                 public void
                 run() {

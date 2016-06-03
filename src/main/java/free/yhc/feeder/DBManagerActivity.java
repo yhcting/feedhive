@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,11 +36,10 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -52,6 +51,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -61,7 +61,14 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.Task;
+import free.yhc.abaselib.util.AUtil;
+import free.yhc.abaselib.util.UxUtil;
+import free.yhc.abaselib.ux.DialogTask;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
@@ -69,14 +76,11 @@ import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.Err;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class DBManagerActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(DBManagerActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(DBManagerActivity.class, Logger.LOGLV_DEFAULT);
 
     @SuppressWarnings("unused")
     public static final String KEY_DB_UPDATED = "dbUpdated";
@@ -126,7 +130,7 @@ UnexpectedExceptionHandler.TrackedModule {
         getView(int position, View convertView, ViewGroup parent) {
             View v = convertView;
             if (null == v) {
-                LayoutInflater li = (LayoutInflater)Environ.getAppContext()
+                LayoutInflater li = (LayoutInflater)AppEnv.getAppContext()
                                                     .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
                 v = li.inflate(_mResId, null);
             }
@@ -167,6 +171,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     putExclusiveDBAccess() {
+        P.bug(AUtil.isUiThread());
         ScheduledUpdateService.enable();
     }
 
@@ -190,60 +195,54 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     exportDBAsync() {
         if (!getExclusiveDBAccess()) {
-            UiHelper.showTextToast(this, R.string.warn_db_in_use);
+            UxUtil.showTextToast(R.string.warn_db_in_use);
             return;
         }
 
-        DiagAsyncTask.Worker exportWork = new DiagAsyncTask.Worker() {
+        Task<Void> t = new Task<Void>() {
             @Override
-            public Err
-            doBackgroundWork(DiagAsyncTask task) {
-                try {
-                    FileInputStream fis = new FileInputStream(new File(mInDBFilePath));
-                    FileOutputStream fos = new FileOutputStream(new File(mExDBFilePath));
-                    Utils.copy(fos, fis);
-                    fis.close();
-                    fos.close();
-                } catch (Exception e) {
-                    return Err.IO_FILE;
+            protected Void
+            doAsync() throws IOException {
+                Err err = Err.UNKNOWN;
+                try (FileInputStream fis = new FileInputStream(new File(mInDBFilePath));
+                     FileOutputStream fos = new FileOutputStream(new File(mExDBFilePath))) {
+                    Util.copy(fos, fis);
+                    err = Err.NO_ERR;
+                } catch (IOException e) {
+                    err = Err.IO_FILE;
+                } finally {
+                    final Err r = err;
+                    AppEnv.getUiHandler().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (r != Err.NO_ERR)
+                                UxUtil.showTextToast(r.getMsgId());
+                            putExclusiveDBAccess();
+                        }
+                    });
                 }
-                return Err.NO_ERR;
-            }
-
-            @Override
-            public void
-            onPostExecute(DiagAsyncTask task, Err result) {
-                if (result != Err.NO_ERR)
-                    UiHelper.showTextToast(DBManagerActivity.this, result.getMsgId());
-
-                putExclusiveDBAccess();
-            }
-
-            @Override
-            public void
-            onCancelled(DiagAsyncTask task) {
-                putExclusiveDBAccess();
+                return null;
             }
         };
 
-        DiagAsyncTask task = new DiagAsyncTask(this,
-                                               exportWork,
-                                               DiagAsyncTask.Style.SPIN,
-                                               R.string.exporting);
-        task.run();
+        DialogTask.Builder<DialogTask.Builder> bldr
+                = new DialogTask.Builder<>(this, t);
+        bldr.setMessage(R.string.exporting);
+        if (!bldr.create().start())
+            P.bug();
     }
 
     private void
     actionExportDB() {
         CharSequence title = getResources().getText(R.string.exportdb);
         CharSequence msg = getResources().getText(R.string.database) + " => " + mExDBFilePath;
-        UiHelper.buildConfirmDialog(this, title, msg, new OnConfirmDialogAction() {
+        UiHelper.buildConfirmDialog(this, title, msg, new UxUtil.ConfirmAction() {
             @Override
-            public void onOk(Dialog dialog) {
+            public void onPositive(@NonNull Dialog dialog) {
                 exportDBAsync();
             }
             @Override
-            public void onCancel(Dialog dialog) { }
+            public void onNegative(@NonNull Dialog dialog) { }
         }).show();
     }
 
@@ -260,99 +259,92 @@ UnexpectedExceptionHandler.TrackedModule {
         final String inDBBackupSuffix = "______backup";
         final File exDbf = new File(mExDBFilePath);
         if (!exDbf.exists()) {
-            UiHelper.showTextToast(this, R.string.warn_exdb_access_denied);
+            UxUtil.showTextToast(R.string.warn_exdb_access_denied);
             return;
         }
 
         switch(verifyCandidateDB(exDbf)) {
         case VERSION_MISMATCH:
-            UiHelper.showTextToast(this, R.string.warn_db_version_mismatch);
+            UxUtil.showTextToast(R.string.warn_db_version_mismatch);
             return;
 
         case NO_ERR:
             break;
 
         default:
-            UiHelper.showTextToast(this, R.string.warn_exdb_not_compatible);
+            UxUtil.showTextToast(R.string.warn_exdb_not_compatible);
             return;
         }
 
         if (!getExclusiveDBAccess()) {
-            UiHelper.showTextToast(this, R.string.warn_db_in_use);
+            UxUtil.showTextToast(R.string.warn_db_in_use);
             return;
         }
 
         final File inDbf = new File(mInDBFilePath);
         final File inDbfBackup = new File(inDbf.getAbsoluteFile() + inDBBackupSuffix);
         if (!inDbf.renameTo(inDbfBackup)) {
-            UiHelper.showTextToast(this, Err.IO_FILE.getMsgId());
+            UxUtil.showTextToast(Err.IO_FILE.getMsgId());
             putExclusiveDBAccess();
             return;
         }
 
-        DiagAsyncTask.Worker importWork = new DiagAsyncTask.Worker() {
+        Task<Void> t = new Task<Void>() {
             @Override
-            public Err
-            doBackgroundWork(DiagAsyncTask task) {
-                try {
-                    FileInputStream fis = new FileInputStream(exDbf);
-                    FileOutputStream fos = new FileOutputStream(inDbf);
-                    Utils.copy(fos, fis);
-                    fis.close();
-                    fos.close();
-                } catch (Exception e) {
-                    return Err.IO_FILE;
+            protected Void
+            doAsync() throws IOException {
+                Err err = Err.UNKNOWN;
+                try (FileInputStream fis = new FileInputStream(exDbf);
+                     FileOutputStream fos = new FileOutputStream(inDbf)) {
+                    Util.copy(fos, fis);
+                    mDbp.reloadDatabase();
+                    err = Err.NO_ERR;
+                } catch (IOException e) {
+                    err = Err.IO_FILE;
+                } finally {
+                    final Err r = err;
+                    AppEnv.getUiHandler().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (r == Err.NO_ERR) {
+                                // All are done successfully!
+                                // Delete useless backup file!
+                                //noinspection ResultOfMethodCallIgnored
+                                inDbfBackup.delete();
+                                onDBChanged(ID_ALL_CHANNEL, 0);
+                            } else {
+                                if (inDbfBackup.renameTo(inDbf))
+                                    UxUtil.showTextToast(Err.DB_CRASH.getMsgId());
+                                else
+                                    UxUtil.showTextToast(r.getMsgId());
+                            }
+                            putExclusiveDBAccess();
+                        }
+                    });
                 }
-
-                mDbp.reloadDatabase();
-
-                return Err.NO_ERR;
-            }
-
-            @Override
-            public void
-            onPostExecute(DiagAsyncTask task, Err result) {
-                if (result == Err.NO_ERR) {
-                    // All are done successfully!
-                    // Delete useless backup file!
-                    //noinspection ResultOfMethodCallIgnored
-                    inDbfBackup.delete();
-                    onDBChanged(ID_ALL_CHANNEL, 0);
-                } else {
-                    if (inDbfBackup.renameTo(inDbf))
-                        UiHelper.showTextToast(DBManagerActivity.this, Err.DB_CRASH.getMsgId());
-                    else
-                        UiHelper.showTextToast(DBManagerActivity.this, Err.IO_FILE.getMsgId());
-                }
-                putExclusiveDBAccess();
-            }
-
-            @Override
-            public void
-            onCancelled(DiagAsyncTask task) {
-                putExclusiveDBAccess();
+                return null;
             }
         };
 
-        DiagAsyncTask task = new DiagAsyncTask(this,
-                                               importWork,
-                                               DiagAsyncTask.Style.SPIN,
-                                               R.string.importing);
-        task.run();
+        DialogTask.Builder<DialogTask.Builder> bldr
+                = new DialogTask.Builder<>(this, t);
+        bldr.setMessage(R.string.importing);
+        if (!bldr.create().start())
+            P.bug();
     }
 
     private void
     actionImportDB() {
         CharSequence title = getResources().getText(R.string.importdb);
         CharSequence msg = getResources().getText(R.string.database) + " <= " + mExDBFilePath;
-        UiHelper.buildConfirmDialog(this, title, msg, new OnConfirmDialogAction() {
+        UiHelper.buildConfirmDialog(this, title, msg, new UxUtil.ConfirmAction() {
             @Override
             public void
-            onOk(Dialog dialog) {
+            onPositive(@NonNull Dialog dialog) {
                 importDBAsync();
             }
             @Override
-            public void onCancel(Dialog dialog) { }
+            public void onNegative(@NonNull Dialog dialog) { }
         }).show();
     }
 
@@ -362,34 +354,28 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     shrinkItemsAsync(final long cid, final int percent) {
-        DiagAsyncTask.Worker shrinkWork = new DiagAsyncTask.Worker() {
+        Task t = new Task<Void>() {
             private int nr = 0;
             @Override
-            public Err
-            doBackgroundWork(DiagAsyncTask task) {
+            protected Void
+            doAsync() {
                 nr = mDbp.deleteOldItems(cid, percent);
-                return Err.NO_ERR;
-            }
-
-            @Override
-            public void
-            onPostExecute(DiagAsyncTask task, Err result) {
-                UiHelper.showTextToast(DBManagerActivity.this,
-                                       nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
-                onDBChanged(cid, nr);
-            }
-
-            @Override
-            public void
-            onCancel(DiagAsyncTask task) {
-                eAssert(false);
+                AppEnv.getUiHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        UxUtil.showTextToast(nr + " " + getResources().getText(R.string.nr_deleted_items_noti));
+                        onDBChanged(cid, nr);
+                    }
+                });
+                return null;
             }
         };
-        DiagAsyncTask task = new DiagAsyncTask(this,
-                                               shrinkWork,
-                                               DiagAsyncTask.Style.SPIN,
-                                               R.string.deleting);
-        task.run();
+
+        DialogTask.Builder<DialogTask.Builder> bldr
+                = new DialogTask.Builder<>(this, t);
+        bldr.setMessage(R.string.deleting);
+        if (!bldr.create().start())
+            P.bug();
     }
 
     /**
@@ -427,51 +413,52 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     loadChannInfoListAsync() {
-        DiagAsyncTask.Worker loadDBInfoWork = new DiagAsyncTask.Worker() {
+        Task t = new Task<Void>() {
             @Override
-            public Err
-            doBackgroundWork(DiagAsyncTask task) {
+            protected Void
+            doAsync() {
                 // Load 'used channel information'
-                Cursor c = mDbp.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
-                                                                   ColumnChannel.TITLE });
+                try (Cursor c = mDbp.queryChannel(new ColumnChannel[] { ColumnChannel.ID,
+                                                                   ColumnChannel.TITLE })) {
 
-                mDbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
-                c.moveToFirst();
-                for (int i = 0; i < mDbInfo.channs.length; i++) {
-                    mDbInfo.channs[i] = new DBInfo.ChannInfo();
-                    mDbInfo.channs[i].id = c.getLong(0);
-                    mDbInfo.channs[i].nrItmes = mDbp.getChannelInfoNrItems(c.getLong(0));
-                    mDbInfo.channs[i].title = c.getString(1);
-                    c.moveToNext();
+                    mDbInfo.channs = new DBInfo.ChannInfo[c.getCount()];
+                    c.moveToFirst();
+                    for (int i = 0; i < mDbInfo.channs.length; i++) {
+                        mDbInfo.channs[i] = new DBInfo.ChannInfo();
+                        mDbInfo.channs[i].id = c.getLong(0);
+                        mDbInfo.channs[i].nrItmes = mDbp.getChannelInfoNrItems(c.getLong(0));
+                        mDbInfo.channs[i].title = c.getString(1);
+                        c.moveToNext();
+                    }
                 }
-                c.close();
-
-                // sorting by number of items
-                Arrays.sort(mDbInfo.channs, mDbInfo.channInfoComparator);
-                return Err.NO_ERR;
-            }
-
-            @Override
-            public void
-            onPostExecute(DiagAsyncTask task, Err result) {
-                activateChannelInfoListView(true);
-                ListView lv = (ListView)DBManagerActivity.this.findViewById(R.id.list);
-                ChannInfoAdapter adapter = new ChannInfoAdapter(DBManagerActivity.this, R.layout.db_manager_channel_row, mDbInfo.channs);
-                lv.setAdapter(adapter);
-                lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                AppEnv.getUiHandler().post(new Runnable() {
                     @Override
-                    public void
-                    onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
-                        actionShrinkDB(position, view);
+                    public void run() {
+                        // sorting by number of items
+                        Arrays.sort(mDbInfo.channs, mDbInfo.channInfoComparator);
+                        activateChannelInfoListView(true);
+                        ListView lv = (ListView)DBManagerActivity.this.findViewById(R.id.list);
+                        ChannInfoAdapter adapter = new ChannInfoAdapter(
+                                DBManagerActivity.this,
+                                R.layout.db_manager_channel_row, mDbInfo.channs);
+                        lv.setAdapter(adapter);
+                        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                            @Override
+                            public void
+                            onItemClick(AdapterView<?> parent, View view, int position, long itemId) {
+                                actionShrinkDB(position, view);
+                            }
+                        });
                     }
                 });
+                return null;
             }
         };
-        DiagAsyncTask task = new DiagAsyncTask(this,
-                                               loadDBInfoWork,
-                                               DiagAsyncTask.Style.SPIN,
-                                               R.string.analyzing_db);
-        task.run();
+        DialogTask.Builder<DialogTask.Builder> bldr
+                = new DialogTask.Builder<>(this, t);
+        bldr.setMessage(R.string.analyzing_db);
+        if (!bldr.create().start())
+            P.bug();
     }
 
     /**
@@ -526,7 +513,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         setContentView(R.layout.db_manager);
 
-        mExDBFilePath = Environ.get().getAppRootDirectoryPath()
+        mExDBFilePath = Environ.get().getAppRootDirectoryPath() + "/"
                         + getResources().getText(R.string.app_name) + ".db";
         mInDBFilePath = getDatabasePath(DB.getDBName()).getAbsolutePath();
 

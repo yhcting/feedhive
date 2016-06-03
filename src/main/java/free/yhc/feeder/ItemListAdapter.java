@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,14 +36,13 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
 
 import android.content.Context;
 import android.database.Cursor;
 import android.database.StaleDataException;
 import android.graphics.drawable.AnimationDrawable;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.animation.Animation;
@@ -51,22 +50,24 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.net.NetReadTask;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.BaseBGTask;
 import free.yhc.feeder.core.ContentsManager;
-import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.feed.Feed;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+import free.yhc.feeder.task.DownloadTask;
 
 public class ItemListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(ItemListAdapter.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ItemListAdapter.class, Logger.LOGLV_DEFAULT);
 
     private final DBPolicy mDbp = DBPolicy.get();
     private final RTTask mRtt = RTTask.get();
@@ -109,7 +110,7 @@ AsyncCursorAdapter.ItemBuilder {
         String enclosureType = "";
     }
 
-    private class DownloadProgressListener extends BaseBGTask.OnEventListener {
+    private class DownloadProgressListener extends DownloadTask.EventListener<DownloadTask, NetReadTask.Result> {
         // mDummyTextView is used for default 'tv' value.
         // If not, 'null' should be used.
         // In this case, code in 'onProgress' should be like below
@@ -120,28 +121,49 @@ AsyncCursorAdapter.ItemBuilder {
         // 'tv' value can be changed after (null != tv) comparison.
         // To avoid this synchronization, mDummyTextView is used.
         // Keep in mind that assigning reference is atomic operation in Java.
-        private volatile TextView tv = mDummyTextView;
+        private volatile TextView mTv = mDummyTextView;
+        private long mMaxProgress = 0;
 
         DownloadProgressListener(TextView tv) {
-            this.tv = tv;
+            this.mTv = tv;
+        }
+
+        private void
+        handleTaskDone(@NonNull DownloadTask task) {
+            task.removeEventListener(this);
         }
 
         void
         setTextView(TextView tv) {
-            if (null == tv)
-                this.tv = mDummyTextView;
-            else
-                this.tv = tv;
+            this.mTv = (null == tv)? mDummyTextView: tv;
         }
 
         @Override
         public void
-        onProgress(BaseBGTask task, int progress) {
-            if (0 > progress) // Fail to get progress.
-                tv.setText("??%");
-            else
-                tv.setText(progress + "%");
-            tv.postInvalidate();
+        onPostRun(@NonNull DownloadTask task,
+                  NetReadTask.Result result,
+                  Exception ex) {
+            handleTaskDone(task);
+        }
+
+        @Override
+        public void
+        onCancelled(@NonNull DownloadTask task, Object param) {
+            handleTaskDone(task);
+        }
+
+        @Override
+        public void
+        onProgressInit(@NonNull DownloadTask task, long maxProgress) {
+            if (DBG) P.v("ItemListAdapter: MaxProg: " + maxProgress);
+            mMaxProgress = maxProgress;
+        }
+
+        @Override
+        public void
+        onProgress(@NonNull DownloadTask task, long progress) {
+            mTv.setText((0 > progress)? "??%": progress * 100 / mMaxProgress + "%");
+            mTv.postInvalidate();
         }
     }
 
@@ -265,6 +287,16 @@ AsyncCursorAdapter.ItemBuilder {
             ii.state = v;
     }
 
+    public void
+    notifyItemDataChanged(long id) {
+        int pos = findPosition(id);
+        int firstVisPos = getListView().getFirstVisiblePosition();
+        View v = getListView().getChildAt(pos - firstVisPos);
+        if (null == v)
+            return; // This is NOT visible item.
+        bindView(v, getListView().getContext(), pos);
+    }
+
     @Override
     public Object
     buildItem(AsyncCursorAdapter adapter, Cursor c) {
@@ -293,7 +325,7 @@ AsyncCursorAdapter.ItemBuilder {
             }
 
         } catch (StaleDataException e) {
-            eAssert(false);
+            P.bug(false);
         }
         //logI("ChannelListAdapter : buildItem - END");
         return i;
@@ -321,10 +353,14 @@ AsyncCursorAdapter.ItemBuilder {
 
     @Override
     public void
-    bindView(View v, final Context context, int position)  {
+    bindView(View v, final Context context, int position) {
         if (!preBindView(v, context, position))
             return;
+        doBindView(v, context, position);
+    }
 
+    private void
+    doBindView(View v, Context context, int position)  {
         ItemInfo ii = (ItemInfo)getItem(position);
 
         final boolean favorite = Feed.Item.isStatFavOn(ii.state);
@@ -361,7 +397,7 @@ AsyncCursorAdapter.ItemBuilder {
         if (ii.enclosureUrl.isEmpty())
             infov.setText("html");
         else
-            infov.setText(Utils.getExtentionFromUrl(ii.enclosureUrl) + " : " + ii.enclosureLen);
+            infov.setText(Util.getExtentionFromUrl(ii.enclosureUrl) + " : " + ii.enclosureLen);
 
         // In case of enclosure, icon is decided by file is in the disk or not.
         // TODO:
@@ -377,8 +413,8 @@ AsyncCursorAdapter.ItemBuilder {
         if (ii.hasDnFile) {
             imgv.setImageResource(R.drawable.ic_save);
         } else {
-            RTTask.TaskState dnState = mRtt.getState(ii.id, RTTask.Action.DOWNLOAD);
-            switch(dnState) {
+            DownloadTask t = mRtt.getDownloadTask(ii.id);
+            switch(mRtt.getRtState(t)) {
             case IDLE:
                 imgv.setImageResource(R.drawable.download_anim0);
                 break;
@@ -387,9 +423,9 @@ AsyncCursorAdapter.ItemBuilder {
                 imgv.setImageResource(R.drawable.ic_pause);
                 break;
 
-            case RUNNING:
+            case RUN:
                 //noinspection ResourceType
-                imgv.setImageResource(R.anim.download);
+                imgv.setImageResource(R.drawable.download);
                 // Why "post runnable and start animation?"
                 // In Android 4.0.3 (ICS)
                 //   putting "((AnimationDrawable)img.getDrawable()).start();" is enough.
@@ -405,7 +441,7 @@ AsyncCursorAdapter.ItemBuilder {
                 //
                 // This program's target platform is ICS
                 /*
-                Utils.getUiHandler().post(new Runnable() {
+                Util.getUiHandler().post(new Runnable() {
                     @Override
                     public void run() {
                         ((AnimationDrawable)imgv.getDrawable()).start();
@@ -417,22 +453,25 @@ AsyncCursorAdapter.ItemBuilder {
                 // bind event listener to show progress
                 DownloadProgressListener listener = new DownloadProgressListener(progressv);
                 progressv.changeListener(listener);
-                mRtt.unbind(progressv);
-                mRtt.bind(ii.id, RTTask.Action.DOWNLOAD, progressv, listener);
+                /* Note that task may be already done. And listener may NOT receive onPostRun, or onCancelled.
+                 * But, it's no problem.
+                 */
+                t.addEventListener(AppEnv.getUiHandlerAdapter(), listener, true);
+                progressv.setText(""); // Clear text at first
                 progressv.setVisibility(View.VISIBLE);
                 break;
 
-            case FAILED:
+            case FAIL:
                 imgv.setImageResource(R.drawable.ic_info);
                 break;
 
-            case CANCELING:
+            case CANCEL:
                 imgv.setImageResource(R.drawable.ic_block);
                 imgv.startAnimation(AnimationUtils.loadAnimation(context, R.anim.fade_inout));
                 break;
 
             default:
-                eAssert(false);
+                P.bug(false);
             }
         }
 

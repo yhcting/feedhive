@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -37,23 +37,30 @@
 package free.yhc.feeder.core;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.MalformedURLException;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.ItemViewActivity;
 import free.yhc.feeder.R;
-import free.yhc.feeder.UiHelper;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
+import free.yhc.feeder.feed.Feed;
+import free.yhc.feeder.feed.FeedPolicy;
+import free.yhc.feeder.task.DownloadTask;
 
 public class ItemActionHandler {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(ItemActionHandler.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ItemActionHandler.class, Logger.LOGLV_DEFAULT);
 
     public static final int REQC_ITEM_VIEW = 0;
 
@@ -65,7 +72,8 @@ public class ItemActionHandler {
 
     public interface AdapterBridge {
         void updateItemState(int pos, long state);
-        void dataSetChanged(long id);
+        void itemDataChanged(long id);
+        void dataSetChanged();
     }
 
     private void
@@ -82,10 +90,10 @@ public class ItemActionHandler {
         // change state as 'opened' at this moment.
         long state = mDbp.getItemInfoLong(id, ColumnItem.STATE);
         if (Feed.Item.isStateOpenNew(state)) {
-            state = Utils.bitSet(state, Feed.Item.FSTAT_OPEN_OPENED, Feed.Item.MSTAT_OPEN);
+            state = Util.bitSet(state, Feed.Item.FSTAT_OPEN_OPENED, Feed.Item.MSTAT_OPEN);
             mDbp.updateItemAsync_state(id, state);
             mABridge.updateItemState(position, state);
-            mABridge.dataSetChanged(id);
+            mABridge.itemDataChanged(id);
             return true;
         }
         return false;
@@ -93,11 +101,11 @@ public class ItemActionHandler {
 
     private void
     onActionOpen_http(long action, long id, int position, String url, String protocol) {
-        RTTask.TaskState state = mRtt.getState(id, RTTask.Action.DOWNLOAD);
-        if (RTTask.TaskState.FAILED == state) {
-            UiHelper.showTextToast(mContext, mRtt.getErr(id, RTTask.Action.DOWNLOAD).getMsgId());
-            mRtt.consumeResult(id, RTTask.Action.DOWNLOAD);
-            mABridge.dataSetChanged(id);
+        DownloadTask t = mRtt.getDownloadTask(id);
+        if (null != t && mRtt.isFailed(t)) {
+            UxUtil.showTextToast(t.getErr().getMsgId());
+            mRtt.removeWatchedTask(t);
+            mABridge.itemDataChanged(id);
             return;
         }
 
@@ -114,13 +122,12 @@ public class ItemActionHandler {
             try {
                 mContext.startActivity(intent);
             } catch (ActivityNotFoundException e) {
-                UiHelper.showTextToast(mContext,
-                                       mContext.getResources().getText(R.string.warn_find_app_to_open).toString()
-                                           + protocol);
+                UxUtil.showTextToast(
+                        mContext.getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
                 return;
             }
         } else
-            Utils.eAssert(false);
+            P.bug(false);
 
         changeItemState_opened(id, position);
     }
@@ -133,9 +140,8 @@ public class ItemActionHandler {
         try {
             mContext.startActivity(intent);
         } catch (ActivityNotFoundException e) {
-            UiHelper.showTextToast(mContext,
-                                   mContext.getResources().getText(R.string.warn_find_app_to_open).toString()
-                                       + protocol);
+            UxUtil.showTextToast(
+                    mContext.getResources().getText(R.string.warn_find_app_to_open).toString() + protocol);
             return;
         }
 
@@ -156,15 +162,16 @@ public class ItemActionHandler {
                long id, int position, String url, String encType) {
         // 'enclosure' is used.
         File f = ContentsManager.get().getItemInfoDataFile(id);
-        Utils.eAssert(null != f);
+        P.bug(null != f);
+        assert null != f;
         if (f.exists()) {
             // "RSS described media type" vs "mime type by guessing from file extention".
             // Experimentally, later is more accurate! (lots of RSS doesn't care about describing exact media type.)
-            String type = Utils.guessMimeTypeFromUrl(url);
+            String type = Util.guessMimeTypeFromUrl(url);
             if (null == type)
                 type = encType;
 
-            if (!Utils.isMimeType(type))
+            if (!Util.isMimeType(type))
                 type = "text/plain"; // this is default.
 
 
@@ -179,47 +186,51 @@ public class ItemActionHandler {
             try {
                 mContext.startActivity(intent);
             } catch (ActivityNotFoundException e) {
-                UiHelper.showTextToast(mContext,
-                                       mContext.getResources().getText(R.string.warn_find_app_to_open).toString()
-                                           + " [" + type + "]");
+                UxUtil.showTextToast(
+                        mContext.getResources().getText(R.string.warn_find_app_to_open).toString() + " [" + type + "]");
                 return;
             }
             // change state as 'opened' at this moment.
             changeItemState_opened(id, position);
         } else {
-            RTTask.TaskState state = mRtt.getState(id, RTTask.Action.DOWNLOAD);
-            switch(state) {
+            DownloadTask t = mRtt.getDownloadTask(id);
+            switch(mRtt.getRtState(t)) {
             case IDLE: {
-                File tmpf = Utils.getNewTempFile();
-                if (null == tmpf)
-                    UiHelper.showTextToast(mContext, R.string.err_iofile);
-                else {
-                    BGTaskDownloadToItemContent dnTask = new BGTaskDownloadToItemContent(url, id);
-                    mRtt.register(id, RTTask.Action.DOWNLOAD, dnTask);
-                    mRtt.start(id, RTTask.Action.DOWNLOAD);
-                    mABridge.dataSetChanged(id);
+                DownloadTask dnTask;
+                try {
+                    dnTask = DownloadTask.create(url, id);
+                    if (!mRtt.addTask(dnTask, id, RTTask.Action.DOWNLOAD))
+                        P.bug(false);
+                    mABridge.itemDataChanged(id);
+                } catch (MalformedURLException e) {
+                    UxUtil.showTextToast(R.string.err_url);
+                } catch (ConnectException e) {
+                    UxUtil.showTextToast(R.string.err_ionet);
+                } catch (IOException e) {
+                    UxUtil.showTextToast(R.string.err_iofile);
                 }
             } break;
 
-            case RUNNING:
+            case RUN:
             case READY:
-                mRtt.cancel(id, RTTask.Action.DOWNLOAD, null);
-                mABridge.dataSetChanged(id);
+                assert t != null;
+                mRtt.cancelTask(t, null);
+                mABridge.itemDataChanged(id);
                 break;
 
-            case CANCELING:
-                UiHelper.showTextToast(mContext, R.string.wait_cancel);
+            case CANCEL:
+                UxUtil.showTextToast(R.string.wait_cancel);
                 break;
 
-            case FAILED: {
-                Err result = mRtt.getErr(id, RTTask.Action.DOWNLOAD);
-                UiHelper.showTextToast(mContext, result.getMsgId());
-                mRtt.consumeResult(id, RTTask.Action.DOWNLOAD);
-                mABridge.dataSetChanged(id);
+            case FAIL: {
+                assert null != t;
+                UxUtil.showTextToast(t.getErr().getMsgId());
+                mRtt.removeWatchedTask(t);
+                mABridge.itemDataChanged(id);
             } break;
 
             default:
-                Utils.eAssert(false);
+                P.bug(false);
             }
         }
     }
@@ -239,23 +250,23 @@ public class ItemActionHandler {
             // Items that have both invalid link and enclosure url, SHOULD NOT be added to DB.
             // Parser give those away in parsing phase.
             // See RSSParser/AtomParser.
-            Utils.eAssert(null != url);
+            P.bug(null != url);
             if (enclosure.equals(url))
                 onActionDn(action, id, position, url, encType);
             else
                 onActionOpen(action, id, position, url);
         } else if (Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA == actionType) {
             // In case of embedded media, external program should be used in force.
-            action = Utils.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
+            action = Util.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
             onActionOpen(action, id, position, enclosure);
         } else
-            Utils.eAssert(false);
+            P.bug(false);
     }
 
     public ItemActionHandler(Activity activity,
                              AdapterBridge bridge) {
         mABridge = bridge;
         mActivity = activity;
-        mContext = null == mActivity? Environ.getAppContext(): mActivity;
+        mContext = null == mActivity? AppEnv.getAppContext(): mActivity;
     }
 }

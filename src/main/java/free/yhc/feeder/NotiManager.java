@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.util.HashSet;
 
 import android.app.Notification;
@@ -50,18 +48,22 @@ import android.content.res.Resources;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Process;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.ListenerManager;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+
+import static free.yhc.abaselib.util.AUtil.isUiThread;
 
 
 public class NotiManager implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(NotiManager.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(NotiManager.class, Logger.LOGLV_DEFAULT);
 
     private static final String NOTI_INTENT_DELETE_ACTION = "feeder.intent.action.NOTIFICATION_DELETE";
     private static NotiManager sInstance = null;
@@ -70,8 +72,8 @@ UnexpectedExceptionHandler.TrackedModule {
 
     // active notification set.
     private final HashSet<NotiType> mAnset = new HashSet<>();
-    private final NotificationManager mNm = (NotificationManager)Environ.getAppContext()
-                                                                        .getSystemService(Context.NOTIFICATION_SERVICE);
+    private final NotificationManager mNm = (NotificationManager)AppEnv.getAppContext()
+                                                                       .getSystemService(Context.NOTIFICATION_SERVICE);
     @SuppressWarnings("FieldCanBeLocal")
     private final ChannUpdatedListener mChannUpdatedListener = new ChannUpdatedListener();
 
@@ -100,7 +102,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         private Notification
         buildNotification() {
-            Context cxt = Environ.getAppContext();
+            Context cxt = AppEnv.getAppContext();
             Resources res = cxt.getResources();
             CharSequence textTitle = res.getText(_mTitle);
             CharSequence textDesc = res.getText(_mDesc);
@@ -202,7 +204,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         run() {
-            eAssert(Utils.isUiThread());
+            P.bug(isUiThread());
             if (mAnset.contains(NotiType.NEWITEM)) {
                 if (!_mNewItemExist)
                     removeNotification(NotiType.NEWITEM);
@@ -241,7 +243,7 @@ UnexpectedExceptionHandler.TrackedModule {
             // In addition, we cannot run below checker code in UI thread because,
             //   this requires DB access and accessing DB is very very slow in heavy-DB-access-period
             //   (ex. updating channel)
-            eAssert(Thread.currentThread() == mBgWorkHandler.getLooper().getThread());
+            P.bug(Thread.currentThread() == mBgWorkHandler.getLooper().getThread());
             switch(_mCmd) {
             case SCAN: {
                 // cids are not used in this case
@@ -254,19 +256,19 @@ UnexpectedExceptionHandler.TrackedModule {
                     else
                         mNewItemChannSet.remove(cid);
                 }
-                Environ.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
+                AppEnv.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
             } break;
 
             case NEW:
                 for (Long cid : _mCids)
                     mNewItemChannSet.add(cid);
-                Environ.getUiHandler().post(new PostNewItemChecker(true));
+                AppEnv.getUiHandler().post(new PostNewItemChecker(true));
                 break;
 
             case READ:
                 for (Long cid : _mCids)
                     mNewItemChannSet.remove(cid);
-                Environ.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
+                AppEnv.getUiHandler().post(new PostNewItemChecker(!mNewItemChannSet.isEmpty()));
                 break;
             }
         }
@@ -288,7 +290,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 mBgWorkHandler.post(new NewItemChecker(cids, NewItemCheckCmd.READ));
             } break;
             default:
-                Utils.eAssert(false);
+                P.bug(false);
             }
         }
     }
@@ -304,11 +306,11 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     addNotification(NotiType type) {
         // To avoid unexpected race-condition.
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         if (NotiType.ACTION == type // UPDATE Notification is used only for 'foreground service' noti.
             || mAnset.contains(type) // already notified.
             || (NotiType.NEWITEM == type // new item but, user don't want to see.
-                && !Utils.isPrefNewmsgNoti()))
+                && !Util.isPrefNewmsgNoti()))
             return; // notification is already notified. Nothing to do.
 
         mAnset.add(type);
@@ -321,7 +323,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     removeNotification(NotiType type) {
         // To avoid unexpected race-condition.
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         if (mAnset.contains(type)) {
             mAnset.remove(type);
             mNm.cancel(type.getNotiId());

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder.appwidget;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.util.HashMap;
 
 import android.appwidget.AppWidgetManager;
@@ -49,17 +47,19 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.preference.PreferenceManager;
 import android.widget.RemoteViewsService;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.R;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class ViewsService extends RemoteViewsService implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ViewsService.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ViewsService.class, Logger.LOGLV_DEFAULT);
 
     private static HashMap<Integer, ViewsFactory> sViewsFactoryMap
         = new HashMap<>();
@@ -86,7 +86,7 @@ UnexpectedExceptionHandler.TrackedModule {
             final int pos = intent.getIntExtra(AppWidgetUtils.MAP_KEY_POSITION, AppWidgetUtils.INVALID_POSITION);
             final long id = intent.getLongExtra(AppWidgetUtils.MAP_KEY_ITEMID, DB.INVALID_ITEM_ID);
             if (DBG) P.v("pending intent : pos : " + pos + " / id : " + id);
-            Environ.getUiHandler().post(new Runnable() {
+            AppEnv.getUiHandler().post(new Runnable() {
                 @Override
                 public void
                 run() {
@@ -121,22 +121,22 @@ UnexpectedExceptionHandler.TrackedModule {
     }
 
     private static class PreferenceChangedListener implements OnSharedPreferenceChangeListener {
-        private Utils.PrefLayout mOldLayout;
+        private Util.PrefLayout mOldLayout;
         PreferenceChangedListener() {
-            mOldLayout = Utils.getPrefAppWidgetButtonLayout();
+            mOldLayout = Util.getPrefAppWidgetButtonLayout();
         }
 
         @Override
         public void
         onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-            if (!key.equals(Utils.getResString(R.string.csappwidget_btn_layout)))
+            if (!key.equals(Util.getResString(R.string.csappwidget_btn_layout)))
                 return; // ignore others
 
-            Utils.PrefLayout newLayout = Utils.getPrefAppWidgetButtonLayout();
+            Util.PrefLayout newLayout = Util.getPrefAppWidgetButtonLayout();
             if (mOldLayout == newLayout)
                 return; // not changed. ignore it.
             mOldLayout = newLayout;
-            Context context = Environ.getAppContext();
+            Context context = AppEnv.getAppContext();
             int[] awids = AppWidgetManager.getInstance(context)
                                           .getAppWidgetIds(new ComponentName(context, Provider.class));
             sendUpdateAppWidgetRequest(context, awids);
@@ -146,7 +146,7 @@ UnexpectedExceptionHandler.TrackedModule {
     static void
     sendUpdateAppWidgetRequest(Context context, int[] awids) {
         Intent intent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-        intent.setClass(Environ.getAppContext(), Provider.class);
+        intent.setClass(AppEnv.getAppContext(), Provider.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, awids);
         context.sendBroadcast(intent);
     }
@@ -187,7 +187,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public static void
     instantiateViewsFactories() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(AppEnv.getAppContext());
         sSPCListener = new PreferenceChangedListener();
         // NOTE
         // SharedPreference uses 'WeekHashMap'.
@@ -209,8 +209,8 @@ UnexpectedExceptionHandler.TrackedModule {
     onGetViewFactory(Intent intent) {
         long catid = intent.getLongExtra(AppWidgetUtils.MAP_KEY_CATEGORYID, DB.INVALID_ITEM_ID);
         int awid = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetUtils.INVALID_APPWIDGETID);
-        eAssert(DB.INVALID_ITEM_ID != catid
-                && AppWidgetUtils.INVALID_APPWIDGETID != awid);
+        P.bug(DB.INVALID_ITEM_ID != catid
+              && AppWidgetUtils.INVALID_APPWIDGETID != awid);
         if (DBG) P.v("category(" + catid + ")" + " appwidget(" + awid + ")");
         ViewsFactory vf = getViewsFactory(awid);
         if (null == vf) {

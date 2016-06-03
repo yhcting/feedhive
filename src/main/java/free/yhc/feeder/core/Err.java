@@ -55,6 +55,7 @@ public enum Err {
     DB_DUPLICATED_CHANNEL       (R.string.err_duplicated_channel),
     DB_UNKNOWN                  (R.string.err_dbunknown),
     DB_CRASH                    (R.string.err_dbcrash),
+    ESSENTIAL_PERM              (R.string.err_essential_perm),
     UNKNOWN                     (R.string.err_unknwon);
 
     private int msgId; // matching message id

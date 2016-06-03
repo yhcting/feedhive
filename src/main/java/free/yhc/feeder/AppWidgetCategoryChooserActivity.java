@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
 import android.R.style;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -48,18 +47,16 @@ import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.appwidget.AppWidgetUtils;
 import free.yhc.feeder.appwidget.UpdateService;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class AppWidgetCategoryChooserActivity extends Activity  implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(AppWidgetCategoryChooserActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AppWidgetCategoryChooserActivity.class, Logger.LOGLV_DEFAULT);
 
     public static final String KEY_CANCELABLE = "cancelable";
 
@@ -78,7 +75,7 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         final int appWidgetId = getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                         AppWidgetUtils.INVALID_APPWIDGETID);
-        eAssert(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
+        P.bug(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
         mCancelable = getIntent().getBooleanExtra(KEY_CANCELABLE, false);
 
         final Intent resultValue = new Intent();

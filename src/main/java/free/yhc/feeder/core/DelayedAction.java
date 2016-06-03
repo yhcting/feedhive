@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -38,11 +38,13 @@ package free.yhc.feeder.core;
 
 import android.os.Handler;
 
+import free.yhc.baselib.Logger;
+
 @SuppressWarnings("unused")
 public class DelayedAction implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(DelayedAction.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(DelayedAction.class, Logger.LOGLV_DEFAULT);
 
     private final Handler mHandler;
     private final Runnable mAction;

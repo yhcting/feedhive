@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
@@ -57,18 +55,18 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
+
+import free.yhc.baselib.Logger;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.feed.Feed;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class ChannelSettingActivity extends Activity implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(ChannelSettingActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ChannelSettingActivity.class, Logger.LOGLV_DEFAULT);
 
     // match string-array 'strarr_updatemode_setting'
     private static final int SPPOS_UPDATEMODE_NORMAL = 0;
@@ -98,9 +96,9 @@ UnexpectedExceptionHandler.TrackedModule {
             i++;
         }
 
-        long[] sods = Utils.convertArrayLongTolong(sodhs.toArray(new Long[sodhs.size()]));
+        long[] sods = Util.convertArrayLongTolong(sodhs.toArray(new Long[sodhs.size()]));
         Arrays.sort(sods);
-        if (!Utils.nrsToNString(sods).equals(oldSchedUpdate)) {
+        if (!Util.nrsToNString(sods).equals(oldSchedUpdate)) {
             mDbp.updateChannel_schedUpdate(mCid, sods);
             ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
         }
@@ -113,13 +111,13 @@ UnexpectedExceptionHandler.TrackedModule {
         long updmode = old_updmode;
         switch (sp.getSelectedItemPosition()) {
         case SPPOS_UPDATEMODE_NORMAL:
-            updmode = Utils.bitSet(updmode, Feed.Channel.FUPD_LINK, Feed.Channel.MUPD);
+            updmode = Util.bitSet(updmode, Feed.Channel.FUPD_LINK, Feed.Channel.MUPD);
             break;
         case SPPOS_UPDATEMODE_DOWNLOAD:
-            updmode = Utils.bitSet(updmode, Feed.Channel.FUPD_DN, Feed.Channel.MUPD);
+            updmode = Util.bitSet(updmode, Feed.Channel.FUPD_DN, Feed.Channel.MUPD);
             break;
         default:
-            eAssert(false);
+            P.bug(false);
         }
 
         if (old_updmode != updmode)
@@ -139,13 +137,13 @@ UnexpectedExceptionHandler.TrackedModule {
         // clear bit for action program.
         switch (sp.getSelectedItemPosition()) {
         case SPPOS_BROWSER_IN:
-            action = Utils.bitSet(action, Feed.Channel.FACT_PROG_IN, Feed.Channel.MACT_PROG);
+            action = Util.bitSet(action, Feed.Channel.FACT_PROG_IN, Feed.Channel.MACT_PROG);
             break;
         case SPPOS_BROWSER_EX:
-            action = Utils.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
+            action = Util.bitSet(action, Feed.Channel.FACT_PROG_EX, Feed.Channel.MACT_PROG);
             break;
         default:
-            eAssert(false);
+            P.bug(false);
         }
 
         if (old_action != action)
@@ -197,10 +195,10 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
 
         mCid = getIntent().getLongExtra("cid", -1);
-        eAssert(mCid >= 0);
+        P.bug(mCid >= 0);
 
         ActionBar ab = getActionBar();
-        eAssert(null != ab);
+        P.bug(null != ab);
         setTitle(mDbp.getChannelInfoString(mCid, ColumnChannel.TITLE));
         ab.setDisplayShowHomeEnabled(false);
 
@@ -217,10 +215,10 @@ UnexpectedExceptionHandler.TrackedModule {
         });
 
         String schedtime = mDbp.getChannelInfoString(mCid, ColumnChannel.SCHEDUPDATETIME);
-        long[] secs = Utils.nStringToNrs(schedtime);
+        long[] secs = Util.nStringToNrs(schedtime);
         for (long s : secs) {
-            eAssert(0 <= s && s < Utils.DAY_IN_SEC);
-            addSchedUpdateRow(schedlo, (int)(s / Utils.HOUR_IN_SEC));
+            P.bug(0 <= s && s < Util.DAY_IN_SEC);
+            addSchedUpdateRow(schedlo, (int)(s / Util.HOUR_IN_SEC));
         }
 
         // Setup "Update Type"
@@ -236,7 +234,7 @@ UnexpectedExceptionHandler.TrackedModule {
         else if (Feed.Channel.isUpdDn(uptype))
             sp.setSelection(SPPOS_UPDATEMODE_DOWNLOAD); // 'Download' is position 1
         else
-            eAssert(false);
+            P.bug(false);
 
         // Setup Browser
         long action = mDbp.getChannelInfoLong(mCid, ColumnChannel.ACTION);
@@ -253,7 +251,7 @@ UnexpectedExceptionHandler.TrackedModule {
             else if (Feed.Channel.isActProgEx(action))
                 sp.setSelection(SPPOS_BROWSER_EX); // 'external browser' is position 1
             else
-                eAssert(false);
+                P.bug(false);
         } else if (Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA == actionType) {
             findViewById(R.id.browser_layout).setVisibility(View.GONE);
         } else {

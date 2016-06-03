@@ -1,9 +1,9 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
- * This file is part of FeedHive
+ * This file is part of NetMBuddy
  *
  * This program is licensed under the FreeBSD license
  *
@@ -36,60 +36,14 @@
 
 package free.yhc.feeder.core;
 
-public class BGTaskUpdateChannel extends BGTask<BGTaskUpdateChannel.Arg, Object> {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(BGTaskUpdateChannel.class);
+import free.yhc.baselib.Logger;
 
-    private volatile NetLoader mLoader = null;
+public class MPlayerUI {
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(MPlayerUI.class, Logger.LOGLV_DEFAULT);
 
-    public static class Arg {
-        final long cid;
-        final String customIconref;
+    private static final int SEEKBAR_MAX = 1000;
 
-        public Arg(long aCid) {
-            cid = aCid;
-            customIconref = null;
-        }
-        public Arg(long aCid, String aCustomIconref) {
-            cid = aCid;
-            customIconref = aCustomIconref;
-        }
+    private static MPlayerUI sInstance = null;
 
-    }
-
-    public
-    BGTaskUpdateChannel(Arg arg) {
-        super(arg, OPT_WAKELOCK | OPT_WIFILOCK);
-    }
-
-    @Override
-    protected Err
-    doBgTask(Arg arg) {
-        try {
-            mLoader = new NetLoader();
-            if (null == arg.customIconref)
-                mLoader.updateLoad(arg.cid);
-            else
-                mLoader.updateLoad(arg.cid, arg.customIconref);
-        } catch (FeederException e) {
-            //logI("BGTaskUpdateChannel : Updating [" + arg.cid + "] : interrupted!");
-            return e.getError();
-        }
-        return Err.NO_ERR;
-    }
-
-    @Override
-    public boolean
-    cancel(Object param) {
-        // I may misunderstand that canceling background task may corrupt DB
-        //   by interrupting in the middle of transaction.
-        // But java thread doesn't interrupt it's executing.
-        // So, I don't worry about this (different from C.)
-        super.cancel(param); // cancel thread
-        if (null != mLoader)
-            mLoader.cancel();     // This is HACK for fast-interrupt.
-        return true;
-    }
 }

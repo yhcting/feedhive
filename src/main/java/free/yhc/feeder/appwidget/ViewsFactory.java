@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder.appwidget;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicReference;
@@ -45,31 +43,38 @@ import java.util.concurrent.atomic.AtomicReference;
 import android.appwidget.AppWidgetManager;
 import android.content.Intent;
 import android.database.Cursor;
+import android.support.annotation.NonNull;
 import android.view.View;
 import android.widget.RemoteViews;
 import android.widget.RemoteViewsService;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.TmTask;
+import free.yhc.baselib.async.TaskManagerBase;
+import free.yhc.baselib.net.NetDownloadTask;
+import free.yhc.baselib.net.NetReadTask;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.R;
-import free.yhc.feeder.UiHelper;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.BGTask;
-import free.yhc.feeder.core.BaseBGTask;
 import free.yhc.feeder.core.ContentsManager;
-import free.yhc.feeder.core.Environ;
-import free.yhc.feeder.core.Err;
 import free.yhc.feeder.core.ItemActionHandler;
 import free.yhc.feeder.core.ListenerManager;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+import free.yhc.feeder.task.DownloadTask;
+
+import static free.yhc.abaselib.util.AUtil.isUiThread;
 
 public class ViewsFactory implements
 RemoteViewsService.RemoteViewsFactory,
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ViewsFactory.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ViewsFactory.class, Logger.LOGLV_DEFAULT);
 
     private static final int COLI_ID                 = 0;
     private static final int COLI_CHANNELID          = 1;
@@ -103,6 +108,8 @@ UnexpectedExceptionHandler.TrackedModule {
     private final int mAppWidgetId;
     private final DBWatcher mDbWatcher;
     private final ItemActionHandler mItemAction;
+    private final DownloadTaskListener mDownloadTaskListener
+            = new DownloadTaskListener();
 
     private long mCategoryId;
     private long[] mCids = null;
@@ -192,7 +199,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     break;
 
                 default:
-                    eAssert(false);
+                    P.bug(false);
                 }
             } else if (type instanceof DBPolicy.UpdateType) {
                 switch ((DBPolicy.UpdateType)type) {
@@ -208,7 +215,7 @@ UnexpectedExceptionHandler.TrackedModule {
                     break; // ignore
 
                 default:
-                    eAssert(false);
+                    P.bug(false);
                 }
             } else if (type instanceof ContentsManager.UpdateType) {
                 switch ((ContentsManager.UpdateType)type) {
@@ -234,43 +241,60 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
+    private class RTTaskEventHandler
+            implements TaskManagerBase.TaskQEventListener {
         @Override
         public void
-        onRegister(BGTask task, long id, RTTask.Action act) {
-            if (RTTask.Action.DOWNLOAD == act
-                && isWidgetItem(id))
-                mRtt.bind(id, act, ViewsFactory.this, new DownloadDataBGTaskListener(id));
-        }
+        onEvent(
+                @NonNull TaskManagerBase tm,
+                @NonNull TaskManagerBase.TaskQEvent ev,
+                int szReady, int szRun,
+                @NonNull TmTask task) {
+            RTTask rtt = (RTTask)tm;
+            RTTask.TaskInfo ti = rtt.getTaskInfo(task);
+            long dbid = (Long)ti.ttag;
+            switch (ev) {
+            case ADDED_TO_READY:
+                if (RTTask.Action.DOWNLOAD == ti.ttype
+                        && isWidgetItem(dbid))
+                    //noinspection RedundantCast
+                    ((DownloadTask)task).addEventListener(
+                            AppEnv.getUiHandlerAdapter(), mDownloadTaskListener);
+                break;
+            case MOVED_TO_RUN:
+                break; // nothing to do
+            case REMOVED_FROM_READY:
+            case REMOVED_FROM_RUN:
+                //noinspection unchecked
+                if (RTTask.Action.DOWNLOAD == ti.ttype)
+                    //noinspection RedundantCast
+                    ((DownloadTask)task).removeEventListener(mDownloadTaskListener);
+                break;
+            }
 
-        @Override
-        public void
-        onUnregister(BGTask task, long id, RTTask.Action act) { }
+        }
     }
 
-    private class DownloadDataBGTaskListener extends BaseBGTask.OnEventListener {
-        @SuppressWarnings("unused")
-        private long _mId = -1;
-        DownloadDataBGTaskListener(long id) {
-            _mId = id;
-        }
-
+    private class DownloadTaskListener extends NetDownloadTask.EventListener<TmTask, NetReadTask.Result> {
         @Override
         public void
-        onCancelled(BaseBGTask task, Object param) {
+        onCancelled(@NonNull TmTask task, Object param) {
+            if (DBG) P.v(task.getUniqueName());
             notifyDataSetChanged();
         }
 
         @Override
         public void
-        onPreRun(BaseBGTask task) {
+        onStarted(@NonNull TmTask task) {
+            if (DBG) P.v(task.getUniqueName());
             // icon should be changed from 'ready' to 'running'
             notifyDataSetChanged();
         }
 
         @Override
         public void
-        onPostRun(BaseBGTask task, Err result) {
+        onPostRun(@NonNull TmTask task, NetReadTask.Result result, Exception ex) {
+            if (DBG) P.v(task.getUniqueName());
             notifyDataSetChanged();
         }
     }
@@ -279,12 +303,21 @@ UnexpectedExceptionHandler.TrackedModule {
         @Override
         public void
         updateItemState(int pos, long state) {
-            // do nothing.
+            if (DBG) P.v("" + pos + ", " + state);
         }
 
         @Override
         public void
-        dataSetChanged(long id) {
+        itemDataChanged(long id) {
+            if (DBG) P.v("" + id);
+            // icon should be changed from 'ready' to 'running'
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void
+        dataSetChanged() {
+            if (DBG) P.v();
             notifyDataSetChanged();
         }
     }
@@ -293,7 +326,7 @@ UnexpectedExceptionHandler.TrackedModule {
     getCursor() {
         mCids = mDbp.getChannelIds(mCategoryId);
         mDbWatcher.updateCategoryChannels(mCids);
-        if (DBG) P.v("Channels : " + Utils.nrsToNString(mCids));
+        if (DBG) P.v("Channels : " + Util.nrsToNString(mCids));
         return mDbp.queryItem(mCids, sQueryProjection);
     }
 
@@ -314,7 +347,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     notifyDataSetChanged() {
-        AppWidgetManager awm = AppWidgetManager.getInstance(Environ.getAppContext());
+        AppWidgetManager awm = AppWidgetManager.getInstance(AppEnv.getAppContext());
         awm.notifyAppWidgetViewDataChanged(mAppWidgetId, R.id.list);
     }
 
@@ -345,7 +378,8 @@ UnexpectedExceptionHandler.TrackedModule {
         mCursor = cur;
 
         mItemAction = new ItemActionHandler(null, new AdapterBridge());
-        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
+        mRtt.addTaskQEventListener(AppEnv.getUiHandlerAdapter(),
+                                   new RTTaskEventHandler());
     }
 
     boolean
@@ -365,7 +399,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     void
     onItemClick(int position, long id) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         if (DBG) P.v("pos : " + position);
         Long cidLong = mDbp.getItemInfoLong(id, ColumnItem.CHANNELID);
         if (null == cidLong) {
@@ -373,7 +407,7 @@ UnexpectedExceptionHandler.TrackedModule {
             //   - Channel is deleted
             //   - App widget is NOT updated yet.
             //   - User select ALREADY-DELETED-ITEM
-            UiHelper.showTextToast(Environ.getAppContext(), R.string.warn_bad_request);
+            UxUtil.showTextToast(R.string.warn_bad_request);
             return;
         }
 
@@ -437,7 +471,7 @@ UnexpectedExceptionHandler.TrackedModule {
             title = mCursor.getString(COLI_TITLE);
             desc = mCursor.getString(COLI_DESCRIPTION);
         }
-        RemoteViews rv = new RemoteViews(Environ.getAppContext().getPackageName(),
+        RemoteViews rv = new RemoteViews(AppEnv.getAppContext().getPackageName(),
                                          R.layout.appwidget_row);
         rv.setTextViewText(R.id.channel, mDbp.getChannelInfoString(cid, ColumnChannel.TITLE));
         rv.setTextViewText(R.id.title, title);
@@ -445,39 +479,34 @@ UnexpectedExceptionHandler.TrackedModule {
 
 
         File df = ContentsManager.get().getItemInfoDataFile(iid);
-        if (DBG) P.v("pos : " + position
-                     + " : Path(" + df.exists() + ") ["
-                     + ((null == df)? "<null>": df.getAbsolutePath()) + "]");
+        if (DBG) {
+            String msg = "pos: " + position + ", id: " + iid;
+            if (null == df)
+                msg += "<null>";
+            else
+                msg += "(" + df.exists() + ")" + df.getAbsolutePath() + "]";
+            P.v(msg);
+        }
         if (null != df && df.exists()) {
             rv.setViewVisibility(R.id.image, View.VISIBLE);
             rv.setImageViewResource(R.id.image, R.drawable.ic_save);
         } else {
-            RTTask.TaskState dnState = mRtt.getState(iid, RTTask.Action.DOWNLOAD);
-            rv.setViewVisibility(R.id.image, View.VISIBLE);
-            switch(dnState) {
-            case IDLE:
-                rv.setViewVisibility(R.id.image, View.GONE);
-                break;
-
-            case READY:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_pause);
-                break;
-
-            case RUNNING:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_refresh);
-                break;
-
-            case FAILED:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_info);
-                break;
-
-            case CANCELING:
-                rv.setImageViewResource(R.id.image, R.drawable.ic_block);
-                break;
-
-            default:
-                eAssert(false);
+            DownloadTask t = mRtt.getDownloadTask(iid);
+            RTTask.RtState rtstate = mRtt.getRtState(t);
+            if (DBG) P.v("RtState: " + rtstate.name());
+            int icon = 0; // invalid icon number
+            switch (rtstate) {
+            case IDLE: icon = 0; break;
+            case READY: icon = R.drawable.ic_pause; break;
+            case RUN: icon = R.drawable.ic_refresh; break;
+            case CANCEL: icon = R.drawable.ic_block; break;
+            case FAIL: icon = R.drawable.ic_info; break;
             }
+            if (0 != icon) {
+                rv.setViewVisibility(R.id.image, View.VISIBLE);
+                rv.setImageViewResource(R.id.image, icon);
+            } else
+                rv.setViewVisibility(R.id.image, View.GONE);
         }
 
         Intent ei = new Intent();
@@ -520,12 +549,11 @@ UnexpectedExceptionHandler.TrackedModule {
         mDbWatcher.close();
         // mDbWatcher.unregister SHOULD be called at UI context
         // See unregisterUpdatedListener at DB.java for details.
-        Environ.getUiHandler().post(new Runnable() {
+        AppEnv.getUiHandler().post(new Runnable() {
             @Override
             public void
             run() {
                 mDbWatcher.unregister();
-                mRtt.unregisterRegisterEventListener(this);
             }
         });
         if (DBG) P.v("Exit");

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,16 +34,17 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.core;
+package free.yhc.feeder.feed;
+
+import free.yhc.baselib.Logger;
+import free.yhc.feeder.core.Util;
 
 //
 // Policy of decisions that is made based on Feed information.
 //
 public class FeedPolicy {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(FeedPolicy.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(FeedPolicy.class, Logger.LOGLV_DEFAULT);
     /**
      * Check that is this valid item?
      * (Result of parsing has enough information required by this application?)
@@ -51,12 +52,12 @@ public class FeedPolicy {
     public static boolean
     verifyConstraints(Feed.Item.ParD item) {
         // 'title' is mandatory!!!
-        if (!Utils.isValidValue(item.title))
+        if (!Util.isValidValue(item.title))
             return false;
 
         // Item should have one of link or enclosure url.
-        return Utils.isValidValue(item.link)
-               || Utils.isValidValue(item.enclosureUrl);
+        return Util.isValidValue(item.link)
+               || Util.isValidValue(item.enclosureUrl);
     }
 
     /**
@@ -66,7 +67,7 @@ public class FeedPolicy {
     @SuppressWarnings("unused")
     public static boolean
     verifyConstraints(Feed.Channel.ParD ch) {
-        return Utils.isValidValue(ch.title);
+        return Util.isValidValue(ch.title);
     }
 
     /**
@@ -91,7 +92,7 @@ public class FeedPolicy {
             actFlag = Feed.Channel.FACT_TYPE_EMBEDDED_MEDIA | Feed.Channel.FACT_PROG_EX;
             break;
         default:
-            Utils.eAssert(false);
+            P.bug(false);
             actFlag = Feed.Channel.FACT_DEFAULT;
         }
 
@@ -100,11 +101,11 @@ public class FeedPolicy {
         // So, this flag should not be changed except for action is invalid value.
         if (Feed.FINVALID == action)
             // In case of newly inserted channel (first decision), FACT_PROG_XX should be set as recommended one.
-            return Utils.bitSet(action, actFlag, Feed.Channel.MACT_TYPE | Feed.Channel.MACT_PROG);
+            return Util.bitSet(action, actFlag, Feed.Channel.MACT_TYPE | Feed.Channel.MACT_PROG);
         else
             // If this is NOT first decision, user may change FACT_PROG_XX setting (UX scenario support this.)
             // So, in this case, FACT_PROG_XX SHOULD NOT be changed.
-            return Utils.bitSet(action, actFlag, Feed.Channel.MACT_TYPE);
+            return Util.bitSet(action, actFlag, Feed.Channel.MACT_TYPE);
     }
 
     public static String
@@ -112,16 +113,16 @@ public class FeedPolicy {
         if (Feed.Channel.FACT_TYPE_DYNAMIC != Feed.Channel.getActType(action))
             return null; // Not applicable for other case!
 
-        if (Utils.isValidValue(enclosure)
-            && Utils.isAudioOrVideo(enclosure))
+        if (Util.isValidValue(enclosure)
+            && Util.isAudioOrVideo(enclosure))
             return enclosure;
         else {
-            if (Utils.isValidValue(link))
+            if (Util.isValidValue(link))
                 return link;
-            else if (Utils.isValidValue(enclosure))
+            else if (Util.isValidValue(enclosure))
                 return enclosure;
             else
-                Utils.eAssert(false); // there is no valid link or enclosure value...
+                P.bug(false); // there is no valid link or enclosure value...
         }
         return null;
     }

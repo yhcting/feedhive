@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
 import java.util.LinkedList;
 
@@ -45,28 +43,34 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.view.Gravity;
+import android.support.annotation.NonNull;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.Toast;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.HelperHandler;
+import free.yhc.baselib.async.Task;
+import free.yhc.baselib.async.ThreadEx;
+import free.yhc.abaselib.util.AUtil;
+import free.yhc.abaselib.util.UxUtil;
+import free.yhc.abaselib.ux.DialogTask;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.ColumnItem;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.core.ContentsManager;
 import free.yhc.feeder.core.Err;
-import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.feed.Feed;
 import free.yhc.feeder.core.RTTask;
-import free.yhc.feeder.core.Utils;
+
+import static free.yhc.baselib.util.Util.convertArrayLongTolong;
 
 public class UiHelper {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(UiHelper.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(UiHelper.class, Logger.LOGLV_DEFAULT);
 
     public interface EditTextDialogAction {
         void prepare(Dialog dialog, EditText edit);
@@ -81,49 +85,52 @@ public class UiHelper {
         void onPostExecute(Err err, Object user);
     }
 
-    public interface OnConfirmDialogAction {
-        void onOk(Dialog dialog);
-        void onCancel(Dialog dialog);
-    }
-
-    public static class DeleteAllDnfilesWorker extends DiagAsyncTask.Worker {
+    public static class DeleteAllDnfilesTask extends Task<Void> {
         private final Context _mContext;
         private final OnPostExecuteListener _mOnPostExecute;
         private final Object _mUser;
-        public DeleteAllDnfilesWorker(Context context,
-                                      OnPostExecuteListener onPostExecute,
-                                      Object user) {
+        public DeleteAllDnfilesTask(
+                Context context,
+                OnPostExecuteListener onPostExecute,
+                Object user) {
+            super(DeleteAllDnfilesTask.class.getSimpleName(),
+                  HelperHandler.get(),
+                  ThreadEx.TASK_PRIORITY_NORM,
+                  false);
             _mContext = context;
             _mOnPostExecute = onPostExecute;
             _mUser = user;
         }
 
         @Override
-        public Err
-        doBackgroundWork(DiagAsyncTask task) {
+        protected Void
+        doAsync() {
             ContentsManager.get().cleanAllChannelDirs();
-            return Err.NO_ERR;
-        }
-
-        @Override
-        public void
-        onPostExecute(DiagAsyncTask task, Err result) {
-            if (Err.NO_ERR != result)
-                UiHelper.showTextToast(_mContext, R.string.delete_downloadded_files_errmsg);
-            if (null != _mOnPostExecute)
-                _mOnPostExecute.onPostExecute(result, _mUser);
+            AppEnv.getUiHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    UxUtil.showTextToast(R.string.delete_downloadded_files_errmsg);
+                    if (null != _mOnPostExecute)
+                        _mOnPostExecute.onPostExecute(Err.NO_ERR, _mUser);
+                }
+            });
+            return null;
         }
     }
 
-    public static class DeleteUsedDnfilesWorker extends DiagAsyncTask.Worker {
+    public static class DeleteUsedDnfilesTask extends Task<Void> {
         private final long _mCid;
         private final Context _mContext;
         private final OnPostExecuteListener _mOnPostExecute;
         private final Object _mUser;
-        public DeleteUsedDnfilesWorker(long cid,
-                                       Context context,
-                                       OnPostExecuteListener onPostExecute,
-                                       Object user) {
+        public DeleteUsedDnfilesTask(long cid,
+                                     Context context,
+                                     OnPostExecuteListener onPostExecute,
+                                     Object user) {
+            super(DeleteAllDnfilesTask.class.getSimpleName(),
+                  HelperHandler.get(),
+                  ThreadEx.TASK_PRIORITY_NORM,
+                  false);
             _mCid = cid;
             _mContext = context;
             _mOnPostExecute = onPostExecute;
@@ -131,8 +138,8 @@ public class UiHelper {
         }
 
         @Override
-        public Err
-        doBackgroundWork(DiagAsyncTask task) {
+        protected Void
+        doAsync() {
             DBPolicy dbp = DBPolicy.get();
             ContentsManager cm = ContentsManager.get();
             LinkedList<File> l;
@@ -152,78 +159,24 @@ public class UiHelper {
                 if (!Feed.Item.isStateOpenNew(state))
                     idsl.add(id);
             }
-            cm.deleteItemContents(Utils.convertArrayLongTolong(idsl.toArray(new Long[idsl.size()])));
-            return Err.NO_ERR;
+            final int failcnt = cm.deleteItemContents(
+                    convertArrayLongTolong(idsl.toArray(new Long[idsl.size()])));
+            AppEnv.getUiHandler().post(new Runnable() {
+                @Override
+                public void run() {
+                    if (0 < failcnt)
+                        UxUtil.showTextToast(R.string.delete_downloadded_files_errmsg);
+                    if (null != _mOnPostExecute)
+                        _mOnPostExecute.onPostExecute(Err.NO_ERR, _mUser);
+                }
+            });
+            return null;
         }
-
-        @Override
-        public void
-        onPostExecute(DiagAsyncTask task, Err result) {
-            if (Err.NO_ERR != result)
-                UiHelper.showTextToast(_mContext, R.string.delete_downloadded_files_errmsg);
-            if (null != _mOnPostExecute)
-                _mOnPostExecute.onPostExecute(result, _mUser);
-        }
-    }
-
-
-    /**
-     * This is for future use...
-     */
-    @SuppressWarnings("unused")
-    private static void
-    showToast(Context context, ViewGroup root) {
-        Toast t = Toast.makeText(context, "", Toast.LENGTH_SHORT);
-        t.setGravity(Gravity.CENTER, 0, 0);
-        t.setView(root);
-        t.show();
-    }
-
-    public static View
-    inflateLayout(Context context, int layout) {
-        LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        return inflater.inflate(layout, null);
-    }
-
-    public static void
-    showTextToast(Context context, String text) {
-        Toast t = Toast.makeText(context, text, Toast.LENGTH_SHORT);
-        t.setGravity(Gravity.CENTER, 0, 0);
-        t.show();
-    }
-
-    public static void
-    showTextToast(Context context, int textid) {
-        Toast t = Toast.makeText(context, textid, Toast.LENGTH_SHORT);
-        t.setGravity(Gravity.CENTER, 0, 0);
-        t.show();
-    }
-
-    public static AlertDialog
-    createAlertDialog(Context context, int icon, CharSequence title, CharSequence message) {
-        eAssert(null != title);
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        AlertDialog dialog = builder.create();
-        if (0 != icon)
-            dialog.setIcon(icon);
-        dialog.setTitle(title);
-        if (null != message)
-            dialog.setMessage(message);
-        return dialog;
-    }
-
-    @SuppressWarnings("unused")
-    public static AlertDialog
-    createAlertDialog(Context context, int icon, int title, int message) {
-        eAssert(0 != title);
-        CharSequence t = context.getResources().getText(title);
-        CharSequence msg = (0 == message)? null: context.getResources().getText(message);
-        return createAlertDialog(context, icon, t, msg);
     }
 
     public static AlertDialog
     createWarningDialog(Context context, CharSequence title, CharSequence message) {
-        return createAlertDialog(context, R.drawable.ic_alert, title, message);
+        return UxUtil.createAlertDialog(context, R.drawable.ic_alert, title, message);
     }
 
     public static AlertDialog
@@ -253,7 +206,7 @@ public class UiHelper {
     public static AlertDialog
     buildOneLineEditTextDialog(final Context context, final CharSequence title, final EditTextDialogAction action) {
         // Create "Enter Url" dialog
-        View layout = inflateLayout(context, R.layout.oneline_editbox_dialog);
+        View layout = AUtil.inflateLayout(R.layout.oneline_editbox_dialog);
         final AlertDialog dialog = createEditTextDialog(context, layout, title);
         // Set action for dialog.
         final EditText edit = (EditText)layout.findViewById(R.id.editbox);
@@ -304,35 +257,22 @@ public class UiHelper {
     buildConfirmDialog(final Context context,
                        final CharSequence title,
                        final CharSequence description,
-                       final OnConfirmDialogAction action) {
-        final AlertDialog dialog = createAlertDialog(context, R.drawable.ic_info, title, description);
-        dialog.setButton(AlertDialog.BUTTON_POSITIVE, context.getResources().getText(R.string.yes),
-                         new DialogInterface.OnClickListener() {
-            @Override
-            public void
-            onClick(DialogInterface diag, int which) {
-                action.onOk(dialog);
-                dialog.dismiss();
-            }
-        });
-
-        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, context.getResources().getText(R.string.no),
-                          new DialogInterface.OnClickListener() {
-            @Override
-            public void
-            onClick(DialogInterface diag, int which) {
-                action.onCancel(dialog);
-                dialog.dismiss();
-            }
-        });
-        return dialog;
+                       final UxUtil.ConfirmAction action) {
+        return UxUtil.buildConfirmDialog(
+                context,
+                title,
+                description,
+                R.drawable.ic_info,
+                AUtil.getResText(R.string.yes),
+                AUtil.getResText(R.string.no),
+                action);
     }
 
     public static AlertDialog
     buildConfirmDialog(final Context context,
                        final int title,
                        final int description,
-                       final OnConfirmDialogAction action) {
+                       final UxUtil.ConfirmAction action) {
         return buildConfirmDialog(context,
                                   context.getResources().getText(title),
                                   context.getResources().getText(description),
@@ -362,7 +302,7 @@ public class UiHelper {
         int i = 0;
         for (Feed.Category cat : cats) {
             if (cat.id != catIdExcluded) {
-                if (!Utils.isValidValue(cat.name)
+                if (!Util.isValidValue(cat.name)
                     && dbp.isDefaultCategoryId(cat.id))
                     menus[i] = context.getResources().getText(R.string.default_category_name).toString();
                 else
@@ -395,22 +335,24 @@ public class UiHelper {
         if (RTTask.get().getItemsDownloading().length > 0)
             return null;
 
-        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+        UxUtil.ConfirmAction action = new UxUtil.ConfirmAction() {
             @Override
             public void
-            onOk(Dialog dialog) {
-                DiagAsyncTask task = new DiagAsyncTask(context,
-                                                       new DeleteAllDnfilesWorker(context,
-                                                                                  onPostExecute,
-                                                                                  postExecuteUser),
-                                                       DiagAsyncTask.Style.SPIN,
-                                                       R.string.delete_all_downloadded_file);
-                task.run();
+            onPositive(@NonNull Dialog dialog) {
+                DialogTask.Builder<DialogTask.Builder> bldr
+                        = new DialogTask.Builder<>(
+                        context,
+                        new DeleteAllDnfilesTask(context,
+                                                 onPostExecute,
+                                                 postExecuteUser));
+                bldr.setMessage(R.string.delete_all_downloadded_file);
+                if (!bldr.create().start())
+                    P.bug();
             }
 
             @Override
             public void
-            onCancel(Dialog dialog) {
+            onNegative(@NonNull Dialog dialog) {
                 if (null != onPostExecute)
                     onPostExecute.onPostExecute(Err.USER_CANCELLED, postExecuteUser);
             }
@@ -444,23 +386,25 @@ public class UiHelper {
             resMsg = R.string.delete_all_used_downloadded_file_msg;
         }
 
-        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+        UxUtil.ConfirmAction action = new UxUtil.ConfirmAction() {
             @Override
             public void
-            onOk(Dialog dialog) {
-                DiagAsyncTask task = new DiagAsyncTask(context,
-                                                       new DeleteUsedDnfilesWorker(cid,
-                                                                                   context,
-                                                                                   onPostExecute,
-                                                                                   postExecuteUser),
-                                                       DiagAsyncTask.Style.SPIN,
-                                                       resTitle);
-                task.run();
+            onPositive(@NonNull Dialog dialog) {
+                DialogTask.Builder<DialogTask.Builder> bldr
+                        = new DialogTask.Builder<>(
+                        context,
+                        new DeleteUsedDnfilesTask(cid,
+                                                  context,
+                                                  onPostExecute,
+                                                  postExecuteUser));
+                bldr.setMessage(resTitle);
+                if (!bldr.create().start())
+                    P.bug();
             }
 
             @Override
             public void
-            onCancel(Dialog dialog) {
+            onNegative(@NonNull Dialog dialog) {
                 if (null != onPostExecute)
                     onPostExecute.onPostExecute(Err.USER_CANCELLED, postExecuteUser);
             }

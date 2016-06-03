@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,24 +34,43 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.core;
+package free.yhc.feeder.feed;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.regex.Pattern;
 
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
+import android.support.annotation.NonNull;
 import android.text.Html;
 
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.HelperHandler;
+import free.yhc.baselib.net.NetReadTask;
+import free.yhc.feeder.core.Err;
+import free.yhc.feeder.core.FeederException;
+import free.yhc.feeder.core.Util;
+
 public abstract class FeedParser {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(FeedParser.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(FeedParser.class, Logger.LOGLV_DEFAULT);
 
     // Result data format from parse.
-    static class Result {
-        Feed.Channel.ParD channel = new Feed.Channel.ParD();
-        Feed.Item.ParD[] items = null;
+    public static class Result {
+        public Feed.Channel.ParD channel = new Feed.Channel.ParD();
+        public Feed.Item.ParD[] items = null;
     }
 
     protected static class NodeValue {
@@ -147,12 +166,12 @@ public abstract class FeedParser {
             //
             if (!isValidItem(item)) {
                 // Try to fixup
-                if (Utils.isValidValue(guid.value)
+                if (Util.isValidValue(guid.value)
                     && _sWebProtoPattern.matcher(guid.value).matches()) {
-                    if (Utils.isValidValue(item.enclosureType)
-                        && !Utils.isValidValue(item.enclosureUrl))
+                    if (Util.isValidValue(item.enclosureType)
+                        && !Util.isValidValue(item.enclosureUrl))
                         item.enclosureUrl = guid.value;
-                    else if (!Utils.isValidValue(item.link))
+                    else if (!Util.isValidValue(item.link))
                         item.link = guid.value;
                 }
             }
@@ -330,7 +349,7 @@ public abstract class FeedParser {
         // Usually, image is wrapped by several white spaces.
         // This beautifies web pages, but ugly in short description.
         // Open discussion for this...
-        text = Utils.removeLeadingTrailingWhiteSpace(text);
+        text = Util.removeLeadingTrailingWhiteSpace(text);
 
         //
         // NOTE
@@ -356,8 +375,8 @@ public abstract class FeedParser {
     // ========================================
     protected static boolean
     isValidItem(Feed.Item.ParD iParD) {
-        return Utils.isValidValue(iParD.title)
-               && (Utils.isValidValue(iParD.link) || Utils.isValidValue(iParD.enclosureUrl));
+        return Util.isValidValue(iParD.title)
+               && (Util.isValidValue(iParD.link) || Util.isValidValue(iParD.enclosureUrl));
     }
 
     // ========================================
@@ -368,13 +387,12 @@ public abstract class FeedParser {
     /**
      * Get real parser for this document
      */
+    @NonNull
     static FeedParser
-    getParser(Document dom) throws FeederException {
-        Utils.eAssert(null != dom);
+    getParser(@NonNull Document dom) throws FeederException {
         Element root = dom.getDocumentElement();
         if (null == root)
             throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
-
         if ("rss".equalsIgnoreCase(root.getNodeName()))
             return new RSSParser();
         else if ("feed".equalsIgnoreCase(root.getNodeName()))
@@ -383,7 +401,58 @@ public abstract class FeedParser {
             throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
     }
 
-    // real parser should implement 'parse' function.
+    @NonNull
+    public static Result
+    parse(@NonNull URL url) throws FeederException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+            NetReadTask.Builder<NetReadTask.Builder> b
+                    = new NetReadTask.Builder<>(Util.createNetConn(url), baos);
+            b.setOwner(HelperHandler.get());
+            b.create().startSync();
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray())) {
+                return parse(bais);
+            }
+        } catch (IOException e) {
+            throw new FeederException(Err.IO_NET);
+        } catch (InterruptedException e) {
+            P.bug(false); // Never happend!
+            throw new FeederException(Err.USER_CANCELLED);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @NonNull
+    public static Result
+    parse(@NonNull String url) throws FeederException {
+        try {
+            return parse(new URL(url));
+        } catch (MalformedURLException e) {
+            throw new FeederException(Err.INVALID_URL);
+        }
+    }
+
+    @NonNull
     abstract Result
-    parse(Document dom) throws FeederException;
+    parseDom(@NonNull Document dom) throws FeederException;
+
+    // real parser should implement 'parse' function.
+    @NonNull
+    public static Result
+    parse(@NonNull InputStream is) throws FeederException {
+        try {
+            Document dom = DocumentBuilderFactory
+                    .newInstance()
+                    .newDocumentBuilder()
+                    .parse(is);
+            return FeedParser.getParser(dom).parseDom(dom);
+        } catch (DOMException | SAXException | ParserConfigurationException e) {
+            e.printStackTrace();
+            throw new FeederException(Err.PARSER_UNSUPPORTED_FORMAT);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new FeederException(Err.UNKNOWN);
+        }
+    }
+
 }

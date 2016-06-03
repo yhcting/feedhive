@@ -46,12 +46,13 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+
 public class UnexpectedExceptionHandler implements
 UncaughtExceptionHandler {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(UnexpectedExceptionHandler.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(UnexpectedExceptionHandler.class, Logger.LOGLV_DEFAULT);
 
     private static final String UNKNOWN = "unknown";
 
@@ -63,7 +64,7 @@ UncaughtExceptionHandler {
     //   before any other module is instantiated
     //
     // Dependency on only following modules are allowed
-    // - Utils
+    // - Util
     private final Thread.UncaughtExceptionHandler mOldHandler = Thread.getDefaultUncaughtExceptionHandler();
     private final LinkedList<TrackedModule> mMods = new LinkedList<>();
     private final PackageReport mPr = new PackageReport();
@@ -158,7 +159,7 @@ UncaughtExceptionHandler {
     }
 
     private UnexpectedExceptionHandler() {
-        setEnvironmentInfo(Environ.getAppContext());
+        setEnvironmentInfo(AppEnv.getAppContext());
     }
     // ========================
     // Publics

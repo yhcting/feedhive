@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -40,13 +40,14 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.view.ViewGroup;
+
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.Feed;
-import free.yhc.feeder.core.Utils;
+import free.yhc.feeder.feed.Feed;
 
 public class ChannelListPagerAdapter extends FragmentPagerAdapterEx {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ChannelListPagerAdapter.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ChannelListPagerAdapter.class, Logger.LOGLV_DEFAULT);
 
     private final DBPolicy mDbp = DBPolicy.get();
     private long[] mCatIds;

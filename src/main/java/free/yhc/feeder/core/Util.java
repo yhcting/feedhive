@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,13 +36,10 @@
 
 package free.yhc.feeder.core;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -52,29 +49,30 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.List;
 
 import org.apache.http.impl.cookie.DateParseException;
 import org.apache.http.impl.cookie.DateUtils;
 
-import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.text.Layout;
-import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.widget.TextView;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.abaselib.util.AUtil;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.net.NetConn;
+import free.yhc.baselib.util.FileUtil;
+import free.yhc.abaselib.util.ImgUtil;
 import free.yhc.feeder.R;
 
-public class Utils {
-    private static final boolean DBG = false;
-    private static final Logger P = new Logger(Utils.class);
+public class Util extends free.yhc.baselib.util.Util {
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(free.yhc.feeder.core.Util.class, Logger.LOGLV_DEFAULT);
 
     // ========================================================================
     // FOR LOGGING
@@ -99,19 +97,10 @@ public class Utils {
 
     // To enable logging to file - NOT LOGCAT
     // These are for debugging purpose
-    private static final boolean ENABLE_LOGF = false;
-    private static final String LOGF = Environment.getExternalStorageDirectory().getAbsolutePath()
-                                       + "/feedhive.log";
-    private static final String LOGF_LAST = LOGF + "-last";
-    private static FileWriter sLogout = null;
 
     // Format of nString (Number String)
     // <number>/<number>/ ... '/' is delimiter between number.
     private static final String NSTRING_DELIMITER = "/";
-    // Characters that is not allowed as filename in Android.
-    private static final char[] sNoFileNameChars = new char[] {
-        '/', '?', '"', '\'', '`', ':', ';', '*', '|', '\\', '<', '>'
-    };
 
     // Belows are not used.
     // Instead of self-implementation, predefined-android-classes are used.
@@ -184,49 +173,6 @@ public class Utils {
             "yyyy.MM.d HH:mm:ss",
         };
 
-    private enum LogLV{
-        V ("[V]", 6),
-        D ("[D]", 5),
-        I ("[I]", 4),
-        W ("[W]", 3),
-        E ("[E]", 2),
-        F ("[F]", 1);
-
-        private String pref; // prefix string
-        private int pri;  // priority
-        LogLV(String pref, int pri) {
-            this.pref = pref;
-            this.pri = pri;
-        }
-
-        @SuppressWarnings("unused")
-        String pref() {
-            return pref;
-        }
-
-        @SuppressWarnings("unused")
-        int pri() {
-            return pri;
-        }
-    }
-
-    public static class Logger {
-        private final Class<?> _mCls;
-
-        public Logger(Class<?> cls) {
-            _mCls = cls;
-        }
-
-        // For logging
-        public void v(String msg) { log(_mCls, LogLV.V, msg); }
-        public void d(String msg) { log(_mCls, LogLV.D, msg); }
-        public void i(String msg) { log(_mCls, LogLV.I, msg); }
-        public void w(String msg) { log(_mCls, LogLV.W, msg); }
-        public void e(String msg) { log(_mCls, LogLV.E, msg); }
-        public void f(String msg) { log(_mCls, LogLV.F, msg); }
-    }
-
-
     public enum PrefLayout {
         // Name of echo elements should match values used in the preference.
         RIGHT,
@@ -242,165 +188,32 @@ public class Utils {
     // =======================
     // Private
     // =======================
-    static {
-        if (ENABLE_LOGF) {
-            try {
-                File logf = new File(LOGF);
-                File logfLast = new File(LOGF_LAST);
-                //noinspection ResultOfMethodCallIgnored
-                logfLast.delete();
-                //noinspection ResultOfMethodCallIgnored
-                logf.renameTo(logfLast);
-                sLogout = new FileWriter(logf);
-            } catch (IOException e) {
-                eAssert(false);
-            }
-        }
-    }
 
-    private static void
-    log(Class<?> cls, LogLV lv, String msg) {
-        if (null == msg)
-            return;
-
-        StackTraceElement ste = Thread.currentThread().getStackTrace()[5];
-        msg = ste.getClassName() + "/" + ste.getMethodName() + "(" + ste.getLineNumber() + ") : " + msg;
-
-        if (ENABLE_LOGF) {
-            try {
-                sLogout.write(lv.pref + " " + msg + "\n");
-                sLogout.flush();
-            } catch (IOException ignored) {}
-        } else {
-            switch(lv) {
-            case V: Log.v(cls.getSimpleName(), msg); break;
-            case D: Log.d(cls.getSimpleName(), msg); break;
-            case I: Log.i(cls.getSimpleName(), msg); break;
-            case W: Log.w(cls.getSimpleName(), msg); break;
-            case E: Log.e(cls.getSimpleName(), msg); break;
-            case F: Log.wtf(cls.getSimpleName(), msg); break;
-            }
-        }
-    }
-
-    /**
-     * Decode image from file path(String) or raw data (byte[]).
-     * @param image Two types are supported.
-     *              String for file path / byte[] for raw image data.
-     */
-    private static Bitmap
-    decodeImageRaw(Object image, BitmapFactory.Options opt) {
-        if (image instanceof String) {
-            return BitmapFactory.decodeFile((String) image, opt);
-        } else if (image instanceof byte[]) {
-            byte[] data = (byte[]) image;
-            return BitmapFactory.decodeByteArray(data, 0, data.length, opt);
-        }
-        eAssert(false);
-        return null;
-    }
     // =======================
     //
     // =======================
     public static void
     init() {
-        eAssert(null == sPrefs);
-        sPrefs = PreferenceManager.getDefaultSharedPreferences(Environ.getAppContext());
-    }
-
-    // Assert
-    public static void
-    eAssert(boolean cond) {
-        if (!cond)
-            throw new AssertionError();
+        P.bug(null == sPrefs);
+        sPrefs = PreferenceManager.getDefaultSharedPreferences(AppEnv.getAppContext());
     }
 
     public static String
     getResString(int id) {
-        return Environ.getAppContext().getResources().getString(id);
+        return AppEnv.getAppContext().getResources().getString(id);
     }
 
-    // ------------------------------------------------------
-    // To handle generic array
-    // ------------------------------------------------------
-    public static <T> T[]
-    toArray(List<T> list, T[] a) {
-        if (a.length < list.size())
-            //noinspection unchecked
-            a = (T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), list.size());
-        return list.toArray(a);
-    }
-
-    public static <T> T[]
-    toArray(List<T> list, Class<T> k) {
-        //noinspection unchecked
-        return list.toArray((T[])java.lang.reflect.Array.newInstance(k, list.size()));
-    }
-
-    public static <T> T[]
-    newArray(Class<T> k, int size) {
-        //noinspection unchecked
-        return (T[])java.lang.reflect.Array.newInstance(k, size);
+    public static NetConn
+    createNetConn(URL url) throws IOException  {
+        NetConn.Builder bldr = NetConn.Builder.newBuilder(url);
+        if (isPrefUseWifiOnly())
+            bldr.setNetType(NetConn.TYPE_WIFI);
+        return bldr.create();
     }
 
     // ------------------------------------------------------
     //
     // ------------------------------------------------------
-    public static boolean
-    isUiThread() {
-        return Thread.currentThread() == Environ.getUiHandler().getLooper().getThread();
-    }
-
-    // Bit mask handling
-    public static long
-    bitClear(long flag, long mask) {
-        return flag & ~mask;
-    }
-
-    public static long
-    bitSet(long flag, long value, long mask) {
-        flag = bitClear(flag, mask);
-        return flag | (value & mask);
-    }
-
-    public static boolean
-    bitIsSet(long flag, long value, long mask) {
-        return value == (flag & mask);
-    }
-
-    public static long[]
-    convertArrayLongTolong(Long[] L) {
-        long[] l = new long[L.length];
-        for (int i = 0; i < L.length; i++)
-            l[i] = L[i];
-        return l;
-    }
-
-    public static Long[]
-    convertArraylongToLong(long[] l) {
-        Long[] L = new Long[l.length];
-        for (int i = 0; i < l.length; i++)
-            L[i] = l[i];
-        return L;
-    }
-
-    public static int[]
-    convertArrayIntegerToint(Integer[] I) {
-        int[] i = new int[I.length];
-        for (int j = 0; j < I.length; j++)
-            i[j] = I[j];
-        return i;
-    }
-
-    @SuppressWarnings("unused")
-    public static Integer[]
-    convertArrayintToInteger(int[] i) {
-        Integer[] I = new Integer[i.length];
-        for (int j = 0; j < i.length; j++)
-            I[j] = i[j];
-        return I;
-    }
-
     /**
      * Is is valid string?
      * Valid means "Not NULL and Not empty".
@@ -413,7 +226,7 @@ public class Utils {
     @SuppressWarnings("unused")
     public static int
     dpToPx(int dp) {
-        return (int) (dp * Environ.getAppContext().getResources().getDisplayMetrics().density);
+        return (int) (dp * AppEnv.getAppContext().getResources().getDisplayMetrics().density);
     }
 
     @SuppressWarnings("unused")
@@ -443,7 +256,7 @@ public class Utils {
                 times[i] = Long.parseLong(timestrs[i]);
         } catch (NumberFormatException e) {
             if (DBG) P.w("Invalid time string! [" + timeString + "]");
-            eAssert(false);
+            P.bug(false);
         }
         return times;
     }
@@ -493,63 +306,6 @@ public class Utils {
     }
 
     /**
-     * Get size(width, height) of given image.
-     * @param image 'image file path' or 'byte[]' image data
-     * @param out out[0] : width of image / out[1] : height of image
-     * @return false if image cannot be decode. true if success
-     */
-    public static boolean
-    imageSize(Object image, int[] out) {
-        eAssert(null != image);
-        BitmapFactory.Options opt = new BitmapFactory.Options();
-        opt.inJustDecodeBounds = true;
-        decodeImageRaw(image, opt);
-        if (opt.outWidth <= 0 || opt.outHeight <= 0 || null == opt.outMimeType) {
-            return false;
-        }
-        out[0] = opt.outWidth;
-        out[1] = opt.outHeight;
-        return true;
-    }
-
-    /**
-     * Calculate rectangle(out[]). This is got by shrinking rectangle(width,height) to
-     *   bound rectangle(boundW, boundH) with fixed ratio.
-     * If input rectangle is included in bound, then input rectangle itself will be
-     *   returned. (we don't need to adjust)
-     * @param boundW width of bound rect
-     * @param boundH height of bound rect
-     * @param width width of rect to be shrunk
-     * @param height height of rect to be shrunk
-     * @param out calculated value [ out[0](width) out[1](height) ]
-     * @return false(not shrunk) / true(shrunk)
-     */
-    public static boolean
-    shrinkFixedRatio(int boundW, int boundH, int width, int height, int[] out) {
-        boolean ret;
-        // Check size of picture..
-        float rw = (float) boundW / (float) width, // width ratio
-        rh = (float) boundH / (float) height; // height ratio
-
-        // check whether shrinking is needed or not.
-        if (rw >= 1.0f && rh >= 1.0f) {
-            // we don't need to shrink
-            out[0] = width;
-            out[1] = height;
-            ret = false;
-        } else {
-            // shrinking is essential.
-            float ratio = (rw > rh) ? rh : rw; // choose minimum
-            // integer-type-casting(rounding down) guarantees that value cannot
-            // be greater than bound!!
-            out[0] = (int) (ratio * width);
-            out[1] = (int) (ratio * height);
-            ret = true;
-        }
-        return ret;
-    }
-
-    /**
      * Make fixed-ration-bounded-bitmap with file.
      * If (0 >= boundW || 0 >= boundH), original-size-bitmap is trying to be created.
      * @param boundW bound width
@@ -558,50 +314,15 @@ public class Utils {
      */
     public static Bitmap
     decodeImage(Object image, int boundW, int boundH) {
-        eAssert(null != image);
-
-        BitmapFactory.Options opt = null;
-        if (0 < boundW && 0 < boundH) {
-            int[] imgsz = new int[2]; // image size : [0]=width / [1] = height
-            if (!imageSize(image, imgsz))
-                // This is not proper image data
-                return null;
-
-            int[] bsz = new int[2]; // adjusted bitmap size
-            boolean bShrink = shrinkFixedRatio(boundW, boundH, imgsz[0], imgsz[1], bsz);
-
-            opt = new BitmapFactory.Options();
-            opt.inDither = false;
-            if (bShrink) {
-                // To save memory we need to control sampling rate. (based on
-                // width!)
-                // for performance reason, we use power of 2.
-                if (0 >= bsz[0])
-                    return null;
-
-                int sampleSize = 1;
-                while (1 < imgsz[0] / (bsz[0] * sampleSize))
-                    sampleSize *= 2;
-
-                // shrinking based on width ratio!!
-                // NOTE : width-based-shrinking may make 1-pixel error in height
-                // side!
-                // (This is not Math!! And we are using integer!!! we cannot
-                // make it exactly!!!)
-                opt.inScaled = true;
-                opt.inSampleSize = sampleSize;
-                opt.inDensity = imgsz[0] / sampleSize;
-                opt.inTargetDensity = bsz[0];
-            }
-        }
-        return decodeImageRaw(image, opt);
+        return ImgUtil.decodeBitmap(image, boundW, boundH);
     }
 
     /**
      * Compress give bitmap to JPEG formatted image data.
      */
+    @NonNull
     public static byte[]
-    compressBitmap(Bitmap bm) {
+    compressBitmap(@NonNull Bitmap bm) {
         long time = System.currentTimeMillis();
         ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
         bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);
@@ -645,29 +366,6 @@ public class Utils {
             } catch (IOException ignored) {}
         }
         return Err.NO_ERR;
-    }
-
-    /**
-     *
-     * @param file Text file.
-     * @return value when reading non-text files, is not defined.
-     */
-    public static String
-    readTextFile(File file) {
-        try {
-            StringBuilder fileData = new StringBuilder(4096);
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-            char[] buf = new char[4096];
-            int bytes;
-            while(-1 != (bytes = reader.read(buf)))
-                fileData.append(buf, 0, bytes);
-            reader.close();
-            return fileData.toString();
-        } catch (FileNotFoundException e) {
-            return null;
-        } catch (IOException e) {
-            return null;
-        }
     }
 
     /**
@@ -740,13 +438,7 @@ public class Utils {
      */
     public static String
     convertToFilename(String str) {
-        // Most Unix (including Linux) allows all 8bit-character as file name
-        //   except for ('/' and 'null').
-        // But android shell doens't allows some characters.
-        // So, we need to handle those...
-        for (char c : sNoFileNameChars)
-            str = str.replace(c, '~');
-        return str;
+        return FileUtil.pathNameEscapeString(str);
     }
 
     /**
@@ -757,27 +449,14 @@ public class Utils {
      */
     public static boolean
     removeFileRecursive(File f, boolean bDeleteMe) {
-        boolean ret = true;
-        if (f.isDirectory()) {
-            for (File c : f.listFiles())
-                if (!removeFileRecursive(c, true))
-                    ret = false;
-        }
-        if (ret && bDeleteMe)
-            return f.delete();
-        return ret;
+        return bDeleteMe? FileUtil.removeFileRecursive(f): FileUtil.cleanDirectory(f);
     }
 
     public static void
     getFilesRecursive(LinkedList<File> l, File f) {
-        if (!f.exists())
-            return;
-
-        if (f.isDirectory()) {
-            for (File c : f.listFiles())
-                    getFilesRecursive(l, c);
-        } else
-            l.add(f);
+        try {
+            FileUtil.addFilesRecursive(l, f);
+        } catch (FileNotFoundException ignored) { }
     }
 
     public static String
@@ -800,31 +479,16 @@ public class Utils {
      */
     public static boolean
     isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager)Environ
-                .getAppContext()
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo ni;
-
         if (isPrefUseWifiOnly())
-            ni = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+            return NetConn.isNetConnected(NetConn.TYPE_WIFI);
         else
-            ni = cm.getActiveNetworkInfo();
-
-        return null != ni && ni.isConnectedOrConnecting();
+            return NetConn.isNetConnected(NetConn.TYPE_ANY);
     }
 
+    @NonNull
     public static File
-    getNewTempFile() {
-        File ret = null;
-        try {
-            ret = File.createTempFile("free.yhc.feeder", null, Environ.get().getTempDirFile());
-        } catch (IOException ignored){ }
-        return ret;
-    }
-
-    public static void
-    cleanTempFiles() {
-        removeFileRecursive(Environ.get().getTempDirFile(), false);
+    getNewTempFile() throws IOException {
+        return AUtil.createTempFile();
     }
 
     // ------------------------------------------------------------------------
@@ -833,7 +497,7 @@ public class Utils {
     //
     // ------------------------------------------------------------------------
     // Preference for internal use.
-    private static boolean
+    public static boolean
     isPrefUseWifiOnly() {
         return sPrefs.getBoolean(getResString(R.string.csuse_wifi_only), false);
     }
@@ -850,7 +514,7 @@ public class Utils {
         try {
             value = Integer.parseInt(v);
         } catch (NumberFormatException e) {
-            eAssert(false);
+            P.bug(false);
         }
         return value;
     }
@@ -871,7 +535,7 @@ public class Utils {
         else if (getResString(R.string.cshigh).equals(prio))
             return Thread.NORM_PRIORITY;
         else {
-            eAssert(false);
+            P.bug(false);
             return Thread.MIN_PRIORITY;
         }
     }
@@ -888,7 +552,7 @@ public class Utils {
         else if (getResString(R.string.cshigh).equals(lv))
             return PrefLevel.HIGH;
         else {
-            eAssert(false);
+            P.bug(false);
             return PrefLevel.MEDIUM;
         }
     }
@@ -948,7 +612,7 @@ public class Utils {
     @SuppressWarnings("unused")
     public static long
     nextNearestTime(Calendar calNow, long[] secs) {
-        eAssert(secs.length > 0);
+        P.bug(secs.length > 0);
         Calendar cal = Calendar.getInstance();
         cal.setTime(calNow.getTime());
 
@@ -965,7 +629,7 @@ public class Utils {
         // Just linear search... it's enough.
         // Binary search is not considered yet.(over-engineering)
         for (long s : secs) {
-            eAssert(s >= 0);
+            P.bug(s >= 0);
             if (s * 1000 > dayTime)
                 return dayTime + s * 1000;
         }
@@ -1025,7 +689,11 @@ public class Utils {
     }
 
 
-
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    //
+    //
+    ///////////////////////////////////////////////////////////////////////////
     // ================================================
     //
     // Utility Functions for Youtube

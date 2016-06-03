@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,11 +36,9 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.text.DateFormat;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.Locale;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -50,16 +48,21 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DBPolicy;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+import free.yhc.feeder.core.Util;
+import free.yhc.feeder.task.UpdateTask;
+
+import static free.yhc.abaselib.util.AUtil.isUiThread;
 
 public class ChannelListAdapter extends AsyncCursorListAdapter implements
 AsyncCursorAdapter.ItemBuilder {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ChannelListAdapter.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ChannelListAdapter.class, Logger.LOGLV_DEFAULT);
 
     private static final Date sDummyDate = new Date();
     private static final ColumnChannel[] sChannQueryColumns = new ColumnChannel[] {
@@ -78,8 +81,6 @@ AsyncCursorAdapter.ItemBuilder {
     private final View.OnClickListener mChIconOnClick;
     private final View.OnClickListener mPosUpOnClick;
     private final View.OnClickListener mPosDnOnClick;
-
-    private final HashMap<View, Integer> mView2PosMap = new HashMap<>();
 
     interface OnActionListener {
         void onUpdateClick(ImageView ibtn, long cid);
@@ -157,7 +158,7 @@ AsyncCursorAdapter.ItemBuilder {
 
     public int
     findPosition(long cid) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         for (int i = 0; i < getCount(); i++) {
             if (getItemInfo_cid(i) == cid)
                     return i;
@@ -180,9 +181,9 @@ AsyncCursorAdapter.ItemBuilder {
      */
     public void
     switchPos(int pos0, int pos1) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         Object sv = setItem(pos0, getItem(pos1));
-        eAssert(null != sv);
+        P.bug(null != sv);
         setItem(pos1, sv);
         notifyDataSetChanged();
     }
@@ -193,7 +194,7 @@ AsyncCursorAdapter.ItemBuilder {
      */
     public void
     notifyChannelIconChanged(long cid) {
-        eAssert(Utils.isUiThread());
+        P.bug(isUiThread());
         ItemInfo ii = (ItemInfo)getItem(findPosition(cid));
         ii.bm = mDbp.getChannelImageBitmap(cid);
         notifyDataSetChanged();
@@ -223,17 +224,13 @@ AsyncCursorAdapter.ItemBuilder {
      * rebind view of given cid only.
      */
     public void
-    notifyChannelRttStateChanged(long cid) {
+    notifyItemDataChanged(long cid) {
         int pos = findPosition(cid);
-        if (pos < 0)
-            return; // Not an visible channel
-        //noinspection ToArrayCallWithZeroLengthArrayArgument
-        for (View v : mView2PosMap.keySet().toArray(new View[0])) {
-            if (pos == mView2PosMap.get(v)) {
-                doBindView(v, (ItemInfo)getItem(pos));
-                return;
-            }
-        }
+        int firstVisPos = getListView().getFirstVisiblePosition();
+        View v = getListView().getChildAt(pos - firstVisPos);
+        if (null == v)
+            return; // This is NOT visible item.
+        bindView(v, getListView().getContext(), pos);
     }
 
     @Override
@@ -251,7 +248,7 @@ AsyncCursorAdapter.ItemBuilder {
             i.oldLastItemId = mDbp.getChannelInfoLong(i.cid, ColumnChannel.OLDLAST_ITEMID);
             i.bm = mDbp.getChannelImageBitmap(i.cid);
         } catch (StaleDataException e) {
-            eAssert(false);
+            P.bug(false);
         }
         //logI("ChannelListAdapter : buildItem - END");
         return i;
@@ -305,31 +302,25 @@ AsyncCursorAdapter.ItemBuilder {
         ImageView noti_up = (ImageView)v.findViewById(R.id.noti_update);
         ImageView noti_dn = (ImageView)v.findViewById(R.id.noti_download);
 
-        RTTask.TaskState state = mRtt.getState(ii.cid, RTTask.Action.UPDATE);
+        UpdateTask t = mRtt.getUpdateTask(ii.cid);
+        int icon = 0;
         noti_up.setVisibility(View.VISIBLE);
-        switch(state) {
-        case IDLE:
+        RTTask.RtState rtstate = mRtt.getRtState(t);
+        if (DBG) P.v("Update View: " + rtstate.name());
+        switch (rtstate) {
+        case IDLE: icon = 0; break;
+        case READY: icon = R.drawable.ic_pause; break;
+        case RUN: icon = R.drawable.ic_refresh; break;
+        case CANCEL: icon = R.drawable.ic_block; break;
+        case FAIL: icon = R.drawable.ic_info; break;
+        default: P.bug(false);
+        }
+
+        if (0 == icon)
             noti_up.setVisibility(View.GONE);
-            break;
-
-        case READY:
-            noti_up.setImageResource(R.drawable.ic_pause);
-            break;
-
-        case RUNNING:
-            noti_up.setImageResource(R.drawable.ic_refresh);
-            break;
-
-        case CANCELING:
-            noti_up.setImageResource(R.drawable.ic_block);
-            break;
-
-        case FAILED:
-            noti_up.setImageResource(R.drawable.ic_info);
-            break;
-
-        default:
-            eAssert(false);
+        else {
+            noti_up.setVisibility(View.VISIBLE);
+            noti_up.setImageResource(icon);
         }
 
         if (0 == mRtt.getItemsDownloading(ii.cid).length)
@@ -347,11 +338,11 @@ AsyncCursorAdapter.ItemBuilder {
             long ageHours = ageTime/ (1000 * 60 * 60);
             long ageDay = ageHours / 24;
             ageHours %= 24;
-            age = String.format("%2d:%2d", ageDay, ageHours);
+            age = String.format(Locale.getDefault(), "%2d:%2d", ageDay, ageHours);
         }
 
         // If there is NO valid title for this channel, Just use URL as title.
-        String title = Utils.isValidValue(ii.title)? ii.title: ii.url;
+        String title = Util.isValidValue(ii.title)? ii.title: ii.url;
         ((TextView)v.findViewById(R.id.title)).setText(title);
         ((TextView)v.findViewById(R.id.description)).setText(ii.desc);
         ((TextView)v.findViewById(R.id.date)).setText(date);
@@ -370,7 +361,6 @@ AsyncCursorAdapter.ItemBuilder {
         if (!preBindView(v, context, position))
             return;
 
-        mView2PosMap.put(v, position);
         doBindView(v, (ItemInfo)getItem(position));
     }
 }

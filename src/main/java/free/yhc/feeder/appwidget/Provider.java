@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -44,14 +44,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
 
+import free.yhc.baselib.Logger;
+
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+import free.yhc.feeder.core.Util;
+
+import static free.yhc.baselib.util.Util.convertArrayIntegerToint;
 
 public class Provider extends AppWidgetProvider implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(Provider.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(Provider.class, Logger.LOGLV_DEFAULT);
 
 
     public Provider() {
@@ -106,7 +110,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         super.onUpdate(context, appWidgetManager, appWidgetIds);
-        if (DBG) P.v("widget ids : " + Utils.nrsToNString(appWidgetIds));
+        if (DBG) P.v("widget ids : " + Util.nrsToNString(appWidgetIds));
 
         ArrayList<Integer> wl = new ArrayList<>(appWidgetIds.length);
         for (int awid : appWidgetIds) {
@@ -115,6 +119,6 @@ UnexpectedExceptionHandler.TrackedModule {
                 wl.add(awid);
         }
         UpdateService.update(context,
-                             Utils.convertArrayIntegerToint(wl.toArray(new Integer[wl.size()])));
+                             convertArrayIntegerToint(wl.toArray(new Integer[wl.size()])));
     }
 }

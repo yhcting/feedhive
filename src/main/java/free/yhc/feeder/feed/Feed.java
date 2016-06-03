@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -34,16 +34,18 @@
  * official policies, either expressed or implied, of the FreeBSD Project.
  *****************************************************************************/
 
-package free.yhc.feeder.core;
+package free.yhc.feeder.feed;
+
+import free.yhc.baselib.Logger;
+
+import static free.yhc.baselib.util.Util.bitCompare;
 
 // Naming notation
 //   F[flag name][value name] : 'F' => Flag
 //   M[flag_name][value name] : 'M' => Mask
 public class Feed {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(Feed.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(Feed.class, Logger.LOGLV_DEFAULT);
 
     public static final long FINVALID = ~0;
 
@@ -68,12 +70,12 @@ public class Feed {
 
         public static boolean
         isStateOpenNew(long flag) {
-            return Utils.bitIsSet(flag, FSTAT_OPEN_NEW, MSTAT_OPEN);
+            return bitCompare(FSTAT_OPEN_NEW, flag, MSTAT_OPEN);
         }
 
         public static boolean
         isStatFavOn(long flag) {
-            return Utils.bitIsSet(flag, FSTAT_FAV_ON, MSTAT_FAV);
+            return bitCompare(FSTAT_FAV_ON, flag, MSTAT_FAV);
         }
 
          // Information from parsing.
@@ -183,22 +185,22 @@ public class Feed {
 
         public static boolean
         isActProgIn(long flag) {
-            return Utils.bitIsSet(flag, FACT_PROG_IN, MACT_PROG);
+            return bitCompare(FACT_PROG_IN, flag, MACT_PROG);
         }
 
         public static boolean
         isActProgEx(long flag) {
-            return Utils.bitIsSet(flag, FACT_PROG_EX, MACT_PROG);
+            return bitCompare(FACT_PROG_EX, flag, MACT_PROG);
         }
 
         public static boolean
         isUpdLink(long flag) {
-            return Utils.bitIsSet(flag, FUPD_LINK, MUPD);
+            return bitCompare(FUPD_LINK, flag, MUPD);
         }
 
         public static boolean
         isUpdDn(long flag) {
-            return Utils.bitIsSet(flag, FUPD_DN, MUPD);
+            return bitCompare(FUPD_DN, flag, MUPD);
         }
     }
 

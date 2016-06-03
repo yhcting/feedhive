@@ -22,4 +22,7 @@
     <dimen name="appwidget_btn_height">40dip</dimen>
     <dimen name="appwidget_list_noti_width">24dip</dimen>
     <dimen name="appwidget_list_noti_height">24dip</dimen>
+    <dimen name="mplayer_control_btn_width">45dp</dimen>
+    <dimen name="mplayer_control_btn_height">45dp</dimen>
+
 </resources>

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -40,21 +40,25 @@ import java.util.Calendar;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import free.yhc.feeder.core.Utils;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.util.UxUtil;
+import free.yhc.feeder.core.Environ;
 
 public class FeederActivity extends Activity {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(FeederActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(FeederActivity.class, Logger.LOGLV_DEFAULT);
 
-    @Override
-    public void
-    onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    private static final int PERM_REQ_ESSENTIAL = 0;
+
+    private void
+    startMainActivity() {
         // Sometimes released version may have some issues regarding scheduled update.
         // Once scheduled update is executed for some reasons, next scheduled update is not
         //   set either.
@@ -64,14 +68,45 @@ public class FeederActivity extends Activity {
         // This may lead to some delay for starting application(but not much) and no harmful.
         AsyncTask.execute(new Runnable() {
             @Override
-            public void run() {
+            public void
+            run() {
                 ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
             }
         });
 
-
         Intent intent = new Intent(this, ChannelListActivity.class);
         startActivity(intent);
+    }
+
+    @Override
+    public void
+    onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Environ env = Environ.get();
+        if (env.hasEssentialPermissions()) {
+            startMainActivity();
+            finish();
+        } else {
+            ActivityCompat.requestPermissions(
+                    this, env.getEssentialPermissions(), PERM_REQ_ESSENTIAL);
+        }
+    }
+
+    @Override
+    public void
+    onRequestPermissionsResult(final int requestCode,
+                               @NonNull final String[] permissions,
+                               @NonNull final int[] grantResults) {
+        P.bug(PERM_REQ_ESSENTIAL == requestCode);
+        if (grantResults.length > 0
+                && PackageManager.PERMISSION_GRANTED == grantResults[0]) {
+            FeederApp.initApplicationPostEssentialPermissions();
+            startMainActivity();
+        } else {
+            if (!Environ.get().hasEssentialPermissions()) {
+                UxUtil.showTextToast(R.string.err_essential_perm);
+            }
+        }
         finish();
     }
 

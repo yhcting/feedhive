@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,7 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
 import android.R.style;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -49,17 +48,17 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.view.KeyEvent;
 import android.widget.ArrayAdapter;
+
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.appwidget.AppWidgetUtils;
 import free.yhc.feeder.core.Err;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class AppWidgetMenuActivity extends Activity  implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(AppWidgetMenuActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AppWidgetMenuActivity.class, Logger.LOGLV_DEFAULT);
 
     private final Intent mResultValue = new Intent();
     private boolean mFinishOnDismiss = true;
@@ -81,7 +80,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 },
                 null);
         if (null == diag) {
-            UiHelper.showTextToast(this, R.string.del_dnfiles_not_allowed_msg);
+            UxUtil.showTextToast(R.string.del_dnfiles_not_allowed_msg);
             finish();
         } else {
             diag.setOnKeyListener(new DialogInterface.OnKeyListener() {
@@ -111,7 +110,7 @@ UnexpectedExceptionHandler.TrackedModule {
         super.onCreate(savedInstanceState);
         final int appWidgetId = getIntent().getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,
                                                         AppWidgetUtils.INVALID_APPWIDGETID);
-        eAssert(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
+        P.bug(AppWidgetUtils.INVALID_APPWIDGETID != appWidgetId);
 
         mResultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,12 +36,11 @@
 
 package free.yhc.feeder.core;
 
+import free.yhc.baselib.Logger;
 
 public class FeederException extends Exception {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(FeederException.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(FeederException.class, Logger.LOGLV_DEFAULT);
 
     private Err err = Err.UNKNOWN; // default error value
 

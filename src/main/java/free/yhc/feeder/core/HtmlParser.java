@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -40,12 +40,14 @@ import java.util.regex.Pattern;
 
 import android.text.Html;
 
+import free.yhc.baselib.Logger;
+
 // Private implementation is NOT used.
 // Now this is just wrapper of predefined Html class of Android.
 @SuppressWarnings("unused")
 class HtmlParser {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(HtmlParser.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(HtmlParser.class, Logger.LOGLV_DEFAULT);
 
     private static final String[] sTagsRegex = new String[] {
         "\\!\\-\\-",

@@ -87,8 +87,9 @@
     <string name="err_duplicated_channel">이미 등록된 채널입니다.</string>
     <string name="err_dbunknown">데이터베이스에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_dbcrash">데이터베이스가 완전히 깨어졌습니다. 어플리케이션 매니져를 이용해서 어플리케이션의 모든 데이타를 지워야 합니다.</string>
-    <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
     <string name="err_user_cancelled">동작이 취소되었습니다.</string>
+    <string name="err_essential_perm">필수 권한 - 외부 저장소 쓰기 - 이 허가되지 않았습니다.</string>
+    <string name="err_unknwon">프로그램에 알수 없는 에러가 발생했습니다.</string>
     <string name="del_dnfiles_not_allowed_msg">다운로드 파일을 삭제할 수 없습니다. 현재 다운로드 중인 파일이 있습니다.</string>
     <string name="delete_downloadded_file">내려받은 파일 삭제</string>
     <string name="delete_used_downloadded_file">사용된 내려받은 파일 삭제</string>

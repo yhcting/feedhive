@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -41,12 +41,14 @@ import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ListView;
+
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.util.AUtil;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class AsyncCursorListAdapter extends AsyncCursorAdapter {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(AsyncCursorListAdapter.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(AsyncCursorListAdapter.class, Logger.LOGLV_DEFAULT);
 
     private static final int INVALID_POS = -1;
     private static final DataProvideStateHandler sDpsHandler = new DataProvideStateHandler();
@@ -102,7 +104,7 @@ public class AsyncCursorListAdapter extends AsyncCursorAdapter {
               maxArrSz,
               hasLimit);
 
-        View firstLoadingView = UiHelper.inflateLayout(context, rowLayout);
+        View firstLoadingView = AUtil.inflateLayout(rowLayout);
         preBindView(firstLoadingView, context, INVALID_POS);
         init(firstLoadingView,
              lv,

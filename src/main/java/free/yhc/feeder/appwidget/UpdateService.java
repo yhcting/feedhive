@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -46,21 +46,23 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.IBinder;
 import android.widget.RemoteViews;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.ThreadEx;
 import free.yhc.feeder.AppWidgetCategoryChooserActivity;
 import free.yhc.feeder.AppWidgetMenuActivity;
 import free.yhc.feeder.AppWidgetUpdateCategoryActivity;
 import free.yhc.feeder.R;
+import free.yhc.feeder.core.Util;
 import free.yhc.feeder.db.DB;
-import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.Err;
-import free.yhc.feeder.core.ThreadEx;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class UpdateService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(UpdateService.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(UpdateService.class, Logger.LOGLV_DEFAULT);
 
     private class AppWidgetUpdater extends ThreadEx<Err> {
         private final AppWidgetManager _mAwm;
@@ -70,7 +72,7 @@ UnexpectedExceptionHandler.TrackedModule {
         private Intent
         createBaseIntent(Class<?> rcvrCls, long catid, int awid,
                          String action, boolean newTask) {
-            Intent i = new Intent(Environ.getAppContext(), rcvrCls);
+            Intent i = new Intent(AppEnv.getAppContext(), rcvrCls);
             // To tell "This is different intent from previous one!"
             i.setData(Uri.fromParts("content", String.valueOf(awid), null));
             i.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, awid);
@@ -86,6 +88,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         AppWidgetUpdater(int[] appWidgetIds, int startId) {
+            super("AppWidgetUpdater", AppEnv.getUiHandlerAdapter(), ThreadEx.TASK_PRIORITY_NORM);
             _mAppWidgetIds = appWidgetIds;
             _mStartId = startId;
             _mAwm = AppWidgetManager.getInstance(getApplicationContext());
@@ -93,7 +96,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         protected void
-        onPreRun() {
+        onStarted() {
             if (DBG) P.v("Enter");
             for (int awid : _mAppWidgetIds) {
                 RemoteViews rv = new RemoteViews(getApplicationContext().getPackageName(),
@@ -105,11 +108,11 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         protected void
-        onPostRun(Err result) {
+        onPostRun(Err result, Exception ex) {
             if (DBG) P.v("Enter");
             for (int awid : _mAppWidgetIds) {
                 RemoteViews rv = null;
-                switch (Utils.getPrefAppWidgetButtonLayout()) {
+                switch (Util.getPrefAppWidgetButtonLayout()) {
                 case RIGHT:
                     rv = new RemoteViews(getApplicationContext().getPackageName(),
                                          R.layout.appwidget_right);
@@ -119,7 +122,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                          R.layout.appwidget_left);
                     break;
                 default:
-                    Utils.eAssert(false);
+                    P.bug(false);
                 }
 
                 long catid = AppWidgetUtils.getWidgetCategory(awid);
@@ -137,7 +140,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                           catid, awid,
                                           AppWidgetUtils.ACTION_LIST_PENDING_INTENT,
                                           false);
-                PendingIntent pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
+                PendingIntent pi = PendingIntent.getBroadcast(AppEnv.getAppContext(), 0, intent, 0);
                 rv.setPendingIntentTemplate(R.id.list, pi);
 
                 // Change category button action pending intent
@@ -147,7 +150,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                           AppWidgetUtils.ACTION_CHANGE_CATEGORY_PENDING_INTENT,
                                           true);
                 intent.putExtra(AppWidgetCategoryChooserActivity.KEY_CANCELABLE, true);
-                pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
+                pi = PendingIntent.getActivity(AppEnv.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.changecat, pi);
 
                 // Move-to-top button action pending intent
@@ -156,7 +159,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                           catid, awid,
                                           AppWidgetUtils.ACTION_MOVE_TO_TOP_PENDING_INTENT,
                                           true);
-                pi = PendingIntent.getBroadcast(Environ.getAppContext(), 0, intent, 0);
+                pi = PendingIntent.getBroadcast(AppEnv.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.move_to_top, pi);
 
                 // update button action pending intent
@@ -165,7 +168,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                           catid, awid,
                                           AppWidgetUtils.ACTION_UPDATE_CATEGORY_PENDING_INTENT,
                                           true);
-                pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
+                pi = PendingIntent.getActivity(AppEnv.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.update, pi);
 
                 // more menu button action pending intent
@@ -174,7 +177,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                           catid, awid,
                                           AppWidgetUtils.ACTION_MORE_MENU_PENDING_INTENT,
                                           true);
-                pi = PendingIntent.getActivity(Environ.getAppContext(), 0, intent, 0);
+                pi = PendingIntent.getActivity(AppEnv.getAppContext(), 0, intent, 0);
                 rv.setOnClickPendingIntent(R.id.more_menu, pi);
 
                 if (DBG) P.v("widget : " + awid);
@@ -187,19 +190,14 @@ UnexpectedExceptionHandler.TrackedModule {
 
         @Override
         protected void
-        onCancel() {
-        }
-
-        @Override
-        protected void
-        onCancelled() {
+        onCancelled(Exception ex) {
             if (DBG) P.v("Enter");
             stopSelf();
         }
 
         @Override
         protected Err
-        doAsyncTask() {
+        doAsync() {
             if (DBG) P.v("Enter");
             /*
             try {
@@ -213,9 +211,9 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static void
     update(Context context, int[] appWidgetIds) {
-        if (DBG) P.v("Widget Ids : " + Utils.nrsToNString(appWidgetIds));
+        if (DBG) P.v("Widget Ids : " + Util.nrsToNString(appWidgetIds));
         // Build the intent to call the service
-        Intent intent = new Intent(Environ.getAppContext(), UpdateService.class);
+        Intent intent = new Intent(AppEnv.getAppContext(), UpdateService.class);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds);
         // Update the widgets via the service
         context.startService(intent);
@@ -223,7 +221,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public static void
     update(Context context, long[] cats) {
-        if (DBG) P.v("Category Ids : " + Utils.nrsToNString(cats));
+        if (DBG) P.v("Category Ids : " + Util.nrsToNString(cats));
         ArrayList<Integer> al = new ArrayList<>(cats.length);
         for (long cat : cats) {
             int[] awids = AppWidgetUtils.getCategoryWidget(cat);
@@ -232,7 +230,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
 
         if (al.size() > 0)
-            update(context, Utils.convertArrayIntegerToint(al.toArray(new Integer[al.size()])));
+            update(context, Util.convertArrayIntegerToint(al.toArray(new Integer[al.size()])));
     }
 
     @SuppressWarnings("unused")
@@ -260,7 +258,7 @@ UnexpectedExceptionHandler.TrackedModule {
         if (DBG) P.v("startId : " + startId);
         // DO NOT anything for additional update request if there is already running update.
         int[] appWidgetIds = intent.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS);
-        new AppWidgetUpdater(appWidgetIds, startId).run();
+        new AppWidgetUpdater(appWidgetIds, startId).start();
         return START_NOT_STICKY;
     }
 

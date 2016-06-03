@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -37,22 +37,32 @@
 package free.yhc.feeder.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Locale;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Environment;
-import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
+
+import free.yhc.abaselib.ABaselib;
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
 
 public class Environ implements
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(Environ.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(Environ.class, Logger.LOGLV_DEFAULT);
+
+    private static final String[] ESSENTIAL_PERMISSIONS = {
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+    };
 
     public static final String PREF_KEY_APP_ROOT = "app_root";
     public static final String PREF_KEY_APP_VERSION = "app_version";
@@ -60,18 +70,13 @@ UnexpectedExceptionHandler.TrackedModule {
     public static final long USAGE_INFO_UPDATE_PERIOD = 1000 * 60 * 60 * 24 * 7; // (ms) 7 days = 1 week
 
 
-    // Even if these two variables are not 'final', those should be handled like 'final'
-    //   because those are set only at init() function, and SHOULD NOT be changed.
-    private static Context sAppContext = null;
-    private static Handler sUiHandler = null;
-
     // NOTE
     // UIPolicy shouldn't includes DBPolicy at it's constructor!
     // And in terms of design, UI policy SHOULD NOT have dependency on DB policy
     // See 'init' routine at FeederApp
     private static Environ sInstance = null;
 
-    private String mAppRootDir;
+    private File mAppRootDirFile;
     private File mAppTempDirFile;
     private File mAppLogDirFile;
     private File mAppErrLogFile;
@@ -83,10 +88,10 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private Environ() {
         // Dependency on only following modules are allowed
-        // - Utils
+        // - Util
         // - UnexpectedExceptionHandler
         UnexpectedExceptionHandler.get().registerModule(this);
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getAppContext());
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(AppEnv.getAppContext());
         String appRoot = prefs.getString(PREF_KEY_APP_ROOT,
                                          Environment.getExternalStorageDirectory().getAbsolutePath() + "/yhcFeeder");
         setAppDirectories(appRoot);
@@ -110,9 +115,7 @@ UnexpectedExceptionHandler.TrackedModule {
             }
         } catch (NameNotFoundException ignore) { }
 
-        sAppContext = aAppContext;
-        sUiHandler = new Handler();
-        Utils.eAssert(null == sInstance);
+        P.bug(null == sInstance);
         sInstance = new Environ();
     }
 
@@ -125,55 +128,53 @@ UnexpectedExceptionHandler.TrackedModule {
     public String
     dump(UnexpectedExceptionHandler.DumpLevel lv) {
         return "[ Environ ]"
-               + "App root dir  : " + mAppRootDir + "\n"
+               + "App root dir  : " + mAppRootDirFile.getAbsolutePath() + "\n"
                + "App temp dir  : " + mAppTempDirFile.getAbsolutePath() + "\n"
                + "App log dir   : " + mAppLogDirFile.getAbsolutePath() + "\n"
                + "App err file  : " + mAppErrLogFile.getAbsolutePath() + "\n"
                + "App usage file: " + mAppUsageLogFile.getAbsolutePath() + "\n";
     }
 
-    public static Context
-    getAppContext() {
-        return sAppContext;
-    }
-
-    public static Handler
-    getUiHandler() {
-        return sUiHandler;
-    }
-
-    /**
-     * SHOULD be called only by FeederPreferenceActivity.
-     */
     public void
-    setAppDirectories(String root) {
-        mAppRootDir = root;
-        //noinspection ResultOfMethodCallIgnored
-        new File(mAppRootDir).mkdirs();
-        if (!root.endsWith("/"))
-            mAppRootDir += "/";
+    setAppDirectories(@NonNull String root) {
+        mAppRootDirFile = new File(root);
+        mAppTempDirFile = new File(mAppRootDirFile.getAbsolutePath() + "/temp");
+        mAppLogDirFile = new File(mAppRootDirFile.getAbsolutePath() + "/log");
+        mAppErrLogFile = new File(mAppLogDirFile.getAbsolutePath() + "/last_error");
+        mAppUsageLogFile = new File(mAppLogDirFile.getAbsolutePath() + "/usage_file");
+    }
 
-        mAppTempDirFile = new File(mAppRootDir + "temp/");
+    public void
+    initAppDirectories() throws IOException {
         //noinspection ResultOfMethodCallIgnored
-        mAppTempDirFile.mkdirs();
-        mAppLogDirFile = new File(mAppRootDir + "log/");
+        mAppRootDirFile.mkdirs();
+
+        ABaselib.initLibraryWithExternalStoragePermission(mAppTempDirFile.getAbsolutePath());
         //noinspection ResultOfMethodCallIgnored
         mAppLogDirFile.mkdirs();
-        mAppErrLogFile = new File(mAppLogDirFile.getAbsoluteFile() + "/last_error");
-        mAppUsageLogFile = new File(mAppLogDirFile.getAbsoluteFile() + "/usage_file");
     }
 
-    /**
-     * returned directory path ends with '/'
-     */
+    public void
+    initPostEssentialPermission() throws IOException {
+        initAppDirectories();
+    }
+
+    public boolean
+    hasEssentialPermissions() {
+        // App requires few dangerous permissions.
+        return PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(
+                AppEnv.getAppContext(),
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+    }
+
+    public String[]
+    getEssentialPermissions() {
+        return ESSENTIAL_PERMISSIONS;
+    }
+
     public String
     getAppRootDirectoryPath() {
-        return mAppRootDir;
-    }
-
-    public File
-    getTempDirFile() {
-        return mAppTempDirFile;
+        return mAppRootDirFile.getAbsolutePath();
     }
 
     public File

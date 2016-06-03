@@ -99,6 +99,15 @@
                 />
         </LinearLayout>
     </HorizontalScrollView>
+    <LinearLayout
+        android:id="@+id/player"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/toolbutton"
+        android:visibility="gone"
+        >
+        <include layout="@layout/mplayer" />
+    </LinearLayout>
     <android.support.v4.view.ViewPager
         android:id="@+id/pager"
         android:layout_width="fill_parent"

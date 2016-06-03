@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -35,126 +35,38 @@
  *****************************************************************************/
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.net.wifi.WifiManager;
 import android.os.IBinder;
-import android.os.PowerManager;
-import free.yhc.feeder.core.BGTask;
-import free.yhc.feeder.core.Environ;
+
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.LifeSupporter;
 import free.yhc.feeder.core.RTTask;
-import free.yhc.feeder.core.RTTask.Action;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class LifeSupportService extends Service implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(LifeSupportService.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(LifeSupportService.class, Logger.LOGLV_DEFAULT);
 
-    public static final String ACTION_START = "feeder.intent.action.START_LIFE_SUPPORT";
-    // Wakelock
-    private static final String WLTAG = "free.yhc.feeder.LifeSupportService";
-
-    private static PowerManager.WakeLock sWl = null;
-    private static WifiManager.WifiLock sWfl = null;
-    private static int sWlcnt = 0;
-    private static final TaskQListener sTaskQListener = new TaskQListener();
-
-    private static class TaskQListener implements RTTask.OnTaskQueueChangedListener {
-        private int _mNrAction = 0;
-
-        @Override
-        public void
-        onEnQ(BGTask task, long id, Action act) {
-            if (Action.UPDATE == act
-                || Action.DOWNLOAD == act) {
-                if (0 == _mNrAction++)
-                    // First action...
-                    LifeSupportService.start();
-            }
-        }
-
-        @Override
-        public void
-        onDeQ(BGTask task, long id, Action act) {
-            if (Action.UPDATE == act
-                || Action.DOWNLOAD == act) {
-                if (0 == --_mNrAction)
-                    LifeSupportService.stop();
-            }
-        }
-    }
-
+    private static final LifeSupporter sLifeSup
+            = LifeSupporter.create(LifeSupportService.class,
+                                LifeSupporter.LOCK_WAKE | LifeSupporter.LOCK_WIFI);
 
     public static void
     init() {
-        RTTask.get().registerTaskQChangedListener(LifeSupportService.class, sTaskQListener);
+        LifeSupporter.addGuestTaskManager(sLifeSup, RTTask.get());
     }
 
     public static void
     start() {
-        if (DBG) P.v("Enter");
-        Intent i = new Intent(Environ.getAppContext(), LifeSupportService.class);
-        i.setAction(ACTION_START);
-        Environ.getAppContext().startService(i);
+        sLifeSup.start();
     }
 
     public static void
     stop() {
-        if (DBG) P.v("Enter");
-        Intent i = new Intent(Environ.getAppContext(), LifeSupportService.class);
-        Environ.getAppContext().stopService(i);
+        sLifeSup.stop();
     }
-
-    public static void
-    getWakeLock() {
-        eAssert(Utils.isUiThread());
-        // getWakeLock() and putWakeLock() are used only at main ui thread (broadcast receiver, onStartCommand).
-        // So, we don't need to synchronize it!
-        eAssert(sWlcnt >= 0);
-        if (null == sWl) {
-            sWl = ((PowerManager)Environ.getAppContext().getSystemService(Context.POWER_SERVICE))
-                    .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WLTAG);
-            sWfl = ((WifiManager)Environ.getAppContext().getSystemService(Context.WIFI_SERVICE))
-                    .createWifiLock(WifiManager.WIFI_MODE_FULL, WLTAG);
-            //logI("ScheduledUpdateService : WakeLock created and aquired");
-            sWl.acquire();
-            sWfl.acquire();
-        }
-        sWlcnt++;
-        //logI("ScheduledUpdateService(GET) : current WakeLock count: " + mWlcnt);
-    }
-
-    public static void
-    putWakeLock() {
-        eAssert(Utils.isUiThread());
-
-        if (sWlcnt <= 0)
-            return; // nothing to put!
-
-        eAssert(sWlcnt > 0);
-        sWlcnt--;
-        //logI("ScheduledUpdateService(PUT) : current WakeLock count: " + mWlcnt);
-        if (0 == sWlcnt) {
-            sWl.release();
-            sWfl.release();
-            // !! NOTE : Important.
-            // if below line "mWl = null" is removed, then RuntimeException is raised
-            //   when 'getWakeLock' -> 'putWakeLock' -> 'getWakeLock' -> 'putWakeLock(*)'
-            //   (at them moment of location on * is marked - last 'putWakeLock').
-            // That is, once WakeLock is released, reusing is dangerous in current Android Framework.
-            // I'm not sure that this is Android FW's bug... or I missed something else...
-            // Anyway, let's set 'mWl' as 'null' here to re-create new WakeLock at next time.
-            sWl = null;
-            sWfl = null;
-            //logI("ScheduledUpdateService : WakeLock is released");
-        }
-    }
-
-
 
     @Override
     public String
@@ -173,10 +85,6 @@ UnexpectedExceptionHandler.TrackedModule {
     @Override
     public int
     onStartCommand(Intent intent, int flags, int startId) {
-        if (!intent.getAction().equals(ACTION_START)) {
-            stopSelf(startId);
-            return START_NOT_STICKY;
-        }
         startForeground(NotiManager.get().getForegroundNotificationId(),
                         NotiManager.get().getForegroundNotification());
         return START_NOT_STICKY;

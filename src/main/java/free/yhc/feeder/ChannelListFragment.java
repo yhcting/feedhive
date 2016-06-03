@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.util.Calendar;
 import java.util.HashSet;
 
@@ -52,6 +50,7 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore.MediaColumns;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -66,26 +65,36 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
-import free.yhc.feeder.UiHelper.OnConfirmDialogAction;
+
+import free.yhc.abaselib.AppEnv;
+import free.yhc.baselib.Logger;
+import free.yhc.baselib.async.Task;
+import free.yhc.baselib.async.TmTask;
+import free.yhc.baselib.async.TaskBase;
+import free.yhc.baselib.async.TaskManagerBase;
+import free.yhc.baselib.net.NetReadTask;
+import free.yhc.abaselib.util.UxUtil;
+import free.yhc.abaselib.ux.DialogTask;
+import free.yhc.feeder.core.Util;
+import free.yhc.feeder.task.DownloadTask;
+import free.yhc.feeder.task.UpdateTask;
 import free.yhc.feeder.db.ColumnChannel;
 import free.yhc.feeder.db.DB;
 import free.yhc.feeder.db.DBPolicy;
-import free.yhc.feeder.core.BGTask;
-import free.yhc.feeder.core.BGTaskUpdateChannel;
-import free.yhc.feeder.core.BaseBGTask;
 import free.yhc.feeder.core.ContentsManager;
 import free.yhc.feeder.core.Err;
-import free.yhc.feeder.core.Feed;
+import free.yhc.feeder.feed.Feed;
 import free.yhc.feeder.core.FeederException;
 import free.yhc.feeder.core.ListenerManager;
 import free.yhc.feeder.core.RTTask;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+
+import static free.yhc.baselib.util.Util.convertArrayLongTolong;
 
 public class ChannelListFragment extends Fragment implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(ChannelListFragment.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(ChannelListFragment.class, Logger.LOGLV_DEFAULT);
 
     private static final int DATA_ARR_MAX = 100;
     private static final int DATA_REQ_SZ = 20;
@@ -97,6 +106,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private final DBPolicy mDbp = DBPolicy.get();
     private final RTTask mRtt = RTTask.get();
+    private final RtTaskQEventListener mRtTaskQEventListener = new RtTaskQEventListener();
+    private final UpdateTaskListener mUpdateTaskListener = new UpdateTaskListener();
+    private final DownloadTaskListener mDownloadTaskListener = new DownloadTaskListener();
+
+    // Tasks that this fragment is registered as listeners.
+    private final HashSet<UpdateTask> mUpTasks = new HashSet<>();
+    private final HashSet<DownloadTask> mDnTasks = new HashSet<>();
 
     private DBWatcher mDbWatcher = null;
     private boolean mPrimary = false;
@@ -133,7 +149,7 @@ UnexpectedExceptionHandler.TrackedModule {
 
         long[]
         getUpdatedChannels() {
-            return Utils.convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[_mUpdatedChannelSet.size()]));
+            return convertArrayLongTolong(_mUpdatedChannelSet.toArray(new Long[_mUpdatedChannelSet.size()]));
         }
 
         boolean
@@ -154,7 +170,7 @@ UnexpectedExceptionHandler.TrackedModule {
                 break;
 
             default:
-                eAssert(false);
+                P.bug(false);
             }
         }
     }
@@ -172,7 +188,7 @@ UnexpectedExceptionHandler.TrackedModule {
             ChannelListAdapter adapter = getAdapter();
             int pos = getPosition(cid);
             if (pos < 0) {
-                eAssert(false);
+                P.bug(false);
                 return;
             }
             if (0 == pos)
@@ -191,7 +207,7 @@ UnexpectedExceptionHandler.TrackedModule {
             int pos = getPosition(cid);
             int cnt = adapter.getCount();
             if (pos >= cnt) {
-                eAssert(false);
+                P.bug(false);
                 return;
             }
             if (cnt - 1 == pos)
@@ -204,36 +220,32 @@ UnexpectedExceptionHandler.TrackedModule {
         }
     }
 
-    private class UpdateBGTaskListener extends BaseBGTask.OnEventListener {
-        private long    _mCid = -1;
-
-        UpdateBGTaskListener(long cid) {
-            _mCid = cid;
-        }
-
+    private class UpdateTaskListener extends TaskBase.EventListener<UpdateTask, Err> {
         @Override
         public void
-        onCancelled(BaseBGTask task, Object param) {
-            eAssert(_mCid >= 0);
+        onCancelled(@NonNull UpdateTask task, Object param) {
+            P.bug(task.getChannelId() >= 0);
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (getActivity().isFinishing())
                 return;
 
             // NOTE : refresh??? just 'notifying' is enough?
             // In current DB policy, sometimes DB may be updated even if updating is cancelled!
-            refreshListItem(_mCid);
+            refreshListItem(task.getChannelId());
         }
 
         @Override
         public void
-        onPreRun(BaseBGTask task) {
+        onStarted(@NonNull UpdateTask task) {
             // NOTE : refresh??? just 'notifying' is enough?
-            channelRttStateChanged(_mCid);
+            itemDataChanged(task.getChannelId());
         }
 
         @Override
         public void
-        onPostRun(BaseBGTask task, Err result) {
+        onPostRun(@NonNull UpdateTask task,
+                  Err result,
+                  Exception ex) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (getActivity().isFinishing())
                 return;
@@ -241,129 +253,61 @@ UnexpectedExceptionHandler.TrackedModule {
             // NOTE : refresh??? just 'notifying' is enough?
             // It should be 'refresh' due to after successful update,
             //   some channel information in DB may be changed.
-            refreshListItem(_mCid);
+            refreshListItem(task.getChannelId());
         }
     }
 
-    private class DownloadBGTaskListener extends BaseBGTask.OnEventListener {
-        private long    _mCid = -1;
-        DownloadBGTaskListener(long cid) {
-            _mCid = cid;
-        }
+    private class DownloadTaskListener extends TaskBase.EventListener<DownloadTask, NetReadTask.Result> {
+        DownloadTaskListener() {}
 
         @Override
         public void
-        onCancelled(BaseBGTask task, Object param) {
+        onCancelled(@NonNull DownloadTask task, Object param) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (getActivity().isFinishing())
                 return;
 
-            if (0 == mRtt.getItemsDownloading(_mCid).length)
-                channelRttStateChanged(_mCid);
+            if (0 == mRtt.getItemsDownloading(task.getChannelId()).length)
+                itemDataChanged(task.getChannelId());
         }
 
         @Override
         public void
-        onPostRun(BaseBGTask task, Err result) {
+        onPostRun(@NonNull DownloadTask task,
+                  NetReadTask.Result result,
+                  Exception ex) {
             // See comments at "ItemListActivity.UpdateBGTaskListener.OnPostRun"
             if (getActivity().isFinishing())
                 return;
 
-            if (0 == mRtt.getItemsDownloading(_mCid).length)
-                channelRttStateChanged(_mCid);
+            if (0 == mRtt.getItemsDownloading(task.getChannelId()).length)
+                itemDataChanged(task.getChannelId());
         }
     }
 
-
-    private class DeleteChannelWorker extends DiagAsyncTask.Worker {
-        private final long[]    _mCids;
-        private long            _mNrDelItems    = 0;
-
-        DeleteChannelWorker(long[] cids) {
-            _mCids = cids;
-        }
-
-        @Override
-        public Err
-        doBackgroundWork(DiagAsyncTask task) {
-            _mNrDelItems = mDbp.deleteChannel(_mCids);
-            return Err.NO_ERR;
-        }
-
+    private class RtTaskQEventListener implements TaskManagerBase.TaskQEventListener {
         @Override
         public void
-        onPostExecute(DiagAsyncTask task, Err result) {
-            UiHelper.showTextToast(getActivity(),
-                                   _mNrDelItems + getResources().getString(R.string.channel_deleted_msg));
-            for (long cid : _mCids)
-                ChannelListFragment.this.getAdapter().removeChannel(cid);
-            dataSetChanged();
-            ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
-        }
-    }
-
-    private class PickIconWorker extends DiagAsyncTask.Worker {
-        private long        _mCid = -1;
-        private final Uri   _mImageUri;
-
-        PickIconWorker(Uri uri) {
-            _mImageUri = uri;
-        }
-
-        @Override
-        public Err
-        doBackgroundWork(DiagAsyncTask task) {
-            String[] filePathColumn = {MediaColumns.DATA};
-
-            _mCid = mCidPickImage;
-
-            Cursor c = getActivity().getContentResolver().query(_mImageUri, filePathColumn, null, null, null);
-            if (!c.moveToFirst()) {
-                c.close();
-                return Err.GET_MEDIA;
+        onEvent(@NonNull TaskManagerBase tm,
+                @NonNull TaskManagerBase.TaskQEvent ev,
+                int szReady, int szRun,
+                @NonNull TmTask task) {
+            RTTask rtt = (RTTask)tm;
+            RTTask.TaskInfo ti = rtt.getTaskInfo(task);
+            // This should be run on ui handler thread.
+            switch (ev) {
+            case ADDED_TO_READY:
+                if (RTTask.Action.UPDATE == ti.ttype) {
+                    UpdateTask t = (UpdateTask)task;
+                    if (t.addEventListener(AppEnv.getUiHandlerAdapter(), mUpdateTaskListener))
+                        mUpTasks.add(t);
+                }
+                break;
+            case REMOVED_FROM_READY:
+            case MOVED_TO_RUN:
+            case REMOVED_FROM_RUN:
             }
-
-            int columnIndex = c.getColumnIndex(filePathColumn[0]);
-            String filePath = c.getString(columnIndex);
-            c.close();
-
-            // Make url string from file path
-            Bitmap bm = Utils.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
-            byte[] imageData = Utils.compressBitmap(bm);
-
-            if (null == imageData)
-                return Err.CODEC_DECODE;
-
-            if (mCidPickImage < 0) {
-                eAssert(false);
-                return Err.UNKNOWN; // something evil!!!
-            } else {
-                mDbp.updateChannel(mCidPickImage, ColumnChannel.IMAGEBLOB, imageData);
-                mCidPickImage = -1;
-            }
-            return Err.NO_ERR;
         }
-
-        @Override
-        public void
-        onPostExecute(DiagAsyncTask task, Err result) {
-            if (Err.NO_ERR == result)
-                getAdapter().notifyChannelIconChanged(_mCid);
-            else
-                UiHelper.showTextToast(getActivity(), result.getMsgId());
-        }
-    }
-
-    private class RTTaskRegisterListener implements RTTask.OnRegisterListener {
-        @Override
-        public void
-        onRegister(BGTask task, long cid, RTTask.Action act) {
-            if (RTTask.Action.UPDATE == act)
-                mRtt.bind(cid, RTTask.Action.UPDATE, ChannelListFragment.this, new UpdateBGTaskListener(cid));
-        }
-        @Override
-        public void
-        onUnregister(BGTask task, long cid, RTTask.Action act) { }
     }
 
     private ChannelListActivity
@@ -383,6 +327,8 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     private void
     dataSetChanged() {
+        if (null == mListView || null == getAdapter())
+            return;
         // ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
         // Delayed action(notify) may lead to unexpected exception. Why?
         // Delayed action means, action can be triggered even after this fragment is destroyed
@@ -399,25 +345,14 @@ UnexpectedExceptionHandler.TrackedModule {
     @SuppressWarnings("unused")
     private void
     dataSetChanged(long cid) {
-        /*
-        ChannelListAdapter cla = (ChannelListAdapter)lv.getAdapter();
-        ((ChannelListAdapter)lv.getAdapter()).clearChangeState();
-        for (int i = lv.getFirstVisiblePosition();
-             i <= lv.getLastVisiblePosition();
-             i++) {
-            long itemCid = cla.getChannelId(i);
-            if (itemCid == cid)
-                cla.addChanged(cla.getItemId(i));
-            else
-                cla.addUnchanged(cla.getItemId(i));
-        }
-        */
-        dataSetChanged();
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     private void
-    channelRttStateChanged(long cid) {
-        getAdapter().notifyChannelRttStateChanged(cid);
+    itemDataChanged(long cid) {
+        if (null == mListView || null == getAdapter())
+            return;
+        getAdapter().notifyItemDataChanged(cid);
     }
 
     private int
@@ -435,12 +370,28 @@ UnexpectedExceptionHandler.TrackedModule {
      * This completely deletes all channel and items.
      */
     private void
-    deleteChannel(long cid) {
-        DiagAsyncTask task = new DiagAsyncTask(getActivity(),
-                                               new DeleteChannelWorker(new long[] { cid }),
-                                               DiagAsyncTask.Style.SPIN,
-                                               R.string.deleting_channel_msg);
-        task.run();
+    deleteChannel(final long cid) {
+        DialogTask.Builder<DialogTask.Builder> bldr
+                = new DialogTask.Builder<>(getActivity(), new Task<Void>() {
+            @Override
+            protected Void
+            doAsync() {
+                final long nr = mDbp.deleteChannel(cid);
+                AppEnv.getUiHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        UxUtil.showTextToast(nr + getResources().getString(R.string.channel_deleted_msg));
+                        ChannelListFragment.this.getAdapter().removeChannel(cid);
+                        dataSetChanged();
+                        ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
+                    }
+                });
+                return null;
+            }
+        });
+        bldr.setMessage(R.string.deleting_channel_msg);
+        if (!bldr.create().start())
+            P.bug();
     }
 
     private boolean
@@ -455,48 +406,56 @@ UnexpectedExceptionHandler.TrackedModule {
     private void
     onContextBtn_channelUpdate(@SuppressWarnings("unused") ImageView ibtn,
                                long cid) {
-        RTTask.TaskState state = mRtt.getState(cid, RTTask.Action.UPDATE);
-        switch (state) {
+        UpdateTask t = mRtt.getUpdateTask(cid);
+        switch (mRtt.getRtState(t)) {
         case IDLE: {
-            BGTaskUpdateChannel task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
-            mRtt.register(cid, RTTask.Action.UPDATE, task);
-            mRtt.start(cid, RTTask.Action.UPDATE);
-            channelRttStateChanged(cid);
+            if (DBG) P.v("ChannelUpdate: IDLE => start Update");
+            UpdateTask task = new UpdateTask(cid, null);
+            if (task.addEventListener(AppEnv.getUiHandlerAdapter(), mUpdateTaskListener))
+                mUpTasks.add(task);
+            mRtt.addTask(task, cid, RTTask.Action.UPDATE);
+            itemDataChanged(cid);
         } break;
 
-        case RUNNING:
+        case RUN:
         case READY:
-            mRtt.cancel(cid, RTTask.Action.UPDATE, null);
+            if (DBG) P.v("ChannelUpdate: RUN/READY => cancel");
+            assert null != t;
+            mRtt.cancelTask(t);
             // to change icon into "canceling"
-            channelRttStateChanged(cid);
+            itemDataChanged(cid);
             break;
 
-        case FAILED: {
-            Err result = mRtt.getErr(cid, RTTask.Action.UPDATE);
-            UiHelper.showTextToast(getActivity(), result.getMsgId());
-            mRtt.consumeResult(cid, RTTask.Action.UPDATE);
-            channelRttStateChanged(cid);
+        case FAIL: {
+            if (DBG) P.v("ChannelUpdate: FAIL => NOTI");
+            assert null != t;
+            Err result = t.getErr();
+            UxUtil.showTextToast(result.getMsgId());
+            // Ignore return value intentionally.
+            mRtt.removeWatchedTask(t);
+            itemDataChanged(cid);
         } break;
 
-        case CANCELING:
-            UiHelper.showTextToast(getActivity(), R.string.wait_cancel);
+        case CANCEL:
+            if (DBG) P.v("ChannelUpdate: CANCELLING => CANCELLING");
+            UxUtil.showTextToast(R.string.wait_cancel);
             break;
 
         default:
-            eAssert(false);
+            P.bug(false);
         }
     }
 
 
     private void
     onContext_deleteChannel(final long cid) {
-        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+        UxUtil.ConfirmAction action = new UxUtil.ConfirmAction() {
             @Override
-            public void onOk(Dialog dialog) {
+            public void onPositive(@NonNull Dialog dialog) {
                 deleteChannel(cid);
             }
             @Override
-            public void onCancel(Dialog dialog) { }
+            public void onNegative(@NonNull Dialog dialog) { }
         };
 
         UiHelper.buildConfirmDialog(getActivity(),
@@ -508,16 +467,16 @@ UnexpectedExceptionHandler.TrackedModule {
 
     private void
     onContext_deleteDownloaded(final long cid) {
-        OnConfirmDialogAction action = new OnConfirmDialogAction() {
+        UxUtil.ConfirmAction action = new UxUtil.ConfirmAction() {
             @Override
-            public void onOk(Dialog dialog) {
+            public void onPositive(@NonNull Dialog dialog) {
                 // delete entire channel directory and re-make it.
                 // Why?
                 // All and only downloadded files are located in channel directory.
                 ContentsManager.get().cleanChannelDir(cid);
             }
             @Override
-            public void onCancel(Dialog dialog) { }
+            public void onNegative(@NonNull Dialog dialog) { }
         };
         UiHelper.buildConfirmDialog(getActivity(),
                                     R.string.delete_downloadded_file,
@@ -530,7 +489,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onContext_deleteUsedDownloaded(final long cid) {
         AlertDialog diag = UiHelper.buildDeleteUsedDnFilesConfirmDialog(cid, this.getActivity(), null, null);
         if (null == diag)
-            UiHelper.showTextToast(this.getActivity(), R.string.del_dnfiles_not_allowed_msg);
+            UxUtil.showTextToast(R.string.del_dnfiles_not_allowed_msg);
         else
             diag.show();
     }
@@ -570,7 +529,7 @@ UnexpectedExceptionHandler.TrackedModule {
                                                         getResources().getText(R.string.pick_icon)),
                                    REQC_PICK_IMAGE);
         } catch (ActivityNotFoundException e) {
-            UiHelper.showTextToast(getActivity(), R.string.warn_find_gallery_app);
+            UxUtil.showTextToast(R.string.warn_find_gallery_app);
         }
     }
 
@@ -603,29 +562,34 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public void
     addChannel(String url, String iconurl) {
-        eAssert(url != null);
-        url = Utils.removeTrailingSlash(url);
+        P.bug(url != null);
+        url = Util.removeTrailingSlash(url);
 
         long cid;
         try {
             cid = mDbp.insertNewChannel(getCategoryId(), url);
         } catch (FeederException e) {
-            UiHelper.showTextToast(getActivity(), e.getError().getMsgId());
+            UxUtil.showTextToast(e.getError().getMsgId());
             return;
         }
+        /* Cursor of adapter is changed.
+         * Not to update whole cursor, append channel data manually to the adapter.
+         */
+        getAdapter().appendChannel(cid);
+        /* channel information should be updated to adapter before starting task
+         * because, update task request to adapter to update task 'state'.
+         */
+        dataSetChanged();
 
         // full update for this newly inserted channel
-        BGTaskUpdateChannel task;
-        if (Utils.isValidValue(iconurl))
-            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid, iconurl));
-        else
-            task = new BGTaskUpdateChannel(new BGTaskUpdateChannel.Arg(cid));
+        UpdateTask task;
+        if (!Util.isValidValue(iconurl))
+            iconurl = null;
+        task = new UpdateTask(cid, iconurl);
+        if (task.addEventListener(AppEnv.getUiHandlerAdapter(), mUpdateTaskListener))
+            mUpTasks.add(task);
+        mRtt.addTask(task, cid, RTTask.Action.UPDATE);
 
-        mRtt.register(cid, RTTask.Action.UPDATE, task);
-        mRtt.start(cid, RTTask.Action.UPDATE);
-
-        getAdapter().appendChannel(cid);
-        dataSetChanged();
         ScheduledUpdateService.scheduleNextUpdate(Calendar.getInstance());
     }
 
@@ -648,11 +612,63 @@ UnexpectedExceptionHandler.TrackedModule {
 
         // this may takes quite long time (if image size is big!).
         // So, let's do it in background.
-        new DiagAsyncTask(getActivity(),
-                          new PickIconWorker(data.getData()),
-                          DiagAsyncTask.Style.SPIN,
-                          R.string.pick_icon_progress)
-            .run();
+        final Uri uri = data.getData();
+        final long cid = mCidPickImage;
+        DialogTask.Builder<DialogTask.Builder> bldr
+                = new DialogTask.Builder<>(getActivity(), new Task<Void>() {
+            private Err
+            doAsync_() {
+                String[] filePathColumn = {MediaColumns.DATA};
+
+                Cursor c = getActivity().getContentResolver().query(
+                        uri, filePathColumn, null, null, null);
+                if (null == c)
+                    return Err.GET_MEDIA;
+
+                if (!c.moveToFirst()) {
+                    c.close();
+                    return Err.GET_MEDIA;
+                }
+
+                int columnIndex = c.getColumnIndex(filePathColumn[0]);
+                String filePath = c.getString(columnIndex);
+                c.close();
+
+                // Make url string from file path
+                Bitmap bm = Util.decodeImage(filePath, Feed.Channel.ICON_MAX_WIDTH, Feed.Channel.ICON_MAX_HEIGHT);
+                if (null == bm)
+                    return Err.CODEC_DECODE;
+                byte[] imageData = Util.compressBitmap(bm);
+                if (mCidPickImage < 0) {
+                    P.bug(false);
+                    return Err.UNKNOWN; // something evil!!!
+                } else {
+                    mDbp.updateChannel(mCidPickImage, ColumnChannel.IMAGEBLOB, imageData);
+                    mCidPickImage = -1;
+                }
+                return Err.NO_ERR;
+            }
+
+            @Override
+            protected Void
+            doAsync() {
+                final Err err = doAsync_();
+                AppEnv.getUiHandler().post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (Err.NO_ERR == err)
+                            getAdapter().notifyChannelIconChanged(cid);
+                        else
+                            UxUtil.showTextToast(err.getMsgId());
+                    }
+                });
+                return null;
+            }
+        });
+
+        bldr.setMessage(R.string.pick_icon_progress);
+        if (!bldr.create().start())
+            P.bug();
     }
 
     public long
@@ -701,7 +717,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onCreateContextMenu2(ContextMenu menu,
                          @SuppressWarnings("unused") View v,
                          ContextMenuInfo menuInfo) {
-        eAssert(mPrimary);
+        P.bug(mPrimary);
         MenuInflater inflater = getActivity().getMenuInflater();
         inflater.inflate(R.menu.channel_context, menu);
         AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
@@ -709,11 +725,11 @@ UnexpectedExceptionHandler.TrackedModule {
             return;
 
         long dbId = getAdapter().getItemInfo_cid(info.position);
-        RTTask.TaskState updateState = mRtt.getState(dbId, RTTask.Action.UPDATE);
-
-        if (RTTask.TaskState.RUNNING == updateState
-            || RTTask.TaskState.READY == updateState
-            || RTTask.TaskState.CANCELING == updateState) {
+        UpdateTask t = mRtt.getUpdateTask(dbId);
+        switch (mRtt.getRtState(t)) {
+        case READY:
+        case RUN:
+        case CANCEL:
             menu.findItem(R.id.delete).setEnabled(false);
             menu.findItem(R.id.pick_icon).setEnabled(false);
             /* full update is useless at this moment. Codes are left for history tracking
@@ -809,7 +825,7 @@ UnexpectedExceptionHandler.TrackedModule {
         @SuppressLint("InflateParams")
         LinearLayout ll = (LinearLayout)inflater.inflate(R.layout.channel_listview, null);
         mListView = (ListView)ll.findViewById(R.id.list);
-        eAssert(null != mListView);
+        P.bug(null != mListView);
         mListView.setAdapter(new ChannelListAdapter(getActivity(),
                                                     ChannelListAdapter.getQueryCursor(mCatId),
                                                     mListView,
@@ -853,18 +869,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public void
     onResume() {
         super.onResume();
-        //logI("==> ChannelListActivity : onResume");
-        // NOTE
-        // Case to think about
-        // - new update task is registered between 'registerManagerEventListener' and 'getUpdateState'
-        // - then, this task will be binded twice.
-        // => This leads to over head operation (ex. refreshing list two times continuously etc.)
-        //    But, this doesn't issue logical error. So, I can get along with this case.
-        //
-        // If 'registerManagerEventListener' is below 'getUpdateState',
-        //   we may miss binding some updating task!
-        mRtt.registerRegisterEventListener(this, new RTTaskRegisterListener());
-
+        mRtt.addTaskQEventListener(AppEnv.getUiHandlerAdapter(), mRtTaskQEventListener);
         HashSet<Long> updatedCids = new HashSet<>();
         for (long cid : mDbWatcher.getUpdatedChannels())
             updatedCids.add(cid);
@@ -882,11 +887,23 @@ UnexpectedExceptionHandler.TrackedModule {
                     if (updatedCids.contains(cid))
                         myUpdatedCids.add(cid);
 
-                    if (RTTask.TaskState.IDLE != mRtt.getState(cid, RTTask.Action.UPDATE))
-                        mRtt.bind(cid, RTTask.Action.UPDATE, this, new UpdateBGTaskListener(cid));
+                    UpdateTask upt = mRtt.getUpdateTask(cid);
+                    if (RTTask.RtState.IDLE != mRtt.getRtState(upt)) {
+                        assert null != upt;
+                        //noinspection unchecked
+                        if (upt.addEventListener(AppEnv.getUiHandlerAdapter(), mUpdateTaskListener))
+                            mUpTasks.add(upt);
+                    }
                     long[] ids = mRtt.getItemsDownloading(cid);
-                    for (long id : ids)
-                        mRtt.bind(id, RTTask.Action.DOWNLOAD, this, new DownloadBGTaskListener(cid));
+                    for (long id : ids) {
+                        DownloadTask dnt = mRtt.getDownloadTask(id);
+                        if (RTTask.RtState.IDLE != mRtt.getRtState(dnt)) {
+                            assert null != dnt;
+                            //noinspection unchecked
+                            if (dnt.addEventListener(AppEnv.getUiHandlerAdapter(), mDownloadTaskListener))
+                                mDnTasks.add(dnt);
+                        }
+                    }
                 } while (c.moveToNext());
             }
             c.close();
@@ -902,7 +919,7 @@ UnexpectedExceptionHandler.TrackedModule {
             && myUpdatedCids.size() > 0) {
             refreshListAsync();
         } else
-            refreshListItem(Utils.convertArrayLongTolong(myUpdatedCids.toArray(new Long[myUpdatedCids.size()])));
+            refreshListItem(convertArrayLongTolong(myUpdatedCids.toArray(new Long[myUpdatedCids.size()])));
 
         // We don't need to worry about item table change.
         // Because, if item is newly inserted, that means some of channel is updated.
@@ -917,7 +934,7 @@ UnexpectedExceptionHandler.TrackedModule {
     onPause() {
         //logI("==> ChannelListActivity : onPause");
         mDbWatcher.register();
-        mRtt.unregisterRegisterEventListener(this);
+        mRtt.removeTaskQEventListener(mRtTaskQEventListener);
         // Why This should be here (NOT 'onStop'!)
         // In normal case, starting 'ItemListAcvitiy' issues 'onStop'.
         // And when exiting from 'ItemListActivity' by back-key event, 'onStart' is called.
@@ -926,9 +943,11 @@ UnexpectedExceptionHandler.TrackedModule {
         // That is, if there is background running background thread, activity is NOT stopped but just paused.
         // (This is experimental conclusion - NOT by analyzing framework source code.)
         // I think this is Android's bug or implicit policy.
-        // Because of above issue, 'binding' and 'unbinding' are done at 'onResume' and 'onPause'.
-        mRtt.unbind(this);
-
+        // Because of above issue, 'adding' and 'removing' are done at 'onResume' and 'onPause'.
+        for (UpdateTask t : mUpTasks)
+            t.removeEventListener(mUpdateTaskListener);
+        for (DownloadTask t : mDnTasks)
+            t.removeEventListener(mDownloadTaskListener);
 
         super.onPause();
     }

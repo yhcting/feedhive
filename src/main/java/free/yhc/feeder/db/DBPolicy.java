@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014
+ * Copyright (C) 2012, 2013, 2014, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,8 +36,6 @@
 
 package free.yhc.feeder.db;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
@@ -51,14 +49,18 @@ import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.LruCache;
+
+import free.yhc.baselib.Logger;
 import free.yhc.feeder.core.ContentsManager;
 import free.yhc.feeder.core.Err;
-import free.yhc.feeder.core.Feed;
-import free.yhc.feeder.core.FeedPolicy;
+import free.yhc.feeder.core.Util;
+import free.yhc.feeder.feed.Feed;
+import free.yhc.feeder.feed.FeedPolicy;
 import free.yhc.feeder.core.FeederException;
 import free.yhc.feeder.core.ListenerManager;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
+
+import static free.yhc.baselib.util.Util.convertArraylongToLong;
 
 //
 // DB synchronizing concept.
@@ -68,7 +70,7 @@ import free.yhc.feeder.core.Utils;
 //
 // For remaining cases for race-condition is blocked by UI.
 // (for example, during update channel items, 'deleteChannel' menu is disabled.)
-// So, in this module, checking race-condition by using 'eAssert' is enough for debugging!
+// So, in this module, checking race-condition by using 'P.bug' is enough for debugging!
 //
 // DEEP INVESTIGATION is required for RACE CONDITION WITHOUT LOCK!
 //
@@ -77,8 +79,8 @@ import free.yhc.feeder.core.Utils;
 // Singleton
 public class DBPolicy implements
 UnexpectedExceptionHandler.TrackedModule {
-    private static final boolean DBG = false;
-    private static final Utils.Logger P = new Utils.Logger(DBPolicy.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(DBPolicy.class, Logger.LOGLV_DEFAULT);
 
     private static final long FLAG_NEW_ITEMS    = 0x1;
     private static final long FLAG_LAST_ITEM_ID = 0x10;
@@ -102,7 +104,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private static DBPolicy sInstance = null;
 
     // Dependency on only following modules are allowed
-    // - Utils
+    // - Util
     // - UnexpectedExceptionHandler
     // - DB / DBThread
     // - UIPolicy
@@ -214,7 +216,7 @@ UnexpectedExceptionHandler.TrackedModule {
     private DBPolicy() {
         UnexpectedExceptionHandler.get().registerModule(this);
         int chnnCacheSize;
-        switch (Utils.getPrefMemConsumptionLevel()) {
+        switch (Util.getPrefMemConsumptionLevel()) {
         case LOW:
             chnnCacheSize = 1024 * 1024; // 1MB
             break;
@@ -264,7 +266,7 @@ UnexpectedExceptionHandler.TrackedModule {
         values.put(ColumnItem.STATE.getName(),               Feed.Item.FSTAT_DEFAULT);
 
         // If success to parse pubdate than pubdate is used, if not, current time is used.
-        long time = Utils.dateStringToTime(parD.pubDate);
+        long time = Util.dateStringToTime(parD.pubDate);
         if (time < 0)
             time = new Date().getTime();
         values.put(ColumnItem.PUBTIME.getName(),             time);
@@ -319,7 +321,7 @@ UnexpectedExceptionHandler.TrackedModule {
             return c.getString(columnIndex);
         case Cursor.FIELD_TYPE_BLOB:
         }
-        eAssert(false);
+        P.bug(false);
         return null;
     }
 
@@ -369,7 +371,7 @@ UnexpectedExceptionHandler.TrackedModule {
             if (System.currentTimeMillis() - timems > 10 * 60 * 1000)
                 // Over 10 minutes, updating is delayed!
                 // This is definitely unexpected error!!
-                eAssert(false);
+                P.bug(false);
         }
     }
 
@@ -411,7 +413,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     getDelayedChannelUpdate() {
-        eAssert(mDelayedChannelUpdate.get() >= 0);
+        P.bug(mDelayedChannelUpdate.get() >= 0);
         mDelayedChannelUpdate.incrementAndGet();
     }
 
@@ -420,7 +422,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     putDelayedChannelUpdate() {
-        eAssert(mDelayedChannelUpdate.get() > 0);
+        P.bug(mDelayedChannelUpdate.get() > 0);
         mDelayedChannelUpdate.decrementAndGet();
     }
 
@@ -486,8 +488,8 @@ UnexpectedExceptionHandler.TrackedModule {
     isDuplicatedCategoryName(String name) {
         boolean ret = false;
         Cursor c = mDb.queryCategory(ColumnCategory.NAME,
-                                     ColumnCategory.NAME,
-                                     name);
+            ColumnCategory.NAME,
+            name);
         if (0 < c.getCount())
             ret = true;
         c.close();
@@ -532,7 +534,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public int
     insertCategory(Feed.Category category) {
-        eAssert(null != category.name);
+        P.bug(null != category.name);
         long id = mDb.insertCategory(category);
         if (0 > id)
             return -1;
@@ -600,7 +602,7 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     insertNewChannel(long categoryid, String url)
             throws FeederException {
-        eAssert(!url.endsWith("/"));
+        P.bug(!url.endsWith("/"));
 
         long[] chState = new long[1];
         long cid = findChannel(chState, url);
@@ -628,13 +630,14 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public Err
     getNewItems(long cid, Feed.Item.ParD[] items, LinkedList<Feed.Item.ParD> newItems) {
-        eAssert(null != items);
+        P.bug(null != items);
         if (DBG) P.v("UpdateChannel DB Section Start : cid[" + cid + "]");
 
+        assert items != null;
         if (0 == items.length)
             return Err.NO_ERR;
 
-        boolean pubDateAvail = Utils.isValidValue(items[0].pubDate);
+        boolean pubDateAvail = Util.isValidValue(items[0].pubDate);
         HashMap<String, HashMap<String, ItemUrls>> mainMap = new HashMap<>();
         HashMap<String, ItemUrls> subMap;
 
@@ -934,20 +937,20 @@ UnexpectedExceptionHandler.TrackedModule {
     public long
     updateChannel(long cid, ColumnChannel column, long value) {
         // Fields those are allowed to be updated.
-        eAssert(ColumnChannel.CATEGORYID == column
-                || ColumnChannel.OLDLAST_ITEMID == column
-                || ColumnChannel.ACTION == column
-                || ColumnChannel.UPDATEMODE == column
-                || ColumnChannel.POSITION == column
-                || ColumnChannel.STATE == column
-                || ColumnChannel.NRITEMS_SOFTMAX == column);
+        P.bug(ColumnChannel.CATEGORYID == column
+            || ColumnChannel.OLDLAST_ITEMID == column
+            || ColumnChannel.ACTION == column
+            || ColumnChannel.UPDATEMODE == column
+            || ColumnChannel.POSITION == column
+            || ColumnChannel.STATE == column
+            || ColumnChannel.NRITEMS_SOFTMAX == column);
         return mDb.updateChannel(cid, column, value);
     }
 
     public long
     updateChannel(long cid, ColumnChannel column, byte[] data) {
         // Fields those are allowed to be updated.
-        eAssert(ColumnChannel.IMAGEBLOB == column);
+        P.bug(ColumnChannel.IMAGEBLOB == column);
         mChannImgCache.remove(cid);
         return mDb.updateChannel(cid, ColumnChannel.IMAGEBLOB, data);
     }
@@ -973,7 +976,7 @@ UnexpectedExceptionHandler.TrackedModule {
     @SuppressWarnings("unused")
     public long
     updateChannel_schedUpdate(long cid, long sec) {
-        return updateChannel_schedUpdate(cid, new long[] { sec });
+        return updateChannel_schedUpdate(cid, new long[]{sec});
     }
 
     /**
@@ -984,8 +987,8 @@ UnexpectedExceptionHandler.TrackedModule {
     updateChannel_schedUpdate(long cid, long[] secs) {
         // verify values SECONDS_OF_DAY
         for (long s : secs)
-            eAssert(0 <= s && s <= Utils.DAY_IN_SEC);
-        return mDb.updateChannel(cid, ColumnChannel.SCHEDUPDATETIME, Utils.nrsToNString(secs));
+            P.bug(0 <= s && s <= Util.DAY_IN_SEC);
+        return mDb.updateChannel(cid, ColumnChannel.SCHEDUPDATETIME, Util.nrsToNString(secs));
     }
 
     /**
@@ -994,7 +997,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     updateChannel_lastItemId(long cid) {
-        updateChannel_lastItemIds(new long[] { cid });
+        updateChannel_lastItemIds(new long[]{cid});
     }
 
     /**
@@ -1003,7 +1006,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public void
     updateChannel_lastItemIds(long[] cids) {
-        Long[] whereValues = Utils.convertArraylongToLong(cids);
+        Long[] whereValues = convertArraylongToLong(cids);
         Long[] targetValues = new Long[cids.length];
         for (int i = 0; i < whereValues.length; i++)
             targetValues[i] = getItemInfoMaxId(whereValues[i]);
@@ -1037,7 +1040,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public Cursor
     queryChannel(long categoryid, ColumnChannel[] columns) {
-        eAssert(categoryid >= 0);
+        P.bug(categoryid >= 0);
         return queryChannel(columns, ColumnChannel.CATEGORYID, categoryid);
     }
 
@@ -1083,7 +1086,7 @@ UnexpectedExceptionHandler.TrackedModule {
             cols[i] = ColumnChannel.ID;
         for (long cid : cids)
             ContentsManager.get().removeChannelDir(cid);
-        return mDb.deleteChannelOR(cols, Utils.convertArraylongToLong(cids));
+        return mDb.deleteChannelOR(cols, convertArraylongToLong(cids));
     }
 
     /**
@@ -1152,13 +1155,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public Long
     getChannelInfoLong(long cid, ColumnChannel column) {
-        eAssert(column.getType().equals("integer"));
+        P.bug(column.getType().equals("integer"));
         return (Long)getChannelInfoObject(cid, column);
     }
 
     public String
     getChannelInfoString(long cid, ColumnChannel column) {
-        eAssert(column.getType().equals("text"));
+        P.bug(column.getType().equals("text"));
         return (String)getChannelInfoObject(cid, column);
     }
 
@@ -1176,7 +1179,7 @@ UnexpectedExceptionHandler.TrackedModule {
             c.close();
             return null;
         }
-        eAssert(c.getColumnCount() == columns.length);
+        P.bug(c.getColumnCount() == columns.length);
         String[] v = new String[columns.length];
         for (int i = 0; i < c.getColumnCount(); i++)
             v[i] = c.getString(i);
@@ -1191,7 +1194,7 @@ UnexpectedExceptionHandler.TrackedModule {
      */
     public long
     getChannelInfoMaxLong(ColumnChannel column) {
-        eAssert(column.getType().equals("integer"));
+        P.bug(column.getType().equals("integer"));
         Cursor c = mDb.queryChannelMax(column);
         if (!c.moveToFirst()) {
             c.close();
@@ -1216,7 +1219,7 @@ UnexpectedExceptionHandler.TrackedModule {
         Cursor c = mDb.queryItemCount(ColumnItem.ID,
                                       ColumnItem.CHANNELID, cid);
         if (!c.moveToFirst())
-            eAssert(false);
+            P.bug(false);
 
         int ret = c.getInt(0);
         c.close();
@@ -1312,13 +1315,13 @@ UnexpectedExceptionHandler.TrackedModule {
 
     public Long
     getItemInfoLong(long id, ColumnItem column) {
-        eAssert(column.getType().equals("integer"));
+        P.bug(column.getType().equals("integer"));
         return (Long)getItemInfoObject(id, column);
     }
 
     public String
     getItemInfoString(long id, ColumnItem column) {
-        eAssert(column.getType().equals("text"));
+        P.bug(column.getType().equals("text"));
         return (String)getItemInfoObject(id, column);
     }
 
@@ -1335,7 +1338,7 @@ UnexpectedExceptionHandler.TrackedModule {
             c.close();
             return null;
         }
-        eAssert(c.getColumnCount() == columns.length);
+        P.bug(c.getColumnCount() == columns.length);
         String[] v = new String[columns.length];
         for (int i = 0; i < c.getColumnCount(); i++)
             v[i] = c.getString(i);
@@ -1400,7 +1403,7 @@ UnexpectedExceptionHandler.TrackedModule {
         }
         return mDb.queryItemOR(columns,
                                cols,
-                               null != cids? Utils.convertArraylongToLong(cids): null,
+                               null != cids? convertArraylongToLong(cids): null,
                                new ColumnItem[] { ColumnItem.TITLE, ColumnItem.DESCRIPTION },
                                null == search? null: new String[] { search, search },
                                fromPubtime, toPubtime,

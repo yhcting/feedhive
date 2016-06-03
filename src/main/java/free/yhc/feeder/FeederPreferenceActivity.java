@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2012, 2013, 2014, 2015
+ * Copyright (C) 2012, 2013, 2014, 2015, 2016
  * Younghyung Cho. <yhcting77@gmail.com>
  * All rights reserved.
  *
@@ -36,25 +36,24 @@
 
 package free.yhc.feeder;
 
-import static free.yhc.feeder.core.Utils.eAssert;
-
 import java.io.File;
+import java.io.IOException;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+
+import free.yhc.baselib.Logger;
+import free.yhc.abaselib.util.UxUtil;
 import free.yhc.feeder.core.Environ;
 import free.yhc.feeder.core.UnexpectedExceptionHandler;
-import free.yhc.feeder.core.Utils;
 
 public class FeederPreferenceActivity extends PreferenceActivity implements
 SharedPreferences.OnSharedPreferenceChangeListener,
 UnexpectedExceptionHandler.TrackedModule {
-    @SuppressWarnings("unused")
-    private static final boolean DBG = false;
-    @SuppressWarnings("unused")
-    private static final Utils.Logger P = new Utils.Logger(FeederPreferenceActivity.class);
+    private static final boolean DBG = Logger.DBG_DEFAULT;
+    private static final Logger P = Logger.create(FeederPreferenceActivity.class, Logger.LOGLV_DEFAULT);
 
     private String mAppRootOld = null;
 
@@ -69,15 +68,22 @@ UnexpectedExceptionHandler.TrackedModule {
     onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
         if (key.equals(Environ.PREF_KEY_APP_ROOT)) {
             String appRoot = sharedPreferences.getString(Environ.PREF_KEY_APP_ROOT, null);
-            eAssert(null != appRoot);
+            P.bug(null != appRoot);
+            assert null != appRoot;
             File appRootFile = new File(appRoot);
             if (!appRootFile.canWrite()) {
-                UiHelper.showTextToast(this, R.string.warn_file_access_denied);
+                UxUtil.showTextToast(R.string.warn_file_access_denied);
                 SharedPreferences.Editor prefEd = sharedPreferences.edit();
                 prefEd.putString(Environ.PREF_KEY_APP_ROOT, mAppRootOld);
                 prefEd.apply();
             } else {
-                Environ.get().setAppDirectories(appRoot);
+                Environ env = Environ.get();
+                env.setAppDirectories(appRoot);
+                try {
+                    env.initAppDirectories();
+                } catch (IOException e) {
+                    P.bug(false); // This SHOULD NOT happen!
+                }
                 mAppRootOld = appRoot;
             }
         }
@@ -92,7 +98,7 @@ UnexpectedExceptionHandler.TrackedModule {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         mAppRootOld = prefs.getString(Environ.PREF_KEY_APP_ROOT, null);
         prefs.registerOnSharedPreferenceChangeListener(this);
-        eAssert(null != mAppRootOld);
+        P.bug(null != mAppRootOld);
     }
 
     @Override

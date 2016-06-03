@@ -9,10 +9,12 @@
     <application
         android:icon="@drawable/icon"
         android:label="@string/app_name"
-        android:name=".FeederApp">
+        android:name=".FeederApp"
+        android:allowBackup="true">
         <activity
             android:name=".FeederActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
+            android:clearTaskOnLaunch="true"
             android:theme="@android:style/Theme.NoTitleBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,6 +24,7 @@
         <activity
             android:name=".ChannelListActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
+            android:clearTaskOnLaunch="true"
             android:theme="@style/FeederTabTheme" />
         <activity
             android:name=".ItemListActivity"
@@ -82,7 +85,9 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/appwidget_info" />
         </receiver>
-        <receiver android:name=".ScheduledUpdateService$AlarmReceiver">
+        <receiver
+            android:name=".ScheduledUpdateService$AlarmReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="feeder.intent.action.SCHEDULED_UPDATE" />
             </intent-filter>
@@ -92,17 +97,23 @@
                 <action android:name="android.intent.action.TIME_SET" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".NotiManager$NotiIntentReceiver">
+        <receiver
+            android:name=".NotiManager$NotiIntentReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="feeder.intent.action.NOTIFICATION_DELETE" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".appwidget.ViewsService$ListPendingIntentReceiver">
+        <receiver
+            android:name=".appwidget.ViewsService$ListPendingIntentReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="feeder.intent.action.LIST_PENDING_INTENT" />
             </intent-filter>
         </receiver>
-        <receiver android:name=".appwidget.ViewsService$MoveToTopPendingIntentReceiver">
+        <receiver
+            android:name=".appwidget.ViewsService$MoveToTopPendingIntentReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="feeder.intent.action.MOVE_TO_TOP_PENDING_INTENT" />
             </intent-filter>
